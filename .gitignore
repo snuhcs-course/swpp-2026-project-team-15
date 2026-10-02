@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+env/
+venv/
+*.egg-info/
+dist/
+
+# Android
+.gradle/
+build/
+*.apk
+*.aab
+local.properties
+.cxx/
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Data & large media files (Keep repo clean)
+data/
+*.jpg
+*.jpeg
+*.png
+*.mp4
+*.tar.gz
+*.zip
+*.sqlite3

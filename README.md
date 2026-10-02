@@ -29,3 +29,9 @@ Rule-based scaling and ingredient omissions on verified recipes, clearly display
 ### Installation
 
 [Installation link here]
+
+## Repository Structure
+
+- `android/` : Mobile Client (Kotlin Android App)
+- `server/` : Backend API (FastAPI / Django)
+- `research/` : Vision-to-Recipe AI Pipelines & Benchmark Suite
