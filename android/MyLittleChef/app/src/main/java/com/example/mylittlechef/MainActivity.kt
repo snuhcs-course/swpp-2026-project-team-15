@@ -13,18 +13,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.mylittlechef.ui.theme.MyLittleChefTheme
 
+import com.example.mylittlechef.ui.onboarding.OnboardingNickname
+import com.example.mylittlechef.ui.onboarding.OnboardingScreen
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             MyLittleChefTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
+                Scaffold(modifier = Modifier.fillMaxSize())
+                {
+                    innerPadding ->
+                    OnboardingScreen(
+                        {},
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
+                //Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+
+                //Greeting(
+                    //    name = "Android",
+                    //    modifier = Modifier.padding(innerPadding)
+                    //)
+                //}
             }
         }
     }
