@@ -35,7 +35,45 @@ fun TitleText(
 }
 
 @Composable
-fun ButtonText(
+fun SubtitleText(
+    text: String,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign? = null,
+    color: Color, // TODO: Color.kt
+    overflow: TextOverflow = TextOverflow.Clip
+)
+{
+    BaseText(
+        text = text,
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = modifier,
+        textAlign = textAlign,
+        color = color,
+        overflow = overflow
+    )
+}
+
+@Composable
+fun NormalButtonText(
+    text: String,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign? = null,
+    color: Color, // TODO: Color.kt
+    overflow: TextOverflow = TextOverflow.Clip
+)
+{
+    BaseText(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        modifier = modifier,
+        textAlign = textAlign,
+        color = color,
+        overflow = overflow
+    )
+}
+
+@Composable
+fun TextOnlyButtonText(
     text: String,
     modifier: Modifier = Modifier,
     textAlign: TextAlign? = null,
