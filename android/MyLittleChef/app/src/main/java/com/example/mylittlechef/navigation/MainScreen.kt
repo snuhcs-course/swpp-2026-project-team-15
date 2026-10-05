@@ -112,7 +112,10 @@ fun MainScreen(
                 )
             }
             composable(Routes.RECIPE) {
-                RecipeScreen()
+                RecipeScreen(
+                    user = user,
+                    onCardClick = {}
+                )
             }
             composable(Routes.PROFILE) {
                 ProfileScreen(

@@ -1,5 +1,7 @@
 package com.example.mylittlechef.navigation
 
+import android.net.Uri
+
 object Routes {
     const val ONBOARDING = "onboarding"
     const val MAIN = "main"
@@ -15,4 +17,6 @@ object Routes {
     const val EDIT_NICKNAME = "edit_nickname"
     const val EDIT_UTENSIL = "edit_utensil"
     const val EDIT_ALLERGY = "edit_allergy"
+
+    fun analyzeRoute(imageUri: String) = "analyze?imageUri=${Uri.encode(imageUri)}"
 }

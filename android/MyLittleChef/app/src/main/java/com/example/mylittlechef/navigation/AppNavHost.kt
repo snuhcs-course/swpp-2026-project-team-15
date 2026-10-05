@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.mylittlechef.ui.fridge.add.CaptureScreen
 
 import com.example.mylittlechef.ui.onboarding.OnboardingScreen
 import com.example.mylittlechef.ui.profile.EditAllergyScreen
@@ -54,7 +55,17 @@ fun AppNavHost(
         }
 
         composable(Routes.CAPTURE) {
-
+            CaptureScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onCaptured = {
+                    uri -> navController.navigate(Routes.analyzeRoute(uri.toString()))
+                },
+                onManualAddClick = {
+                    navController.navigate(Routes.MANUAL_ADD)
+                }
+            )
         }
 
         composable(Routes.ANALYZE) {
