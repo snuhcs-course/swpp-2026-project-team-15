@@ -159,10 +159,10 @@ private fun AddIngredientButton(
 // 더미 데이터와 미리보기
 // ─────────────────────────────────────────────
 private val sampleIngredients = listOf(
-    Ingredient("다진마늘"),
-    Ingredient("고춧가루"),
-    Ingredient("소금"),
-    Ingredient("양파"),
-    Ingredient("두부"),
-    Ingredient("김치")
+    Ingredient(1, "다진마늘"),
+    Ingredient(2, "고춧가루"),
+    Ingredient(3, "소금"),
+    Ingredient(4, "양파"),
+    Ingredient(5, "두부"),
+    Ingredient(6, "김치")
 )
