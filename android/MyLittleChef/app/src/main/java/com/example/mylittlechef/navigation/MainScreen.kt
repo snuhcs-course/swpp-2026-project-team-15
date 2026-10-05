@@ -1,6 +1,8 @@
 package com.example.mylittlechef.navigation
 
 import androidx.annotation.DrawableRes // drawable 리소스 ID 파라미터 표시
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.padding // 안쪽 여백 (탭 바에 화면이 안 가려지게)
 import androidx.compose.material3.Icon // 탭 아이콘
 import androidx.compose.material3.MaterialTheme // 테마 색상/글자 스타일
@@ -95,7 +97,9 @@ fun MainScreen(
         NavHost(
             navController = tabNavController,
             startDestination = Routes.FRIDGE,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None }
         ) {
             composable(Routes.FRIDGE) {
                 FridgeScreen(onAddIngredientClick = onAddIngredientClick)
