@@ -20,7 +20,7 @@ fun TitleText(
     text: String,
     modifier: Modifier = Modifier,
     textAlign: TextAlign? = null,
-    color: Color, // TODO: Color.kt
+    color: Color = Color.Unspecified,
     overflow: TextOverflow = TextOverflow.Clip
 )
 {
@@ -39,7 +39,7 @@ fun SubtitleText(
     text: String,
     modifier: Modifier = Modifier,
     textAlign: TextAlign? = null,
-    color: Color, // TODO: Color.kt
+    color: Color = Color.Unspecified,
     overflow: TextOverflow = TextOverflow.Clip
 )
 {
@@ -58,7 +58,7 @@ fun NormalButtonText(
     text: String,
     modifier: Modifier = Modifier,
     textAlign: TextAlign? = null,
-    color: Color, // TODO: Color.kt
+    color: Color = Color.Unspecified,
     overflow: TextOverflow = TextOverflow.Clip
 )
 {
@@ -77,13 +77,32 @@ fun TextOnlyButtonText(
     text: String,
     modifier: Modifier = Modifier,
     textAlign: TextAlign? = null,
-    color: Color, // TODO: Color.kt
+    color: Color = Color.Unspecified,
     overflow: TextOverflow = TextOverflow.Clip
 )
 {
     BaseText(
         text = text,
         style = MaterialTheme.typography.labelMedium,
+        modifier = modifier,
+        textAlign = textAlign,
+        color = color,
+        overflow = overflow
+    )
+}
+
+@Composable
+fun NavTabText(
+    text: String,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign? = null,
+    color: Color = Color.Unspecified,
+    overflow: TextOverflow = TextOverflow.Clip
+)
+{
+    BaseText(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
         modifier = modifier,
         textAlign = textAlign,
         color = color,
