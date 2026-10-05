@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.mylittlechef.navigation.AppNavHost
 import com.example.mylittlechef.ui.theme.MyLittleChefTheme
 
 import com.example.mylittlechef.ui.onboarding.OnboardingNickname
@@ -22,14 +23,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MyLittleChefTheme {
-                Scaffold(modifier = Modifier.fillMaxSize())
-                {
-                    innerPadding ->
-                    OnboardingScreen(
-                        {},
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                AppNavHost()
+                //Scaffold(modifier = Modifier.fillMaxSize())
+                //{
+                //    innerPadding ->
+                //    OnboardingScreen(
+                //        {},
+                //        modifier = Modifier.padding(innerPadding)
+                //    )
+                //}
                 //Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
 
                 //Greeting(

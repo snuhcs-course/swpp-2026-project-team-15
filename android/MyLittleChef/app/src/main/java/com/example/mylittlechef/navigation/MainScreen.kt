@@ -25,6 +25,9 @@ import com.example.mylittlechef.ui.fridge.FridgeScreen
 import com.example.mylittlechef.ui.profile.ProfileScreen
 import com.example.mylittlechef.ui.recipe.RecipeScreen
 
+import com.example.mylittlechef.ui.theme.GreenGray
+import com.example.mylittlechef.ui.theme.DeepGreen
+
 // 하단 탭 정의. 탭을 추가/변경할 때 이 enum만 고치면 된다
 // 아이콘은 단색 SVG(Vector Asset)여야 선택/비선택 색이 틴트로 바뀐다
 enum class BottomTab(
@@ -77,10 +80,10 @@ fun MainScreen(
                             )
                         },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary, // 선택: 초록
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant, // 비선택: 연한 색
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            selectedIconColor = DeepGreen,
+                            selectedTextColor = DeepGreen,
+                            unselectedIconColor = GreenGray,
+                            unselectedTextColor = GreenGray,
                             indicatorColor = Color.Transparent // Figma처럼 선택 배경(알약 모양) 제거
                         )
                     )
