@@ -4,6 +4,7 @@ import android.R.attr.strokeWidth
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
 import com.example.mylittlechef.R
@@ -11,12 +12,14 @@ import com.example.mylittlechef.R
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
@@ -31,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -166,5 +170,68 @@ fun DashedButton(
                     vertical = 12.dp
                 )
         )
+    }
+}
+
+@Composable
+fun LikeButton(
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+)
+{
+    IconButton(
+        modifier = modifier,
+        onClick = onClick
+    )
+    {
+        Icon(
+            painter =
+                if (selected) painterResource(R.drawable.ic_star_filled)
+                else painterResource(R.drawable.ic_star)
+            ,
+            contentDescription = "back",
+            tint = Color.Unspecified
+        )
+    }
+}
+
+@Composable
+fun RecipeTabButton(
+    text: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    buttonColorOn: Color,
+    buttonColorOff: Color,
+    textColorOn: Color,
+    textColorOff: Color,
+    dividerWidth: Dp,
+    onClick: () -> Unit
+)
+{
+    Column(
+        modifier = Modifier.wrapContentWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    )
+    {
+        TextButton(
+            modifier = modifier,
+            onClick = onClick
+        )
+        {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = if (selected) textColorOn else textColorOff
+            )
+        }
+
+        HorizontalDivider(
+            thickness = 2.dp,
+            color = if (selected) buttonColorOn else buttonColorOff,
+            modifier = Modifier.width(dividerWidth)
+        )
+
     }
 }

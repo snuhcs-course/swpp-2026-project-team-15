@@ -9,12 +9,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.mylittlechef.model.Preset
 import com.example.mylittlechef.ui.fridge.add.CaptureScreen
 
 import com.example.mylittlechef.ui.onboarding.OnboardingScreen
 import com.example.mylittlechef.ui.profile.EditAllergyScreen
 import com.example.mylittlechef.ui.profile.EditNicknameScreen
 import com.example.mylittlechef.ui.profile.EditUtensilScreen
+import com.example.mylittlechef.ui.recipe.RecipeDetailScreen
+import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
 private const val START_DESTINATION = Routes.MAIN
@@ -26,6 +29,7 @@ fun AppNavHost(
 {
     val navController = rememberNavController()
     val user: UserViewModel = viewModel()
+    val fridge: FridgeViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -38,7 +42,8 @@ fun AppNavHost(
 
         composable(Routes.MAIN) {
             MainScreen(
-                user,
+                user = user,
+                fridge = fridge,
                 onAddIngredientClick = {
                     navController.navigate(Routes.CAPTURE)
                 },
@@ -50,6 +55,10 @@ fun AppNavHost(
                 },
                 onEditAllergyClick = {
                     navController.navigate(Routes.EDIT_ALLERGY)
+                },
+                onRecipeCardClick = {
+                    recipe ->
+                    navController.navigate("${Routes.RECIPE_DETAIL}/${recipe.id}")
                 }
             )
         }
@@ -110,6 +119,30 @@ fun AppNavHost(
                     navController.popBackStack()
                 }
             )
+        }
+
+        composable(
+            route = "${Routes.RECIPE_DETAIL}/{recipeId}"
+        ) { backStackEntry ->
+
+            val recipeId = backStackEntry.arguments
+                ?.getString("recipeId")
+                ?.toLongOrNull()
+
+            val recipe = Preset.sampleRecipes.find {
+                it.id == recipeId
+            }
+
+            if (recipe != null) {
+                RecipeDetailScreen(
+                    user = user,
+                    recipe = recipe,
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onLikeClick = {}
+                )
+            }
         }
     }
 }

@@ -18,5 +18,7 @@ object Routes {
     const val EDIT_UTENSIL = "edit_utensil"
     const val EDIT_ALLERGY = "edit_allergy"
 
+    const val RECIPE_DETAIL = "recipe_detail" // TODO: recipe 하위 route가 되어야 함
+
     fun analyzeRoute(imageUri: String) = "analyze?imageUri=${Uri.encode(imageUri)}"
 }

@@ -20,6 +20,8 @@ class UserViewModel(
     var allergies by mutableStateOf<List<String>>(allergies)
         private set
 
+    var likes by mutableStateOf<List<Long>>(emptyList())
+
     fun updateNickname(value: String) {
         nickname = value
     }
@@ -30,5 +32,13 @@ class UserViewModel(
 
     fun updateAllergies(value: List<String>) {
         allergies = value
+    }
+
+    fun addLikes(value: Long) {
+        likes += value
+    }
+
+    fun removeLikes(value: Long) {
+        likes -= value
     }
 }

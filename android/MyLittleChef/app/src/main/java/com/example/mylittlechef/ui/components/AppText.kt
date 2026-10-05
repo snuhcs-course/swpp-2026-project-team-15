@@ -111,6 +111,36 @@ fun NavTabText(
 }
 
 @Composable
+fun RecipeSubtitleText(
+    text: String
+)
+{
+    BaseText(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        textAlign = TextAlign.Left,
+        color = Color.Black,
+        overflow = TextOverflow.Clip,
+        modifier = Modifier
+    )
+}
+
+@Composable
+fun RecipeBodyText(
+    text: String
+)
+{
+    BaseText(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        textAlign = TextAlign.Left,
+        color = Color.Black,
+        overflow = TextOverflow.Clip,
+        modifier = Modifier
+    )
+}
+
+@Composable
 private fun BaseText(
     text: String,
     style: TextStyle,

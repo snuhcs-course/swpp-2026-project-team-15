@@ -22,6 +22,7 @@ import androidx.navigation.compose.composable // 경로에 화면 등록
 import androidx.navigation.compose.currentBackStackEntryAsState // 현재 경로를 상태로 관찰
 import androidx.navigation.compose.rememberNavController // 탭용 NavController 생성
 import com.example.mylittlechef.R
+import com.example.mylittlechef.model.Recipe
 import com.example.mylittlechef.ui.components.NavTabText
 import com.example.mylittlechef.ui.fridge.FridgeScreen
 import com.example.mylittlechef.ui.profile.ProfileScreen
@@ -29,6 +30,7 @@ import com.example.mylittlechef.ui.recipe.RecipeScreen
 
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.ui.theme.DeepGreen
+import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
 // 하단 탭 정의. 탭을 추가/변경할 때 이 enum만 고치면 된다
@@ -46,10 +48,12 @@ enum class BottomTab(
 @Composable
 fun MainScreen(
     user: UserViewModel,
+    fridge: FridgeViewModel,
     onAddIngredientClick: () -> Unit,
     onEditNicknameClick: () -> Unit,
     onEditUtensilClick: () -> Unit,
     onEditAllergyClick: () -> Unit,
+    onRecipeCardClick: (Recipe) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // 탭 전환만 담당하는 NavController (최상위 NavController와 별개)
@@ -114,7 +118,9 @@ fun MainScreen(
             composable(Routes.RECIPE) {
                 RecipeScreen(
                     user = user,
-                    onCardClick = {}
+                    fridge = fridge,
+                    onRecipeCardClick = onRecipeCardClick,
+                    onLikeClick = {}
                 )
             }
             composable(Routes.PROFILE) {
