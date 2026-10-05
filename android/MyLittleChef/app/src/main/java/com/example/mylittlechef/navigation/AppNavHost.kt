@@ -24,7 +24,7 @@ import com.example.mylittlechef.ui.recipe.RecipeDetailScreen
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
-private const val START_DESTINATION = Routes.MAIN
+private const val START_DESTINATION = Routes.ONBOARDING
 
 @Composable
 fun AppNavHost(
@@ -42,7 +42,14 @@ fun AppNavHost(
         enterTransition = { EnterTransition.None },
         exitTransition = { ExitTransition.None }
     ) {
-        // TODO: Onboarding.kt
+        composable(Routes.ONBOARDING) {
+            OnboardingScreen(
+                user = user,
+                onFinish = {
+                    navController.navigate(Routes.MAIN)
+                }
+            )
+        }
 
         composable(Routes.MAIN) {
             MainScreen(
