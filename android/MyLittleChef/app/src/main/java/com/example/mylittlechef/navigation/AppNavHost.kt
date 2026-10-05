@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.mylittlechef.model.Preset
 import com.example.mylittlechef.ui.fridge.add.CaptureScreen
+import com.example.mylittlechef.ui.fridge.add.ManualAddScreen
 
 import com.example.mylittlechef.ui.onboarding.OnboardingScreen
 import com.example.mylittlechef.ui.profile.EditAllergyScreen
@@ -82,7 +83,16 @@ fun AppNavHost(
         }
 
         composable(Routes.MANUAL_ADD) {
-
+            ManualAddScreen(
+                fridge = fridge,
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onSaveClick = {
+                    navController.popBackStack()
+                    navController.popBackStack()
+                }
+            )
         }
 
         composable(Routes.EDIT_NICKNAME) {

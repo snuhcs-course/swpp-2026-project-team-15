@@ -9,4 +9,8 @@ import com.example.mylittlechef.model.Ingredient
 class FridgeViewModel : ViewModel()
 {
     var ingredients by mutableStateOf<List<Ingredient>>(emptyList())
+
+    fun addIngredients(items: List<Ingredient>) {
+        ingredients += items
+    }
 }

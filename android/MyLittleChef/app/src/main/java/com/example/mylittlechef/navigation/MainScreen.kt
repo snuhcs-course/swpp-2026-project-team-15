@@ -112,6 +112,7 @@ fun MainScreen(
             composable(Routes.FRIDGE) {
                 FridgeScreen(
                     user = user,
+                    fridge = fridge,
                     onAddIngredientClick = onAddIngredientClick
                 )
             }

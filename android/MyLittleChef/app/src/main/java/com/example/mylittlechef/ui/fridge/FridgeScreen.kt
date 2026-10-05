@@ -37,21 +37,19 @@ import com.example.mylittlechef.ui.theme.Gray
 import com.example.mylittlechef.ui.theme.DeepBrown
 import com.example.mylittlechef.ui.theme.DeepGreen
 import com.example.mylittlechef.R
+import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
 @Composable
 fun FridgeScreen(
     user: UserViewModel,
+    fridge: FridgeViewModel,
     onAddIngredientClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // TODO: FridgeViewModel + UI State
-
-    val ingredients = remember { sampleIngredients }
-
     FridgeContent(
         nickname = user.nickname,
-        ingredients = ingredients,
+        ingredients = fridge.ingredients,
         onAddIngredientClick = onAddIngredientClick,
         modifier = modifier
             .background(color = Color.White)

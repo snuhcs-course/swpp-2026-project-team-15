@@ -71,6 +71,7 @@ fun AddFlowScaffold(
 {
     Scaffold(
         modifier = modifier.imePadding(),
+        containerColor = Color.White,
         topBar = {
             AddFlowHeader(
                 onBackClick = onBackClick,
