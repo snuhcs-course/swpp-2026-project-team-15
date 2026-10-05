@@ -11,7 +11,8 @@ object Routes {
     const val PROFILE = "profile"
 
     const val CAPTURE = "capture" // 재료 촬영
-    const val ANALYZE = "analyze" // AI 분석 (분석 중/실패/성공)
+    const val ARG_IMAGE_URI = "imageUri"
+    const val ANALYZE = "analyze?imageUri={imageUri}" // NavHost에 등록할 때 쓰는 패턴
     const val MANUAL_ADD = "manual_add" // 직접 입력
 
     const val EDIT_NICKNAME = "edit_nickname"

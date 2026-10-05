@@ -5,11 +5,14 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.mylittlechef.model.Preset
+import com.example.mylittlechef.ui.fridge.add.AnalyzeScreen
 import com.example.mylittlechef.ui.fridge.add.CaptureScreen
 import com.example.mylittlechef.ui.fridge.add.ManualAddScreen
 
@@ -78,8 +81,30 @@ fun AppNavHost(
             )
         }
 
-        composable(Routes.ANALYZE) {
-
+        composable(
+            route = Routes.ANALYZE,
+            arguments = listOf(
+                navArgument(Routes.ARG_IMAGE_URI) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            AnalyzeScreen(
+                fridge = fridge,
+                imageUri = backStackEntry.arguments?.getString(Routes.ARG_IMAGE_URI),
+                onBackClick = { navController.popBackStack() },
+                onManualClick = {
+                    navController.navigate(Routes.MANUAL_ADD) {
+                        popUpTo(Routes.ANALYZE) { inclusive = true }
+                    }
+                },
+                onRetakeClick = { navController.popBackStack() },
+                onSaveClick = {
+                    navController.popBackStack(Routes.MAIN, inclusive = false)
+                }
+            )
         }
 
         composable(Routes.MANUAL_ADD) {

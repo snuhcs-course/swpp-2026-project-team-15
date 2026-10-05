@@ -335,18 +335,18 @@ private fun RecipeDescriptionText(
         }
     }
 
-    val lastChar = missingIngredients.last().name.last()
-
-    fun hasFinalConsonant(char: Char): Boolean {
-        return (char.code - '가'.code) % 28 != 0
-    }
-
-    val particle = if (hasFinalConsonant(lastChar)) "이" else "가"
-
     RecipeBodyText(
         text = if (missingIngredients.isEmpty()) {
             "지금 바로 만들 수 있어요"
         } else {
+            val lastChar = missingIngredients.last().name.last()
+
+            fun hasFinalConsonant(char: Char): Boolean {
+                return (char.code - '가'.code) % 28 != 0
+            }
+
+            val particle = if (hasFinalConsonant(lastChar)) "이" else "가"
+
             "${missingIngredients.joinToString(", ") { "${it.name}" }}${particle} 없어요"
         }
     )
