@@ -29,6 +29,7 @@ import com.example.mylittlechef.ui.recipe.RecipeScreen
 
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.ui.theme.DeepGreen
+import com.example.mylittlechef.viewmodel.UserViewModel
 
 // 하단 탭 정의. 탭을 추가/변경할 때 이 enum만 고치면 된다
 // 아이콘은 단색 SVG(Vector Asset)여야 선택/비선택 색이 틴트로 바뀐다
@@ -44,9 +45,10 @@ enum class BottomTab(
 
 @Composable
 fun MainScreen(
+    user: UserViewModel,
     onAddIngredientClick: () -> Unit,
     onEditNicknameClick: () -> Unit,
-    onEditToolClick: () -> Unit,
+    onEditUtensilClick: () -> Unit,
     onEditAllergyClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -104,15 +106,19 @@ fun MainScreen(
             exitTransition = { ExitTransition.None }
         ) {
             composable(Routes.FRIDGE) {
-                FridgeScreen(onAddIngredientClick = onAddIngredientClick)
+                FridgeScreen(
+                    user = user,
+                    onAddIngredientClick = onAddIngredientClick
+                )
             }
             composable(Routes.RECIPE) {
                 RecipeScreen()
             }
             composable(Routes.PROFILE) {
                 ProfileScreen(
-                    onEditNicknameClick = onEditAllergyClick,
-                    onEditToolClick = onEditToolClick,
+                    user = user,
+                    onEditNicknameClick = onEditNicknameClick,
+                    onEditUtensilClick = onEditUtensilClick,
                     onEditAllergyClick = onEditAllergyClick
                 )
             }

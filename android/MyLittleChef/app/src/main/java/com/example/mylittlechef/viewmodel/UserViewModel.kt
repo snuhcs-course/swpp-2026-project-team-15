@@ -5,15 +5,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 
-class UserViewModel : ViewModel()
+class UserViewModel(
+    nickname: String = "",
+    utensils: List<String> = emptyList(),
+    allergies: List<String> = emptyList()
+) : ViewModel()
 {
-    var nickname by mutableStateOf("")
+    var nickname by mutableStateOf(nickname)
         private set
 
-    var utensils by mutableStateOf<List<String>>(emptyList())
+    var utensils by mutableStateOf<List<String>>(utensils)
         private set
 
-    var allergies by mutableStateOf<List<String>>(emptyList())
+    var allergies by mutableStateOf<List<String>>(allergies)
         private set
 
     fun updateNickname(value: String) {

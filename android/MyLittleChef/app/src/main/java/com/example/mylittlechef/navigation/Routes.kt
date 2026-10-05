@@ -11,4 +11,8 @@ object Routes {
     const val CAPTURE = "capture" // 재료 촬영
     const val ANALYZE = "analyze" // AI 분석 (분석 중/실패/성공)
     const val MANUAL_ADD = "manual_add" // 직접 입력
+
+    const val EDIT_NICKNAME = "edit_nickname"
+    const val EDIT_UTENSIL = "edit_utensil"
+    const val EDIT_ALLERGY = "edit_allergy"
 }
