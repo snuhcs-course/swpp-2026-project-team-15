@@ -230,7 +230,7 @@ class IngredientEditorState(
     // TODO: implement
 
     fun startAdd() {
-        
+
     }
 
     fun toggleEdit(index: Int) {

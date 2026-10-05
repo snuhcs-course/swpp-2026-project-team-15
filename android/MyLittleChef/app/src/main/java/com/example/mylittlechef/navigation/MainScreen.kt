@@ -42,10 +42,12 @@ enum class BottomTab(
     PROFILE(Routes.PROFILE, "내 정보", R.drawable.ic_profile)
 }
 
-// 하단 탭이 있는 메인 화면. 안쪽에 '탭 전용 NavHost'를 따로 둔다
 @Composable
 fun MainScreen(
-    onAddIngredientClick: () -> Unit, // 냉장고의 '재료 추가' → 최상위 NavHost에서 촬영 화면으로 이동
+    onAddIngredientClick: () -> Unit,
+    onEditNicknameClick: () -> Unit,
+    onEditToolClick: () -> Unit,
+    onEditAllergyClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     // 탭 전환만 담당하는 NavController (최상위 NavController와 별개)
@@ -104,8 +106,16 @@ fun MainScreen(
             composable(Routes.FRIDGE) {
                 FridgeScreen(onAddIngredientClick = onAddIngredientClick)
             }
-            composable(Routes.RECIPE) { RecipeScreen() }
-            composable(Routes.PROFILE) { ProfileScreen() }
+            composable(Routes.RECIPE) {
+                RecipeScreen()
+            }
+            composable(Routes.PROFILE) {
+                ProfileScreen(
+                    onEditNicknameClick = onEditAllergyClick,
+                    onEditToolClick = onEditToolClick,
+                    onEditAllergyClick = onEditAllergyClick
+                )
+            }
         }
     }
 }

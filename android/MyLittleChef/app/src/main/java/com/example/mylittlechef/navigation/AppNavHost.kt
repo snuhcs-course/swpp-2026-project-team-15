@@ -32,5 +32,17 @@ fun AppNavHost(
                 }
             )
         }
+
+        composable(Routes.CAPTURE) {
+
+        }
+
+        composable(Routes.ANALYZE) {
+
+        }
+
+        composable(Routes.MANUAL_ADD) {
+
+        }
     }
 }
