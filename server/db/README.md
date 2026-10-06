@@ -1,23 +1,25 @@
 # Recipe CSV import (SQLite prototype)
 
-`import_recipes.py` creates a new local SQLite database from the eight entity CSV files. It uses only Python's standard library. The source CSV files are read without modification.
+`import_recipes.py` creates a local SQLite database from eight entity CSV files. It uses Python's standard library and leaves the source files unchanged.
 
-From the repository root, put the eight CSV files in `data/recipes/` and run:
+## Ingredient data
+
+Put the eight prepared entity CSVs in `data/recipes/`. `Ingredient.csv` contains 715 distinct names. Names have not yet been merged for synonyms or corrected for source typos.
+
+`RecipeIngredient.csv` contains 5,933 rows covering all 537 recipes in `Recipe.csv`. Each row has its own `recipe_ingredient_id`, so the same ingredient can appear more than once in a recipe with different quantities. Use distinct `ingredient_id` values for ingredient matching; display quantities from the individual rows. `quantity_text` keeps amounts as written, such as `200g` or `약간`. Eight rows have no amount and import as SQL `NULL`.
+
+`ingredient_type_code` and `ingredient_type` classify each row as `3060001` / `주재료`, `3060002` / `부재료`, or `3060003` / `양념`. They do not identify which cooking step uses the ingredient.
+
+## Build the local database
+
+From the repository root, run:
 
 ```powershell
 python server/db/import_recipes.py
 ```
 
-Alternatively, keep the CSVs elsewhere and pass their directory:
+To keep the CSVs elsewhere, pass `--csv-dir "C:\path\to\recipes"`. The default database path is `data/recipes/recipes.sqlite3`; pass `--db "C:\path\to\recipes.sqlite3"` to choose another path. The importer refuses to overwrite an existing database. Choose a new path when rebuilding, or remove only a generated test database you no longer need.
 
-```powershell
-python server/db/import_recipes.py --csv-dir "C:\path\to\recipes"
-```
+All eight CSV headers are checked before database creation. Blank or whitespace-only cells become SQL `NULL`. IDs and step numbers must be positive integers. Foreign keys are enforced, and a failed import removes only the new database file it created.
 
-The default output is `data/recipes/recipes.sqlite3`. To choose another file, add `--db "C:\path\to\recipes.sqlite3"`. The script refuses to overwrite an existing database. Delete or rename a *generated test database* before rebuilding it; do not point the script at an existing database containing work you need to keep.
-
-All eight CSV headers are checked before any database is created. Blank or whitespace-only CSV cells become SQL `NULL`. IDs and step numbers must be positive integers. Foreign keys are enforced, and a failed import removes only the new database file it created. The current files yield 537 `recipe` rows and 2,870 `recipe_step` rows; the other six files contain headers only.
-
-`schema.sql` is a first SQLite schema for validating CSV import and raw SQL queries. It is not yet a SQLAlchemy model or an Alembic migration. The SQL table names use `snake_case`; column names match the CSV headers. `recipe_step.step_id` is the primary key because two `(recipe_id, step_number)` pairs repeat in the current source data.
-
-The repository currently ignores `data/`, so the CSVs and generated SQLite file stay local. Record the CSV source and sharing terms before adding data to the public repository.
+The resulting tables contain 537 `recipe` rows, 2,870 `recipe_step` rows, 715 `ingredient` rows and 5,933 `recipe_ingredient` rows. The cooking-tool and allergen tables still contain headers only. `recipe_step.step_id` is the primary key.

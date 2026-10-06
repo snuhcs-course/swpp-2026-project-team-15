@@ -58,9 +58,15 @@ TABLES = (
     CsvTable(
         "RecipeIngredient.csv",
         "recipe_ingredient",
-        ("recipe_id", "ingredient_id", "quantity_text", "ingredient_type", "original_name"),
-        frozenset({"recipe_id", "ingredient_id"}),
-        (("quantity_text", 100), ("ingredient_type", 50), ("original_name", 255)),
+        (
+            "recipe_ingredient_id", "recipe_id", "ingredient_id", "quantity_text",
+            "ingredient_type_code", "ingredient_type", "original_name",
+        ),
+        frozenset({"recipe_ingredient_id", "recipe_id", "ingredient_id"}),
+        (
+            ("quantity_text", 100), ("ingredient_type_code", 7),
+            ("ingredient_type", 50), ("original_name", 255),
+        ),
     ),
     CsvTable(
         "RecipeCookingTool.csv", "recipe_cooking_tool", ("recipe_id", "tool_id"),

@@ -23,16 +23,17 @@ CREATE TABLE recipe_step (
 
 CREATE TABLE ingredient (
     ingredient_id INTEGER PRIMARY KEY,
-    name VARCHAR(100) NOT NULL
+    name VARCHAR(100) NOT NULL UNIQUE
 );
 
 CREATE TABLE recipe_ingredient (
+    recipe_ingredient_id INTEGER PRIMARY KEY,
     recipe_id INTEGER NOT NULL REFERENCES recipe(recipe_id),
     ingredient_id INTEGER NOT NULL REFERENCES ingredient(ingredient_id),
     quantity_text VARCHAR(100),
+    ingredient_type_code VARCHAR(7) NOT NULL,
     ingredient_type VARCHAR(50),
-    original_name VARCHAR(255),
-    PRIMARY KEY (recipe_id, ingredient_id)
+    original_name VARCHAR(255)
 );
 
 CREATE TABLE cooking_tool (
