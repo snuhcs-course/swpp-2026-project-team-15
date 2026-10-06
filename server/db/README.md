@@ -4,7 +4,7 @@
 
 ## Ingredient data
 
-Put the eight prepared entity CSVs in `data/recipes/`. `Ingredient.csv` contains 715 distinct names. Names have not yet been merged for synonyms or corrected for source typos.
+Put the eight prepared entity CSVs in `data/recipes/`. `Ingredient.csv` contains 701 distinct names. Bracketed preparation labels such as `[양념장]` were removed from `Ingredient.name` for matching, while the complete source text remains in `RecipeIngredient.original_name`. Synonyms and source typos have not yet been corrected.
 
 `RecipeIngredient.csv` contains 5,933 rows covering all 537 recipes in `Recipe.csv`. Each row has its own `recipe_ingredient_id`, so the same ingredient can appear more than once in a recipe with different quantities. Use distinct `ingredient_id` values for ingredient matching; display quantities from the individual rows. `quantity_text` keeps amounts as written, such as `200g` or `약간`. Eight rows have no amount and import as SQL `NULL`.
 
@@ -22,4 +22,4 @@ To keep the CSVs elsewhere, pass `--csv-dir "C:\path\to\recipes"`. The default d
 
 All eight CSV headers are checked before database creation. Blank or whitespace-only cells become SQL `NULL`. IDs and step numbers must be positive integers. Foreign keys are enforced, and a failed import removes only the new database file it created.
 
-The resulting tables contain 537 `recipe` rows, 2,870 `recipe_step` rows, 715 `ingredient` rows and 5,933 `recipe_ingredient` rows. The cooking-tool and allergen tables still contain headers only. `recipe_step.step_id` is the primary key.
+The resulting tables contain 537 `recipe` rows, 2,870 `recipe_step` rows, 701 `ingredient` rows and 5,933 `recipe_ingredient` rows. The cooking-tool and allergen tables still contain headers only. `recipe_step.step_id` is the primary key.
