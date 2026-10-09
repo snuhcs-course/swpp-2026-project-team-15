@@ -1,3 +1,4 @@
+// AI-generated initial capture-flow scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 package com.example.mylittlechef.ui.fridge.add
 
 import android.Manifest // CAMERA 권한 이름이 들어있음

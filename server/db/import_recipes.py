@@ -1,5 +1,7 @@
 """Create a local SQLite recipe database from the eight entity CSV files."""
 
+# AI-generated initial importer with Codex (GPT-6.1 Sol), 2026-10-05 to 2026-10-06; reviewed by Soohyun An.
+
 from __future__ import annotations
 
 import argparse

@@ -1,3 +1,4 @@
+-- AI-generated initial schema with Codex (GPT-6.1 Sol), 2026-10-04 to 2026-10-06; reviewed by Soohyun An.
 CREATE TABLE recipe (
     recipe_id INTEGER PRIMARY KEY,
     name VARCHAR(100) NOT NULL,

@@ -140,6 +140,7 @@ fun BackButton(
     }
 }
 
+// AI-generated initial DashedButton draft with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 @Composable
 fun DashedButton(
     text: String,
