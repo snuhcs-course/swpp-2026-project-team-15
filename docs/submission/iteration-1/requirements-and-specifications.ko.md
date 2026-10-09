@@ -1,19 +1,19 @@
-# My Little Chef — 요구사항 및 명세서 (한국어 검토본)
+# My Little Chef — 요구사항 및 명세서
 
 **Team 15 · Iteration 1 · 2026-10-09 · v0.3**
 
 **언어:** [English](requirements-and-specifications.en.md) · [한국어](requirements-and-specifications.ko.md)
 
-**문서 목적:** 팀원이 제품의 목표와 사용 흐름을 이해하고 영어 제출본을 검토하기 위한 초안. 과제 제출본은 영어로 Wiki에 게시하고 PDF로 제출해야 한다.
+**문서 목적:** 제품의 목표, 사용 흐름, 기능·비기능 요구사항을 팀원이 공유하기 위한 문서이다.
 **현재 상태:** 기능 요구사항은 프로젝트 종료 시 달성할 목표를 설명한다. 아래의 Iteration 1 구현 현황과 혼동하지 않는다.
 
 ## 1. 개정 이력
 
 | 버전 | 날짜 | 주요 변경 |
 | --- | --- | --- |
-| 0.1 | 2026-10-09 | 최종 제안서와 앱·DB·리서치 브랜치를 바탕으로 영어 초안 작성 |
-| 0.2 | 2026-10-09 | 병합된 회의록, 결정 로그, 현황 문서와 일정표 대조 사항 추가 |
-| 0.3 | 2026-10-09 | 한국어 검토본 작성. 필수 사용자 스토리와 후보 기능을 구분하고 TA 피드백을 반영 |
+| 0.1 | 2026-09-30 | 제안서와 초기 연구를 바탕으로 목표 사용자, 재료 등록, 레시피 추천 요구사항 작성 |
+| 0.2 | 2026-10-07 | Android 시제품, 레시피 데이터, TA 피드백을 반영해 1인분 요리와 실제 조리 제약을 구체화 |
+| 0.3 | 2026-10-09 | 필수 사용자 스토리 6개와 후보 기능을 구분하고 화면 흐름을 정리 |
 
 ## 2. 프로젝트 요약
 
@@ -134,16 +134,8 @@ flowchart LR
 | 추천 목록 | 조리 가능 여부·부족한 조건 확인, 다른 결과·즐겨찾기 | 가능한 요리 0개면 이유와 다음 행동 안내 |
 | 상세 | 원본 재료·양·순서·출처, 제안된 변경 확인 | 양·안전 정보가 부족하면 해당 한계 표시 |
 
-**제출 전 필수 보완:** 위 흐름도와 표만으로는 과제의 와이어프레임 요구를 충족하지 않는다. [팀 Figma](https://www.figma.com/design/bxDeYMiAzC9LY7oHNj2OQV/my-little-chef?t=4IKrs5VSkKNKfJMZ-1)에서 실제 화면을 가져와 버튼별 전환 화살표, 허용·금지 입력, 실패 화면을 주석으로 표시해 영어 Wiki/PDF에 넣어야 한다.
+화면 설계 원본은 [팀 Figma](https://www.figma.com/design/bxDeYMiAzC9LY7oHNj2OQV/my-little-chef?t=4IKrs5VSkKNKfJMZ-1)에 있다.
 
-## 8. Iteration 1의 근거와 범위
+## 8. Iteration 1 구현 범위와 향후 결정
 
 Android 브랜치는 온보딩, 사진·수동 등록, 후보 확인, 냉장고, 레시피 목록·상세 등의 **목업 흐름**을 보여준다. 분석 화면은 사진에서 재료를 추론하지 않고 미리 정한 후보를 반환한다. 레시피 목록도 실제 537개 DB와 연결되지 않았다. 별도의 SQLite 프로토타입에는 레시피 537개, 단계 2,870개, 재료 701개, 레시피-재료 관계 5,933개가 정리되어 있다. 조리도구·알레르기 관계 테이블은 비어 있다. 연구 브랜치의 비교 수치는 모의 재료 문자열에 대한 진단이며 냉장고 사진 인식 성능이 아니다. 원본 데이터의 레시피 대표 이미지 및 단계 이미지 URL 필드는 사용하지 않는다고 제공처가 답했다.
-
-현재 일정표의 P6(서버·API)과 P10(전체 통합·테스트)은 `Completed`로 표시되어 있지만 Git 근거상 완성된 통합 서버는 확인되지 않는다. P9(문서·교체 계획)는 `Hold`이며 10월 9일에 별도 문서 작업이 병합되었다. **영어 제출본을 만들기 전에 완료 범위를 일정표와 일치시켜야 한다.**
-
-## 9. 근거 자료
-
-- [Iteration 1 현황](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/iterations/iteration-1-status.md), [10월 7일 TA 회의 요약](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/meetings/2026-10-07-ta-and-iteration-2.md), [결정 로그](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/decisions.md)
-- [Recipe Database Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Recipe-Database), [Figma](https://www.figma.com/design/bxDeYMiAzC9LY7oHNj2OQV/my-little-chef?t=4IKrs5VSkKNKfJMZ-1)
-- 공식 과제 지침: `2 - Requirements & Specifications Guidelines.pdf` (수업 자료). 영어 Wiki/PDF에서는 로컬 파일 경로를 참고문헌으로 넣지 않는다.

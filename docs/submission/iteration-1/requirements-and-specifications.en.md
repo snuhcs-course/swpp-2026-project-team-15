@@ -9,9 +9,9 @@
 
 | Version | Date | Changes |
 | --- | --- | --- |
-| 0.1 | 2026-10-09 | Initial requirements draft based on the refined proposal, Iteration 1 prototype, and TA feedback. |
-| 0.2 | 2026-10-09 | Linked the merged meeting, decision, and Iteration 1 status records; flagged schedule claims requiring review. |
-| 0.3 | 2026-10-09 | Separated six proposed mandatory stories from candidate features and added a UI flow to accompany the wireframes. |
+| 0.1 | 2026-09-30 | Initial requirements based on the proposal and early research: target users, ingredient registration, and recipe recommendations. |
+| 0.2 | 2026-10-07 | Updated the scope using the Iteration 1 prototype, recipe data, and TA feedback on one-person meals and practical constraints. |
+| 0.3 | 2026-10-09 | Refined six mandatory user stories, candidate features, and the UI flow. |
 
 ## Project Abstract
 
@@ -106,9 +106,9 @@ This is not yet a mandatory user story. The allowed substitution list, whether a
 | NFR-05 | The application must communicate loading, empty-result, and recoverable error states in plain language. | Exercise each state in an integrated build. |
 | NFR-06 | Photo-to-confirmation and recipe-result response times should be measured on the deployment setup; numerical targets will be set after a real-image baseline. | Record latency on representative devices and images in a later iteration. |
 
-## UI Requirements and Wireframe Checklist
+## User Interface Requirements
 
-The flow below summarizes intended transitions and failure paths. It is based on the current Android screen structure and [team Figma design](https://www.figma.com/design/bxDeYMiAzC9LY7oHNj2OQV/my-little-chef?t=4IKrs5VSkKNKfJMZ-1). For the submitted PDF, add annotated captures of the actual wireframes that show the contents of each screen, permitted user inputs, button transitions, and failure states. The flowchart alone does not replace those wireframes.
+The flow below summarizes intended transitions and failure paths. It is based on the current Android screen structure and [team Figma design](https://www.figma.com/design/bxDeYMiAzC9LY7oHNj2OQV/my-little-chef?t=4IKrs5VSkKNKfJMZ-1).
 
 ```mermaid
 flowchart LR
@@ -134,12 +134,8 @@ flowchart LR
 | Recipe Detail | Read source, amounts, steps, missing items, adjustments | Back to results; clearly separate original and suggested content |
 | Favorites | Open or remove saved recipes | Recipe detail; show an empty-favorites state |
 
-## Iteration 1 Evidence and Open Decisions
+## Iteration 1 Scope and Open Decisions
 
 The Android prototype demonstrates onboarding, profile editing, camera/manual input, a mock analysis result, a digital refrigerator, recipe cards/details, and favorites. The current analysis result and displayed recipes are preset data. A separate SQLite prototype imports 537 source recipes, 2,870 steps, and 5,933 recipe-ingredient rows; the cooking-tool and allergen link tables are still empty. A research branch compares normalization and ranking candidates using simulated ingredient mentions rather than real refrigerator photographs. These components are not yet integrated as a functioning recognition-to-recommendation backend.
-
-The merged [Iteration 1 status](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/iterations/iteration-1-status.md) is the evidence summary for these claims. The [October 7 TA and team follow-up](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/meetings/2026-10-07-ta-and-iteration-2.md) explains why the requirements now emphasize one-person portions, tool constraints, editable recognition results, and bounded recipe adjustments. The [decision log](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/decisions.md) identifies proposals that should not be described as implemented behavior.
-
-The schedule's P6 and P10 completion labels should be read with the actual Iteration 1 scope in mind: the repository establishes the local database and mock Android path, but does not establish a deployed API or end-to-end photo-to-recipe service. The [status record](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/iterations/iteration-1-status.md) tracks the remaining integration work.
 
 Open choices for subsequent revisions include exact quantity tracking, the seasoning checklist, required tools for each curated recipe, verified one-serving quantity rules, permitted recipe adjustments, refresh ordering, and precise empty/error behavior. Any resolution should update the user stories and design document together.

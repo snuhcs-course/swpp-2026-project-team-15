@@ -9,9 +9,9 @@
 
 | Version | Date | Changes |
 | --- | --- | --- |
-| 0.1 | 2026-10-09 | Combined Android, recipe database, and research work into an Iteration 1 system design draft; recorded integration gaps and Iteration 2 decisions. |
-| 0.2 | 2026-10-09 | Added the merged repository evidence and PM handoff references; identified schedule claims needing scope review. |
-| 0.3 | 2026-10-09 | Added current library information, a bilingual source, and explicit PDF/Wiki scope notes. |
+| 0.1 | 2026-09-30 | Initial design based on the proposal and early recognition and recipe research. |
+| 0.2 | 2026-10-07 | Incorporated the Android prototype, recipe database, and TA feedback; separated current components from the proposed integration. |
+| 0.3 | 2026-10-09 | Refined the architecture, data model, draft interfaces, technology choices, and integration limits. |
 
 ## 1. Scope and Current System State
 
@@ -163,13 +163,3 @@ The next integration sequence should be:
 6. Introduce refresh, approved substitutions, and optional “one additional ingredient unlocks…” suggestions only after the baseline recommendation constraints are reliable.
 
 Detailed test cases and measured results belong in separate testing documentation. This section records design consequences and the implementation order.
-
-## References and Repository Evidence
-
-- Team-owned refined proposal document (`Final-Proposal-eng.docx`, provided separately).
-- [Recipe Database Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Recipe-Database), including public data-source links and current row counts.
-- [Earlier research design notes](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Vision-to-Recipe-Research-Design) and [research comparison](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Pipeline-Candidate-Comparative-Evaluation); interpret reported metrics within the simulated diagnostic setup.
-- Code branch tips at the time of this draft: Android `ae22ec7`, recipe DB `0405ffc`, research `4ea64e3`.
-- [Iteration 1 status](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/iterations/iteration-1-status.md), [decision log](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/decisions.md), and [October 7 follow-up](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/meetings/2026-10-07-ta-and-iteration-2.md), merged in [documentation PR #1](https://github.com/snuhcs-course/swpp-2026-project-team-15/pull/1).
-
-The schedule's P6 and P10 completion labels should be interpreted within the Iteration 1 scope: the code evidence supports a local recipe database and mock Android flow, not a deployed API or end-to-end photo-to-recipe integration. The [status record](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/iterations/iteration-1-status.md) lists that integration as next work. Detailed test cases and measured results belong in separate Testing Documentation, as required by the course guidelines.

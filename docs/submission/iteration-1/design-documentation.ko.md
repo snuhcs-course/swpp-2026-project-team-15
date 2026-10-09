@@ -1,19 +1,19 @@
-# My Little Chef — 설계 문서 (한국어 검토본)
+# My Little Chef — 설계 문서
 
 **Team 15 · Iteration 1 · 2026-10-09 · v0.3**
 
 **언어:** [English](design-documentation.en.md) · [한국어](design-documentation.ko.md)
 
-**문서 목적:** 팀 개발자가 현재 구조를 재현하고 다음 작업을 나눌 수 있도록 하는 설계 초안. 수업 제출본은 영어로 GitHub Wiki에 게시하고 PDF로 제출한다.
+**문서 목적:** 팀 개발자가 현재 구조를 재현하고 다음 작업을 나눌 수 있도록 하는 설계 문서이다.
 **표기:** `[현재]`는 브랜치에서 확인된 구현, `[제안]`은 다음 iteration의 설계안, `[미정]`은 팀 결정이 필요한 항목이다. 이 문서에 제안된 API와 모델은 아직 실행 중인 서비스가 아니다.
 
 ## 1. 개정 이력
 
 | 버전 | 날짜 | 주요 변경 |
 | --- | --- | --- |
-| 0.1 | 2026-10-09 | Android, 레시피 DB, 연구 브랜치의 독립된 결과를 한 문서에 정리 |
-| 0.2 | 2026-10-09 | Git 문서, 회의록, Wiki 근거와 일정표 대조 사항 추가 |
-| 0.3 | 2026-10-09 | 한국어 검토본 작성. 현재/제안 구조, 데이터·API 계약, 외부 라이브러리 및 미결정을 명확히 구분 |
+| 0.1 | 2026-09-30 | 제안서와 초기 인식·레시피 연구를 바탕으로 설계 방향 작성 |
+| 0.2 | 2026-10-07 | Android 시제품, 레시피 DB, TA 피드백을 반영하고 현재 구성과 통합안을 구분 |
+| 0.3 | 2026-10-09 | 아키텍처, 데이터 모델, API 초안, 기술 선택과 통합 범위를 구체화 |
 
 ## 2. 시스템 범위와 현재 상태
 
@@ -171,13 +171,4 @@ SQLite 입력 스크립트는 Python 표준 라이브러리로 작성되었다. 
 5. 레시피의 부족한 조건과 추천 이유를 화면에서 검증한다.
 6. 기본 추천이 안정된 뒤 새로고침, 제한된 AI 조정, 추가 구매 제안을 단계적으로 도입한다.
 
-세부 테스트 계획과 결과는 수업 지침에 따라 별도 Testing Documentation에 기록한다. 이 문서는 **구현 경계와 설계 판단**을 설명한다. Iteration 5에서 요구하는 디자인 패턴 상세 설명은 그 단계에서 실제 코드와 함께 추가한다.
-
-## 10. 출처와 제출 전 확인
-
-- [Recipe Database Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Recipe-Database), [리서치 Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Pipeline-Candidate-Comparative-Evaluation), [이전 연구 설계 기록](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Vision-to-Recipe-Research-Design)
-- [Iteration 1 현황](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/iterations/iteration-1-status.md), [결정 로그](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/decisions.md), [10월 7일 회의록](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/meetings/2026-10-07-ta-and-iteration-2.md)
-- 코드 근거: Android `ae22ec7`, 레시피 DB `0405ffc`, 연구 `4ea64e3` 브랜치 시점.
-- 공식 과제 지침: `3 - Design Documentation Guidelines.pdf` (수업 자료).
-
-**제출 전 확인:** 일정표의 P6·P10 완료 범위 및 P9 상태를 실제 구현과 일치시킨다. 확정되지 않은 API·모델·DB 선택을 완료 설계처럼 표현하지 않는다. 영어 Wiki/PDF에서는 이 한국어 검토본에서 합의된 내용만 옮긴다.
+세부 테스트 계획과 결과는 별도 Testing Documentation에 기록한다. 이 문서는 **구현 경계와 설계 판단**을 설명한다.
