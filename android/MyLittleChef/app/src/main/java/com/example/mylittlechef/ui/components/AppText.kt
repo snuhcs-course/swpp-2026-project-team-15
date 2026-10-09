@@ -1,3 +1,4 @@
+// AI-generated initial text-highlighting scaffold with Claude chat (Sonnet 5.5), 2026-10-04; tag format redesigned and reviewed by Ahyoon Choi.
 package com.example.mylittlechef.ui.components
 
 import androidx.compose.material3.MaterialTheme

@@ -1,3 +1,4 @@
+// AI-generated initial fridge-layout scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 package com.example.mylittlechef.ui.fridge.components
 
 import androidx.compose.foundation.layout.Box

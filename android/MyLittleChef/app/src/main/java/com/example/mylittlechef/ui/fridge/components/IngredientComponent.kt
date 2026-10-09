@@ -1,3 +1,4 @@
+// AI-generated initial IngredientItem, EditableIngredientList, IngredientRow, and IngredientEditorState drafts with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 package com.example.mylittlechef.ui.fridge.components
 
 import androidx.annotation.DrawableRes
