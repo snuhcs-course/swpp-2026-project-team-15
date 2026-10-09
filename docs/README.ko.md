@@ -11,5 +11,6 @@
 - [결정 로그](decisions.ko.md): 확정된 방향과 아직 비교 중인 선택.
 - [PM 인수인계](pm-handoff.ko.md): 매 iteration 운영 절차와 인수인계 목록.
 - [Iteration 1 요구사항·설계 문서](submission/iteration-1/README.md): Wiki·PDF 준비에 사용할 한·영 Markdown 원본.
+- [Iteration 1 AI 협업 보고서](ai-collaboration/iteration-1/team15-iter1-AI-collaboration-report-draft.ko.md): 팀 보고서, 개인별 기록, 프롬프트 로그.
 
 회의 기록은 개인 메시지 원문이 아니라 프로젝트에 필요한 논의 요약이다. 범위나 구조에 영향을 주는 결정은 결정 로그와 관련 Wiki 문서에도 반영한다.

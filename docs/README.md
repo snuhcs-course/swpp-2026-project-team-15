@@ -11,5 +11,6 @@ This directory keeps team operations and meeting decisions alongside the code. T
 - [Decision log](decisions.md): current choices and unresolved questions.
 - [PM handoff](pm-handoff.md): recurring process and handoff checklist.
 - [Iteration 1 Requirements & Specifications and Design](submission/iteration-1/README.md): English and Korean Markdown sources for Wiki and PDF preparation.
+- [Iteration 1 AI collaboration report](ai-collaboration/iteration-1/team15-iter1-AI-collaboration-report-draft.en.md): team report, individual records, and prompt log.
 
 Meeting notes summarize project discussion. They are not a verbatim export of private messages. Changes to scope or architecture should be recorded in the decision log and, when relevant, the Wiki.

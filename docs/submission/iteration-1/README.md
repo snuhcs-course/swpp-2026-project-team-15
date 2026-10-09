@@ -4,6 +4,7 @@
 | --- | --- | --- |
 | Requirements & Specifications | [English](requirements-and-specifications.en.md) | [한국어](requirements-and-specifications.ko.md) |
 | Design Documentation | [English](design-documentation.en.md) | [한국어](design-documentation.ko.md) |
+| AI Collaboration Report | [English](../../ai-collaboration/iteration-1/team15-iter1-AI-collaboration-report-draft.en.md) | [한국어](../../ai-collaboration/iteration-1/team15-iter1-AI-collaboration-report-draft.ko.md) |
 
 The English versions are intended for the required GitHub Wiki pages and course PDFs. Korean versions help the team review decisions and hand work to future PMs. When one version changes, update the other and the corresponding Wiki page in the same documentation change.
 
