@@ -1,5 +1,7 @@
 # Research and implementation: 2026-09-27 to 2026-10-06
 
+[English](2026-09-27-to-10-06-research-and-build.md) · [한국어](2026-09-27-to-10-06-research-and-build.ko.md)
+
 Source: team discussion summary, branch commits, recipe database Wiki, and dates supplied by the Iteration 1 PM. These notes summarize progress; they do not claim an integrated release.
 
 ## Timeline

@@ -1,5 +1,7 @@
 # TA meeting and Iteration 2 follow-up — 2026-10-07
 
+[English](2026-10-07-ta-and-iteration-2.md) · [한국어](2026-10-07-ta-and-iteration-2.ko.md)
+
 Source: Iteration 1 PM's summary of the TA meeting and team follow-up. Items marked **proposal** were discussed but not yet implemented or finalized.
 
 ## TA feedback
