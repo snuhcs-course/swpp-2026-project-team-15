@@ -5,7 +5,7 @@
 
 ## 1. AI를 사용한 곳
 
-수현은 레시피 ER 모델, 엔티티 CSV, `server/db/schema.sql`, `server/db/import_recipes.py`, DB Wiki 초안에 Codex를 사용했다. 아윤은 Android 내비게이션, 온보딩, 냉장고, 촬영·분석·직접 입력 화면 일부의 초안에 Claude를 사용했다. 레시피 화면과 ViewModel은 직접 작성했다. 혁준은 PM 인수인계 문서, TA 발표 초안, Mermaid 도표, 제출 문서 Markdown 표현에 Codex를 사용했다. PM에 따르면 재혁은 [연구 코드](https://github.com/snuhcs-course/swpp-2026-project-team-15/commit/4ea64e3)와 [연구 Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Pipeline-Candidate-Comparative-Evaluation)로 이어진 AI 파이프라인 탐색에 Codex를 사용했다. 산출물만으로 Codex가 작성한 코드 줄을 특정할 수는 없다. **작업 담당자, 추가 일정표 Task, 완료 범위는 팀과 PM이 직접 결정했다.**
+수현은 레시피 ER 모델, 엔티티 CSV, `server/db/schema.sql`, `server/db/import_recipes.py`, DB Wiki 초안에 Codex를 사용했다. 아윤은 Android 내비게이션, 온보딩, 냉장고, 촬영·분석·직접 입력 화면 일부의 초안에 Claude를 사용했다. 레시피 화면과 ViewModel은 직접 작성했다. 혁준은 PM 인수인계 문서, TA 발표 초안, Mermaid 도표에 Codex를 사용했다. PM에 따르면 재혁은 [연구 코드](https://github.com/snuhcs-course/swpp-2026-project-team-15/commit/4ea64e3)와 [연구 Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Pipeline-Candidate-Comparative-Evaluation)로 이어진 AI 파이프라인 탐색에 Codex를 사용했다. 산출물만으로 Codex가 작성한 코드 줄을 특정할 수는 없다. **작업 담당자, 추가 일정표 Task, 완료 범위는 팀과 PM이 직접 결정했다.**
 
 ## 2. 실제 프롬프트 기록
 
@@ -23,7 +23,7 @@
 
 ## 4. 오류·환각
 
-수현은 `[불고기양념] 간장` 같은 접두어가 재료 이름에 남아 같은 재료가 중복될 위험을 CSV 수동 검사에서 발견했다. 정규화된 이름과 원본 이름을 분리했다. 아윤은 온보딩 초안의 `rememberSaveable` 타입과 누락된 import를 확인했고, 의존성 안내 후 발생한 Kotlin 메타데이터 불일치를 Gradle 빌드에서 발견했다. Codex는 혁준의 개인 초안 작성 시점을 모르고 문서 개정 이력 세 날짜를 모두 10월 9일로 적었다. PM이 실제 날짜를 제공해 [수정했다](https://github.com/snuhcs-course/swpp-2026-project-team-15/commit/9eff8d1). 정확한 수정 시간은 기록되지 않았다.
+수현은 `[불고기양념] 간장` 같은 접두어가 재료 이름에 남아 같은 재료가 중복될 위험을 CSV 수동 검사에서 발견했다. 정규화된 이름과 원본 이름을 분리했다. 아윤은 온보딩 초안의 `rememberSaveable` 타입과 누락된 import를 확인했고, 의존성 안내 후 발생한 Kotlin 메타데이터 불일치를 Gradle 빌드에서 발견했다. 정확한 수정 시간은 기록되지 않았다.
 
 ## 5. 수정한 프롬프트
 
