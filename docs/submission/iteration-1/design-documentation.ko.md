@@ -2,10 +2,7 @@
 
 **Team 15 · Iteration 1 · 2026-10-09 · v0.3**
 
-**언어:** [English](design-documentation.en.md) · [한국어](design-documentation.ko.md)
-
-**문서 목적:** 팀 개발자가 현재 구조를 재현하고 다음 작업을 나눌 수 있도록 하는 설계 문서이다.
-**표기:** `[현재]`는 브랜치에서 확인된 구현, `[제안]`은 다음 iteration의 설계안, `[미정]`은 팀 결정이 필요한 항목이다. 이 문서에 제안된 API와 모델은 아직 실행 중인 서비스가 아니다.
+**언어:** [English](design-documentation.en.md)
 
 ## 1. 개정 이력
 

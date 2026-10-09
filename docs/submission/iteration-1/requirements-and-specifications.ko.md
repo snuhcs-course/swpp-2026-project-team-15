@@ -2,10 +2,7 @@
 
 **Team 15 · Iteration 1 · 2026-10-09 · v0.3**
 
-**언어:** [English](requirements-and-specifications.en.md) · [한국어](requirements-and-specifications.ko.md)
-
-**문서 목적:** 제품의 목표, 사용 흐름, 기능·비기능 요구사항을 팀원이 공유하기 위한 문서이다.
-**현재 상태:** 기능 요구사항은 프로젝트 종료 시 달성할 목표를 설명한다. 아래의 Iteration 1 구현 현황과 혼동하지 않는다.
+**언어:** [English](requirements-and-specifications.en.md)
 
 ## 1. 개정 이력
 
