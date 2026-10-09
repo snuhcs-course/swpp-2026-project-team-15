@@ -1,5 +1,7 @@
 # Meeting log
 
+[English](README.md) · [한국어](README.ko.md)
+
 These are concise summaries of team discussions and TA feedback. Dates were confirmed by the Iteration 1 PM. The source chat export does not include full timestamps, so individual statements are not assigned an exact time or speaker unless independently documented. Private or unrelated chat content is excluded.
 
 | Date | Topic | Notes |

@@ -1,5 +1,7 @@
 # Decision log
 
+[English](decisions.md) · [한국어](decisions.ko.md)
+
 Use this page for choices that affect scope, architecture, data, or the user experience. Record the meeting date, the evidence, and whether a choice is agreed or still under evaluation. Update the relevant Wiki page when a technical decision is settled.
 
 | Date | Topic | Current position | State / next check |

@@ -1,5 +1,7 @@
 # Iteration 1 status
 
+[English](iteration-1-status.md) · [한국어](iteration-1-status.ko.md)
+
 Updated: 2026-10-09. Scope: Team 15's Iteration 1, ending 2026-10-09. The team aimed to finish core work by 2026-10-07 and use the remaining time for feedback and corrections.
 
 ## Evidence and responsibility

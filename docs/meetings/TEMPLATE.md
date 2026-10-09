@@ -1,5 +1,7 @@
 # YYYY-MM-DD — Meeting title
 
+[English](TEMPLATE.md) · [한국어](TEMPLATE.ko.md)
+
 Attendees: list only people who actually joined.
 Recorder: name.
 Source: meeting, chat, TA feedback, or other source.

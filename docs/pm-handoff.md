@@ -1,5 +1,7 @@
 # PM handoff and project operating guide
 
+[English](pm-handoff.md) · [한국어](pm-handoff.ko.md)
+
 Current iteration boundary: Iteration 1 ends 2026-10-09. The completed schedule names **Hyeokjun Kweon** as Iteration 1 PM and **Ahyoon Choi** as Iteration 2 PM. Later PM rotation is recorded in the team schedule; check the latest workbook rather than copying this list into future reports.
 
 ## Sources of truth
