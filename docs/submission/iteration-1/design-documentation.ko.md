@@ -175,7 +175,7 @@ SQLite 입력 스크립트는 Python 표준 라이브러리로 작성되었다. 
 
 ## 10. 출처와 제출 전 확인
 
-- [Recipe Database Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Recipe-Database), [리서치 Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Pipeline-Candidate-Comparative-Evaluation), [기존 Design Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Design-Documentation)
+- [Recipe Database Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Recipe-Database), [리서치 Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Pipeline-Candidate-Comparative-Evaluation), [이전 연구 설계 기록](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Vision-to-Recipe-Research-Design)
 - [Iteration 1 현황](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/iterations/iteration-1-status.md), [결정 로그](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/decisions.md), [10월 7일 회의록](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/meetings/2026-10-07-ta-and-iteration-2.md)
 - 코드 근거: Android `ae22ec7`, 레시피 DB `0405ffc`, 연구 `4ea64e3` 브랜치 시점.
 - 공식 과제 지침: `3 - Design Documentation Guidelines.pdf` (수업 자료).

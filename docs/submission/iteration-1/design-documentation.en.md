@@ -168,7 +168,7 @@ Detailed test cases and measured results belong in separate testing documentatio
 
 - Team-owned refined proposal document (`Final-Proposal-eng.docx`, provided separately).
 - [Recipe Database Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Recipe-Database), including public data-source links and current row counts.
-- [Design Documentation Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Design-Documentation) and [research comparison](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Pipeline-Candidate-Comparative-Evaluation); interpret reported metrics within the simulated diagnostic setup.
+- [Earlier research design notes](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Vision-to-Recipe-Research-Design) and [research comparison](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Pipeline-Candidate-Comparative-Evaluation); interpret reported metrics within the simulated diagnostic setup.
 - Code branch tips at the time of this draft: Android `ae22ec7`, recipe DB `0405ffc`, research `4ea64e3`.
 - [Iteration 1 status](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/iterations/iteration-1-status.md), [decision log](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/decisions.md), and [October 7 follow-up](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/main/docs/meetings/2026-10-07-ta-and-iteration-2.md), merged in [documentation PR #1](https://github.com/snuhcs-course/swpp-2026-project-team-15/pull/1).
 
