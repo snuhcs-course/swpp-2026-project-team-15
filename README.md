@@ -1,37 +1,27 @@
-# SNU-SWPP-Template
+# My Little Chef
 
-You can use the README file to showcase and promote your mobile app. The template provided below is just a starting point. Feel free to craft your README as you see fit. 
+My Little Chef is Team 15's SWPP Fall 2026 project for people cooking in small households. The intended flow is to review ingredients identified from a photo, keep an editable fridge inventory, and find recipes that fit the available ingredients, tools, allergies, and serving size.
 
-Please note that the README doesn't affect your grade and is not included in documentation(Wiki).
+## Iteration 1 state (2026-10-09)
 
-# [My Litte Chef]
+Iteration 1 produced separate prototypes and source data; it did **not** produce an integrated end-to-end service. The Android branch demonstrates screens with mock data. The recipe database branch contains a SQLite schema and CSV importer. The research branch compares candidate recognition and recommendation approaches using a limited, simulated benchmark. Real-photo detection quality and the integrated API flow remain to be established.
 
-[Recipe Recommendation from Refrigerator Images]
+| Area | Branch | Current artifact |
+| --- | --- | --- |
+| Android UI | [`origin/feat/android-studio`](https://github.com/snuhcs-course/swpp-2026-project-team-15/tree/origin/feat/android-studio) | Android prototype and navigation; mock responses |
+| Recipe data | [`feat/recipe-db-schema-import`](https://github.com/snuhcs-course/swpp-2026-project-team-15/tree/feat/recipe-db-schema-import) | SQLite schema, CSV importer, data notes |
+| Research | [`feat/research-pipeline`](https://github.com/snuhcs-course/swpp-2026-project-team-15/tree/feat/research-pipeline) | Candidate pipelines and simulated benchmark |
 
-<img width="1088" height="412" alt="image" src="https://github.com/user-attachments/assets/26fa7412-819e-4555-8681-27b2ee79e3c7" />
+The remote Android branch is literally named `origin/feat/android-studio`; this is why its remote-tracking name appears as `origin/origin/feat/android-studio` locally. The feature branches have not yet been merged into `main`.
 
-## Features
+## Documentation
 
-- Feature 1: Photo-Based Digital Refrigerator Management
-Snap photos of groceries to auto-detect and register 20–40 ingredients into an editable digital inventory.
-- Feature 2: Constraint-Aware Recipe Search & Recommendation
-Filter out allergen/tool conflicts and rank recipes by available ingredients and cooking time.
-- Feature 3: Transparent AI Recipe Adjustments
-Rule-based scaling and ingredient omissions on verified recipes, clearly displaying changes while preserving food safety.
+- [Project documentation](docs/README.md): Iteration 1 status, meeting log, decisions, and PM handoff.
+- [GitHub Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki): design, research, and recipe database documentation.
+- [Figma design](https://www.figma.com/design/bxDeYMiAzC9LY7oHNj2OQV/my-little-chef?t=4IKrs5VSkKNKfJMZ-1).
 
-## Getting Started
+The entity CSV bundle and generated SQLite database are distributed separately and are not tracked in Git. The [recipe database Wiki page](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Recipe-Database) describes the source and import process.
 
-### Prerequisites
+## Collaboration
 
-- Android Studio [version, e.g., 4.2.1]
-- Minimum Android SDK Version [e.g., 21]
-
-### Installation
-
-[Installation link here]
-
-## Repository Structure
-
-- `android/` : Mobile Client (Kotlin Android App)
-- `server/` : Backend API (FastAPI / Django)
-- `research/` : Vision-to-Recipe AI Pipelines & Benchmark Suite
+Work on a focused branch, open a pull request to `main`, and identify the actual contributors in the schedule. Record meeting decisions in [`docs/meetings/`](docs/meetings/README.md); update [`docs/decisions.md`](docs/decisions.md) when a choice changes. The PM handoff checklist is in [`docs/pm-handoff.md`](docs/pm-handoff.md).
