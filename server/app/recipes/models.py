@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Opus 5.5), 2026-10-11; review pending by Jaehyuk Choi.
+# AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 """SQLModel tables mirroring server/db/schema.sql, which remains the source of truth.
 
 Only the tables the API reads are mapped; tools and allergens are still empty.

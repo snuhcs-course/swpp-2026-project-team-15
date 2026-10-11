@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Opus 5.5), 2026-10-11; review pending by Jaehyuk Choi.
+# AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 """Application factory. Collaborators are injected so tests can replace them.
 
 Run: uv run --env-file .env uvicorn app.main:create_app_from_env --factory

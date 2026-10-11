@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Opus 5.5), 2026-10-11; review pending by Jaehyuk Choi.
+# AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 """Recognition providers behind one interface, so tests never call a paid API."""
 
 import hashlib

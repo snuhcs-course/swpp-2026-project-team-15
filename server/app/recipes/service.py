@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Opus 5.5), 2026-10-11; review pending by Jaehyuk Choi.
+# AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 """Read-only recipe queries over the database built by server/db/import_recipes.py."""
 
 import re

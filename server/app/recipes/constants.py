@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Opus 5.5), 2026-10-11; review pending by Jaehyuk Choi.
+# AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 """Ingredient naming rules shared by recognition and recommendation."""
 
 # Seasonings a one-person household is assumed to always have. Chosen from the most

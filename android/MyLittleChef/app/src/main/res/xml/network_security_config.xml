@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- AI-generated with Claude Code (Opus 5.5), 2026-10-11; review pending by Jaehyuk Choi. -->
+<!-- AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi. -->
 <!-- Plain HTTP only for the local backend reached through `adb reverse tcp:8000 tcp:8000`. -->
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
