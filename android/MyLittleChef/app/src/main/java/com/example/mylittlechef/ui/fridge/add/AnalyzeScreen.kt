@@ -21,14 +21,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.example.mylittlechef.data.IngredientAnalyzer
 import com.example.mylittlechef.model.Ingredient
-import com.example.mylittlechef.model.Preset
 import com.example.mylittlechef.ui.components.SubtitleText
 import com.example.mylittlechef.ui.components.NormalButton
 import com.example.mylittlechef.ui.components.SubtitleText
@@ -43,8 +44,6 @@ import com.example.mylittlechef.ui.theme.Gray
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.ui.theme.MyLittleChefTheme
 import com.example.mylittlechef.viewmodel.FridgeViewModel
-import kotlinx.coroutines.delay
-import kotlin.time.Duration.Companion.milliseconds
 import androidx.core.net.toUri
 
 sealed interface AnalyzeUiState {
@@ -67,10 +66,15 @@ fun AnalyzeScreen(
     val editor = rememberIngredientEditorState()
     var uiState by remember { mutableStateOf<AnalyzeUiState>(AnalyzeUiState.Loading) }
 
-    LaunchedEffect(Unit) {
-        delay(2000.milliseconds)
-        editor.replaceAll(Preset.analyzeResult)
-        uiState = AnalyzeUiState.Success
+    val context = LocalContext.current
+    LaunchedEffect(imageUri) {
+        val candidates = imageUri?.let { IngredientAnalyzer(context).analyze(it.toUri()) }
+        if (candidates.isNullOrEmpty()) {
+            uiState = AnalyzeUiState.Failed
+        } else {
+            editor.replaceAll(candidates)
+            uiState = AnalyzeUiState.Success
+        }
     }
 
     AnalyzeContent(

@@ -32,6 +32,7 @@ import com.example.mylittlechef.ui.recipe.RecipeScreen
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.ui.theme.DeepGreen
 import com.example.mylittlechef.viewmodel.FridgeViewModel
+import com.example.mylittlechef.viewmodel.RecipeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
 // 하단 탭 정의. 탭을 추가/변경할 때 이 enum만 고치면 된다
@@ -50,6 +51,7 @@ enum class BottomTab(
 fun MainScreen(
     user: UserViewModel,
     fridge: FridgeViewModel,
+    recipes: RecipeViewModel,
     onAddIngredientClick: () -> Unit,
     onEditNicknameClick: () -> Unit,
     onEditUtensilClick: () -> Unit,
@@ -121,6 +123,7 @@ fun MainScreen(
                 RecipeScreen(
                     user = user,
                     fridge = fridge,
+                    recipes = recipes,
                     onRecipeCardClick = onRecipeCardClick,
                     onLikeClick = {}
                 )

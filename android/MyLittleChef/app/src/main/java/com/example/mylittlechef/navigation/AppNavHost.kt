@@ -12,7 +12,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.mylittlechef.model.Preset
 import com.example.mylittlechef.ui.fridge.add.AnalyzeScreen
 import com.example.mylittlechef.ui.fridge.add.CaptureScreen
 import com.example.mylittlechef.ui.fridge.add.ManualAddScreen
@@ -23,6 +22,7 @@ import com.example.mylittlechef.ui.profile.EditNicknameScreen
 import com.example.mylittlechef.ui.profile.EditUtensilScreen
 import com.example.mylittlechef.ui.recipe.RecipeDetailScreen
 import com.example.mylittlechef.viewmodel.FridgeViewModel
+import com.example.mylittlechef.viewmodel.RecipeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
 private const val START_DESTINATION = Routes.ONBOARDING
@@ -35,6 +35,7 @@ fun AppNavHost(
     val navController = rememberNavController()
     val user: UserViewModel = viewModel()
     val fridge: FridgeViewModel = viewModel()
+    val recipes: RecipeViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -56,6 +57,7 @@ fun AppNavHost(
             MainScreen(
                 user = user,
                 fridge = fridge,
+                recipes = recipes,
                 onAddIngredientClick = {
                     navController.navigate(Routes.CAPTURE)
                 },
@@ -172,9 +174,7 @@ fun AppNavHost(
                 ?.getString("recipeId")
                 ?.toLongOrNull()
 
-            val recipe = Preset.sampleRecipes.find {
-                it.id == recipeId
-            }
+            val recipe = recipes.find(recipeId)
 
             if (recipe != null) {
                 RecipeDetailScreen(

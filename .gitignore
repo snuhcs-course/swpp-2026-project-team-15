@@ -26,7 +26,7 @@ local.properties
 Thumbs.db
 
 # Data & large media files (Keep repo clean)
-data/
+/data/
 *.jpg
 *.jpeg
 *.png
