@@ -6,13 +6,13 @@ plugins {
 android {
     namespace = "com.example.mylittlechef"
     compileSdk {
-        version = release(37)
+        version = release(36)
     }
 
     defaultConfig {
         applicationId = "com.example.mylittlechef"
-        minSdk = 36
-        targetSdk = 37
+        minSdk = 26
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
