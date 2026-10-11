@@ -25,14 +25,15 @@ sh scripts/run-local-demo.sh path/to/recipes_csv_with_ingredients.zip   # first 
 sh scripts/run-local-demo.sh                                            # later runs
 ```
 
-The script builds the recipe database (`data/recipes/recipes.sqlite3`), creates `server/.env` from `server/.env.example`, installs and opens the app, and then runs the server in the foreground. Stop it with Ctrl+C. On Windows, run it from Git Bash.
+The script builds the recipe database (`data/recipes/recipes.sqlite3`), creates `server/.env` from `server/.env.example`, installs and opens the app, and then runs the server in the foreground. Stop it with Ctrl+C. On Windows, run it inside WSL; the phone must be attached to WSL (for example with `usbipd`).
 
 By default `VISION_PROVIDER=mock` replays recorded recognition results, so no API key is needed and the detected items do not depend on the photo. To use Gemini, set `VISION_PROVIDER=gemini`, `GEMINI_API_KEY` and `GEMINI_MODEL` in `server/.env`. Never commit that file.
 
-Server checks:
+Checks:
 
 ```sh
-cd server && uv run ruff check . && uv run pytest
+cd server && uv run ruff check . && uv run pytest     # server
+cd android/MyLittleChef && sh ./gradlew testDebugUnitTest   # app
 ```
 
 | Endpoint | Purpose |
