@@ -6,7 +6,7 @@ import com.google.gson.Gson
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-// JSON samples follow server/app/schemas.py; a renamed field would turn into null here.
+// JSON samples follow server/app/{vision,recipes}/schemas.py; a renamed field would turn into null here.
 class ApiModelsTest {
     private val gson = Gson()
 

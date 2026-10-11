@@ -5,7 +5,7 @@ import com.example.mylittlechef.model.Ingredient
 import com.example.mylittlechef.model.Recipe
 import com.google.gson.annotations.SerializedName
 
-// Field names mirror server/app/schemas.py; a mismatch silently becomes null in Gson.
+// Field names mirror server/app/{vision,recipes}/schemas.py; a mismatch silently becomes null in Gson.
 
 data class AnalyzeResponse(
     val candidates: List<IngredientCandidateDto>
