@@ -38,3 +38,7 @@ data/
 # Local course deliverables and presentation build artifacts
 output/
 .presentation-build/
+
+# Secrets & local databases
+.env
+*.db
