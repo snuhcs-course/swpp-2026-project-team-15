@@ -6,9 +6,11 @@ from types import SimpleNamespace
 import pytest
 
 from app.config import SERVER_DIR
-from app.gemini_vision import GeminiVisionProvider
-from app.schemas import DetectedItem
-from app.vision import FixtureVisionProvider, VisionError, to_candidates
+from app.vision.exceptions import VisionError
+from app.vision.gemini import GeminiVisionProvider
+from app.vision.providers import FixtureVisionProvider
+from app.vision.schemas import DetectedItem
+from app.vision.service import to_candidates
 
 FIXTURES = SERVER_DIR / "fixtures" / "vision"
 

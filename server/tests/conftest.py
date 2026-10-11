@@ -5,10 +5,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from app.database import read_only_sqlite_engine
 from app.main import create_app
-from app.recipes import RecipeRepository, read_only_sqlite_engine
-from app.schemas import DetectedItem
-from app.vision import VisionError
+from app.recipes.service import RecipeRepository
+from app.vision.exceptions import VisionError
+from app.vision.schemas import DetectedItem
 
 SCHEMA = Path(__file__).resolve().parents[1] / "db" / "schema.sql"
 

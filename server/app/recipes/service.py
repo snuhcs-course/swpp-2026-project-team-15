@@ -2,14 +2,13 @@
 """Read-only recipe queries over the database built by server/db/import_recipes.py."""
 
 import re
-from pathlib import Path
 
 from sqlalchemy import Engine, case, func
-from sqlmodel import Session, col, create_engine, select
+from sqlmodel import Session, col, select
 
-from app.models import Ingredient, Recipe, RecipeIngredient, RecipeStep
-from app.schemas import RecipeRecommendation
-from app.vocabulary import STAPLE_SEASONINGS, with_synonyms
+from app.recipes.constants import STAPLE_SEASONINGS, with_synonyms
+from app.recipes.models import Ingredient, Recipe, RecipeIngredient, RecipeStep
+from app.recipes.schemas import RecipeRecommendation
 
 _LEADING_NUMBER = re.compile(r"\d+")
 
@@ -17,12 +16,6 @@ _LEADING_NUMBER = re.compile(r"\d+")
 def _leading_int(text: str | None) -> int | None:
     match = _LEADING_NUMBER.match(text or "")
     return int(match.group()) if match else None
-
-
-def read_only_sqlite_engine(db_path: Path) -> Engine:
-    if not db_path.is_file():
-        raise FileNotFoundError(f"Recipe database not found: {db_path}")
-    return create_engine(f"sqlite:///file:{db_path}?mode=ro&uri=true")
 
 
 class RecipeRepository:

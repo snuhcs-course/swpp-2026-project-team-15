@@ -5,8 +5,9 @@ from google import genai
 from google.genai import types
 from pydantic import ValidationError
 
-from app.schemas import DetectedItem
-from app.vision import DETECTED_ITEMS, VisionError
+from app.vision.exceptions import VisionError
+from app.vision.providers import DETECTED_ITEMS
+from app.vision.schemas import DetectedItem
 
 PROMPT = (
     "List the food items visible in this refrigerator or pantry photo. "

@@ -1,6 +1,6 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-10-11; review pending by Jaehyuk Choi.
-from app.recipes import RecipeRepository
-from app.vocabulary import with_synonyms
+from app.recipes.constants import with_synonyms
+from app.recipes.service import RecipeRepository
 
 
 def names(recipes) -> list[str]:
