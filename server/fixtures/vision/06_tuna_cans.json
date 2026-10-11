@@ -1,0 +1,38 @@
+{
+  "image_file": "tuna_cans.jpg",
+  "items": [
+    {
+      "name_raw": "오뚜기 가벼운참치 마일드 135g",
+      "category": "참치캔",
+      "confidence": 0.95,
+      "package_type": "캔",
+      "visual_clues": "좌측 스택 최상단 캔. 연두색 라벨 배경에 상하 반전된 영양정보 표기: '총 내용량 135 g 145 kcal', '나트륨 720mg 36%', '단백질 23g 42%', 분리배출 캔류 마크, HACCP 인증 마크, 오뚜기 로고. 135g에 145kcal 스펙은 오뚜기 가벼운참치 마일드와 일치.",
+      "ambiguity_note": "캔이 거꾸로 놓여 있어 전면 상품명 텍스트는 보이지 않으나 영양성분(145kcal) 및 포장 디자인으로 식별 확실."
+    },
+    {
+      "name_raw": "오뚜기 가벼운참치 살코기 135g",
+      "category": "참치캔",
+      "confidence": 0.98,
+      "package_type": "캔",
+      "visual_clues": "좌측 스택 2단, 3단, 4단에 위치한 파란색 라벨 캔 3개. 2~3단 캔 전면에 '가벼운참치 살코기', '40% FAT down', '맛은 Up 지방은 Down', '135 g(고형량 103 g, 195 kcal)', LIGHT&JOY 로고, 카나페 연출컷 선명.",
+      "ambiguity_note": "개별 캔 3개가 적재되어 있음. 2단과 3단은 거꾸로 적재되어 있고 4단은 정방향 적재."
+    },
+    {
+      "name_raw": "깔보 이지플립 참치 (Calvo Easy Flip Tuna)",
+      "category": "참치캔",
+      "confidence": 0.95,
+      "package_type": "캔",
+      "visual_clues": "우측 파란색 종이 슬리브 포장 안에 은색/흰색 이지필 원형 캔이 위아래 2개(멀티팩) 수납됨. 슬리브 상단에 대형 흰색 'Calvo' 로고와 'EASY FLIP' 타원형 로고, 분홍빛 참치 살코기 사진.",
+      "ambiguity_note": "오일 종류(올리브유/해바라기유 등) 세부 서브명칭은 슬리브 상단 각도상 일부 가려짐."
+    },
+    {
+      "name_raw": "계란 (구운계란/훈제계란 추정)",
+      "category": "계란",
+      "confidence": 0.7,
+      "package_type": "비닐",
+      "visual_clues": "아래 선반 우측 틈새에 패키지 일부 노출. 굵은 검은색 캘리그라피로 '계란' 텍스트, 하단에 붉은색 영문 '...ed Eggs' (Roasted Eggs 추정).",
+      "ambiguity_note": "선반 턱에 가려져 패키지 우측 일부만 보여 정확한 브랜드명 단정에는 제한."
+    }
+  ],
+  "original_file": "20260928_161541.jpg"
+}

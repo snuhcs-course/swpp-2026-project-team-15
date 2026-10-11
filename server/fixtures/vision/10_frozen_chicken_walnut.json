@@ -1,0 +1,30 @@
+{
+  "image_file": "frozen_chicken_walnut.jpg",
+  "items": [
+    {
+      "name_raw": "CJ 제일제당 소바바 황금홀릭 후라이드 순살치킨",
+      "category": "냉동 치킨",
+      "confidence": 0.98,
+      "package_type": "파우치",
+      "visual_clues": "상단 'CJ 제일제당' 로고, '소바바' 텍스트, 중앙 금색 입체 폰트 '황금홀릭', 우하단 붉은색 라벨 '후라이드 순살치킨', 하단 튀김 치킨 이미지",
+      "ambiguity_note": "제품 하단부가 냉동실 도어 바스켓 투명 가드에 가려져 있으나 제품명 및 브랜드가 명확함"
+    },
+    {
+      "name_raw": "락앤락 밀폐용기 내 호두",
+      "category": "호두",
+      "confidence": 0.85,
+      "package_type": "밀폐용기",
+      "visual_clues": "뚜껑에 거꾸로 부착된 'LOCK & LOCK' 라벨 스티커, 사면 결착형 반투명 용기, 내부의 굴곡진 뇌 형태 황갈색 견과류(호두)",
+      "ambiguity_note": "반투명 용기 재질로 인해 내용물이 다소 흐리게 보이나 외형 굴곡으로 호두로 강하게 추정됨"
+    },
+    {
+      "name_raw": "붉은색 뚜껑 용기 내 참깨(추정)",
+      "category": "참깨",
+      "confidence": 0.65,
+      "package_type": "플라스틱 용기",
+      "visual_clues": "우측 가장자리에 위치한 붉은색 뚜껑 용기, 내부에 채워진 황갈색의 자잘한 알갱이 형태",
+      "ambiguity_note": "화면 우측 가장자리에 잘려 있어 라벨이 보이지 않으며 통깨 외 다른 소형 곡류/가루일 가능성 존재"
+    }
+  ],
+  "original_file": "20260928_191645.jpg"
+}

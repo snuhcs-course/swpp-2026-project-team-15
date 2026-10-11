@@ -1,0 +1,38 @@
+{
+  "image_file": "noodles_meal_kit.jpg",
+  "items": [
+    {
+      "name_raw": "풀무원 지구식단 저당 볶음짬뽕",
+      "category": "냉동 볶음면",
+      "confidence": 0.99,
+      "package_type": "파우치",
+      "visual_clues": "패키지 텍스트 '풀무원지구식단 저당 볶음짬뽕', '식물성 100% PLANT BASED', '직화 풍미의 짬뽕소스, 쫄깃한 면발', 볶음짬뽕 조리예 사진",
+      "ambiguity_note": "없음 (전면 전체 노출)"
+    },
+    {
+      "name_raw": "풀무원 평양냉면",
+      "category": "냉면",
+      "confidence": 0.99,
+      "package_type": "파우치",
+      "visual_clues": "패키지 텍스트 '풀무원 평양냉면', '시원담백한 양지육수와 초고압면으로 끝까지', '동치미 발효액으로 찐한 청량감 UP', 놋그릇 냉면 조리예 사진",
+      "ambiguity_note": "없음 (전면 주요 정보 노출)"
+    },
+    {
+      "name_raw": "CJ 갓면비법 콩국수",
+      "category": "콩국수",
+      "confidence": 0.92,
+      "package_type": "파우치",
+      "visual_clues": "'갓면비법' 로고 마크, '콩과 비법 견과류로...', 캘리그래피 '콩', 맷돌과 견과류 일러스트, 콩국수 조리예 사진",
+      "ambiguity_note": "오른쪽 일부가 인접한 평양냉면 파우치에 가려져 있으나 제품명과 시각 요소로 식별 가능"
+    },
+    {
+      "name_raw": "삼립(SPC) 가공식품 (상세 상품명 미확인)",
+      "category": "가공식품",
+      "confidence": 0.7,
+      "package_type": "비닐/파우치",
+      "visual_clues": "포장 후면 바코드 '8 801068 383225' (8801068: SPC 삼립/샤니 제조사 코드), HACCP 마크, 분리배출 비닐 표시",
+      "ambiguity_note": "포장 뒷면만 보이고 앞면 상품명이 가려져 있어 구체적 품목명은 특정 불가"
+    }
+  ],
+  "original_file": "20260928_191540.jpg"
+}
