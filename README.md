@@ -14,6 +14,35 @@ Iteration 1 produced separate prototypes and source data; it did **not** produce
 
 The remote Android branch is literally named `origin/feat/android-studio`; this is why its remote-tracking name appears as `origin/origin/feat/android-studio` locally. The feature branches have not yet been merged into `main`.
 
+## Run the local demo
+
+The backend runs on your computer and the app runs on an Android phone connected by USB. The phone reaches the server through `adb reverse`, so no Wi-Fi setup is needed.
+
+**Prerequisites:** [uv](https://docs.astral.sh/uv/), Android Studio (SDK and JDK 21), the recipe CSV zip shared outside Git, and a phone with USB debugging enabled and authorized (`adb devices` shows `device`).
+
+```sh
+sh scripts/run-local-demo.sh path/to/recipes_csv_with_ingredients.zip   # first run
+sh scripts/run-local-demo.sh                                            # later runs
+```
+
+The script builds the recipe database (`data/recipes/recipes.sqlite3`), creates `server/.env` from `server/.env.example`, installs and opens the app, and then runs the server in the foreground. Stop it with Ctrl+C. On Windows, run it from Git Bash.
+
+By default `VISION_PROVIDER=mock` replays recorded recognition results, so no API key is needed and the detected items do not depend on the photo. To use Gemini, set `VISION_PROVIDER=gemini`, `GEMINI_API_KEY` and `GEMINI_MODEL` in `server/.env`. Never commit that file.
+
+Server checks:
+
+```sh
+cd server && uv run ruff check . && uv run pytest
+```
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /analyze` | Photo → unconfirmed ingredient candidates |
+| `POST /recipes/recommend` | Confirmed ingredients → recipes ranked by missing items (ten staple seasonings assumed) |
+| `GET /health` | Liveness check |
+
+Interactive API docs: <http://127.0.0.1:8000/docs> while the server runs.
+
 ## Documentation
 
 - [Project documentation](docs/README.md): Iteration 1 status, meeting log, decisions, and PM handoff.
