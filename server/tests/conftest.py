@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import create_app
-from app.recipes import RecipeRepository
+from app.recipes import RecipeRepository, read_only_sqlite_engine
 from app.schemas import DetectedItem
 from app.vision import VisionError
 
@@ -71,7 +71,7 @@ class StubVision:
 
 @pytest.fixture
 def repository(recipe_db: Path) -> RecipeRepository:
-    return RecipeRepository(recipe_db)
+    return RecipeRepository(read_only_sqlite_engine(recipe_db))
 
 
 @pytest.fixture

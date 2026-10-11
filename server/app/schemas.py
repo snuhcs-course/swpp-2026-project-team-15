@@ -1,10 +1,10 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-10-11; review pending by Jaehyuk Choi.
 """API contract between the Android client and the server."""
 
-from pydantic import BaseModel, Field
+from sqlmodel import Field, SQLModel
 
 
-class DetectedItem(BaseModel):
+class DetectedItem(SQLModel):
     """One item a vision provider reports; mirrors the 2026-09-30 Gemini benchmark output."""
 
     name_raw: str
@@ -12,19 +12,19 @@ class DetectedItem(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
 
 
-class IngredientCandidate(BaseModel):
+class IngredientCandidate(SQLModel):
     name: str
     raw_texts: list[str]
     confidence: float
 
 
-class AnalyzeResponse(BaseModel):
+class AnalyzeResponse(SQLModel):
     """Unconfirmed candidates: the user must review them before they enter the fridge."""
 
     candidates: list[IngredientCandidate]
 
 
-class RecommendRequest(BaseModel):
+class RecommendRequest(SQLModel):
     ingredients: list[str] = Field(description="Confirmed ingredient names from the fridge")
     # Source recipes need a median of 11 ingredients, so a strict 0-1 limit returns
     # almost nothing for a realistic fridge; results are ranked by missing count instead.
@@ -32,7 +32,7 @@ class RecommendRequest(BaseModel):
     limit: int = Field(default=20, ge=1, le=100)
 
 
-class RecipeRecommendation(BaseModel):
+class RecipeRecommendation(SQLModel):
     id: int
     name: str
     time_minutes: int | None
@@ -42,6 +42,6 @@ class RecipeRecommendation(BaseModel):
     missing: list[str]
 
 
-class RecommendResponse(BaseModel):
+class RecommendResponse(SQLModel):
     staples_assumed: list[str]
     recipes: list[RecipeRecommendation]

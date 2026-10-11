@@ -11,7 +11,7 @@ from google import genai
 
 from app.config import Settings
 from app.gemini_vision import GeminiVisionProvider
-from app.recipes import RecipeRepository
+from app.recipes import RecipeRepository, read_only_sqlite_engine
 from app.schemas import AnalyzeResponse, RecommendRequest, RecommendResponse
 from app.vision import FixtureVisionProvider, VisionError, VisionProvider, to_candidates
 from app.vocabulary import STAPLE_SEASONINGS
@@ -51,7 +51,8 @@ def create_app(vision: VisionProvider, recipes: RecipeRepository) -> FastAPI:
 
 def create_app_from_env() -> FastAPI:
     settings = Settings.from_env()
-    return create_app(_build_vision(settings), RecipeRepository(settings.recipe_db_path))
+    recipes = RecipeRepository(read_only_sqlite_engine(settings.recipe_db_path))
+    return create_app(_build_vision(settings), recipes)
 
 
 def _build_vision(settings: Settings) -> VisionProvider:
