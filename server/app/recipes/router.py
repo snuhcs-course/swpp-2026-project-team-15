@@ -8,8 +8,9 @@ from app.recipes.schemas import RecommendRequest, RecommendResponse
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
 
-@router.post("/recommend")
+@router.post("/recommend", summary="Recommend recipes for the fridge", operation_id="recommend")
 def recommend(request: RecommendRequest, recipes: RecipeRepositoryDep) -> RecommendResponse:
+    """Return recipes that use the given ingredients, fewest missing ingredients first."""
     return RecommendResponse(
         staples_assumed=list(STAPLE_SEASONINGS),
         recipes=recipes.recommend(request.ingredients, request.max_missing, request.limit),

@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
+from app.schemas import ErrorResponse
 from app.vision.dependencies import VisionProviderDep
 from app.vision.exceptions import VisionError, VisionUnavailableError
 from app.vision.schemas import AnalyzeResponse
@@ -13,8 +14,21 @@ SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic"}
 router = APIRouter(tags=["vision"])
 
 
-@router.post("/analyze")
-def analyze(image: Annotated[UploadFile, File()], vision: VisionProviderDep) -> AnalyzeResponse:
+@router.post(
+    "/analyze",
+    summary="Detect ingredients in a photo",
+    operation_id="analyze_photo",
+    responses={
+        415: {"model": ErrorResponse, "description": "Not a JPEG, PNG, WebP or HEIC image"},
+        502: {"model": ErrorResponse, "description": "Recognition failed or returned bad output"},
+        503: {"model": ErrorResponse, "description": "Recognition temporarily unavailable; retry"},
+    },
+)
+def analyze(
+    image: Annotated[UploadFile, File(description="Fridge or pantry photo, sent unchanged")],
+    vision: VisionProviderDep,
+) -> AnalyzeResponse:
+    """Return ingredient candidates for the user to confirm; nothing is saved to the fridge."""
     if image.content_type not in SUPPORTED_IMAGE_TYPES:
         raise HTTPException(
             status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, f"Unsupported image type: {image.content_type}"

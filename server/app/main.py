@@ -20,13 +20,17 @@ from app.vision.router import router as vision_router
 
 
 def create_app(vision: VisionProvider, recipes: RecipeRepository) -> FastAPI:
-    app = FastAPI(title="My Little Chef API", version="0.1.0")
+    app = FastAPI(
+        title="My Little Chef API",
+        version="0.1.0",
+        description="Ingredient recognition and recipe recommendation for one-person households.",
+    )
     app.state.vision_provider = vision
     app.state.recipe_repository = recipes
     app.include_router(vision_router)
     app.include_router(recipes_router)
 
-    @app.get("/health", tags=["health"])
+    @app.get("/health", tags=["health"], summary="Liveness check")
     def health() -> dict[str, str]:
         return {"status": "ok"}
 

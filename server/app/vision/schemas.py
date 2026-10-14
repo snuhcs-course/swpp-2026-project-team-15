@@ -11,9 +11,9 @@ class DetectedItem(SQLModel):
 
 
 class IngredientCandidate(SQLModel):
-    name: str
-    raw_texts: list[str]
-    confidence: float
+    name: str = Field(description="Generic ingredient name used for recipe matching")
+    raw_texts: list[str] = Field(description="Labels or descriptions seen in the photo")
+    confidence: float = Field(description="Highest model confidence among merged items, 0-1")
 
 
 class AnalyzeResponse(SQLModel):
