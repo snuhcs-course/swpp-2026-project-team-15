@@ -14,11 +14,13 @@
 | 2026-10-07 | 추천 동작 | 가능한 요리를 우선 보여주고 새로고침, 부족한 재료, 제한된 AI 치환 검토 | 세부 정렬·안전 규칙 미정 |
 | 2026-10-07 | 재료 등록 | 편의와 정확도의 균형. 사진에 잘 안 보이는 양념은 별도 체크 방식 고려 | 실제 사진·사용자로 방식 비교 |
 | 2026-10-11 | 백엔드 | FastAPI + SQLModel(Django/DRF 미사용), uv 관리, uvicorn worker 1개. 로컬 개발은 SQLite, 서버 배포 시 PostgreSQL·Redis·Docker Compose | 최재혁 제안, `feat/local-integration`에 구현. PR에서 팀 검토 |
-| 2026-10-11 | 로컬 데모 | 폰은 USB(`adb reverse`)로 노트북 서버에 연결. `scripts/run-local-demo.sh`로 일괄 실행 | Galaxy S22(Android 14)에서 확인 |
-| 2026-10-11 | 인식 | provider 인터페이스 뒤의 Gemini. 개발·테스트는 9월 30일 실사진 결과를 재생(`VISION_PROVIDER=mock`). Gemini 1.5 Flash-8B는 더 이상 제공되지 않아 `gemini-3.5-flash-lite`로 확인 | 실호출 1회. 평가 사진 집합 정확도는 미측정 |
-| 2026-10-11 | 추천 | 상비 양념 10종을 가정, 냉장고 재료 1개 이상 사용, 부족 재료 수로 정렬(기본 한도 3, 원본 레시피 재료 중앙값 11) | 최소 규칙. 정규화·정렬·1인분 환산은 연구 브랜치로 |
+| 2026-10-11 | 로컬 데모 | 폰은 USB(`adb reverse`)로 노트북 서버에 연결. `scripts/run-local-demo.sh`로 일괄 실행 | Galaxy S22(Android 14), Galaxy S25+(Android 16)에서 확인. 에뮬레이터가 함께 있으면 USB 폰 우선 |
+| 2026-10-11 | 인식 | provider 인터페이스 뒤의 Gemini. 개발·테스트는 9월 30일 실사진 결과를 재생(`VISION_PROVIDER=mock`). Gemini 1.5 Flash-8B는 더 이상 제공되지 않아 `gemini-3.5-flash-lite`로 확인 | 실사진 11장 recall 20/26(2026-10-14, 탐색용). 고정 평가셋과 기준은 Iteration 3 |
+| 2026-10-11 | 추천 | 상비 양념 10종을 가정, 냉장고 재료 1개 이상 사용, 부족 재료 수로 정렬(기본 한도 3, 원본 레시피 재료 중앙값 11) | 임시 기본판. 레시피 필터링 담당(안수현)과 클라이언트 정렬 담당(권혁준)이 main에서 교체 |
 | 2026-10-11 | 재고 | 앱 메모리에 두고 추천 요청마다 전송. 서버는 상태 없음 | 영속 저장은 미결정 |
 | 2026-10-11 | Android 빌드 | 강의 tutorial과 같은 Retrofit·Gson·OkHttp. minSdk 26·targetSdk 36은 강의 사양, compileSdk는 현재 AndroidX가 요구해 37 유지 | 필요 시 TA에 예외로 설명 |
+| 2026-10-14 | 사진 업로드 | 앱은 2048px 이하 사진을 그대로, 더 큰 사진은 2048px로 줄여 방향·촬영 시각·기기 태그를 유지하고 GPS는 제거해 전송. 서버는 그대로 전달하고 HEIF도 수용 | 사진을 가공하지 않는다는 계획과 다름: Gemini 이미지 토큰은 크기와 무관하게 1,090이라 축소는 업로드 시간만 줄임. 이전 1024px 재인코딩은 방향 정보를 잃었음. 배포 전 recall 비교로 2048px 확정 |
+| 2026-10-14 | 테스트 | GitHub Actions가 PR과 main push마다 ruff, pytest+커버리지, Android lint, JVM 단위 테스트, JaCoCo 실행. 기기 테스트는 로컬 | 서버 분기 커버리지 95%, 앱 라인 커버리지 약 2%(UI 테스트 없음) |
 
 ## 미결정
 
