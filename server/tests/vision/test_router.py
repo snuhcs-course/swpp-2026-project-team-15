@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Opus 5.5), 2026-10-11 to 2026-10-14; review pending by Jaehyuk Choi.
+# AI-generated with Claude Code (Opus 5.5), 2026-10-11 to 2026-10-14; reviewed by Jaehyuk Choi.
 from app.vision.exceptions import VisionError, VisionUnavailableError
 from app.vision.schemas import DetectedItem
 from tests.conftest import StubVision

@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Opus 5.5), 2026-10-14; review pending by Jaehyuk Choi.
+# AI-generated with Claude Code (Opus 5.5), 2026-10-14; reviewed by Jaehyuk Choi.
 """Measure ingredient recognition on the 2026-09-30 real photos.
 
 Each photo is sent unchanged. A ground-truth item counts as found when one of its accepted
