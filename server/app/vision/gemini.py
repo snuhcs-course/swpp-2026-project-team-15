@@ -27,18 +27,26 @@ REQUEST_TIMEOUT_MS = 30_000
 
 
 class GeminiVisionProvider:
-    def __init__(self, client: genai.Client, model: str) -> None:
+    def __init__(
+        self,
+        client: genai.Client,
+        model: str,
+        prompt: str = PROMPT,
+        response_schema: type = list[DetectedItem],
+    ) -> None:
         self._client = client
         self._model = model
+        self._prompt = prompt
+        self._response_schema = response_schema
 
     def detect(self, image: bytes, mime_type: str) -> list[DetectedItem]:
         try:
             response = self._client.models.generate_content(
                 model=self._model,
-                contents=[types.Part.from_bytes(data=image, mime_type=mime_type), PROMPT],
+                contents=[types.Part.from_bytes(data=image, mime_type=mime_type), self._prompt],
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
-                    response_schema=list[DetectedItem],
+                    response_schema=self._response_schema,
                 ),
             )
         except genai.errors.ClientError as exc:

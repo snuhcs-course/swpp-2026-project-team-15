@@ -94,3 +94,17 @@ def test_gemini_provider_reports_rejected_request_as_permanent_error():
         gemini_with(FakeModels(error=error)).detect(b"img", "image/jpeg")
 
     assert not isinstance(raised.value, VisionUnavailableError)
+
+
+def test_gemini_provider_sends_the_configured_prompt():
+    class RecordingModels(FakeModels):
+        def generate_content(self, **kwargs):
+            self.contents = kwargs["contents"]
+            return super().generate_content(**kwargs)
+
+    models = RecordingModels("[]")
+    provider = GeminiVisionProvider(SimpleNamespace(models=models), "m", prompt="custom prompt")
+
+    provider.detect(b"img", "image/jpeg")
+
+    assert models.contents[-1] == "custom prompt"
