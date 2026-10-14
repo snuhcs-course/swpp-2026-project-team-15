@@ -35,10 +35,38 @@ export ANDROID_HOME
 ADB="$ANDROID_HOME/platform-tools/adb"
 [ -x "$ADB" ] || ADB="$ADB.exe"
 
-step "Checking the phone"
+# Prefer a USB phone over a running emulator; ANDROID_SERIAL overrides the choice.
+select_device() {
+    ready=$("$ADB" devices | awk 'NR > 1 && $2 == "device" { print $1 }')
+    if [ -n "${ANDROID_SERIAL:-}" ]; then
+        echo "$ready" | grep -qx "$ANDROID_SERIAL" ||
+            fail "ANDROID_SERIAL=$ANDROID_SERIAL is not connected and authorized."
+        echo "$ANDROID_SERIAL"
+        return
+    fi
+    phones=$(echo "$ready" | grep -v '^emulator-' || true)
+    emulators=$(echo "$ready" | grep '^emulator-' || true)
+    pending=$("$ADB" devices | awk 'NR > 1 && $2 != "device" && $1 !~ /^emulator-/ { print $1 " (" $2 ")" }')
+    if [ -z "$phones" ] && [ -n "$pending" ]; then
+        fail "Phone not ready: $pending. Accept the USB debugging prompt on the phone and re-run."
+    fi
+    for candidates in "$phones" "$emulators"; do
+        count=$(echo "$candidates" | grep -c . || true)
+        if [ "$count" -eq 1 ]; then
+            echo "$candidates"
+            return
+        elif [ "$count" -gt 1 ]; then
+            fail "Several devices: $(echo "$candidates" | tr '\n' ' ')- choose one with ANDROID_SERIAL=<serial> sh scripts/run-local-demo.sh"
+        fi
+    done
+    fail "No authorized device. Connect the phone by USB, enable USB debugging and accept the prompt. ('adb devices' shows: $("$ADB" devices | tail -n +2 | tr '\n' ' '))"
+}
+
+step "Choosing the device"
 "$ADB" start-server >/dev/null
-state=$("$ADB" get-state 2>/dev/null || true)
-[ "$state" = "device" ] || fail "No authorized phone. Connect it by USB, enable USB debugging and accept the prompt. ('adb devices' shows: $("$ADB" devices | tail -n +2 | tr '\n' ' '))"
+ANDROID_SERIAL=$(select_device)
+export ANDROID_SERIAL # adb and Gradle both target only this device.
+echo "Using $("$ADB" shell getprop ro.product.model | tr -d '\r') ($ANDROID_SERIAL)"
 
 step "Preparing the recipe database"
 if [ ! -f "$RECIPE_DB" ]; then
