@@ -3,10 +3,12 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import httpx
 import pytest
+from google.genai import errors as genai_errors
 
 from app.config import SERVER_DIR
-from app.vision.exceptions import VisionError
+from app.vision.exceptions import VisionError, VisionUnavailableError
 from app.vision.gemini import GeminiVisionProvider
 from app.vision.providers import FixtureVisionProvider
 from app.vision.schemas import DetectedItem
@@ -42,13 +44,20 @@ def test_candidates_merge_same_category_and_keep_order():
 
 
 class FakeModels:
-    def __init__(self, text: str) -> None:
+    def __init__(self, text: str = "", error: Exception | None = None) -> None:
         self.text = text
+        self.error = error
         self.calls = 0
 
     def generate_content(self, **_kwargs):
         self.calls += 1
+        if self.error:
+            raise self.error
         return SimpleNamespace(text=self.text)
+
+
+def gemini_with(models: FakeModels) -> GeminiVisionProvider:
+    return GeminiVisionProvider(SimpleNamespace(models=models), model="test-model")
 
 
 def test_gemini_provider_parses_structured_response():
@@ -61,7 +70,27 @@ def test_gemini_provider_parses_structured_response():
 
 
 def test_gemini_provider_rejects_malformed_response():
-    provider = GeminiVisionProvider(SimpleNamespace(models=FakeModels("not json")), "test-model")
-
     with pytest.raises(VisionError):
-        provider.detect(b"img", "image/jpeg")
+        gemini_with(FakeModels("not json")).detect(b"img", "image/jpeg")
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        genai_errors.ClientError(429, {"error": {"message": "quota"}}),
+        genai_errors.ServerError(503, {"error": {"message": "overloaded"}}),
+        httpx.ReadTimeout("timed out"),
+    ],
+)
+def test_gemini_provider_marks_transient_failures_as_unavailable(error):
+    with pytest.raises(VisionUnavailableError):
+        gemini_with(FakeModels(error=error)).detect(b"img", "image/jpeg")
+
+
+def test_gemini_provider_reports_rejected_request_as_permanent_error():
+    error = genai_errors.ClientError(400, {"error": {"message": "bad image"}})
+
+    with pytest.raises(VisionError) as raised:
+        gemini_with(FakeModels(error=error)).detect(b"img", "image/jpeg")
+
+    assert not isinstance(raised.value, VisionUnavailableError)

@@ -1,4 +1,5 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
+from app.vision.exceptions import VisionError, VisionUnavailableError
 from app.vision.schemas import DetectedItem
 from tests.conftest import StubVision
 
@@ -41,6 +42,16 @@ def test_analyze_rejects_empty_upload(make_client):
 
 
 def test_analyze_reports_provider_failure_as_bad_gateway(make_client):
-    response = make_client(StubVision(error=True)).post("/analyze", files={"image": JPEG})
+    vision = StubVision(error=VisionError("bad response"))
+
+    response = make_client(vision).post("/analyze", files={"image": JPEG})
 
     assert response.status_code == 502
+
+
+def test_analyze_reports_temporary_unavailability_as_503(make_client):
+    vision = StubVision(error=VisionUnavailableError("rate limit"))
+
+    response = make_client(vision).post("/analyze", files={"image": JPEG})
+
+    assert response.status_code == 503

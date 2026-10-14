@@ -60,13 +60,15 @@ def recipe_db(tmp_path: Path) -> Path:
 
 
 class StubVision:
-    def __init__(self, items: list[DetectedItem] | None = None, error: bool = False) -> None:
+    def __init__(
+        self, items: list[DetectedItem] | None = None, error: VisionError | None = None
+    ) -> None:
         self.items = items or []
         self.error = error
 
     def detect(self, image: bytes, mime_type: str) -> list[DetectedItem]:
         if self.error:
-            raise VisionError("provider down")
+            raise self.error
         return self.items
 
 
