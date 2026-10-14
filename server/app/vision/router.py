@@ -9,7 +9,7 @@ from app.vision.exceptions import VisionError, VisionUnavailableError
 from app.vision.schemas import AnalyzeResponse
 from app.vision.service import to_candidates
 
-SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic"}
+SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 
 router = APIRouter(tags=["vision"])
 
@@ -19,7 +19,7 @@ router = APIRouter(tags=["vision"])
     summary="Detect ingredients in a photo",
     operation_id="analyze_photo",
     responses={
-        415: {"model": ErrorResponse, "description": "Not a JPEG, PNG, WebP or HEIC image"},
+        415: {"model": ErrorResponse, "description": "Not a JPEG, PNG, WebP, HEIC or HEIF image"},
         502: {"model": ErrorResponse, "description": "Recognition failed or returned bad output"},
         503: {"model": ErrorResponse, "description": "Recognition temporarily unavailable; retry"},
     },
