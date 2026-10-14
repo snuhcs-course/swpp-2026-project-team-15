@@ -1,5 +1,6 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 import sqlite3
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -73,8 +74,10 @@ class StubVision:
 
 
 @pytest.fixture
-def repository(recipe_db: Path) -> RecipeRepository:
-    return RecipeRepository(read_only_sqlite_engine(recipe_db))
+def repository(recipe_db: Path) -> Iterator[RecipeRepository]:
+    engine = read_only_sqlite_engine(recipe_db)
+    yield RecipeRepository(engine)
+    engine.dispose()  # closes pooled SQLite connections
 
 
 @pytest.fixture
