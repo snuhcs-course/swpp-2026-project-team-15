@@ -34,8 +34,8 @@ By default `VISION_PROVIDER=mock` replays recorded recognition results, so no AP
 Checks:
 
 ```sh
-cd server && uv run ruff check . && uv run pytest     # server
-cd android/MyLittleChef && sh ./gradlew testDebugUnitTest   # app
+cd server && uv run ruff check . && uv run pytest --cov --cov-report=term-missing   # server + coverage
+cd android/MyLittleChef && sh ./gradlew testDebugUnitTest createDebugUnitTestCoverageReport   # app + JaCoCo
 ```
 
 | Endpoint | Purpose |

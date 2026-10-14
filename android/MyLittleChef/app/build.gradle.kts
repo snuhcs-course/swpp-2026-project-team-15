@@ -20,6 +20,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // JaCoCo report: ./gradlew createDebugUnitTestCoverageReport
+            enableUnitTestCoverage = true
+        }
         release {
             optimization {
                 enable = false
