@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
+# AI-generated with Claude Code (Opus 5.5), 2026-10-11 to 2026-10-14; review pending by Jaehyuk Choi.
 # Starts the backend on this computer and installs/launches the app on a USB-connected phone.
 # Usage: sh scripts/run-local-demo.sh [path/to/recipes_csv_with_ingredients.zip]
 set -eu

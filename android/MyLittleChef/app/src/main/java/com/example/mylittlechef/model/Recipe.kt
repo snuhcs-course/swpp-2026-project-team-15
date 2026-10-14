@@ -1,3 +1,4 @@
+// Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 package com.example.mylittlechef.model
 
 import androidx.annotation.DrawableRes

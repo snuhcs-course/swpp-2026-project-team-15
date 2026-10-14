@@ -1,4 +1,5 @@
 // AI-generated initial navigation scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
+// Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 package com.example.mylittlechef.navigation
 
 import androidx.annotation.DrawableRes // drawable 리소스 ID 파라미터 표시

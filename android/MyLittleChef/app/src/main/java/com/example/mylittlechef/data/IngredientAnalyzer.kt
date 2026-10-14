@@ -1,4 +1,4 @@
-// AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi. Updated 2026-10-14.
+// AI-generated with Claude Code (Opus 5.5), 2026-10-11 to 2026-10-14; review pending by Jaehyuk Choi.
 package com.example.mylittlechef.data
 
 import android.content.Context
