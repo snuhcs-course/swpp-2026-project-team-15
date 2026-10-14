@@ -1,3 +1,4 @@
+// Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 package com.example.mylittlechef.ui.recipe
 
 import androidx.compose.foundation.Image
@@ -22,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,7 +39,6 @@ import com.example.mylittlechef.viewmodel.UserViewModel
 import androidx.compose.ui.unit.dp
 import com.example.mylittlechef.R
 import com.example.mylittlechef.model.Ingredient
-import com.example.mylittlechef.model.Preset
 import com.example.mylittlechef.ui.components.LikeButton
 import com.example.mylittlechef.ui.components.RecipeBodyText
 import com.example.mylittlechef.ui.components.RecipeSubtitleText
@@ -48,19 +49,26 @@ import com.example.mylittlechef.ui.theme.DeepGreen
 import com.example.mylittlechef.ui.theme.Gray
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.viewmodel.FridgeViewModel
+import com.example.mylittlechef.viewmodel.RecipeViewModel
 
 @Composable
 fun RecipeScreen(
     user: UserViewModel,
     fridge: FridgeViewModel,
+    recipes: RecipeViewModel,
     onRecipeCardClick: (Recipe) -> Unit,
     onLikeClick: (Recipe) -> Unit,
     modifier: Modifier = Modifier
 )
 {
+    LaunchedEffect(fridge.ingredients) {
+        recipes.refresh(fridge.ingredients)
+    }
+
     RecipeContent(
         user,
         fridge,
+        recipes,
         onRecipeCardClick,
         onLikeClick
     )
@@ -75,6 +83,7 @@ enum class RecipeTab {
 fun RecipeContent(
     user: UserViewModel,
     fridge: FridgeViewModel,
+    recipes: RecipeViewModel,
     onRecipeCardClick: (Recipe) -> Unit,
     onLikeClick: (Recipe) -> Unit,
     modifier: Modifier = Modifier
@@ -146,7 +155,7 @@ fun RecipeContent(
                 RecipeCardList(
                     user = user,
                     fridge = fridge,
-                    recipes = Preset.sampleRecipes,
+                    recipes = recipes.recommended,
                     onRecipeCardClick = onRecipeCardClick,
                     onLikeClick = onLikeClick
                 )
@@ -155,7 +164,7 @@ fun RecipeContent(
                 RecipeCardList(
                     user = user,
                     fridge = fridge,
-                    recipes = Preset.sampleRecipes.filter { it.id in user.likes },
+                    recipes = recipes.liked(user.likes),
                     onRecipeCardClick = onRecipeCardClick,
                     onLikeClick = onLikeClick
                 )
@@ -281,7 +290,8 @@ fun RecipeCard(
                 Spacer(Modifier.height(10.dp))
                 RecipeDescriptionText(
                     fridgeIngredients = fridge.ingredients,
-                    recipeIngredients = recipe.ingredients
+                    recipeIngredients = recipe.ingredients,
+                    serverMissing = recipe.missing
                 )
             }
 
@@ -326,10 +336,11 @@ fun RecipeCard(
 @Composable
 private fun RecipeDescriptionText(
     fridgeIngredients: List<Ingredient>,
-    recipeIngredients: List<Ingredient>
+    recipeIngredients: List<Ingredient>,
+    serverMissing: List<Ingredient>?
 )
 {
-    val missingIngredients = recipeIngredients.filter { recipeIngredient ->
+    val missingIngredients = serverMissing ?: recipeIngredients.filter { recipeIngredient ->
         fridgeIngredients.none { fridgeIngredient ->
             fridgeIngredient.name == recipeIngredient.name
         }

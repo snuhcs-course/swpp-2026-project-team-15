@@ -1,0 +1,54 @@
+{
+  "image_file": "beverage_door.jpg",
+  "items": [
+    {
+      "name_raw": "임실목장 무항생제 우유",
+      "category": "우유",
+      "confidence": 0.98,
+      "package_type": "페트병",
+      "visual_clues": "흰색 보틀, 'Premium', '무항생제', '임실목장', '1A' 등급 표기, 유통기한 '2026.10.01'",
+      "ambiguity_note": "없음 (라벨 및 품목 뚜렷함)"
+    },
+    {
+      "name_raw": "코카콜라 제로 500ml",
+      "category": "탄산음료",
+      "confidence": 0.99,
+      "package_type": "페트병",
+      "visual_clues": "검은색 캡에 'Coca-Cola zero', 빨간색 라벨에 'Coca-Cola zero 500 ml (0 kcal)', 날인 '2026.12.05 P2 11:34'",
+      "ambiguity_note": "없음"
+    },
+    {
+      "name_raw": "코카콜라 제로",
+      "category": "탄산음료",
+      "confidence": 0.98,
+      "package_type": "페트병",
+      "visual_clues": "검은색 캡에 'Coca-Cola zero', 빨간색 라벨 후면 정보, 날인 '2026.12.05 11:35'",
+      "ambiguity_note": "라벨 뒷면이 전면을 향하고 있으나 캡 인쇄 및 병 형태로 확정"
+    },
+    {
+      "name_raw": "닥터페퍼",
+      "category": "탄산음료",
+      "confidence": 0.95,
+      "package_type": "페트병",
+      "visual_clues": "붉은색 뚜껑 위 'Dr Pepper' 로고 인쇄, 짙은 갈색 탄산음료 액체",
+      "ambiguity_note": "앞쪽 코카콜라 병에 몸통이 가려져 있으나 캡 로고 명확함"
+    },
+    {
+      "name_raw": "산타 헬레나 바라이탈 와인",
+      "category": "와인",
+      "confidence": 0.98,
+      "package_type": "유리병",
+      "visual_clues": "녹색 유리병, 붉은색 액체, 라벨의 'SANTA HELENA', 'Varietal', 한글 표기 '산타 헬레나', 19세 미만 경고문구",
+      "ambiguity_note": "없음"
+    },
+    {
+      "name_raw": "어두운 액체 페트병 (간장/더치커피 등 추정)",
+      "category": "미상 (조미료/음료)",
+      "confidence": 0.5,
+      "package_type": "페트병",
+      "visual_clues": "검은색 뚜껑의 투명 페트병, 짙은 흑갈색 액체, 병목 날인",
+      "ambiguity_note": "앞선 두 개의 코카콜라 병에 의해 라벨이 90% 이상 가려져 정확한 상품 식별 불가"
+    }
+  ],
+  "original_file": "20260928_161257.jpg"
+}

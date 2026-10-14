@@ -1,0 +1,46 @@
+{
+  "image_file": "apple_grape_sidedish.jpg",
+  "items": [
+    {
+      "name_raw": "사과",
+      "category": "사과",
+      "confidence": 0.99,
+      "package_type": "원물",
+      "visual_clues": "선명한 붉은색 껍질, 꼭지 부근 황색, 붉은색 스티로폼 과일 받침망",
+      "ambiguity_note": "없음 (원물 외형 뚜렷함)"
+    },
+    {
+      "name_raw": "샤인머스캣 (청포도)",
+      "category": "청포도",
+      "confidence": 0.98,
+      "package_type": "비닐+완충망",
+      "visual_clues": "알이 굵고 둥근 연두색 포도송이, 투명 비닐 포장 및 백색 완충망 포장",
+      "ambiguity_note": "비닐에 인쇄된 일부 숫자/텍스트 파편 존재하나 완충망으로 전체 라벨 가려짐"
+    },
+    {
+      "name_raw": "유리 반찬용기 내 조리 반찬 (장조림/젓갈류 추정)",
+      "category": "반찬",
+      "confidence": 0.9,
+      "package_type": "밀폐용기",
+      "visual_clues": "짙은 남색 뚜껑의 원형 투명 유리용기, 내부 붉고 어두운 양념 조리식품 및 양념 입자",
+      "ambiguity_note": "유리 표면 결로 및 밀폐 상태로 인해 구체적인 반찬 메뉴 특정 제한"
+    },
+    {
+      "name_raw": "갈색 달걀 (난각번호 인쇄)",
+      "category": "달걀",
+      "confidence": 0.99,
+      "package_type": "트레이",
+      "visual_clues": "타원형 갈색 껍질, 껍질에 검은색 난각번호 잉크 마킹 확인, 전용 백색 에그 트레이 거치",
+      "ambiguity_note": "상단 선반에 의해 트레이 뒤쪽 공간이 일부 차폐되어 전체 수량 불명 (확인 가능 4~5개)"
+    },
+    {
+      "name_raw": "크라프트 종이봉투 포장 식품",
+      "category": "가공식품",
+      "confidence": 0.7,
+      "package_type": "종이",
+      "visual_clues": "상단 우측 뒤편 갈색 크라프트 종이봉투 포장체",
+      "ambiguity_note": "불투명 봉투 및 전면 용기에 가려져 내부 내용물 확인 불가"
+    }
+  ],
+  "original_file": "20260928_161501.jpg"
+}

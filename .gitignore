@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
+.coverage
+htmlcov/
 .venv/
 env/
 venv/
@@ -26,7 +28,7 @@ local.properties
 Thumbs.db
 
 # Data & large media files (Keep repo clean)
-data/
+/data/
 *.jpg
 *.jpeg
 *.png
@@ -38,3 +40,7 @@ data/
 # Local course deliverables and presentation build artifacts
 output/
 .presentation-build/
+
+# Secrets & local databases
+.env
+*.db
