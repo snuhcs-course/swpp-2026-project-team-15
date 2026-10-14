@@ -53,7 +53,7 @@ class FakeModels:
         self.calls += 1
         if self.error:
             raise self.error
-        return SimpleNamespace(text=self.text)
+        return SimpleNamespace(text=self.text, usage_metadata=None)
 
 
 def gemini_with(models: FakeModels) -> GeminiVisionProvider:

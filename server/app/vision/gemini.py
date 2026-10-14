@@ -1,6 +1,8 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 """Gemini-backed recognition. Requests only the fields the app uses to keep tokens low."""
 
+import logging
+
 import httpx
 from google import genai
 from google.genai import types
@@ -16,6 +18,8 @@ PROMPT = (
     "category (a generic Korean ingredient name usable in a recipe, e.g. 신라면 -> 라면) "
     "and confidence between 0 and 1. Omit non-food objects."
 )
+
+logger = logging.getLogger(__name__)
 
 # The free tier answers 429 when the per-minute quota is used up.
 _RATE_LIMITED = 429
@@ -44,6 +48,8 @@ class GeminiVisionProvider:
         except (genai.errors.ServerError, httpx.TimeoutException) as exc:
             raise VisionUnavailableError(f"Gemini is unavailable: {exc}") from exc
 
+        if usage := response.usage_metadata:
+            logger.info("Gemini %s used %s tokens", self._model, usage.total_token_count)
         try:
             return DETECTED_ITEMS.validate_json(response.text or "")
         except ValidationError as exc:

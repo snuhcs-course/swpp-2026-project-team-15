@@ -4,6 +4,8 @@
 Run: uv run --env-file .env uvicorn app.main:create_app_from_env --factory
 """
 
+import logging
+
 from fastapi import FastAPI
 from google import genai
 from google.genai import types
@@ -32,6 +34,7 @@ def create_app(vision: VisionProvider, recipes: RecipeRepository) -> FastAPI:
 
 
 def create_app_from_env() -> FastAPI:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
     settings = Settings.from_env()
     recipes = RecipeRepository(read_only_sqlite_engine(settings.recipe_db_path))
     return create_app(_build_vision(settings), recipes)
