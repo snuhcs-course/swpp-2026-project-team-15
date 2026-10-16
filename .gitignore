@@ -9,6 +9,9 @@ venv/
 *.egg-info/
 dist/
 
+# Local environment configuration
+.env
+
 # Android
 .gradle/
 build/
