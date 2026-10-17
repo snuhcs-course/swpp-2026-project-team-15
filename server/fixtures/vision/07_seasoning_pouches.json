@@ -1,0 +1,30 @@
+{
+  "image_file": "seasoning_pouches.jpg",
+  "items": [
+    {
+      "name_raw": "그레이비 파우더 (GRAVY POWDER)",
+      "category": "소스/파우더",
+      "confidence": 0.99,
+      "package_type": "파우치",
+      "visual_clues": "은박 스탠딩 파우치 전면에 영문 'GRAVY POWDER' 및 한글 '그레이비 파우더' 텍스트 인쇄, 상단 실링에 2024.12.28 날짜 각인",
+      "ambiguity_note": "바구니 앞면에 하단 일부가 가려져 있으나 라벨이 매우 선명함"
+    },
+    {
+      "name_raw": "계란찜요리사 (Steamed Eggs Chef, 군마트용)",
+      "category": "조미료/양념",
+      "confidence": 0.96,
+      "package_type": "파우치",
+      "visual_clues": "흰색 지퍼 파우치에 '누구나 쉽고 맛있게', '계란찜요리사', 'Steamed Eggs Chef', '[군마트용]', '새우젓' 텍스트 인쇄. 내부 스틱형 소포장 식별 가능",
+      "ambiguity_note": "전면의 그레이비 파우더에 의해 중앙 하단부가 일부 가려짐"
+    },
+    {
+      "name_raw": "섬들채 진하고 깊은 한알육수",
+      "category": "육수/조미료",
+      "confidence": 0.93,
+      "package_type": "파우치",
+      "visual_clues": "'섬들채' 로고, '진하고 깊은...', '한알육...' 텍스트 및 붉은 소고기 단면 사진 확인",
+      "ambiguity_note": "앞쪽 계란찜 파우치에 의해 제품명의 우측 끝 글자 및 패키지 우측/하단부가 가려져 있음"
+    }
+  ],
+  "original_file": "20260928_161616.jpg"
+}

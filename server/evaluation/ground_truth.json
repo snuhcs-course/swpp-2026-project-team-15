@@ -1,0 +1,16 @@
+{
+  "source": "Ground-truth column of the 2026-09-30 real-photo benchmark report (Jaehyuk Choi), section 3. Each item lists the names accepted as a correct detection.",
+  "images": {
+    "01_beverage_door": {"우유": ["우유"], "콜라": ["콜라", "탄산음료"], "닥터페퍼": ["닥터페퍼", "탄산음료"], "와인": ["와인"]},
+    "02_soymilk_cheese": {"두유": ["두유"], "슬라이스 치즈": ["치즈"]},
+    "03_grana_padano_cheese": {"하드 치즈": ["치즈", "파다노"]},
+    "04_garlic_eggs": {"다진마늘": ["다진마늘", "마늘"], "달걀": ["달걀", "계란"]},
+    "05_apple_grape_sidedish": {"사과": ["사과"], "청포도": ["청포도", "포도"], "반찬": ["반찬"], "달걀": ["달걀", "계란"]},
+    "06_tuna_cans": {"참치캔": ["참치"], "달걀": ["달걀", "계란"]},
+    "07_seasoning_pouches": {"그레이비 파우더": ["그레이비", "소스"], "계란찜 양념": ["계란찜", "양념", "조미료"]},
+    "08_ramen_pile": {"라면": ["라면"]},
+    "09_noodles_meal_kit": {"볶음짬뽕": ["짬뽕", "볶음면"], "평양냉면": ["냉면"], "콩국수": ["콩국수"]},
+    "10_frozen_chicken_walnut": {"순살치킨": ["치킨"], "호두": ["호두"], "통깨": ["깨"]},
+    "11_cut_fruits_cups": {"파인애플": ["파인애플"], "메론": ["멜론", "메론"]}
+  }
+}

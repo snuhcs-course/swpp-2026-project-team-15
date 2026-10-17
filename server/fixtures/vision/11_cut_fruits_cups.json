@@ -1,0 +1,54 @@
+{
+  "image_file": "cut_fruits_cups.jpg",
+  "items": [
+    {
+      "name_raw": "과일한컵(파인애플)",
+      "category": "파인애플",
+      "confidence": 0.99,
+      "package_type": "플라스틱컵",
+      "visual_clues": "투명 원형 컵용기, 노란색 파인애플 깍둑썰기 과육, 라벨 텍스트 '과일한컵(파인애플) 170g 파인애플(필리핀산) 100% 2300원'",
+      "ambiguity_note": "동일 규격 제품 3컵 확인"
+    },
+    {
+      "name_raw": "과일한컵(메론)",
+      "category": "멜론",
+      "confidence": 0.98,
+      "package_type": "플라스틱컵",
+      "visual_clues": "투명 원형 컵용기, 연두색/연노랑 멜론 과육 조각, 라벨 텍스트 '과일한컵(메론) 150g 메론(국산) 100% 2500원'",
+      "ambiguity_note": "없음"
+    },
+    {
+      "name_raw": "과일한컵(키위)",
+      "category": "키위",
+      "confidence": 0.98,
+      "package_type": "플라스틱컵",
+      "visual_clues": "투명 원형 컵용기, 초록색 키위 슬라이스 과육 및 검은 씨앗, 라벨 텍스트 '과일한컵(키위) 150g 2500원'",
+      "ambiguity_note": "없음"
+    },
+    {
+      "name_raw": "과일한컵(무화과)",
+      "category": "무화과",
+      "confidence": 0.99,
+      "package_type": "플라스틱용기",
+      "visual_clues": "투명 사각 클램쉘 용기, 반으로 자른 보라/붉은 무화과 과육, 라벨 텍스트 '과일한컵(무화과) 120g 무화과(국산) 100% 2500원'",
+      "ambiguity_note": "없음"
+    },
+    {
+      "name_raw": "과일한컵(복숭아)",
+      "category": "복숭아",
+      "confidence": 0.98,
+      "package_type": "플라스틱컵",
+      "visual_clues": "투명 원형 컵용기, 붉은 껍질과 노란 속살의 복숭아 슬라이스, 라벨 텍스트 '과일한컵(복숭아) 140g 복숭아(국산) 100% 2500원'",
+      "ambiguity_note": "없음"
+    },
+    {
+      "name_raw": "과일도시락(모듬과일)",
+      "category": "모듬과일",
+      "confidence": 0.96,
+      "package_type": "밀폐용기",
+      "visual_clues": "팔각 투명 플라스틱 볼 용기, 귤(감귤 알맹이), 키위, 붉은 과일, 분홍색 포크 내장, 라벨 텍스트 '220g 3800원'",
+      "ambiguity_note": "2개 용기 확인"
+    }
+  ],
+  "original_file": "20260929_103129.jpg"
+}

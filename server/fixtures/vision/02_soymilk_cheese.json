@@ -1,0 +1,46 @@
+{
+  "image_file": "soymilk_cheese.jpg",
+  "items": [
+    {
+      "name_raw": "건국 약콩두유 (전면 파우치)",
+      "category": "두유",
+      "confidence": 0.99,
+      "package_type": "파우치",
+      "visual_clues": "'KU 건국대학교', '건국 약콩두유', 'Blacksoybean Milk', '190 mL(55 kcal)', '원액두유 87%' 라벨 및 맷돌/콩 일러스트 선명",
+      "ambiguity_note": "없음 (정면 라벨 완전 노출)"
+    },
+    {
+      "name_raw": "건국 약콩두유 (후면 파우치)",
+      "category": "두유",
+      "confidence": 0.98,
+      "package_type": "파우치",
+      "visual_clues": "전면 파우치 아래 포개어져 있으며 'KU 건국대학교', '건국 약콩...', '190 mL(55 kcal)' 동일 표기 확인",
+      "ambiguity_note": "전면 파우치에 의해 일부 가려져 있으나 동일 제품임이 명확함"
+    },
+    {
+      "name_raw": "건국 약콩두유 (포장 박스/카톤)",
+      "category": "두유",
+      "confidence": 0.95,
+      "package_type": "종이박스",
+      "visual_clues": "HACCP 마크, 멸균제품 표기, 원재료명('검은콩', '올리고당' 등), 제조원 '충북 충주시 건국유업', 품목보고번호 일치",
+      "ambiguity_note": "측면 상세 표시면만 보이나 하단 파우치와 동일한 건국유업 약콩두유 패키지로 확인"
+    },
+    {
+      "name_raw": "슬라이스 치즈",
+      "category": "치즈",
+      "confidence": 0.92,
+      "package_type": "비닐",
+      "visual_clues": "정사각형 노란색 가공치즈 슬라이스 다수 적층, 투명 필름 포장 외형",
+      "ambiguity_note": "브랜드명 라벨은 측면에서 보이지 않으나 형태와 색상으로 슬라이스 치즈 확정"
+    },
+    {
+      "name_raw": "과일망 포장 품목 (과일 추정)",
+      "category": "과일",
+      "confidence": 0.6,
+      "package_type": "원물",
+      "visual_clues": "흰색 다이아몬드형 발포 완충망(과일망)에 싸여 있는 둥근 원물",
+      "ambiguity_note": "치즈 뒤쪽에 가려져 있고 초점이 맞지 않아 구체적 과일 품종(배/사과 등)은 특정 불가"
+    }
+  ],
+  "original_file": "20260928_161306.jpg"
+}

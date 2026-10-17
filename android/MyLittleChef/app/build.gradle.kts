@@ -11,8 +11,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.mylittlechef"
-        minSdk = 36
-        targetSdk = 37
+        minSdk = 26
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -20,6 +20,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // JaCoCo report: ./gradlew createDebugUnitTestCoverageReport
+            enableUnitTestCoverage = true
+        }
         release {
             optimization {
                 enable = false
@@ -58,4 +62,6 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
     implementation(libs.coil.compose)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
 }

@@ -1,0 +1,22 @@
+{
+  "image_file": "garlic_eggs.jpg",
+  "items": [
+    {
+      "name_raw": "국산 다진마늘 500g",
+      "category": "다진마늘",
+      "confidence": 1.0,
+      "package_type": "플라스틱 용기",
+      "visual_clues": "원통형 플라스틱 용기에 흰색 뚜껑, 전면 라벨에 '국산 다진마늘', '내용량 500 g', '원재료명 마늘(국산) 100%' 텍스트 명시, 내부 다진 마늘 내용물 확인됨",
+      "ambiguity_note": "없음 (라벨 및 내용물 명확)"
+    },
+    {
+      "name_raw": "갈색 달걀 (난각번호 표기)",
+      "category": "달걀",
+      "confidence": 1.0,
+      "package_type": "원물",
+      "visual_clues": "흰색/투명 롤링 계란 디스펜서에 담긴 갈색 달걀들(최소 6알 관찰), 계란 껍데기에 산란일자 및 생산자 코드 '0816 TXD702' 녹색 난각번호 날인 확인됨",
+      "ambiguity_note": "뒷줄 달걀들이 상단 선반 및 앞쪽 달걀에 의해 일부 가려져 있으나 동일한 갈색란으로 명확함"
+    }
+  ],
+  "original_file": "20260928_161446.jpg"
+}

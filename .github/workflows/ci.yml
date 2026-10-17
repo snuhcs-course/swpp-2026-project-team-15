@@ -1,0 +1,42 @@
+# AI-generated with Claude Code (Opus 5.5), 2026-10-14; reviewed by Jaehyuk Choi.
+# Fast checks on every pull request and on main (course Week 7-1, p.39).
+# Device tests (connectedDebugAndroidTest) need an emulator and are run locally for now.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest --cov --cov-report=term-missing
+
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android/MyLittleChef
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - run: sh ./gradlew lintDebug testDebugUnitTest createDebugUnitTestCoverageReport
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-reports
+          path: android/MyLittleChef/app/build/reports
