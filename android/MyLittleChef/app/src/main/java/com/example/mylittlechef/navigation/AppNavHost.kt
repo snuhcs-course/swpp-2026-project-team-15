@@ -1,11 +1,16 @@
 // AI-generated initial navigation scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
+// Codex-assisted changes (GPT-6.1 Sol), 2026-10-14; human review pending.
 package com.example.mylittlechef.navigation
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 
@@ -22,11 +27,12 @@ import com.example.mylittlechef.ui.profile.EditAllergyScreen
 import com.example.mylittlechef.ui.profile.EditNicknameScreen
 import com.example.mylittlechef.ui.profile.EditUtensilScreen
 import com.example.mylittlechef.ui.recipe.RecipeDetailScreen
+import com.example.mylittlechef.data.local.PreferencesFridgeRepository
+import com.example.mylittlechef.data.local.PreferencesUserRepository
+import com.example.mylittlechef.data.local.localDataStore
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.RecipeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
-
-private const val START_DESTINATION = Routes.ONBOARDING
 
 @Composable
 fun AppNavHost(
@@ -34,13 +40,34 @@ fun AppNavHost(
 )
 {
     val navController = rememberNavController()
-    val user: UserViewModel = viewModel()
-    val fridge: FridgeViewModel = viewModel()
+    val store = LocalContext.current.applicationContext.localDataStore
+    val userRepository = remember(store) { PreferencesUserRepository(store) }
+    val fridgeRepository = remember(store) { PreferencesFridgeRepository(store) }
+    val userFactory = remember(userRepository) {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                UserViewModel(repository = userRepository) as T
+        }
+    }
+    val fridgeFactory = remember(fridgeRepository) {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                FridgeViewModel(repository = fridgeRepository) as T
+        }
+    }
+    val user: UserViewModel = viewModel(factory = userFactory)
+    val fridge: FridgeViewModel = viewModel(factory = fridgeFactory)
     val recipes: RecipeViewModel = viewModel()
+
+    // Wait for persisted data before choosing the first screen or fetching recommendations.
+    if (!user.isLoaded || !fridge.isLoaded) return
+    val startDestination = remember { if (user.onboardingComplete) Routes.MAIN else Routes.ONBOARDING }
 
     NavHost(
         navController = navController,
-        startDestination = START_DESTINATION,
+        startDestination = startDestination,
         modifier = modifier,
         enterTransition = { EnterTransition.None },
         exitTransition = { ExitTransition.None }
@@ -49,7 +76,10 @@ fun AppNavHost(
             OnboardingScreen(
                 user = user,
                 onFinish = {
-                    navController.navigate(Routes.MAIN)
+                    user.completeOnboarding()
+                    navController.navigate(Routes.MAIN) {
+                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                    }
                 }
             )
         }
