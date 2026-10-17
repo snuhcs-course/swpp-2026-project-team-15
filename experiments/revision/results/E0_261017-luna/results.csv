@@ -1,0 +1,17 @@
+﻿run_id,case_id,recipe_name,status,reason,artifact
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-9,오므라이스,revised,,AI-E0-9.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-18,두부국,refused,두부국의 핵심 재료인 두부가 재고에 없어 원본 요리의 정체성을 유지할 수 없습니다.,AI-E0-18.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-97,계란말이,revised,,AI-E0-97.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-112,김치적,refused,"김치적은 김치를 소고기·표고버섯·도라지와 함께 꼬치에 꿰어 밀가루와 달걀을 입혀 지지는 산적입니다. 재고에는 김치와 달걀만 있어 다른 꼬치 재료가 빠지면 원래 요리의 구성을 유지하기 어렵고, 김치만 부치면 김치전과 같은 다른 요리가 됩니다.",AI-E0-112.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-114,두부김치,refused,"두부김치의 정체성을 이루는 두부가 재고에 없고, 재고의 김치(ingredient_id 70)는 원본 배추김치(ingredient_id 228)와 다른 재료 ID이므로 같은 재료로 간주할 수 없습니다. 따라서 원본 요리의 정체성을 유지하는 개정안을 제안할 수 없습니다.",AI-E0-114.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-115,오믈렛,revised,,AI-E0-115.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-118,중국식볶음밥,revised,,AI-E0-118.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-130,두부양념조림,refused,두부양념조림의 핵심 재료인 두부가 재고에 없어 요리의 정체성을 유지할 수 없습니다. 간장도 없어 원래의 간장 양념을 만들 수 없습니다.,AI-E0-130.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-192,김치채소쌈,refused,"이 요리는 쇠고기볶음밥을 김치와 여러 채소 잎에 싸는 것이 핵심인데, 재고에 쇠고기와 김치 외 쌈채소가 없어 핵심 구성을 유지할 수 없습니다.",AI-E0-192.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-194,계란말이주먹밥,revised,,AI-E0-194.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-216,두부오믈렛,refused,두부오믈렛의 정체성을 이루는 핵심 재료인 두부가 재고에 없어 원본 요리를 유지할 수 없습니다.,AI-E0-216.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-238,김치주먹밥,revised,,AI-E0-238.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-291,김치쌈밥,revised,,AI-E0-291.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-299,열무비빔밥,refused,"열무김치가 이 요리의 핵심 재료인데 재고에 없고, 일반 김치는 다른 재료이므로 대체하면 열무비빔밥의 정체성을 유지할 수 없습니다.",AI-E0-299.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-320,김치볶음밥,revised,,AI-E0-320.json
+2fe4a04e1b664d809d46ed015df7f174,AI-E0-421,양파전,refused,양파전의 핵심 재료인 양파가 재고에 없어 양파에 소를 채워 부치는 원래 요리의 정체성을 유지할 수 없습니다.,AI-E0-421.json

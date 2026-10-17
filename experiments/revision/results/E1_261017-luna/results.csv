@@ -1,0 +1,17 @@
+﻿run_id,case_id,recipe_name,status,reason,artifact
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-9,오므라이스,revised,,AI-E1-9.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-18,두부국,refused,국물 요리인 두부국을 안전하고 일관되게 조리하는 데 필요한 물이나 육수가 재고에 없습니다. 또한 원본의 소고기·고추장 등 핵심 양념 재료도 없어 재고만으로는 원본의 두부국을 유지하는 조리법을 제안할 수 없습니다.,AI-E1-18.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-97,계란말이,revised,,AI-E1-97.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-112,김치적,revised,,AI-E1-112.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-114,두부김치,revised,,AI-E1-114.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-115,오믈렛,revised,,AI-E1-115.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-118,중국식볶음밥,revised,,AI-E1-118.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-130,두부양념조림,revised,,AI-E1-130.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-192,김치채소쌈,refused,"김치와 채소 잎에 쇠고기볶음밥을 각각 싸는 것이 이 요리의 핵심인데, 재고에 깻잎·양배추·근대 같은 쌈용 채소가 없어 김치채소쌈의 정체성을 유지할 수 없습니다.",AI-E1-192.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-194,계란말이주먹밥,revised,,AI-E1-194.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-216,두부오믈렛,revised,,AI-E1-216.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-238,김치주먹밥,revised,,AI-E1-238.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-291,김치쌈밥,revised,,AI-E1-291.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-299,열무비빔밥,refused,열무비빔밥의 핵심인 열무김치가 재고에 없습니다. 일반 김치는 별도의 재료이므로 이를 대신 사용하면 원래 요리의 정체성을 유지할 수 없습니다.,AI-E1-299.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-320,김치볶음밥,revised,,AI-E1-320.json
+f5cd9c10b86f4ac385cc658d0ad565f3,AI-E1-421,양파전,revised,,AI-E1-421.json
