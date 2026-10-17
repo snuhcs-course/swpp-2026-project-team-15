@@ -54,10 +54,9 @@ class OfflineTestCase(unittest.TestCase):
 def sample_recipe() -> SourceRecipe:
     """Plain source input with repeated IDs, nullable text and original context."""
     return SourceRecipe(9, "오므라이스", None, "한식", None, "20분", None, "4인분", None,
-                        None, "https://example.test/recipe/9",
                         (SourceIngredient(1, 32, "계란", "2개", "3060001", "주재료", "달걀"),
                          SourceIngredient(2, 32, "계란", "약간", "3060003", "양념", "[양념]계란")),
-                        (SourceStep(1, 1, "계란을 충분히 익힌다.", None, "조리 팁"),))
+                        (SourceStep(1, 1, "계란을 충분히 익힌다.", "조리 팁"),))
 
 
 def inventory() -> tuple[InventoryIngredient, ...]:
@@ -91,8 +90,8 @@ def create_database(path: Path) -> None:
         ingredients = dict(pair for pairs in INVENTORIES.values() for pair in pairs)
         connection.executemany("INSERT INTO ingredient VALUES (?, ?)", ingredients.items())
         for index, (recipe_id, name) in enumerate(ALL_RECIPES):
-            connection.execute("INSERT INTO recipe(recipe_id,name,servings,source_url) VALUES (?,?,?,?)",
-                               (recipe_id, name, "4인분", f"https://example.test/{recipe_id}"))
+            connection.execute("INSERT INTO recipe(recipe_id,name,servings) VALUES (?,?,?)",
+                               (recipe_id, name, "4인분"))
             for offset, (quantity, label, original) in enumerate((
                 ("2개", "주재료", "달걀"), ("약간", "양념", "[양념]계란"), (None, None, None),
             )):
@@ -100,6 +99,7 @@ def create_database(path: Path) -> None:
                                    (index * 3 + offset + 1, recipe_id, 32, quantity,
                                     "3060001" if offset == 0 else "3060003", label, original))
             for offset in (1, 0):
-                connection.execute("INSERT INTO recipe_step VALUES (?,?,?,?,?,?)",
-                                   (index * 2 + offset + 1, recipe_id, 1, "충분히 익힌다.", None,
+                connection.execute("INSERT INTO recipe_step(step_id,recipe_id,step_number,instruction,tip) "
+                                   "VALUES (?,?,?,?,?)",
+                                   (index * 2 + offset + 1, recipe_id, 1, "충분히 익힌다.",
                                     "조리 팁" if offset else None))

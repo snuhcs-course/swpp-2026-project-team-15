@@ -53,13 +53,30 @@ class LoaderTests(OfflineTestCase):
         self.assertEqual(recipe.ingredients[1].ingredient_type_code, "3060003")
         self.assertEqual([step.step_id for step in recipe.steps], [1, 2])
         self.assertEqual(recipe.steps[1].tip, "조리 팁")
-        self.assertIsNone(recipe.steps[0].image_url)
+        self.assertIsNone(recipe.steps[0].tip)
         self.assertIsNone(recipe.description)
-        self.assertEqual(recipe.source_url, "https://example.test/9")
+        self.assertNotIn("main_image_url", asdict(recipe))
+        self.assertNotIn("source_url", asdict(recipe))
+        self.assertNotIn("image_url", asdict(recipe.steps[0]))
         self.assertEqual(len(inventories["AI-E0"]), 7)
         self.assertEqual(len(inventories["AI-E1"]), 10)
         self.assertEqual(before, hashlib.sha256(self.database.read_bytes()).hexdigest())
         self.assertEqual(len(asdict(recipe)["ingredients"]), 3)
+
+    def test_legacy_url_columns_are_ignored_without_changing_database(self):
+        with closing(sqlite3.connect(self.database)) as connection, connection:
+            connection.execute("ALTER TABLE recipe ADD COLUMN main_image_url TEXT")
+            connection.execute("ALTER TABLE recipe ADD COLUMN source_url TEXT")
+            connection.execute("ALTER TABLE recipe_step ADD COLUMN image_url TEXT")
+            connection.execute("UPDATE recipe SET main_image_url='https://example.test/image', "
+                               "source_url='https://example.test/source'")
+            connection.execute("UPDATE recipe_step SET image_url='https://example.test/step'")
+        before = hashlib.sha256(self.database.read_bytes()).hexdigest()
+        recipes, _ = load_inputs(self.database)
+        self.assertNotIn("main_image_url", asdict(recipes[9]))
+        self.assertNotIn("source_url", asdict(recipes[9]))
+        self.assertNotIn("image_url", asdict(recipes[9].steps[0]))
+        self.assertEqual(before, hashlib.sha256(self.database.read_bytes()).hexdigest())
 
     def test_connections_are_read_only_and_closed(self):
         import experiments.revision.sqlite_loader as loader

@@ -33,7 +33,6 @@ class SourceStep:
     step_id: int
     step_number: int
     instruction: str
-    image_url: str | None
     tip: str | None
 
 
@@ -50,8 +49,6 @@ class SourceRecipe:
     calories: str | None
     servings: str | None
     difficulty: str | None
-    main_image_url: str | None
-    source_url: str | None
     ingredients: tuple[SourceIngredient, ...]
     steps: tuple[SourceStep, ...]
 

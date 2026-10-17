@@ -34,7 +34,12 @@ def load_inputs(database: Path, *, recipe_pairs=RECIPES,
             connection.execute("BEGIN")
             recipes = {}
             for recipe_id, expected_name in recipe_pairs:
-                row = connection.execute("SELECT * FROM recipe WHERE recipe_id = ?", (recipe_id,)).fetchone()
+                # Explicit columns also tolerate legacy databases retaining unused URLs.
+                row = connection.execute("""
+                    SELECT recipe_id, name, description, cuisine_type, category,
+                           cooking_time, calories, servings, difficulty
+                    FROM recipe WHERE recipe_id = ?
+                """, (recipe_id,)).fetchone()
                 if row is None or row["name"] != expected_name:
                     raise PreflightError(f"Recipe {recipe_id} missing or name differs from {expected_name}")
                 ingredients = tuple(SourceIngredient(**dict(item)) for item in connection.execute("""
@@ -46,7 +51,7 @@ def load_inputs(database: Path, *, recipe_pairs=RECIPES,
                 source_count = connection.execute(
                     "SELECT count(*) FROM recipe_ingredient WHERE recipe_id = ?", (recipe_id,)).fetchone()[0]
                 steps = tuple(SourceStep(**dict(item)) for item in connection.execute("""
-                    SELECT step_id, step_number, instruction, image_url, tip FROM recipe_step
+                    SELECT step_id, step_number, instruction, tip FROM recipe_step
                     WHERE recipe_id = ? ORDER BY step_number, step_id
                 """, (recipe_id,)))
                 if not ingredients or len(ingredients) != source_count or not steps:

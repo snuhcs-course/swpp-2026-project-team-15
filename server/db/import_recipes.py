@@ -29,13 +29,12 @@ TABLES = (
         (
             "recipe_id", "name", "description", "cuisine_type", "category",
             "cooking_time", "calories", "servings", "difficulty",
-            "main_image_url", "source_url",
         ),
         frozenset({"recipe_id"}),
         (
             ("name", 100), ("cuisine_type", 50), ("category", 50),
             ("cooking_time", 20), ("calories", 20), ("servings", 20),
-            ("difficulty", 50), ("main_image_url", 2048), ("source_url", 2048),
+            ("difficulty", 50),
         ),
     ),
     CsvTable(
@@ -53,9 +52,8 @@ TABLES = (
     CsvTable(
         "RecipeStep.csv",
         "recipe_step",
-        ("step_id", "recipe_id", "step_number", "instruction", "image_url", "tip"),
+        ("step_id", "recipe_id", "step_number", "instruction", "tip"),
         frozenset({"step_id", "recipe_id", "step_number"}),
-        (("image_url", 2048),),
     ),
     CsvTable(
         "RecipeIngredient.csv",
