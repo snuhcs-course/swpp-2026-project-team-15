@@ -76,12 +76,15 @@ def write_sheets(directory: Path, records: list[dict]) -> None:
 
     The active run owns these sheets until it stops. Review after completion or
     stop; each subsequent run has another directory and cannot overwrite reviews.
+    Keep run/case keys in both sheets for joins across repeated experiments, and
+    use the original recipe name so model renaming cannot obscure the source.
     """
     results, evaluation = [], []
     for record in records:
-        keys = {key: record[key] for key in ("run_id", "case_id", "experiment", "recipe_id", "status")}
+        keys = {key: record[key] for key in ("run_id", "case_id")}
+        keys["recipe_name"] = record["original"]["name"]
         model = record["model_result"]
-        results.append({**keys, "can_revise": model["can_revise"] if model else "",
+        results.append({**keys, "status": record["status"],
                         "reason": model["reason"] if model else record["error"],
                         "artifact": f"{record['case_id']}.json"})
         status = record["status"]
@@ -90,6 +93,6 @@ def write_sheets(directory: Path, records: list[dict]) -> None:
                   for key in SCORES}
         evaluation.append({**keys, **scores, "reviewer": "", "rubric_version": "",
                            "notes": ""})
-    keys = ("run_id", "case_id", "experiment", "recipe_id", "status")
-    _write_csv(directory / "results.csv", keys + ("can_revise", "reason", "artifact"), results)
+    keys = ("run_id", "case_id", "recipe_name")
+    _write_csv(directory / "results.csv", keys + ("status", "reason", "artifact"), results)
     _write_csv(directory / "evaluation.csv", keys + SCORES + ("reviewer", "rubric_version", "notes"), evaluation)

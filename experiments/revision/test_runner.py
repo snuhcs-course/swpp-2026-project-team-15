@@ -90,6 +90,22 @@ class RunnerTests(OfflineTestCase):
         evaluations = self.read_csv(summary.directory / "evaluation.csv")
         self.assertEqual(len(results), 32)
         self.assertEqual(len(evaluations), 32)
+        self.assertEqual(list(results[0]),
+                         ["run_id", "case_id", "recipe_name", "status", "reason", "artifact"])
+        self.assertEqual(list(evaluations[0]),
+                         ["run_id", "case_id", "recipe_name", *SCORES,
+                          "reviewer", "rubric_version", "notes"])
+        self.assertEqual(set(results[0]) & set(evaluations[0]),
+                         {"run_id", "case_id", "recipe_name"})
+        self.assertEqual([row["case_id"] for row in results],
+                         [row["case_id"] for row in evaluations])
+        for result, evaluation, case in zip(results, evaluations, matrix()):
+            self.assertEqual(result["recipe_name"], dict(RECIPES)[case.recipe_id])
+            self.assertEqual(evaluation["recipe_name"], result["recipe_name"])
+            self.assertEqual(result["run_id"], meta["run_id"])
+            self.assertEqual(evaluation["run_id"], result["run_id"])
+            self.assertEqual([evaluation[key] for key in ("reviewer", "rubric_version", "notes")],
+                             [""] * 3)
         self.assertFalse((summary.directory / "cases").exists())
         self.assertEqual(len(list(summary.directory.glob("AI-*.json"))), 32)
         for row in results:
@@ -103,6 +119,41 @@ class RunnerTests(OfflineTestCase):
         self.assertEqual([evaluations[1][key] for key in SCORES], ["", "N/A", "N/A", "N/A"])
         self.assertEqual([evaluations[2][key] for key in SCORES], [""] * 4)
         self.assertTrue((summary.directory / "evaluation.csv").read_bytes().startswith(b"\xef\xbb\xbf"))
+        self.assertTrue((summary.directory / "results.csv").read_bytes().startswith(b"\xef\xbb\xbf"))
+
+    def test_csv_uses_original_name_and_preserves_json_feasibility(self):
+        revised = feasible()
+        revised["revised_recipe"]["name"] = "Renamed mock dish"
+        revised["reason"] = ""
+        llm = MockLLM({"AI-E0-9": model_raw(revised)}, cases=(Case("AI-E0", 9),))
+        summary = run(self.database, self.output, llm, llm.configuration(),
+                      cases=(Case("AI-E0", 9),))
+        record = self.read_json(summary.directory / "AI-E0-9.json")
+        self.assertEqual(record["model_result"], revised)
+        self.assertTrue(record["model_result"]["can_revise"])
+        for filename in ("results.csv", "evaluation.csv"):
+            row = self.read_csv(summary.directory / filename)[0]
+            self.assertEqual(row["recipe_name"], record["original"]["name"])
+            self.assertNotIn("can_revise", row)
+        result = self.read_csv(summary.directory / "results.csv")[0]
+        self.assertEqual(result["status"], "revised")
+        self.assertEqual(result["reason"], "")
+
+    def test_csv_run_case_keys_disambiguate_repeated_runs(self):
+        sheets = {"results.csv": [], "evaluation.csv": []}
+        for run_id in ("first", "second"):
+            cases = (Case("AI-E0", 9),)
+            llm = MockLLM(cases=cases)
+            summary = run(self.database, self.output, llm, llm.configuration(),
+                          cases=cases, run_id=run_id)
+            for filename, rows in sheets.items():
+                rows.extend(self.read_csv(summary.directory / filename))
+        keys = []
+        for rows in sheets.values():
+            self.assertEqual({row["case_id"] for row in rows}, {"AI-E0-9"})
+            keys.append({(row["run_id"], row["case_id"]) for row in rows})
+            self.assertEqual(len(keys[-1]), 2)
+        self.assertEqual(keys[0], keys[1])
 
     def test_first_operational_error_stops_after_preserving_existing_results(self):
         for index, failure in enumerate(({"api_error": "simulated timeout"}, "malformed JSON",
@@ -128,6 +179,13 @@ class RunnerTests(OfflineTestCase):
                 self.assertEqual(error["raw_response"], failure)
             evaluations = self.read_csv(summary.directory / "evaluation.csv")
             self.assertEqual(len(evaluations), 3)
+            results = self.read_csv(summary.directory / "results.csv")
+            self.assertEqual([row["status"] for row in results],
+                             ["revised", "refused", error["status"]])
+            self.assertEqual(results[1]["reason"], json.loads(MOCK_REFUSAL)["result"]["reason"])
+            self.assertEqual(results[-1]["reason"], error["error"])
+            self.assertEqual(results[-1]["recipe_name"], error["original"]["name"])
+            self.assertEqual(evaluations[-1]["case_id"], results[-1]["case_id"])
             self.assertFalse((summary.directory / "cases").exists())
             for row in self.read_csv(summary.directory / "results.csv"):
                 self.assertEqual(row["artifact"], f"{row['case_id']}.json")
