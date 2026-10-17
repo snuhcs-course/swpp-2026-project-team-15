@@ -1,13 +1,11 @@
 """Pure data structures and deterministic ingredient matching metrics."""
 # AI-generated initial implementation with Codex (GPT-6 Luna Medium),
-# 2026-10-13; reviewed and revised by Soohyun An.
-
+# 2026-10-13 to 2026-10-17; reviewed and revised by Soohyun An.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Mapping
-
 
 MAIN = "주재료"
 SECONDARY = "부재료"
