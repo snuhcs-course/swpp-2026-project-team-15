@@ -16,14 +16,16 @@ class PreflightError(ValueError):
 
 
 def load_inputs(database: Path, *, recipe_pairs=RECIPES,
-                inventory_pairs=INVENTORIES) -> tuple[dict[int, SourceRecipe], dict[str, tuple[InventoryIngredient, ...]]]:
+                inventory_pairs=None) -> tuple[dict[int, SourceRecipe], dict[str, tuple[InventoryIngredient, ...]]]:
     """Validate requested ID/name pairs and load full snapshots before any LLM call.
 
-    Defaults preserve whole-matrix preflight. Runners supply only selected recipes
+    Defaults preserve original E0/E1 preflight. Runners supply only selected recipes
     and inventories, so unrelated missing records do not block a selected run.
     Separate queries prevent ingredient/step Cartesian duplication. Nullable text
     stays null and raw classifications are not interpreted as required ingredients.
     """
+    if inventory_pairs is None:
+        inventory_pairs = {key: INVENTORIES[key] for key in ("AI-E0", "AI-E1")}
     if not database.is_file():
         raise PreflightError(f"SQLite database does not exist: {database}")
     try:

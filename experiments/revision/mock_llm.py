@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from server.recipe_revision import APIError, LLMResponse, RevisionRequest
-from .cases import Case, matrix
+from .cases import Case, INVENTORIES, matrix
 
 MOCK_REFUSAL = json.dumps({"result": {
     "can_revise": False, "reason": "MOCK ONLY: 판단을 생성하지 않는 오프라인 실행 확인용 결과입니다.",
@@ -17,7 +17,7 @@ MOCK_REFUSAL = json.dumps({"result": {
 class MockLLM:
     """Use canned outputs in matrix order; never import a network transport.
 
-    An optional file maps selected or all 32 case IDs to raw strings or an api_error object.
+    A file maps selected, original 32 or all 40 case IDs to raw strings or api_error objects.
     Raw strings are intentional so malformed-response scenarios are reproducible.
     """
 
@@ -26,9 +26,12 @@ class MockLLM:
         self._cases = matrix() if cases is None else cases
         self._responses = responses
         if responses is not None:
+            if not {case.case_id for case in self._cases} <= set(responses):
+                raise ValueError("Mock fixtures must include every selected case ID")
             if set(responses) not in ({case.case_id for case in self._cases},
-                                      {case.case_id for case in matrix()}):
-                raise ValueError("Mock fixtures must contain exactly the selected or all 32 case IDs")
+                                      {case.case_id for case in matrix()},
+                                      {case.case_id for case in matrix(tuple(INVENTORIES))}):
+                raise ValueError("Mock fixtures must contain exactly the selected, original 32 or all 40 case IDs")
             for value in responses.values():
                 if not isinstance(value, str) and not (
                     isinstance(value, dict) and set(value) == {"api_error"}

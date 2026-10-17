@@ -9,7 +9,7 @@ from pathlib import Path
 import sqlite3
 from unittest.mock import patch
 
-from experiments.revision.cases import INVENTORIES, RECIPES, matrix
+from experiments.revision.cases import ALL_RECIPES, EXPERIMENT_RECIPES, INVENTORIES, RECIPES, matrix
 from experiments.revision.mock_llm import MockLLM
 from experiments.revision.run_experiment import run
 from experiments.revision.sqlite_loader import PreflightError, load_inputs
@@ -43,6 +43,7 @@ class LoaderTests(OfflineTestCase):
         before = hashlib.sha256(self.database.read_bytes()).hexdigest()
         recipes, inventories = load_inputs(self.database)
         self.assertEqual(set(recipes), {key for key, _ in RECIPES})
+        self.assertEqual(set(inventories), {"AI-E0", "AI-E1"})
         recipe = recipes[9]
         self.assertEqual([row.ingredient_id for row in recipe.ingredients], [32, 32, 32])
         self.assertEqual([row.recipe_ingredient_id for row in recipe.ingredients], [1, 2, 3])
@@ -79,6 +80,14 @@ class LoaderTests(OfflineTestCase):
         with self.assertRaises(sqlite3.ProgrammingError):
             captured[0].execute("SELECT 1")
 
+    def test_default_preflight_does_not_require_garlic_experiment_data(self):
+        with closing(sqlite3.connect(self.database)) as connection, connection:
+            connection.execute("DELETE FROM recipe WHERE recipe_id IN (335,395)")
+            connection.execute("DELETE FROM ingredient WHERE ingredient_id IN (169,103,214,349,213)")
+        recipes, inventories = load_inputs(self.database)
+        self.assertEqual(set(recipes), {key for key, _ in RECIPES})
+        self.assertEqual(set(inventories), {"AI-E0", "AI-E1"})
+
     def test_preflight_failure_saves_only_metadata_without_calling_llm(self):
         mutations = ("DELETE FROM recipe WHERE recipe_id=9",
                      "UPDATE recipe SET name='wrong' WHERE recipe_id=9",
@@ -114,7 +123,30 @@ class LoaderTests(OfflineTestCase):
 
     def test_readme_matrix_matches_configuration(self):
         text = (Path(__file__).parent / "README.md").read_text(encoding="utf-8")
-        for recipe_id, name in RECIPES:
+        for recipe_id, name in ALL_RECIPES:
             self.assertIn(f"| {recipe_id} | {name} |", text)
-        for ingredient_id, name in INVENTORIES["AI-E1"]:
+        for ingredient_id, name in dict(pair for pairs in INVENTORIES.values() for pair in pairs).items():
             self.assertIn(f"{name}({ingredient_id})", text)
+
+    def test_garlic_conditions_differ_only_in_preparation_and_share_four_recipes(self):
+        whole = dict(INVENTORIES["AI-E2"])
+        minced = dict(INVENTORIES["AI-E3"])
+        self.assertEqual(set(whole) - set(minced), {169})
+        self.assertEqual(set(minced) - set(whole), {103})
+        whole.pop(169)
+        minced.pop(103)
+        self.assertEqual(whole, minced)
+        self.assertEqual(set(whole) - set(dict(INVENTORIES["AI-E1"])), {214, 349, 213})
+        self.assertEqual(EXPERIMENT_RECIPES["AI-E2"], EXPERIMENT_RECIPES["AI-E3"])
+        self.assertEqual([rid for rid, _ in EXPERIMENT_RECIPES["AI-E2"]], [335, 395, 97, 421])
+        self.assertEqual(len(matrix(("AI-E2", "AI-E3"))), 8)
+
+    def test_garlic_inventory_preflight_checks_added_ids_and_names(self):
+        with closing(sqlite3.connect(self.database)) as connection, connection:
+            connection.execute("UPDATE ingredient SET name='wrong' WHERE ingredient_id=169")
+        with self.assertRaises(PreflightError):
+            load_inputs(self.database, recipe_pairs=EXPERIMENT_RECIPES["AI-E2"],
+                        inventory_pairs={"AI-E2": INVENTORIES["AI-E2"]})
+        recipes, _ = load_inputs(self.database, recipe_pairs=EXPERIMENT_RECIPES["AI-E3"],
+                                inventory_pairs={"AI-E3": INVENTORIES["AI-E3"]})
+        self.assertEqual(len(recipes), 4)

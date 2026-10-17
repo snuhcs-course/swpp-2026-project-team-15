@@ -12,7 +12,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 from urllib.error import HTTPError
 
-from experiments.revision.cases import Case, RECIPES, matrix
+from experiments.revision.cases import Case, EXPERIMENT_RECIPES, INVENTORIES, RECIPES, matrix
 from experiments.revision.mock_llm import MOCK_REFUSAL, MockLLM
 from experiments.revision.reports import SCORES, write_json
 from experiments.revision.run_experiment import RunSummary, main, run
@@ -338,8 +338,8 @@ class RunnerTests(OfflineTestCase):
         self.assertEqual(metadata["configuration"]["provider"], "mock")
 
     def test_cli_selects_one_experiment_and_recipe_with_matching_fixture(self):
-        for experiment in (0, 1):
-            for recipe_id, _ in RECIPES:
+        for experiment in (0, 1, 2, 3):
+            for recipe_id, _ in EXPERIMENT_RECIPES[f"AI-E{experiment}"]:
                 with self.subTest(experiment=experiment, recipe_id=recipe_id):
                     case_id = f"AI-E{experiment}-{recipe_id}"
                     fixture = self.root / "selected.json"
@@ -357,28 +357,78 @@ class RunnerTests(OfflineTestCase):
                     self.assertEqual(list(meta["inventories"]), [f"AI-E{experiment}"])
                     record = self.read_json(directory / f"{case_id}.json")
                     self.assertEqual(record["original"]["recipe_id"], recipe_id)
-                    self.assertEqual(len(record["inventory"]), 7 if experiment == 0 else 10)
+                    self.assertEqual([(item["ingredient_id"], item["name"]) for item in record["inventory"]],
+                                     list(INVENTORIES[f"AI-E{experiment}"]))
 
     def test_cli_all_aliases_run_only_selected_inventory(self):
-        for experiment, flag in ((0, "--all"), (1, "-all")):
+        for experiment, flag in ((0, "--all"), (1, "-all"), (2, "--all"), (3, "-all")):
             output = self.output / str(experiment)
             with redirect_stdout(StringIO()) as console:
                 code = main(["--experiment-num", str(experiment), flag,
                              "--db", str(self.database), "--output-dir", str(output)])
             self.assertEqual(code, 0)
-            self.assertIn("16/16 attempts", console.getvalue())
+            count = 16 if experiment < 2 else 4
+            self.assertIn(f"{count}/{count} attempts", console.getvalue())
             metadata = self.read_json(next(output.iterdir()) / "metadata.json")
             self.assertEqual(metadata["recorded_case_ids"],
-                             [f"AI-E{experiment}-{recipe_id}" for recipe_id, _ in RECIPES])
+                             [f"AI-E{experiment}-{recipe_id}"
+                              for recipe_id, _ in EXPERIMENT_RECIPES[f"AI-E{experiment}"]])
 
     def test_cli_invalid_or_conflicting_selection_never_constructs_model(self):
-        for options in (["--experiment-num", "2"], ["--recipe-id", "999"],
-                        ["--recipe-id", "9", "--all"]):
+        for options in (["--experiment-num", "4"], ["--recipe-id", "999"],
+                        ["--recipe-id", "9", "--all"],
+                        ["--experiment-num", "2", "--recipe-id", "9"],
+                        ["--experiment-num", "3", "--recipe-id", "18"],
+                        ["--experiment-num", "0", "--recipe-id", "335"],
+                        ["--experiment-num", "1", "--recipe-id", "395"]):
             with patch("experiments.revision.run_experiment.MockLLM") as factory:
                 with redirect_stderr(StringIO()), self.assertRaises(SystemExit) as caught:
                     main(options)
                 self.assertEqual(caught.exception.code, 2)
                 factory.assert_not_called()
+
+    def test_garlic_default_recipe_is_first_selected_recipe(self):
+        for experiment in (2, 3):
+            output = self.output / str(experiment)
+            with redirect_stdout(StringIO()):
+                code = main(["--experiment-num", str(experiment), "--db", str(self.database),
+                             "--output-dir", str(output)])
+            self.assertEqual(code, 0)
+            meta = self.read_json(next(output.iterdir()) / "metadata.json")
+            self.assertEqual(meta["recorded_case_ids"], [f"AI-E{experiment}-335"])
+
+    def test_garlic_full_fixture_stops_after_first_error_and_keeps_refusal(self):
+        for experiment in ("AI-E2", "AI-E3"):
+            cases = matrix((experiment,))
+            answers = {case.case_id: MOCK_REFUSAL for case in matrix(tuple(INVENTORIES))}
+            answers[f"{experiment}-395"] = {"api_error": "simulated error"}
+            llm = MockLLM(answers, cases=cases)
+            summary = run(self.database, self.output, llm, llm.configuration(), cases=cases)
+            self.assertFalse(summary.complete)
+            self.assertEqual(llm.calls, 2)
+            meta = self.read_json(summary.directory / "metadata.json")
+            self.assertEqual(meta["unattempted_case_ids"], [f"{experiment}-97", f"{experiment}-421"])
+            self.assertEqual(self.read_csv(summary.directory / "results.csv")[0]["status"], "refused")
+
+    def test_legacy_fixture_is_rejected_for_garlic_cases_before_generation(self):
+        fixture = self.root / "legacy.json"
+        fixture.write_text(json.dumps(self.script()), encoding="utf-8")
+        for experiment in (2, 3):
+            with self.assertRaisesRegex(ValueError, "every selected case"):
+                MockLLM(self.script(), cases=matrix((f"AI-E{experiment}",)))
+            output = self.output / str(experiment)
+            with patch.object(MockLLM, "generate") as generate, redirect_stderr(StringIO()):
+                with self.assertRaises(SystemExit) as caught:
+                    main(["--experiment-num", str(experiment), "--all",
+                          "--mock-responses", str(fixture), "--db", str(self.database),
+                          "--output-dir", str(output)])
+            self.assertEqual(caught.exception.code, 1)
+            generate.assert_not_called()
+            directory = next(output.iterdir())
+            self.assertEqual({path.name for path in directory.iterdir()}, {"metadata.json"})
+            meta = self.read_json(directory / "metadata.json")
+            self.assertEqual(meta["diagnostics"]["stage"], "configuration")
+            self.assertEqual(meta["attempted_case_ids"], [])
 
     def test_selected_run_preflight_ignores_unselected_recipes_and_inventory(self):
         import sqlite3

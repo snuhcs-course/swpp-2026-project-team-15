@@ -12,7 +12,7 @@ import unittest
 from unittest.mock import patch
 
 from server.recipe_revision import InventoryIngredient, SourceIngredient, SourceRecipe, SourceStep
-from experiments.revision.cases import INVENTORIES, RECIPES
+from experiments.revision.cases import ALL_RECIPES, INVENTORIES
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -88,8 +88,9 @@ def create_database(path: Path) -> None:
     """Populate the real importer schema with all fixed IDs and source edge cases."""
     with closing(sqlite3.connect(path)) as connection, connection:
         connection.executescript((ROOT / "server/db/schema.sql").read_text(encoding="utf-8"))
-        connection.executemany("INSERT INTO ingredient VALUES (?, ?)", INVENTORIES["AI-E1"])
-        for index, (recipe_id, name) in enumerate(RECIPES):
+        ingredients = dict(pair for pairs in INVENTORIES.values() for pair in pairs)
+        connection.executemany("INSERT INTO ingredient VALUES (?, ?)", ingredients.items())
+        for index, (recipe_id, name) in enumerate(ALL_RECIPES):
             connection.execute("INSERT INTO recipe(recipe_id,name,servings,source_url) VALUES (?,?,?,?)",
                                (recipe_id, name, "4인분", f"https://example.test/{recipe_id}"))
             for offset, (quantity, label, original) in enumerate((

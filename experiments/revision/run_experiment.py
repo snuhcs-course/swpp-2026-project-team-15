@@ -24,7 +24,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from server.recipe_revision.core import (LLM, PROMPT_VERSION, SCHEMA_VERSION, RevisionOutcome,
                                          build_request, revise)  # noqa: E402
-from experiments.revision.cases import Case, INVENTORIES, RECIPES, matrix  # noqa: E402
+from experiments.revision.cases import ALL_RECIPES, Case, EXPERIMENT_RECIPES, INVENTORIES, matrix  # noqa: E402
 from experiments.revision.mock_llm import MockLLM  # noqa: E402
 from experiments.revision.reports import redact, utc_now, write_json, write_sheets  # noqa: E402
 from experiments.revision.sqlite_loader import PreflightError, load_inputs  # noqa: E402
@@ -67,7 +67,7 @@ def run(database: Path, output_dir: Path, llm: LLM | None = None,
     Existing run directories are never reused, including for error reporting.
     """
     cases = matrix() if cases is None else cases
-    if not cases or len(set(cases)) != len(cases) or not set(cases) <= set(matrix()):
+    if not cases or len(set(cases)) != len(cases) or not set(cases) <= set(matrix(tuple(INVENTORIES))):
         raise ValueError("Cases must be a nonempty unique subset of the fixed matrix")
     if llm is not None and make_llm is not None:
         raise ValueError("Supply either an adapter or a factory")
@@ -102,7 +102,7 @@ def run(database: Path, output_dir: Path, llm: LLM | None = None,
         recipe_ids = {case.recipe_id for case in cases}
         experiments = {case.experiment for case in cases}
         recipes, inventories = load_inputs(
-            database, recipe_pairs=tuple(pair for pair in RECIPES if pair[0] in recipe_ids),
+            database, recipe_pairs=tuple(pair for pair in ALL_RECIPES if pair[0] in recipe_ids),
             inventory_pairs={key: pairs for key, pairs in INVENTORIES.items() if key in experiments})
         metadata["database_sha256"] = _fingerprint(database)
         metadata["inventories"] = {key: [asdict(item) for item in values]
@@ -184,15 +184,15 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", type=Path, default=REPO_ROOT / "data/recipes/recipes.sqlite3")
     parser.add_argument("--output-dir", type=Path, default=REPO_ROOT / "data/recipes/revision-experiments")
-    parser.add_argument("--experiment-num", type=int, choices=(0, 1), default=0,
-                        help="Select exactly one inventory: 0 (default) or 1")
+    parser.add_argument("--experiment-num", type=int, choices=(0, 1, 2, 3), default=0,
+                        help="Inventory: 0 (default), 1, 2 (whole garlic), 3 (minced garlic)")
     selection = parser.add_mutually_exclusive_group()
-    selection.add_argument("--recipe-id", type=int, choices=[pair[0] for pair in RECIPES], default=9,
-                           help="One fixed recipe ID (default: 9)")
+    selection.add_argument("--recipe-id", type=int, choices=[pair[0] for pair in ALL_RECIPES],
+                           help="One recipe in the condition (default: 9 for E0/E1, 335 for E2/E3)")
     selection.add_argument("--all", "-all", dest="all_recipes", action="store_true",
-                           help="Run all 16 recipes under the selected inventory")
+                           help="Run all recipes in the condition: 16 for E0/E1, 4 for E2/E3")
     parser.add_argument("--provider", choices=("mock", "chat-completions"), default="mock")
-    parser.add_argument("--mock-responses", type=Path, help="Selected-case or full 32-case fixture mapping")
+    parser.add_argument("--mock-responses", type=Path, help="Selected-case, original 32-case or full 40-case fixture mapping")
     parser.add_argument("--allow-live-api", action="store_true", help="Explicitly enable potentially paid API calls")
     parser.add_argument("--model", help="Live model; otherwise REVISION_LLM_MODEL")
     parser.add_argument("--timeout", type=_positive_float, default=60)
@@ -206,8 +206,13 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("Live flags cannot be used in mock mode")
     if args.provider != "mock" and args.mock_responses:
         parser.error("Mock fixtures cannot be used with the live provider")
-    cases = tuple(Case(f"AI-E{args.experiment_num}", recipe_id) for recipe_id, _ in RECIPES
-                  if args.all_recipes or recipe_id == args.recipe_id)
+    experiment = f"AI-E{args.experiment_num}"
+    recipe_pairs = EXPERIMENT_RECIPES[experiment]
+    recipe_id = args.recipe_id if args.recipe_id is not None else recipe_pairs[0][0]
+    if not args.all_recipes and recipe_id not in dict(recipe_pairs):
+        parser.error(f"Recipe {recipe_id} is not available in {experiment}")
+    cases = tuple(Case(experiment, selected_id) for selected_id, _ in recipe_pairs
+                  if args.all_recipes or selected_id == recipe_id)
     # The factory adds file-loaded credentials before any response can be saved.
     secrets = [os.environ.get("REVISION_LLM_API_KEY", "")]
 
