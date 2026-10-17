@@ -5,7 +5,7 @@ adapter. No database, filesystem, provider settings or experiment IDs are needed
 Semantic mistakes remain observations for human review, not synthetic refusals.
 """
 # AI-generated initial importer with Codex (GPT-6.1 Sol)
-# 2026-10-14 to 2026-10-26; reviewed by Soohyun An
+# 2026-10-14 to 2026-10-17; reviewed by Soohyun An
 
 from dataclasses import asdict, dataclass, field
 import json
@@ -131,11 +131,18 @@ class APIError(Exception):
 
 
 class ResponseFormatError(Exception):
-    """Invalid model/provider output with available raw text for observation."""
+    """Invalid output with safe model text and an explicit failure boundary.
 
-    def __init__(self, reason: str, raw_response: str | None = None):
+    Adapters set ``stage="provider_response"`` for decoding/envelope failures;
+    model JSON/schema errors default to ``response_parsing``. Provider error
+    bodies and credentials must not be supplied as raw model text.
+    """
+
+    def __init__(self, reason: str, raw_response: str | None = None, *,
+                 stage: str = "response_parsing"):
         super().__init__(reason)
         self.raw_response = raw_response
+        self.stage = stage
 
 
 @dataclass(frozen=True)
@@ -148,6 +155,7 @@ class RevisionOutcome:
     model_result: dict | None
     error: str | None
     provider_metadata: dict = field(default_factory=dict)
+    failure_stage: str | None = None
 
 
 def build_request(recipe: SourceRecipe,
@@ -230,10 +238,12 @@ def revise(recipe: SourceRecipe, inventory: tuple[InventoryIngredient, ...],
         response = llm.generate(request)
         result = parse_response(response.text)
     except APIError as exc:
-        return RevisionOutcome("api_error", request, None, None, str(exc))
+        return RevisionOutcome("api_error", request, None, None, str(exc),
+                               failure_stage="api_request")
     except ResponseFormatError as exc:
         return RevisionOutcome("response_format_error", request,
                                response.text if response else exc.raw_response,
-                               None, str(exc), response.metadata if response else {})
+                               None, str(exc), response.metadata if response else {},
+                               failure_stage=exc.stage)
     return RevisionOutcome("revised" if result["can_revise"] else "refused",
                            request, response.text, result, None, response.metadata)

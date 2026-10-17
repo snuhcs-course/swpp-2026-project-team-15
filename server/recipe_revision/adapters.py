@@ -5,7 +5,7 @@ Transport is injectable for tests. No credentials are read until from_environmen
 is explicitly called, and no network call is made until generate is called.
 """
 # AI-generated initial importer with Codex (GPT-6.1 Sol)
-# 2026-10-14 to 2026-10-26; reviewed by Soohyun An
+# 2026-10-14 to 2026-10-17; reviewed by Soohyun An
 
 import json
 import math
@@ -101,17 +101,18 @@ class ChatCompletionsLLM:
         try:
             body = response_bytes.decode("utf-8").replace(self._api_key, "[REDACTED]")
         except UnicodeError:
-            body = response_bytes.decode("utf-8", errors="replace").replace(self._api_key, "[REDACTED]")
-            raise ResponseFormatError("Provider response is not UTF-8", body) from None
+            raise ResponseFormatError("Provider response is not UTF-8", stage="provider_response") from None
         try:
             data = json.loads(body)
             choice = data["choices"][0]
             message = choice["message"]
             content = message.get("content")
             if message.get("refusal") or choice.get("finish_reason") != "stop":
-                raise ResponseFormatError("Provider refused or returned incomplete model output", body)
+                raise ResponseFormatError("Provider refused or returned incomplete model output",
+                                          content if isinstance(content, str) else None,
+                                          stage="provider_response")
             if not isinstance(content, str):
-                raise ResponseFormatError("Provider returned no model text", body)
+                raise ResponseFormatError("Provider returned no model text", stage="provider_response")
             metadata = {}
             if isinstance(data.get("id"), str):
                 metadata["request_id"] = data["id"]
@@ -122,4 +123,4 @@ class ChatCompletionsLLM:
                                      if type(usage.get(key)) is int}
             return LLMResponse(content, metadata)
         except (ValueError, KeyError, IndexError, TypeError, AttributeError):
-            raise ResponseFormatError("Provider response envelope is invalid", body) from None
+            raise ResponseFormatError("Provider response envelope is invalid", stage="provider_response") from None

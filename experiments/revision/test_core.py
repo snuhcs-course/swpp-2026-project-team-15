@@ -1,6 +1,6 @@
 """Structural contracts and prompts, with no semantic correctness assumptions."""
 # AI-generated initial importer with Codex (GPT-6.1 Sol)
-# 2026-10-14 to 2026-10-26; reviewed by Soohyun An
+# 2026-10-14 to 2026-10-17; reviewed by Soohyun An
 
 from dataclasses import FrozenInstanceError, asdict
 import json
@@ -195,6 +195,10 @@ class CoreTests(OfflineTestCase):
             if expected.endswith("error"):
                 self.assertIsNone(result.model_result)
                 self.assertTrue(result.error)
+                self.assertEqual(result.failure_stage,
+                                 "api_request" if expected == "api_error" else "response_parsing")
+            else:
+                self.assertIsNone(result.failure_stage)
             if isinstance(answer, ResponseFormatError):
                 self.assertEqual(result.raw_response, "original body")
             if isinstance(answer, LLMResponse):

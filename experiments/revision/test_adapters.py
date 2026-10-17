@@ -1,6 +1,6 @@
 """Mock HTTP boundary only; these tests never send provider API requests."""
 # AI-generated initial importer with Codex (GPT-6.1 Sol)
-# 2026-10-14 to 2026-10-26; reviewed by Soohyun An
+# 2026-10-14 to 2026-10-17; reviewed by Soohyun An
 
 from io import BytesIO
 from http.client import IncompleteRead
@@ -56,7 +56,7 @@ class AdapterTests(OfflineTestCase):
             self.assertNotIn("secret-key", str(caught.exception))
             self.assertEqual(transport.call_count, 1)
 
-    def test_invalid_envelopes_refusals_and_truncation_preserve_raw_text(self):
+    def test_invalid_envelopes_refusals_and_truncation_preserve_only_model_text(self):
         for body in ("{bad secret-key", "[]", "{}", json.dumps({"choices": [{"finish_reason": "length",
                            "message": {"content": "{}"}}]}),
                      json.dumps({"choices": [{"finish_reason": "stop", "message": {
@@ -64,7 +64,8 @@ class AdapterTests(OfflineTestCase):
             transport = self.transport(body)
             with self.subTest(body=body), self.assertRaises(ResponseFormatError) as caught:
                 self.adapter(transport).generate(build_request(sample_recipe(), inventory()))
-            self.assertEqual(caught.exception.raw_response, body.replace("secret-key", "[REDACTED]"))
+            self.assertEqual(caught.exception.stage, "provider_response")
+            self.assertEqual(caught.exception.raw_response, "{}" if '"length"' in body else None)
             self.assertNotIn("secret-key", str(caught.exception))
             self.assertEqual(transport.call_count, 1)
 
@@ -87,10 +88,10 @@ class AdapterTests(OfflineTestCase):
     def test_redirects_are_not_followed(self):
         self.assertIsNone(_NoRedirect().redirect_request(None, None, 307, "redirect", {}, "https://other.test"))
 
-    def test_non_utf8_keeps_available_text_and_stops_as_format_error(self):
+    def test_non_utf8_excludes_provider_body_and_stops_as_format_error(self):
         transport = self.transport("")
         transport.return_value.__enter__.return_value.read.return_value = b"invalid \xff body"
         with self.assertRaises(ResponseFormatError) as caught:
             self.adapter(transport).generate(build_request(sample_recipe(), inventory()))
-        self.assertIn("invalid", caught.exception.raw_response)
-        self.assertIn("body", caught.exception.raw_response)
+        self.assertIsNone(caught.exception.raw_response)
+        self.assertEqual(caught.exception.stage, "provider_response")
