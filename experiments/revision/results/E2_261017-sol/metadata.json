@@ -1,0 +1,106 @@
+{
+  "run_id": "",
+  "started_at": "2026-10-17T05:00:00.325906+00:00",
+  "finished_at": "2026-10-17T05:01:34.365269+00:00",
+  "complete": true,
+  "run_status": "completed",
+  "configuration": {
+    "provider": "chat-completions",
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "model": "gpt-6.1-sol",
+    "timeout": 60,
+    "temperature": null,
+    "max_completion_tokens": null
+  },
+  "prompt_version": "3",
+  "schema_version": "3",
+  "database": "C:\\sh\\2026\\courses\\5_swpp\\project\\swpp-2026-project-team-15\\data\\recipes\\recipes.sqlite3",
+  "database_sha256": "28ff44eeb6c598710af95824962e096b2e1e534307782e90b849cef9c45a05dd",
+  "planned_cases": [
+    {
+      "experiment": "AI-E2",
+      "recipe_id": 335,
+      "case_id": "AI-E2-335"
+    },
+    {
+      "experiment": "AI-E2",
+      "recipe_id": 395,
+      "case_id": "AI-E2-395"
+    },
+    {
+      "experiment": "AI-E2",
+      "recipe_id": 97,
+      "case_id": "AI-E2-97"
+    },
+    {
+      "experiment": "AI-E2",
+      "recipe_id": 421,
+      "case_id": "AI-E2-421"
+    }
+  ],
+  "inventories": {
+    "AI-E2": [
+      {
+        "ingredient_id": 70,
+        "name": "김치"
+      },
+      {
+        "ingredient_id": 223,
+        "name": "밥"
+      },
+      {
+        "ingredient_id": 32,
+        "name": "계란"
+      },
+      {
+        "ingredient_id": 284,
+        "name": "소금"
+      },
+      {
+        "ingredient_id": 282,
+        "name": "설탕"
+      },
+      {
+        "ingredient_id": 313,
+        "name": "식용유"
+      },
+      {
+        "ingredient_id": 554,
+        "name": "후추"
+      },
+      {
+        "ingredient_id": 345,
+        "name": "양파"
+      },
+      {
+        "ingredient_id": 9,
+        "name": "간장"
+      },
+      {
+        "ingredient_id": 147,
+        "name": "두부"
+      },
+      {
+        "ingredient_id": 214,
+        "name": "바게트"
+      },
+      {
+        "ingredient_id": 349,
+        "name": "어묵"
+      },
+      {
+        "ingredient_id": 213,
+        "name": "밀가루"
+      },
+      {
+        "ingredient_id": 169,
+        "name": "마늘"
+      }
+    ]
+  },
+  "attempted_case_ids": ["AI-E2-335", "AI-E2-395", "AI-E2-97", "AI-E2-421"],
+  "recorded_case_ids": ["AI-E2-335", "AI-E2-395", "AI-E2-97", "AI-E2-421"],
+  "unattempted_case_ids": [],
+  "stopping_case_id": null,
+  "stopping_reason": null
+}
