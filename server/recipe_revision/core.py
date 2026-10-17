@@ -7,11 +7,12 @@ Semantic mistakes remain observations for human review, not synthetic refusals.
 # AI-generated initial importer with Codex (GPT-6.1 Sol)
 # 2026-10-14 to 2026-10-17; reviewed by Soohyun An
 
-from dataclasses import asdict, dataclass, field
 import json
 import re
+from dataclasses import asdict, dataclass, field
 from typing import Protocol
 
+from .failures import Failure
 from .models import InventoryIngredient, SourceRecipe
 
 SCHEMA_VERSION = "3"
@@ -19,8 +20,12 @@ PROMPT_VERSION = "3"
 
 
 def _object(properties: dict) -> dict:
-    return {"type": "object", "properties": properties,
-            "required": list(properties), "additionalProperties": False}
+    return {
+        "type": "object",
+        "properties": properties,
+        "required": list(properties),
+        "additionalProperties": False,
+    }
 
 
 def output_schema() -> dict:
@@ -32,32 +37,70 @@ def output_schema() -> dict:
     integer = {"type": "integer"}
     string = {"type": "string"}
     nullable_text = {"type": ["string", "null"]}
-    recipe = _object({
-        "name": string, "servings": nullable_text,
-        "ingredients": {"type": "array", "minItems": 1, "items": _object({
-            "ingredient_id": integer, "name": string, "quantity_text": nullable_text,
-        })},
-        "steps": {"type": "array", "minItems": 1, "items": _object({
-            "step_number": integer, "instruction": string, "tip": nullable_text,
-        })},
-    })
-    changes = {"type": "array", "items": _object({
-        "kind": {"type": "string", "enum": [
-            "omission", "substitution", "quantity", "servings", "step",
-        ]},
-        "reason": string,
-        "source_ingredient_row_ids": {"type": "array", "items": integer},
-        "source_step_ids": {"type": "array", "items": integer},
-    })}
-    success = _object({
-        "can_revise": {"type": "boolean", "enum": [True]}, "reason": string,
-        "changes": changes, "revised_recipe": recipe,
-    })
-    refusal = _object({
-        "can_revise": {"type": "boolean", "enum": [False]},
-        "reason": {"type": "string", "pattern": r"\S"},
-        "changes": {**changes, "maxItems": 0}, "revised_recipe": {"type": "null"},
-    })
+    recipe = _object(
+        {
+            "name": string,
+            "servings": nullable_text,
+            "ingredients": {
+                "type": "array",
+                "minItems": 1,
+                "items": _object(
+                    {
+                        "ingredient_id": integer,
+                        "name": string,
+                        "quantity_text": nullable_text,
+                    }
+                ),
+            },
+            "steps": {
+                "type": "array",
+                "minItems": 1,
+                "items": _object(
+                    {
+                        "step_number": integer,
+                        "instruction": string,
+                        "tip": nullable_text,
+                    }
+                ),
+            },
+        }
+    )
+    changes = {
+        "type": "array",
+        "items": _object(
+            {
+                "kind": {
+                    "type": "string",
+                    "enum": [
+                        "omission",
+                        "substitution",
+                        "quantity",
+                        "servings",
+                        "step",
+                    ],
+                },
+                "reason": string,
+                "source_ingredient_row_ids": {"type": "array", "items": integer},
+                "source_step_ids": {"type": "array", "items": integer},
+            }
+        ),
+    }
+    success = _object(
+        {
+            "can_revise": {"type": "boolean", "enum": [True]},
+            "reason": string,
+            "changes": changes,
+            "revised_recipe": recipe,
+        }
+    )
+    refusal = _object(
+        {
+            "can_revise": {"type": "boolean", "enum": [False]},
+            "reason": {"type": "string", "pattern": r"\S"},
+            "changes": {**changes, "maxItems": 0},
+            "revised_recipe": {"type": "null"},
+        }
+    )
     return _object({"result": {"anyOf": [success, refusal]}})
 
 
@@ -93,7 +136,9 @@ steps. Changes reference original ingredient row IDs/step IDs where relevant; us
 empty reference lists when no source row applies. Answer explanatory text in Korean.
 Before returning, check that the verdict, reason, changes and recipe all agree.
 For example, if onion is essential to the source onion pancake and is unavailable,
-return {"result":{"can_revise":false,"reason":"핵심 재료인 양파가 없어 원본 요리를 유지할 수 없습니다.","changes":[],"revised_recipe":null}}.
+return {"result":{"can_revise":false,\
+"reason":"핵심 재료인 양파가 없어 원본 요리를 유지할 수 없습니다.",\
+"changes":[],"revised_recipe":null}}.
 Do not return can_revise=true with null recipe or empty ingredients/steps.
 """
 
@@ -106,10 +151,15 @@ class RevisionRequest:
     user: str
 
     def to_dict(self) -> dict:
-        return {"prompt_version": PROMPT_VERSION, "schema_version": SCHEMA_VERSION,
-                "messages": [{"role": "system", "content": self.system},
-                             {"role": "user", "content": self.user}],
-                "output_schema": output_schema()}
+        return {
+            "prompt_version": PROMPT_VERSION,
+            "schema_version": SCHEMA_VERSION,
+            "messages": [
+                {"role": "system", "content": self.system},
+                {"role": "user", "content": self.user},
+            ],
+            "output_schema": output_schema(),
+        }
 
 
 @dataclass(frozen=True)
@@ -129,6 +179,10 @@ class LLM(Protocol):
 class APIError(Exception):
     """Sanitized API failure; adapters must not include headers or credentials."""
 
+    def __init__(self, reason: str, *, failure: Failure | None = None):
+        super().__init__(reason)
+        self.failure = failure
+
 
 class ResponseFormatError(Exception):
     """Invalid output with safe model text and an explicit failure boundary.
@@ -138,8 +192,9 @@ class ResponseFormatError(Exception):
     bodies and credentials must not be supplied as raw model text.
     """
 
-    def __init__(self, reason: str, raw_response: str | None = None, *,
-                 stage: str = "response_parsing"):
+    def __init__(
+        self, reason: str, raw_response: str | None = None, *, stage: str = "response_parsing"
+    ):
         super().__init__(reason)
         self.raw_response = raw_response
         self.stage = stage
@@ -156,14 +211,24 @@ class RevisionOutcome:
     error: str | None
     provider_metadata: dict = field(default_factory=dict)
     failure_stage: str | None = None
+    failure: Failure | None = None
 
 
-def build_request(recipe: SourceRecipe,
-                  inventory: tuple[InventoryIngredient, ...]) -> RevisionRequest:
+def build_request(
+    recipe: SourceRecipe, inventory: tuple[InventoryIngredient, ...]
+) -> RevisionRequest:
     """Preserve complete originals and supplied inventory in an isolated request."""
-    return RevisionRequest(SYSTEM_PROMPT, json.dumps({
-        "original": asdict(recipe), "inventory": [asdict(item) for item in inventory],
-    }, ensure_ascii=False, allow_nan=False))
+    return RevisionRequest(
+        SYSTEM_PROMPT,
+        json.dumps(
+            {
+                "original": asdict(recipe),
+                "inventory": [asdict(item) for item in inventory],
+            },
+            ensure_ascii=False,
+            allow_nan=False,
+        ),
+    )
 
 
 def _validate(value: object, schema: dict, path: str = "result") -> None:
@@ -179,15 +244,24 @@ def _validate(value: object, schema: dict, path: str = "result") -> None:
         raise ResponseFormatError(f"{path}: no matching outcome branch ({'; '.join(errors)})")
     kinds = schema["type"]
     kinds = kinds if isinstance(kinds, list) else [kinds]
-    matches = {"null": value is None, "boolean": type(value) is bool,
-               "integer": type(value) is int, "string": isinstance(value, str),
-               "array": isinstance(value, list), "object": isinstance(value, dict)}
+    matches = {
+        "null": value is None,
+        "boolean": type(value) is bool,
+        "integer": type(value) is int,
+        "string": isinstance(value, str),
+        "array": isinstance(value, list),
+        "object": isinstance(value, dict),
+    }
     if not any(matches[kind] for kind in kinds):
         raise ResponseFormatError(f"{path}: incorrect field type")
     if "enum" in schema and value not in schema["enum"]:
         raise ResponseFormatError(f"{path}: unsupported enum value")
     if isinstance(value, str):
-        if path != "result.result.reason" and path.endswith((".reason", ".name", ".instruction")) and not value.strip():
+        if (
+            path != "result.result.reason"
+            and path.endswith((".reason", ".name", ".instruction"))
+            and not value.strip()
+        ):
             raise ResponseFormatError(f"{path}: text must be nonempty")
         if "pattern" in schema and not re.search(schema["pattern"], value):
             raise ResponseFormatError(f"{path}: refusal requires a nonempty reason")
@@ -198,7 +272,9 @@ def _validate(value: object, schema: dict, path: str = "result") -> None:
         for key, subschema in properties.items():
             _validate(value[key], subschema, f"{path}.{key}")
     elif isinstance(value, list):
-        if len(value) < schema.get("minItems", 0) or len(value) > schema.get("maxItems", len(value)):
+        if len(value) < schema.get("minItems", 0) or len(value) > schema.get(
+            "maxItems", len(value)
+        ):
             raise ResponseFormatError(f"{path}: array length violates outcome contract")
         for index, item in enumerate(value):
             _validate(item, schema["items"], f"{path}[{index}]")
@@ -206,6 +282,7 @@ def _validate(value: object, schema: dict, path: str = "result") -> None:
 
 def parse_response(text: str) -> dict:
     """Reject malformed/conditional shapes without repairing AI observations."""
+
     def pairs(items):
         result = {}
         for key, value in items:
@@ -225,8 +302,9 @@ def parse_response(text: str) -> dict:
     return value["result"]
 
 
-def revise(recipe: SourceRecipe, inventory: tuple[InventoryIngredient, ...],
-           llm: LLM) -> RevisionOutcome:
+def revise(
+    recipe: SourceRecipe, inventory: tuple[InventoryIngredient, ...], llm: LLM
+) -> RevisionOutcome:
     """Make one attempt and return its observation; the runner decides when to stop.
 
     APIError and ResponseFormatError are adapter failures with sanitized messages.
@@ -238,12 +316,31 @@ def revise(recipe: SourceRecipe, inventory: tuple[InventoryIngredient, ...],
         response = llm.generate(request)
         result = parse_response(response.text)
     except APIError as exc:
-        return RevisionOutcome("api_error", request, None, None, str(exc),
-                               failure_stage="api_request")
+        return RevisionOutcome(
+            "api_error",
+            request,
+            None,
+            None,
+            str(exc),
+            failure_stage="api_request",
+            failure=exc.failure,
+        )
     except ResponseFormatError as exc:
-        return RevisionOutcome("response_format_error", request,
-                               response.text if response else exc.raw_response,
-                               None, str(exc), response.metadata if response else {},
-                               failure_stage=exc.stage)
-    return RevisionOutcome("revised" if result["can_revise"] else "refused",
-                           request, response.text, result, None, response.metadata)
+        return RevisionOutcome(
+            "response_format_error",
+            request,
+            response.text if response else exc.raw_response,
+            None,
+            str(exc),
+            response.metadata if response else {},
+            failure_stage=exc.stage,
+            failure=Failure("response_format", exc.stage),
+        )
+    return RevisionOutcome(
+        "revised" if result["can_revise"] else "refused",
+        request,
+        response.text,
+        result,
+        None,
+        response.metadata,
+    )
