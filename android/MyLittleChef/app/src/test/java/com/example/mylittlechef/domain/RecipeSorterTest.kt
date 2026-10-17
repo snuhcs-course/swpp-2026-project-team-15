@@ -31,4 +31,16 @@ class RecipeSorterTest {
         val input = listOf(recipe(1, 8), recipe(2, 8, emptyList()))
         assertEquals(listOf(2L, 1L), sortRecipes(input, RecipeSortType.FEWEST_MISSING, listOf("두부")).map { it.id })
     }
+
+    @Test fun missingCount_usesCookingTimeThenServerOrderForTies() {
+        val input = listOf(
+            recipe(1, 30, listOf("양파")),
+            recipe(2, 50, emptyList()),
+            recipe(3, 10, listOf("양파")),
+            recipe(4, 0, listOf("양파")),
+            recipe(5, 10, listOf("양파"))
+        )
+        assertEquals(listOf(2L, 3L, 5L, 1L, 4L),
+            sortRecipes(input, RecipeSortType.FEWEST_MISSING).map { it.id })
+    }
 }

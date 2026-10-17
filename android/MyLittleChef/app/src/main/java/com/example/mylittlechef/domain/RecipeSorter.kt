@@ -1,3 +1,4 @@
+// AI-assisted with Codex (GPT-6.1 Sol), 2026-10-14; human review pending.
 package com.example.mylittlechef.domain
 
 import com.example.mylittlechef.model.Recipe
@@ -17,15 +18,18 @@ fun sortRecipes(
     val available = fridgeNames.map { it.trim().lowercase() }.toSet()
     fun missingCount(recipe: Recipe): Int =
         recipe.missing?.size ?: recipe.ingredients.count { it.name.trim().lowercase() !in available }
+    fun cookingTime(recipe: Recipe): Int = if (recipe.time <= 0) Int.MAX_VALUE else recipe.time
     val indexed = recipes.withIndex()
     val sorted = when (type) {
         RecipeSortType.RECOMMENDED -> indexed
         RecipeSortType.COOKING_TIME -> indexed.sortedWith(
-            compareBy<IndexedValue<Recipe>> { if (it.value.time <= 0) Int.MAX_VALUE else it.value.time }
+            compareBy<IndexedValue<Recipe>> { cookingTime(it.value) }
                 .thenBy { it.index }
         )
         RecipeSortType.FEWEST_MISSING -> indexed.sortedWith(
-            compareBy<IndexedValue<Recipe>> { missingCount(it.value) }.thenBy { it.index }
+            compareBy<IndexedValue<Recipe>> { missingCount(it.value) }
+                .thenBy { cookingTime(it.value) }
+                .thenBy { it.index }
         )
     }
     return sorted.map { it.value }
