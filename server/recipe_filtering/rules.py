@@ -1,6 +1,6 @@
 """Filtering rule definitions and explainable deterministic decisions."""
 # AI-generated initial implementation with Codex (GPT-6 Luna Medium),
-# 2026-10-13; reviewed by Soohyun An.
+# 2026-10-13 to 2026-10-17; reviewed by Soohyun An.
 
 from __future__ import annotations
 
@@ -38,19 +38,26 @@ def build_rules(d_thresholds: tuple[float, ...] = (0.25, 0.5, 0.75)) -> tuple[Ru
         Rule("C", "일반 재료 일치 ≥ 2 OR 주재료 일치 ≥ 1", "general_or_main"),
     ]
     rules.extend(
-        Rule(f"D({threshold:g})", f"일반 재료 충족률 ≥ {threshold:g}", "general_coverage", threshold)
+        Rule(
+            f"D({threshold:g})", f"일반 재료 충족률 ≥ {threshold:g}", "general_coverage", threshold
+        )
         for threshold in d_thresholds
     )
     return tuple(rules)
 
 
-def evaluate_rule(rule: Rule, metrics: RecipeMetrics) -> tuple[bool, str]:
+def evaluate_rule(
+    rule: Rule, metrics: RecipeMetrics, *, general_minimum: int = 2, main_minimum: int = 1
+) -> tuple[bool, str]:
     """Return whether a rule passes and a concise explanation of its decision.
 
     For a D(t) rule, an undefined general-ingredient coverage (no classified
     general ingredients) fails explicitly instead of treating missing data as
     full coverage. The explanation is intended for CSV review, not an API
     contract.
+
+    Optional C thresholds let service policies vary without changing experiment
+    defaults or the meanings of the other rules.
     """
     if rule.kind == "baseline":
         passed = metrics.total_matches >= 2 and metrics.main_matches >= 1
@@ -67,12 +74,16 @@ def evaluate_rule(rule: Rule, metrics: RecipeMetrics) -> tuple[bool, str]:
         passed = metrics.general_matches >= 1
         return passed, "일반 재료 1개 이상 일치" if passed else "일반 재료 일치 수 0"
     if rule.kind == "general_or_main":
-        passed = metrics.general_matches >= 2 or metrics.main_matches >= 1
+        if general_minimum < 1 or main_minimum < 1:
+            raise ValueError("C match thresholds must be positive")
+        passed = metrics.general_matches >= general_minimum or metrics.main_matches >= main_minimum
         reasons = []
-        if metrics.general_matches < 2:
-            reasons.append("일반 재료 일치 수 2 미만")
-        if metrics.main_matches < 1:
-            reasons.append("주재료 일치 수 0")
+        if metrics.general_matches < general_minimum:
+            reasons.append(f"일반 재료 일치 수 {general_minimum} 미만")
+        if metrics.main_matches < main_minimum:
+            reasons.append(
+                "주재료 일치 수 0" if main_minimum == 1 else f"주재료 일치 수 {main_minimum} 미만"
+            )
         return passed, "조건 충족" if passed else "; ".join(reasons)
     if rule.kind == "general_coverage":
         # A recipe with no classified general ingredients has no meaningful rate.
