@@ -7,17 +7,21 @@ people assess their quality. Allergy functionality and actual cooking are exclud
 
 ## Experiment conditions
 
-
-Compare 16 fixed recipes under two inventories, producing 32 cases in total.
-Each CLI invocation selects either E0 or E1.
+E0/E1 compare the 16 recipes below (32 cases). E2/E3 compare garlic preparation
+using the same four recipes under both inventories (8 additional cases).
+Each CLI invocation selects one condition.
 
 | Condition | Available ingredients (normalized ingredient IDs in parentheses) |
 | --- | --- |
 | AI-E0 | 김치(70), 밥(223), 계란(32), 소금(284), 설탕(282), 식용유(313), 후추(554) |
 | AI-E1 | E0 + 양파(345), 간장(9), 두부(147) |
+| AI-E2 (whole) | E1 + 바게트(214), 어묵(349), 밀가루(213), 마늘(169) |
+| AI-E3 (minced) | E1 + 바게트(214), 어묵(349), 밀가루(213), 다진마늘(103) |
 
 All listed ingredients, including seasonings, are considered available. Owned
 quantities are unknown. Recipe and ingredient names below match the Korean DB records.
+
+### E0/E1 recipes
 
 | Recipe ID | Recipe name |
 | --- | --- |
@@ -37,6 +41,19 @@ quantities are unknown. Recipe and ingredient names below match the Korean DB re
 | 299 | 열무비빔밥 |
 | 320 | 김치볶음밥 |
 | 421 | 양파전 |
+
+### E2/E3 recipes (execution order)
+
+| Recipe ID | Recipe name |
+| --- | --- |
+| 335 | 마늘빵 |
+| 395 | 어묵볶음 |
+| 97 | 계란말이 |
+| 421 | 양파전 |
+
+E2 and E3 differ only in garlic ID; all other inventory items are identical.
+Observe whether the model adapts preparation steps appropriately, using the
+existing prompt and human evaluation criteria.
 
 ## Setup
 
@@ -63,7 +80,7 @@ The runner loads this file without overwriting existing environment variables.
 python -m experiments.revision.run_experiment --recipe-id 9
 ```
 
-### Mock: all 16 recipes
+### Mock: all recipes in the selected condition
 
 ```bash
 python -m experiments.revision.run_experiment --all
@@ -79,7 +96,7 @@ python -m experiments.revision.run_experiment \
   --provider chat-completions --allow-live-api --recipe-id 9
 ```
 
-### API: all 16 recipes
+### API: all recipes in the selected condition
 
 ```bash
 python -m experiments.revision.run_experiment \
@@ -87,21 +104,22 @@ python -m experiments.revision.run_experiment \
 ```
 
 API runs send recipes and inventory to the configured provider and may incur costs.
-The examples use E0; select E1 with `--experiment-num 1`.
+The examples use E0. Select E1, E2 or E3 with `--experiment-num 1`, `2` or `3`.
+For E2/E3 single-case runs, choose a recipe from their four-recipe list.
 
 ### Options
 
 | Option | Description |
 | --- | --- |
-| `--experiment-num` | Inventory: `0` (E0, default) or `1` (E1) |
-| `--recipe-id` | One fixed recipe; default `9` |
-| `--all`, `-all` | All 16 recipes in one inventory; mutually exclusive with `--recipe-id` |
+| `--experiment-num` | `0` (E0, default), `1` (E1), `2` (E2, whole garlic), `3` (E3, minced garlic) |
+| `--recipe-id` | One recipe in the selected condition; default `9` for E0/E1, `335` for E2/E3 |
+| `--all`, `-all` | All 16 recipes for E0/E1 or all 4 for E2/E3; mutually exclusive with `--recipe-id` |
 | `--provider` | `mock` (default) or `chat-completions` |
 | `--allow-live-api` | Required to enable live calls |
 | `--model` | Override `REVISION_LLM_MODEL` |
 | `--db` | Override the default SQLite path |
 | `--output-dir` | Parent directory for new runs; default `data/recipes/revision-experiments/` |
-| `--mock-responses` | JSON fixture mapping for selected cases or all 32 cases; Mock only |
+| `--mock-responses` | JSON fixtures for selected cases, original 32 E0/E1 cases or all 40 cases; Mock only |
 | `--timeout` | Positive request timeout in seconds; default `60` |
 | `--temperature` | Optional live sampling setting; must be supported by the model |
 | `--max-completion-tokens` | Optional live output token limit |
