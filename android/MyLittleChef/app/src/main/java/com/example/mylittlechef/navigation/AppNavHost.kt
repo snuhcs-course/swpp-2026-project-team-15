@@ -31,6 +31,7 @@ import com.example.mylittlechef.data.local.PreferencesFridgeRepository
 import com.example.mylittlechef.data.local.PreferencesUserRepository
 import com.example.mylittlechef.data.local.localDataStore
 import com.example.mylittlechef.viewmodel.FridgeViewModel
+import com.example.mylittlechef.data.recipes.NetworkRecipeSource
 import com.example.mylittlechef.viewmodel.RecipeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
@@ -59,7 +60,14 @@ fun AppNavHost(
     }
     val user: UserViewModel = viewModel(factory = userFactory)
     val fridge: FridgeViewModel = viewModel(factory = fridgeFactory)
-    val recipes: RecipeViewModel = viewModel()
+    val recipeFactory = remember {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                RecipeViewModel(integrated = NetworkRecipeSource()) as T
+        }
+    }
+    val recipes: RecipeViewModel = viewModel(factory = recipeFactory)
 
     // Wait for persisted data before choosing the first screen or fetching recommendations.
     if (!user.isLoaded || !fridge.isLoaded) return

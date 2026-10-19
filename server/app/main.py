@@ -16,6 +16,7 @@ from google.genai import types
 
 from app.config import Settings
 from app.database import read_only_sqlite_engine
+from app.recipes.catalog import router as catalog_router
 from app.recipes.providers import revision_factory
 from app.recipes.recommendations import RecommendationService
 from app.recipes.router import router as recipes_router
@@ -43,6 +44,7 @@ def create_app(
     )
     app.include_router(vision_router)
     app.include_router(recipes_router)
+    app.include_router(catalog_router)
 
     @app.get("/health", tags=["health"], summary="Liveness check")
     def health() -> dict[str, str]:

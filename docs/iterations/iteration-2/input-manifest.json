@@ -1,0 +1,13 @@
+{
+  "db_sha256": "1afa65f082c7a0233ff677ad3d7b5008e7237e3e47afabfe981fa73d43a17781",
+  "zip_sha256": "dc4505362f08c2842ccc0d06118dfe0a1d8e4a42258ed12e4db97f4bc5e2dfe8",
+  "counts": {
+    "recipe": 537,
+    "recipe_step": 2870,
+    "ingredient": 560,
+    "recipe_ingredient": 5933
+  },
+  "foreign_key_errors": 0,
+  "branch": "feat/iter2-final-integration",
+  "prepared_merge_head": "77fcf848dde95af2136b82a6781b50fea042155b"
+}

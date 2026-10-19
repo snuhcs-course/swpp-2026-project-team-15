@@ -1,59 +1,72 @@
 # My Little Chef
 
-My Little Chef is Team 15's SWPP Fall 2026 project for people cooking in small households. The intended flow is to review ingredients identified from a photo, keep an editable fridge inventory, and find recipes that fit the available ingredients, tools, allergies, and serving size.
+SNU SWPP Fall 2026 · Team15. Review photo ingredient candidates, maintain a local fridge and browse original recipes alongside explicitly labeled AI revision outcomes.
 
-## Iteration 1 state (2026-10-09)
+## Iteration2 integration branch
 
-Iteration 1 produced separate prototypes and source data; it did **not** produce an integrated end-to-end service. The Android branch demonstrates screens with mock data. The recipe database branch contains a SQLite schema and CSV importer. The research branch compares candidate recognition and recommendation approaches using a limited, simulated benchmark. Real-photo detection quality and the integrated API flow remain to be established.
+This branch merges Hyeokjun's `88d3380` (including `1edadc0`) and Suhyeon's `89fc8ba` on main `a27bf0a`, preserving their original commits, repositories, filtering/revision and tests. Integration adds a versioned ingredient catalog and Android adapter, source restoration, state handling and scenario tests. [Contract and test plan](docs/iterations/iteration-2/integration-contract.md).
 
-| Area | Branch | Current artifact |
-| --- | --- | --- |
-| Android UI | [`origin/feat/android-studio`](https://github.com/snuhcs-course/swpp-2026-project-team-15/tree/origin/feat/android-studio) | Android prototype and navigation; mock responses |
-| Recipe data | [`feat/recipe-db-schema-import`](https://github.com/snuhcs-course/swpp-2026-project-team-15/tree/feat/recipe-db-schema-import) | SQLite schema, CSV importer, data notes |
-| Research | [`feat/research-pipeline`](https://github.com/snuhcs-course/swpp-2026-project-team-15/tree/feat/research-pipeline) | Candidate pipelines and simulated benchmark |
+- DataStore persists fridge/profile/onboarding/favorite IDs. Favorite originals restore from the server without invoking AI; old AI suggestions are not persisted.
+- Reviewed names resolve to the current catalog before ID requests. Unknown/ambiguous names are disclosed; no arbitrary IDs are invented. Only water is assumed available.
+- Original quantities, textual servings/time, steps and tips remain visible. Revised/refused/failed/not_attempted are distinct; successful HTTP does not imply successful AI revision.
+- Loading, empty results, mapping warnings, errors and retry differ. Latest-request guards prevent older responses replacing newer inventory results. New recommendation transport allows the existing three sequential60-second revision attempts; no automatic retry.
+- Tool/allergy metadata are empty: suitability and cooking safety are **not verified**. Semantic revision correctness and authoritative one-serving conversion are not established features.
 
-The remote Android branch is literally named `origin/feat/android-studio`; this is why its remote-tracking name appears as `origin/origin/feat/android-studio` locally. The feature branches have not yet been merged into `main`.
+P0–P5 is a [historical simulation archive](research/README.md). [Iteration1 status](docs/iterations/iteration-1-status.md) remains a dated record.
 
-## Run the local demo
+## Run locally
 
-The backend runs on your computer and the app runs on an Android phone connected by USB. The phone reaches the server through `adb reverse`, so no Wi-Fi setup is needed.
-
-**Prerequisites:** [uv](https://docs.astral.sh/uv/), Android Studio (SDK and JDK 21), the recipe CSV zip shared outside Git, and a phone with USB debugging enabled and authorized (`adb devices` shows `device`).
+Requires uv/Python≥3.12, Android SDK37, JDK21, and an authorized USB-debugging phone. App minSdk26/target36/compile37. The **October19 560-ingredient entity ZIP**, distributed privately, must match this schema/importer. From repository root:
 
 ```sh
-sh scripts/run-local-demo.sh path/to/recipes_csv_with_ingredients.zip   # first run
-sh scripts/run-local-demo.sh                                            # later runs
+sh scripts/run-local-demo.sh path/to/entities-2026-10-19.zip
+# Subsequent runs:
+sh scripts/run-local-demo.sh
 ```
 
-If both a phone and an emulator are running, the script uses the phone; set `ANDROID_SERIAL=<serial>` to choose another device.
+The script imports into `data/recipes-iter2/recipes.sqlite3` only when absent, checks the water catalog, creates server `.env` if absent, installs the app, configures adb reverse8000 and starts uvicorn. Stop with Ctrl+C. Use `ANDROID_SERIAL=<serial>` when choosing a device. In WSL attach the phone first.
 
-The script builds the recipe database (`data/recipes/recipes.sqlite3`), creates `server/.env` from `server/.env.example`, installs and opens the app, and then runs the server in the foreground. Stop it with Ctrl+C. On Windows, run it inside WSL; the phone must be attached to WSL (for example with `usbipd`).
+The previous701-ingredient bundle/DB is preserved at its old path. Never mix IDs: old204=된장 versus new204=물. A changed server catalog yields409 before revision when the client sends its version. Data redistribution rights remain unconfirmed; CSV/DB/recipe data stay outside Git.
 
-By default `VISION_PROVIDER=mock` replays recorded recognition results, so no API key is needed and the detected items do not depend on the photo. To use Gemini, set `VISION_PROVIDER=gemini`, `GEMINI_API_KEY` and `GEMINI_MODEL` in `server/.env`. Never commit that file.
-
-Checks:
-
-```sh
-cd server && uv run ruff check . && uv run pytest --cov --cov-report=term-missing   # server + coverage
-cd android/MyLittleChef && sh ./gradlew testDebugUnitTest createDebugUnitTestCoverageReport   # app + JaCoCo
-```
+Both providers default to mock, with no API key or paid calls. Vision mock selects recorded candidates by image hash rather than recognizing the photo. Revision mock is a labeled refusal; it does not generate a real revised recipe. Live settings are listed in `server/.env.example`; keep keys only in `.env`, never in the app/Git. Confirm provider cost/authorization before a live run.
 
 | Endpoint | Purpose |
 | --- | --- |
-| `POST /analyze` | Photo → unconfirmed ingredient candidates |
-| `POST /recipes/recommend` | Confirmed ingredients → recipes ranked by missing items (ten staple seasonings assumed) |
-| `GET /health` | Liveness check |
+| POST `/analyze` | Photo→unconfirmed candidates |
+| GET `/recipes/catalog` | Versioned IDs/names for mapping |
+| POST `/recipes/recommendations` | IDs→original/filtering/revision outcomes; optional X-Ingredient-Catalog protects mapping version |
+| GET `/recipes/source/{id}` | Original lookup for saved favorites; no AI |
+| POST `/recipes/recommend` | Preserved legacy name API and staple policy, separate from new app behavior |
+| GET `/health` | Liveness |
 
-Interactive API docs: <http://127.0.0.1:8000/docs> while the server runs.
+API docs: <http://127.0.0.1:8000/docs> while running. Catalog validation catches the known old-water-ID mismatch; it is not a data rights or food-safety check. Catalog/DB replacement during a request is unsupported; use an immutable imported DB while the server runs.
 
-## Documentation
+## Checks and pre-commit
 
-- [Project documentation](docs/README.md): Iteration 1 status, meeting log, decisions, and PM handoff.
-- [GitHub Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki): design, research, and recipe database documentation.
-- [Figma design](https://www.figma.com/design/bxDeYMiAzC9LY7oHNj2OQV/my-little-chef?t=4IKrs5VSkKNKfJMZ-1).
+From the repository root:
 
-The entity CSV bundle and generated SQLite database are distributed separately and are not tracked in Git. The [recipe database Wiki page](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Recipe-Database) describes the source and import process.
+```sh
+(cd server && uv sync --locked)
+uv run --project server --locked pre-commit install --allow-missing-config
+uv run --project server --locked pre-commit run --all-files
+(cd server && uv run --locked pytest --cov --cov-report=term-missing --cov-report=html --junitxml=test-results.xml)
+(cd android/MyLittleChef && sh ./gradlew lintDebug testDebugUnitTest createDebugUnitTestCoverageReport assembleDebug)
+```
 
-## Collaboration
+CI collects original server and experiment tests, covers app/filtering/revision, and saves server reports and Android reports/debug APK. Pre-commit uses the same quick lint/format and protected-reference integrity checks, without running Gradle or live AI. Existing contributor tests are preserved byte-for-byte. [Quality environment](docs/iterations/iteration-2/quality-environment.md).
 
-Work on a focused branch, open a pull request to `main`, and identify the actual contributors in the schedule. Record meeting decisions in [`docs/meetings/`](docs/meetings/README.md); update [`docs/decisions.md`](docs/decisions.md) when a choice changes. The PM handoff checklist is in [`docs/pm-handoff.md`](docs/pm-handoff.md).
+For connected tests, start the server with both providers=mock and the matching560-item DB, authorize USB and configure reverse8000, then run:
+
+```sh
+(cd android/MyLittleChef && sh ./gradlew connectedDebugAndroidTest)
+```
+
+The device suite includes photo upload→reviewed names→catalog→new recommendations→rendered original detail. Confirmation is scripted in the network/render test; manual camera/gallery/navigation usability remains separate. UI tests also check original/suggestion toggling with synthetic fixtures. Do not interpret mock success as recognition accuracy or safe revisions. [Testing evidence](docs/iterations/iteration-2/README.md).
+
+Docker/nginx/deployment stack is deferred to Iteration3 planning by the user. This is a local runnable increment with CI, not a production deployment.
+
+## Documents and external records
+
+[Documentation index](docs/README.md) · [decisions](docs/decisions.md) · [PM handoff](docs/pm-handoff.md) · [official Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki).
+
+Wiki/Sheet/Figma/eTL are agent read-only. Updated document sources are prepared locally for the user to publish; a code PR does not publish them. Review/merge, actual Wiki revisions, iteration-2-demo/video, PDF/XLSX exports and eTL upload require separate completion evidence. Preserve original authorship/history and use a main-targeting PR; do not force-push or commit private data/credentials/raw messages.

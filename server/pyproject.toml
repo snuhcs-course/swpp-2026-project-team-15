@@ -14,8 +14,10 @@ dependencies = [
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
+    "pre-commit>=4.7.0",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
+    "python-dotenv>=1.0,<2",
     "ruff>=0.17.0",
 ]
 
@@ -23,11 +25,11 @@ dev = [
 package = false
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["."]
+testpaths = ["tests", "../experiments/filtering", "../experiments/revision"]
+pythonpath = [".", ".."]
 
 [tool.coverage.run]
-source = ["app"]
+source = ["app", "recipe_filtering", "recipe_revision"]
 branch = true
 
 [tool.ruff]

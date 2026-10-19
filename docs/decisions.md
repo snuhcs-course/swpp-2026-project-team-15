@@ -1,33 +1,29 @@
-# Decision log
+# Decision log — effective state
 
 [English](decisions.md) · [한국어](decisions.ko.md)
 
-Use this page for choices that affect scope, architecture, data, or the user experience. Record the meeting date, the evidence, and whether a choice is agreed or still under evaluation. Update the relevant Wiki page when a technical decision is settled.
+Reconciled 2026-10-20 against main `a27bf0a` and the latest reviewed branches. Earlier discussion/decisions remain in [meeting records](meetings/README.md) and the [prior log at b1e508a](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/b1e508af2be675ac6cad5403ace3d7e2fb1a49d2/docs/decisions.md). The table distinguishes implemented baseline policy from proposals and unmerged work.
 
-| Date | Topic | Current position | State / next check |
-| --- | --- | --- | --- |
-| 2026-09-14 to 2026-09-16 | Product direction | Support small-household cooking from ingredients already at home. | Agreed project direction; first proposal followed. |
-| 2026-09-23 to 2026-09-25 | User flow | Photo-assisted ingredient entry with user review and an editable fridge inventory, followed by recipe browsing/detail. | Wireframes and prototype; usability and accuracy remain to be checked. |
-| 2026-10-04 to 2026-10-06 | Recipe storage | Start with a local SQLite schema and entity CSV import to inspect the data; consider ORM and serving APIs during integration. | Prototype choice; production DB/ORM not yet selected. |
-| 2026-10-07 | Server responsibilities | Separate image analysis into candidate ingredients from recommendation using confirmed inventory and user constraints. | Agreed direction; API contracts and deployment pending. |
-| 2026-10-07 | Target audience | Make the recipe set and quantities suitable for one person and available cooking tools. | Iteration 2 data curation needed. |
-| 2026-10-07 | Recommendation behavior | Show feasible recipes first; consider refresh, missing-ingredient suggestions, and limited AI substitutions with clear boundaries. | Product behavior discussed; ranking and safety rules still need specification. |
-| 2026-10-07 | Ingredient entry | Balance low effort against recognition errors. Consider a separate checkbox/onboarding path for pantry seasonings that photos may miss. | Compare options with real photos and users. |
-| 2026-10-11 | Backend | FastAPI with SQLModel (no Django/DRF), managed by uv; one uvicorn worker. SQLite for local development; PostgreSQL, Redis and Docker Compose when the server is deployed. | Proposed by Jaehyuk Choi and implemented in `feat/local-integration`; team review in the PR. |
-| 2026-10-11 | Local demo | The phone reaches the laptop's server over USB (`adb reverse`); `scripts/run-local-demo.sh` starts everything. | Verified on a Galaxy S22 (Android 14) and a Galaxy S25+ (Android 16); prefers the USB phone when an emulator also runs. |
-| 2026-10-11 | Recognition | Gemini behind a provider interface. Development and tests replay the 2026-09-30 real-photo outputs (`VISION_PROVIDER=mock`). Gemini 1.5 Flash-8B is no longer offered; `gemini-3.5-flash-lite` was verified. | Recall 20/26 on the 11 real photos (2026-10-14, exploratory); a frozen evaluation set with thresholds is due in Iteration 3. |
-| 2026-10-11 | Recommendation | Assume ten staple seasonings; require at least one fridge ingredient; rank by missing items (default limit 3, since source recipes need a median of 11 ingredients). | Temporary baseline: the recipe-filtering owner (Soohyun An) and the client sorting owner (Hyeokjun Kweon) replace it on main. |
-| 2026-10-11 | Inventory | Kept in app memory and sent with each recommendation request; the server is stateless. | Persistence still open. |
-| 2026-10-11 | Android build | Retrofit, Gson and OkHttp as in the course tutorial. minSdk 26 and targetSdk 36 per course spec; compileSdk stays 37 because current AndroidX libraries require it. | Exception to explain to the TA if asked. |
-| 2026-10-14 | Photo upload | The app sends photos up to 2048 px unchanged; larger photos are resized to 2048 px with orientation, capture time and device tags kept and GPS removed. The server forwards uploads unchanged and also accepts HEIF. | Differs from the plan to send photos unprocessed: Gemini charges 1,090 image tokens at any size, so resizing only shortens uploads; the earlier 1024-px re-encode lost the orientation. Confirm 2048 px by comparing recall before deployment. |
-| 2026-10-14 | Testing | GitHub Actions runs ruff, pytest with coverage, Android lint, JVM unit tests and JaCoCo on every pull request and push to main. Device tests run locally. | Server branch coverage 95%; app line coverage about 2% (no UI tests yet). |
+| Topic | Effective state / evidence | Boundary |
+| --- | --- | --- |
+| Product and user review | Small-household cooking; photo-assisted candidates reviewed before inventory, then recipe browsing/detail (September planning and October 7 TA discussion) | One-person conversion, tools and allergies are intended requirements, not fully delivered |
+| Backend | October 11 FastAPI/SQLModel/uv/SQLite choice is implemented and merged through PR #6 | PostgreSQL/Redis/Docker/public deployment remain future proposals |
+| Local demo | USB adb reverse; laptop server, phone app; current script builds DB only if absent | Dataset version and existing server/reverse state must be checked |
+| Recognition | Provider interface; mock or configurable Gemini. Mock selects a recorded fixture by image hash | Historical model availability/20-of-26 recall observations are dated, not current availability or universal quality claims |
+| Baseline recommendation | Names, limited synonyms, ten assumed seasonings, at least one fridge ingredient, max_missing=3 by default | Temporary main behavior; new revision branch has different ID/filter/seasoning policy |
+| Inventory/profile | Main uses memory; Hyeokjun's DataStore/VM implementation is on `88d3380` and its ancestor | Persistence is implemented on a branch, not an undecided technology choice or merged main feature. Full favorite objects are not restored |
+| Android build | minSdk 26/target 36/compile 37; Retrofit/Gson/OkHttp | compile 37 supports the current AndroidX dependencies |
+| Photo handling | October 14: client long-side 2048px preparation, selected EXIF retained, GPS excluded; server forwards uploaded content | Differs from the PM's unprocessed-photo premise. Sample 1090-token observations do not prove constant cost; recall impact remains to be checked |
+| Testing | CI configured for server ruff/pytest coverage and Android lint/JVM/JaCoCo; local device checks separate | Baseline 33 passed/95%, older Android 2% lines; these do not cover the new combined implementation |
+| Catalog | Main 701 ingredients, new bundle 560, shared IDs change meaning | New matching schema/importer and separate DB verification required; redistribution rights not established |
+| AI reporting | Current course AI Guidelines v1.1; useful manual-fix comments conditional | Blanket AI-file markers are not required. Preserve existing attribution and original prompts |
 
-## Open choices
+## Integration choices awaiting evidence
 
-- Production database, caching and deployment for a shared server.
-- Persistent inventory storage and synchronization between device and server.
-- Recognition test image set and acceptable correction burden.
-- Recipe/tool/allergen mapping and one-person quantity conversion rules.
-- Exact scope, validation, cost controls, and disclosure of AI recipe adjustments.
+- Canonical name-to-ID mapping, ambiguous/unknown ingredients and explicit catalog version validation.
+- New API original/revision DTOs, partial/refused/failed/not_attempted versus empty/transport failure states. `revised` is not semantic or allergy validation.
+- Recommendation ordering/filtering counts, total request timeout/cancellation/retry and favorite-detail restoration.
+- Allergy/tool source data, serving adaptation, safe/disclosed revision scope and AI cost controls.
+- Public deployment and shared-server synchronization, after local integration scope is settled.
 
-When a choice is resolved, replace the open item with a dated entry above and link its implementation or experiment.
+No new obligations or deadlines are assigned to teammates by this reconciliation. Record each actual policy change with date, reason, source/PR and result. Update official Wiki separately; a code PR does not publish it.

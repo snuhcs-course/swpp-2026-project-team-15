@@ -1,33 +1,25 @@
-# 결정 로그
+# 결정 로그 — 현재 유효 상태
 
 [English](decisions.md) · [한국어](decisions.ko.md)
 
-제품 범위, 구조, 데이터 또는 사용자 경험에 영향을 주는 선택을 기록한다. **합의한 방향**과 **아직 평가 중인 제안**을 구분하고, 확정 시 관련 Wiki도 갱신한다.
+2026-10-20 main `a27bf0a` 및 최신 검토 branch 기준으로 다시 정리했다. 과거논의는 [회의록](meetings/README.ko.md)과 [b1e508a의 이전로그](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/b1e508af2be675ac6cad5403ace3d7e2fb1a49d2/docs/decisions.ko.md)에 보존된다. 구현/미병합/제안을 구분한다.
 
-| 날짜 | 주제 | 현재 방향 | 상태·다음 확인 |
-| --- | --- | --- | --- |
-| 2026-09-14~16 | 제품 방향 | 집에 있는 재료를 활용하는 자취·1인 가구 요리 지원 | 프로젝트 방향 합의, 첫 제안서 작성 |
-| 2026-09-23~25 | 사용자 흐름 | 사진 보조 입력, 사용자 확인, 수정 가능한 냉장고, 레시피 탐색 | 와이어프레임·목업. 사용성과 정확도 확인 필요 |
-| 2026-10-04~06 | 레시피 저장 | SQLite와 엔티티별 CSV로 로컬 구조·입력 실험 | 시제품 선택. 운영 DB·ORM 미정 |
-| 2026-10-07 | 서버 역할 | 사진→후보 재료와 확정 재고·제약→추천을 분리 | 방향 합의. API 계약·배포 미완료 |
-| 2026-10-07 | 대상 고객 | 요리·재료량·도구를 1인 가구에 맞추기 | Iteration 2 데이터 정제 필요 |
-| 2026-10-07 | 추천 동작 | 가능한 요리를 우선 보여주고 새로고침, 부족한 재료, 제한된 AI 치환 검토 | 세부 정렬·안전 규칙 미정 |
-| 2026-10-07 | 재료 등록 | 편의와 정확도의 균형. 사진에 잘 안 보이는 양념은 별도 체크 방식 고려 | 실제 사진·사용자로 방식 비교 |
-| 2026-10-11 | 백엔드 | FastAPI + SQLModel(Django/DRF 미사용), uv 관리, uvicorn worker 1개. 로컬 개발은 SQLite, 서버 배포 시 PostgreSQL·Redis·Docker Compose | 최재혁 제안, `feat/local-integration`에 구현. PR에서 팀 검토 |
-| 2026-10-11 | 로컬 데모 | 폰은 USB(`adb reverse`)로 노트북 서버에 연결. `scripts/run-local-demo.sh`로 일괄 실행 | Galaxy S22(Android 14), Galaxy S25+(Android 16)에서 확인. 에뮬레이터가 함께 있으면 USB 폰 우선 |
-| 2026-10-11 | 인식 | provider 인터페이스 뒤의 Gemini. 개발·테스트는 9월 30일 실사진 결과를 재생(`VISION_PROVIDER=mock`). Gemini 1.5 Flash-8B는 더 이상 제공되지 않아 `gemini-3.5-flash-lite`로 확인 | 실사진 11장 recall 20/26(2026-10-14, 탐색용). 고정 평가셋과 기준은 Iteration 3 |
-| 2026-10-11 | 추천 | 상비 양념 10종을 가정, 냉장고 재료 1개 이상 사용, 부족 재료 수로 정렬(기본 한도 3, 원본 레시피 재료 중앙값 11) | 임시 기본판. 레시피 필터링 담당(안수현)과 클라이언트 정렬 담당(권혁준)이 main에서 교체 |
-| 2026-10-11 | 재고 | 앱 메모리에 두고 추천 요청마다 전송. 서버는 상태 없음 | 영속 저장은 미결정 |
-| 2026-10-11 | Android 빌드 | 강의 tutorial과 같은 Retrofit·Gson·OkHttp. minSdk 26·targetSdk 36은 강의 사양, compileSdk는 현재 AndroidX가 요구해 37 유지 | 필요 시 TA에 예외로 설명 |
-| 2026-10-14 | 사진 업로드 | 앱은 2048px 이하 사진을 그대로, 더 큰 사진은 2048px로 줄여 방향·촬영 시각·기기 태그를 유지하고 GPS는 제거해 전송. 서버는 그대로 전달하고 HEIF도 수용 | 사진을 가공하지 않는다는 계획과 다름: Gemini 이미지 토큰은 크기와 무관하게 1,090이라 축소는 업로드 시간만 줄임. 이전 1024px 재인코딩은 방향 정보를 잃었음. 배포 전 recall 비교로 2048px 확정 |
-| 2026-10-14 | 테스트 | GitHub Actions가 PR과 main push마다 ruff, pytest+커버리지, Android lint, JVM 단위 테스트, JaCoCo 실행. 기기 테스트는 로컬 | 서버 분기 커버리지 95%, 앱 라인 커버리지 약 2%(UI 테스트 없음) |
+| 항목 | 현재 적용과 경계 |
+| --- | --- |
+| 방향 | 소가구·사진후보확인→재고→추천/상세. 1 인분/도구/알레르기 전체구현은 아님 |
+| Backend | 10-11 선택 FastAPI/SQLModel/uv/SQLite는 PR #6 병합. PostgreSQL/Redis/Docker/public deployment는 제안 |
+| 로컬 demo | laptopserver/USB 폰 adb reverse. script는 DB 존재시재생성안함. 기존자원·버전확인필요 |
+| 인식 | mock/Gemini provider. mock은 imagehash fixture 선택. 과거 model 지원/20of26은 날짜제한관측 |
+| main 추천 | 이름·소수동의어·상비양념 10 종·재고최소 1·기본부족 3. 새 ID/revision 정책과 다름 |
+| 저장 | main 메모리. 혁준 88d3380 및 ancestor에 DataStore/VM 구현. 기술미결정이나 main 완료로 쓰지 않음. favorite 상세복원불완전 |
+| Android | min26/target 36/compile 37; Retrofit/Gson/OkHttp. compile 37은 현 AndroidX 때문 |
+| 사진 | 10-14 client 최대 2048px·선택 EXIF 유지/GPS 제외·server 그대로. PM 무후처리전제와 차이. 표본 1090token을 비용불변으로 일반화금지, recall 영향미검증 |
+| 테스트 | CIserverruff/pytestcov·Androidlint/JVM/JaCoCo, device 별도. 기본판 33pass/95%, 과거 Android2%는 새통합측정아님 |
+| Catalog | old 701/new 560; 공유 ID의미변경. matching schema/importer·별도 DB 검증필요. 재배포권한미확인 |
+| AI 보고 | 최신 v1.1. 모든 AI 파일표기의무없음, 수동수정위치주석은 유용한경우. 과거 attribution/prompt 보존 |
 
-## 미결정
+## 남은 통합 선택
 
-- 공유 서버의 운영 DB·캐시·배포.
-- 냉장고 재고의 영속 저장과 기기/서버 동기화.
-- 인식 평가 사진 집합과 허용할 수정 부담.
-- 레시피의 조리도구·알레르겐 연결과 1인분 양 변환.
-- AI 조정의 허용 범위, 검증, 비용 통제, 사용자 표시 방법.
+이름→ID의모호함/unknown·catalog 검증, 새 original/revisionDTO, partial/refused/failed/not_attempted·empty·transport 구분, 정렬/count·전체 timeout/cancel/retry·favorite 상세복원이 남았다. revised는 의미정확/안전보증아니다. 도구/알레르기 data·분량·안전한 AI 수정범위/고지/비용, public deployment/공유동기화는 별도근거가 필요하다.
 
-결정이 나면 날짜·근거·담당과 구현/실험 링크를 위 표에 추가하고 미결정 목록에서 옮긴다.
+다른팀원에 새의무·마감을 부여하지 않는다. 실제정책변경의 날짜·이유·PR/근거·결과를 기록하고 공식 Wiki를 별도갱신한다. 코드 PR은 Wiki 게시가 아니다.

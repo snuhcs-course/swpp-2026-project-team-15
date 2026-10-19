@@ -2,15 +2,15 @@
 
 [English](README.md) · [한국어](README.ko.md)
 
-This directory keeps team operations and meeting decisions alongside the code. Technical research, design, and recipe database notes are indexed in the [GitHub Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki).
+Updated 2026-10-20. Start with the [root README](../README.md) for current setup, delivered features and limits. PR #6 is merged; latest persistence/sorting and ID-based revision work remain on separate branches. Iteration 1 status/submission files below are historical records, not current completion claims.
 
-## Start here
+| Document | Scope |
+| --- | --- |
+| [Meeting log](meetings/README.md) | Dated discussion and actual decisions |
+| [Decision log](decisions.md) | Dated choices; retain history when revising a choice |
+| [PM handoff](pm-handoff.md) | Current operating guide and integration boundaries |
+| [Iteration 1 status](iterations/iteration-1-status.md) | Snapshot at that iteration boundary |
+| [Iteration 1 submission sources](submission/iteration-1/README.md) | Requirements/design source records |
+| [Iteration 1 AI report](ai-collaboration/iteration-1/team15-iter1-AI-collaboration-report-draft.en.md) | Contributor records from that period |
 
-- [Iteration 1 status](iterations/iteration-1-status.md): delivered artifacts, limits, and next work.
-- [Meeting log](meetings/README.md): dated summaries and decisions.
-- [Decision log](decisions.md): current choices and unresolved questions.
-- [PM handoff](pm-handoff.md): recurring process and handoff checklist.
-- [Iteration 1 Requirements & Specifications and Design](submission/iteration-1/README.md): English and Korean Markdown sources for Wiki and PDF preparation.
-- [Iteration 1 AI collaboration report](ai-collaboration/iteration-1/team15-iter1-AI-collaboration-report-draft.en.md): team report, individual records, and prompt log.
-
-Meeting notes summarize project discussion. They are not a verbatim export of private messages. Changes to scope or architecture should be recorded in the decision log and, when relevant, the Wiki.
+The [official Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki) is a separate Git repository and remained at its October 9 revision when checked October 20; Testing/Iteration 2 AI pages were not published. Local drafts, publication and PDF/eTL submission are distinct states. Summarize necessary meeting decisions rather than committing raw private conversations.

@@ -3,8 +3,11 @@
 # Modified with Codex (GPT-6.1 Sol), 2026-10-17; reviewed by Soohyun An.
 # Changes: Add the recommendations endpoint with input and database error handling.
 
-from fastapi import APIRouter, HTTPException
+from typing import Annotated
 
+from fastapi import APIRouter, Header, HTTPException
+
+from app.recipes.catalog import read_catalog
 from app.recipes.constants import STAPLE_SEASONINGS
 from app.recipes.dependencies import RecipeRepositoryDep, RecommendationServiceDep
 from app.recipes.recommendations import InvalidRevisionLimit
@@ -35,10 +38,17 @@ def recommend(request: RecommendRequest, recipes: RecipeRepositoryDep) -> Recomm
     responses={503: {"description": "Recipe source is unavailable"}},
 )
 def recommendations(
-    request: RecommendationsRequest, service: RecommendationServiceDep
+    request: RecommendationsRequest,
+    service: RecommendationServiceDep,
+    catalog_version: Annotated[str | None, Header(alias="X-Ingredient-Catalog")] = None,
 ) -> RecommendationsResponse:
     """Return all candidates; client display sorting is independent of AI priority."""
     try:
+        if (
+            catalog_version is not None
+            and read_catalog(service.repository).version != catalog_version
+        ):
+            raise HTTPException(409, "Ingredient catalog changed; refresh the catalog")
         return service.recommend(request)
     except (UnknownIngredients, InvalidRevisionLimit):
         raise HTTPException(422, "Invalid ingredient IDs or revision limit") from None

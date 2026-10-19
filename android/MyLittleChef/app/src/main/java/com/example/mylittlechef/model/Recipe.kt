@@ -14,7 +14,10 @@ data class Recipe(
     @DrawableRes val imageRes: Int? = null,
 
     // Missing items computed by the server (staples and synonyms considered); null for local data.
-    val missing: List<Ingredient>? = null
+    val missing: List<Ingredient>? = null,
+    val filteringMissingCount: Int? = null,
+    val source: RecipeText? = null,
+    val revision: RecipeRevisionInfo? = null
 )
 
 data class AIRecipe(

@@ -17,7 +17,7 @@ fun sortRecipes(
     if (type == RecipeSortType.RECOMMENDED) return recipes.toList()
     val available = fridgeNames.map { it.trim().lowercase() }.toSet()
     fun missingCount(recipe: Recipe): Int =
-        recipe.missing?.size ?: recipe.ingredients.count { it.name.trim().lowercase() !in available }
+        recipe.filteringMissingCount ?: recipe.missing?.size ?: recipe.ingredients.count { it.name.trim().lowercase() !in available }
     fun cookingTime(recipe: Recipe): Int = if (recipe.time <= 0) Int.MAX_VALUE else recipe.time
     val indexed = recipes.withIndex()
     val sorted = when (type) {

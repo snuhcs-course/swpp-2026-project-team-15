@@ -2,46 +2,34 @@
 
 [English](pm-handoff.md) · [한국어](pm-handoff.ko.md)
 
-Current iteration boundary: Iteration 1 ends 2026-10-09. The completed schedule names **Hyeokjun Kweon** as Iteration 1 PM and **Ahyoon Choi** as Iteration 2 PM. Later PM rotation is recorded in the team schedule; check the latest workbook rather than copying this list into future reports.
+Updated 2026-10-20, Iteration 2. The prior schedule names Hyeokjun as Iteration 1 PM and Ahyoon as Iteration 2 PM; verify any later rotation against the current schedule. This guide records existing process and current boundaries, without assigning new obligations or deadlines to teammates.
 
-## Sources of truth
+## Current handoff
 
-| Item | Location | Maintain when |
-| --- | --- | --- |
-| Tasks, owners, planned/actual hours, final commit | Team schedule workbook (`team15-iter1-schedule.xlsx` for Iteration 1 submission) | Work is added or completed; before submission |
-| Code and review | Git branches and pull requests | Each implementation change |
-| Meeting outcomes | [`docs/meetings/`](meetings/README.md) | After each team or TA meeting |
-| Product/technical choices | [`docs/decisions.md`](decisions.md) | A choice is made or revised |
-| Technical explanation | [GitHub Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki) | Design, research, or data behavior changes |
-| Current implementation state | [`docs/iterations/`](iterations/iteration-1-status.md) | At each iteration boundary |
+PR #6 is merged into main `a27bf0a`. Android, database and historical research artifacts are now included; the local baseline reaches recipe detail through FastAPI. Hyeokjun's latest DataStore/sorting branches (#9/#10) and Suhyeon's new ID-based recommendation/revision branch remain unmerged. Their contracts and catalog versions differ. See the [root README](../README.md) for exact heads, setup and limits.
 
-The code repository and Wiki are separate Git repositories. A pull request to the code repository does not update the Wiki automatically.
+The next integration needs a consistent ingredient catalog, name-to-ID mapping, new DTOs/status handling, ordering, request lifetime and persistence restoration. A clean merge preview is not runtime verification. Record actual decisions and results once made; do not turn proposed behavior into completed features.
 
-## Each iteration
+## Sources and evidence
 
-1. **Start:** read the prior status and meeting log; confirm the PM, owners, iteration goal, acceptance evidence, and deferred work in the schedule. Do not assume a proposed feature is implemented.
-2. **Plan:** keep existing `P` identifiers. Add new tasks as `A1`, `A2`, etc. in date order; record actual participants and workers, not the whole team by default. Split work small enough to show distinct deliverables.
-3. **Work:** use focused branches and pull requests. Link tasks to commits/PRs and keep setup instructions with the code. Review other branches before describing the project as integrated.
-4. **Meet:** use the [meeting template](meetings/TEMPLATE.md). Record decisions, options, actions, owners, and due dates. Move durable choices into the decision log and relevant Wiki page.
-5. **Close:** reconcile task status and human/agent hours with actual work; record the relevant final commit ID for each completed task. Check links, data counts, demo behavior, and claims against the current branch. Mark deferred work explicitly for the next iteration.
-6. **Submit:** export the course documents from reviewed sources and use the exact course naming convention. For Iteration 1, the ZIP is `team15-iter1.zip` with `team15-iter1-reqspec.pdf`, `team15-iter1-design.pdf`, `team15-iter1-schedule.xlsx`, and `team15-iter1-AI-collaboration-report.pdf`. Verify the course portal deadline and uploaded archive separately.
+| Item | Source |
+| --- | --- |
+| Tasks, actual workers, hours/tokens, final commits | Team schedule; agents have READ-ONLY access and prepare local PM drafts |
+| Code/review/merge | GitHub branches and PRs |
+| Meeting times and key decisions | [Meeting log](meetings/README.md) |
+| Durable technical choices | [Decision log](decisions.md) and Wiki |
+| Current execution and limitations | [Root README](../README.md) |
+| Prior boundary record | [Iteration 1 status](iterations/iteration-1-status.md), preserved as historical |
 
-## Branch and data conventions
+Code and Wiki are separate Git repositories. Code changes do not publish Wiki drafts automatically. Official Wiki was still October 9 revision when checked October 20.
 
-- `main` is the integration branch. The Iteration 1 Android, recipe DB, and research deliverables are still on separate branches; see [status](iterations/iteration-1-status.md).
-- Prefer `feat/<topic>` for team feature work; documentation maintenance may use a focused `docs/<topic>` or `codex/<topic>` branch. Open a PR with scope, evidence, limitations, and review owner before merging.
-- Do not commit raw private chat, passwords, API keys, local database files, or the separately distributed CSV bundle. Summarize meeting decisions instead. The repository's `.gitignore` excludes local data and generated output.
-- Before using the course-provided OpenAI API key, agree on budget/usage limits and store it outside Git. GPU/CPU server access is an optional resource until provisioned and tested.
+## Iteration procedure
 
-## Iteration 2 handoff
+1. Confirm the current goal and existing schedule ownership. Preserve P identifiers and let the PM assign added A identifiers. Record only real workers/participants and measured effort.
+2. Prepare requirements/API and testing plans, implement with unit/regression tests, push a focused branch, open a PR, review/merge, then verify critical flows on merged main. Preserve shared history and attribution.
+3. Record actual meeting time/key points and decisions, not invented meetings or private message dumps. Use the [meeting template](meetings/TEMPLATE.md).
+4. Align Requirements, Design, Testing and AI Report with the actual code and evidence. Testing needs Plan and Results, date/SHA/commands/counts/coverage/targets/exclusions/screenshots. AI report uses current v1.1, not blanket code-marker requirements. Formal≥30 frozen AI cases are due Iteration 3.
+5. Publish and read back actual Wiki revisions. Prepare `iteration-2-demo`, root setup/features/limitations, a short demo video, required Wiki PDFs and schedule XLSX. Check eTL upload/deadline evidence separately; none is completed merely by drafting.
+6. Hand over open PRs, unresolved policies, known gaps, evidence locations and access status. Do not send credentials through Git.
 
-- Coordinate replacement of Android mock responses with the two server flows and agree on request/response examples.
-- Select a pilot recipe set and ingredient vocabulary for one-person cooking. Finish quantity, tool, and allergen information needed by recommendation filters.
-- Evaluate photo recognition with real images and record failure cases; retain manual correction and consider a seasoning checklist.
-- Define recipe refresh, missing-ingredient suggestions, and restricted AI substitutions before promising them as features.
-- Decide inventory persistence, backend framework, and ORM based on the API and data needs, then update the decision log/Wiki.
-- Keep the TA meeting action list and schedule aligned; carry unfinished Iteration 1 work forward with a new planned task rather than silently marking it done.
-
-## Handoff note for the outgoing PM
-
-Before the next PM takes over, provide the current schedule, open PRs/branches, outstanding TA feedback, Wiki pages, demo instructions, and a short list of decisions waiting for the team. Confirm that each person can access the repository and relevant course resources. Avoid sending credentials through the repository.
+Private data, generated SQLite files, keys and raw chats stay outside Git. Confirm data redistribution rights and authorization for new dependencies/paid calls. Preserve existing UI/design when connecting data.

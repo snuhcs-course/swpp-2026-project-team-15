@@ -1,35 +1,30 @@
-# Vision-to-Recipe AI Pipeline Benchmarks
+# Vision-to-Recipe research archive
 
-This directory contains the comparative evaluation suite and reference pipeline implementations (P0 to P5) for the My Little Chef recommendation engine.
+This directory preserves the Iteration 1 P0–P5 comparison. It is included in main through PR #6, but is separate from the Android/FastAPI runtime.
 
-> **Full Documentation & Architectural Decision Records**:  
-> See the team's GitHub Wiki for comprehensive research findings, failure mode analysis, and trade-off matrices:  
-> - [[Design Documentation]](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Design-Documentation)
-> - [[Pipeline Candidate Comparative Evaluation]](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Pipeline-Candidate-Comparative-Evaluation)
+## What the results mean
 
----
+`benchmark_suite.py` runs six diagnostic scenarios over supplied ingredient strings. Vision is simulated; token counts and several utility/accuracy values are fixed or constructed by the pipelines. Some embedding computations use FastEmbed. `benchmark_results.json` contains the output of that mixed simulation, not measured real-photo recognition, real-VLM latency/cost, or verified cooking/allergy safety. A successful simulated scenario does not validate production deployment.
 
-## Directory Structure
+`common/recipe_db.py` has a small reference vocabulary (31 canonical ingredients and about 11 example recipes), distinct from the main SQLite dataset. P2–P5 names and diagrams describe experimental ideas, not evidence that learned training, calibrated statistical gating or safe recipe adaptation is deployed.
 
-```text
-research/
-├── benchmark_suite.py         # Diagnostic benchmark runner across 6 stress scenarios
-├── benchmark_results.json     # Measured quantitative metrics (latency, recall, utility)
-├── common/
-│   ├── models.py              # Pydantic data schemas (Recipe, RawDetection, Metric)
-│   └── recipe_db.py           # Standard canonical ingredient dictionary & verified recipes
-└── pipelines/
-    ├── baseline_closed_bbox.py        # P0: Closed-vocabulary detector baseline
-    ├── p1_open_vocab_embedding.py     # P1: Open-tag VLM + FastEmbed baseline
-    ├── p2_hypothesis_driven_vision.py # P2: Learned metric adapter (contrastive loss)
-    ├── p3_role_gated_recommender.py   # P3: Dynamic ROC-AUC statistical gating
-    ├── p4_constraint_action_dag.py    # P4: Lexicographical structural DAG ranking
-    └── p5_integrated_metric_dag.py    # P5: Practical Fusion stack (Proposed for MVP)
+## Files
+
+| Path | Purpose |
+| --- | --- |
+| `benchmark_suite.py` | Scenario runner; actual location of the script cited in old Wiki research |
+| `benchmark_results.json` | Archived scenario output with the limitations above |
+| `common/` | Research schemas and small example catalog |
+| `pipelines/` | P0 baseline and P1–P5 candidate experiments |
+
+The historical [pipeline comparison](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Pipeline-Candidate-Comparative-Evaluation) and [research design](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki/Vision-to-Recipe-Research-Design) retain their dated proposal context. Follow runtime code and current design documentation for the implemented API.
+
+## Reproducing the historical experiment
+
+The runner imports FastEmbed, which is not supplied by the server environment, and initializing its embedding model may download model files. Prepare a separate research environment and confirm dependency/download authorization first. The archived entry command, from the repository root, is:
+
+```sh
+(cd research && python benchmark_suite.py)
 ```
 
-## Running the Benchmark Suite
-
-```bash
-# Execute evaluation across all 6 diagnostic scenarios
-python benchmark_suite.py
-```
+It writes `research/benchmark_results.json`; preserve original output before any authorized rerun. This is not required to launch the local demo. No research dependencies were installed and no benchmark was rerun during the October 20 documentation refresh.

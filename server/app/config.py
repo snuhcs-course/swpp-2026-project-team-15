@@ -34,7 +34,8 @@ class Settings:
             raise ValueError(f"VISION_PROVIDER must be 'mock' or 'gemini', got {provider!r}")
         settings = cls(
             vision_provider=provider,
-            recipe_db_path=REPO_ROOT / env.get("RECIPE_DB_PATH", "data/recipes/recipes.sqlite3"),
+            recipe_db_path=REPO_ROOT
+            / env.get("RECIPE_DB_PATH", "data/recipes-iter2/recipes.sqlite3"),
             vision_fixture_dir=SERVER_DIR / "fixtures" / "vision",
             gemini_api_key=env.get("GEMINI_API_KEY", ""),
             gemini_model=env.get("GEMINI_MODEL", ""),
