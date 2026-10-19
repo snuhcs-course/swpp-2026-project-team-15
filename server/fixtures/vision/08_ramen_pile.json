@@ -1,0 +1,54 @@
+{
+  "image_file": "ramen_pile.jpg",
+  "items": [
+    {
+      "name_raw": "농심 얼큰한 너구리 5개입 (번들 1)",
+      "category": "라면",
+      "confidence": 0.99,
+      "package_type": "비닐",
+      "visual_clues": "중앙 위치 투명 비닐 번들, '얼큰한 너구리 5개입' 세로 띠 및 상단 '5개입' 대형 텍스트",
+      "ambiguity_note": "없음 (전면 노출)"
+    },
+    {
+      "name_raw": "농심 얼큰한 너구리 5개입 (번들 2)",
+      "category": "라면",
+      "confidence": 0.99,
+      "package_type": "비닐",
+      "visual_clues": "우측 위치 투명 비닐 번들, '얼큰한 너구리 5개입', '인생을 맛있게 농심', '5개입' 표기 및 고객센터 안내문",
+      "ambiguity_note": "중앙 번들과 일부 접촉"
+    },
+    {
+      "name_raw": "농심 신라면 BLACK",
+      "category": "라면",
+      "confidence": 0.99,
+      "package_type": "비닐",
+      "visual_clues": "하단 우측 검은색/붉은색 봉지, '辛', '매울 신', 영문 'BLACK' 텍스트 및 표고버섯 조리예 사진",
+      "ambiguity_note": "우측 너구리 번들 아래 일부 가려짐"
+    },
+    {
+      "name_raw": "농심 신라면 건면",
+      "category": "라면",
+      "confidence": 0.98,
+      "package_type": "비닐",
+      "visual_clues": "좌측 중앙 베이지색/붉은색 봉지, 붓글씨 '辛' 아래 붉은 리본의 흰색 '건면' 표기",
+      "ambiguity_note": "봉지가 접혀 있고 주변 라면에 일부 가려짐"
+    },
+    {
+      "name_raw": "농심 배홍동 칼빔면",
+      "category": "라면",
+      "confidence": 0.97,
+      "package_type": "비닐",
+      "visual_clues": "하단 연두색 바탕에 붉은 도트 무늬, 붉은 말풍선 안 '배홍동 칼빔면' 텍스트, '455 kcal', 2봉지 적재 확인",
+      "ambiguity_note": "중앙 너구리 번들 밑에 일부 깔려 있음"
+    },
+    {
+      "name_raw": "농심 얼큰한 너구리 (낱개)",
+      "category": "라면",
+      "confidence": 0.98,
+      "package_type": "비닐",
+      "visual_clues": "좌측 상단 노란 모서리, '얼큰한' 타원 배지, '너' 캘리그라피, 완도 다시마 설명문",
+      "ambiguity_note": "신라면 건면 뒤로 일부 가려짐"
+    }
+  ],
+  "original_file": "20260928_191419.jpg"
+}

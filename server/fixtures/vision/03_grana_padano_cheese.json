@@ -1,0 +1,14 @@
+{
+  "image_file": "grana_padano_cheese.jpg",
+  "items": [
+    {
+      "name_raw": "암브로시 그라나 파다노 (Ambrosi Grana Padano Multipack 20g x 5pc)",
+      "category": "치즈",
+      "confidence": 1.0,
+      "package_type": "종이상자",
+      "visual_clues": "갈색 종이 패키지, 'AMBROSI', 'GRANA PADANO', 'MULTIPACK DI GRANA PADANO 5 PORZIONI DA 20g', DOP 인증 마크, 중앙 창으로 보이는 개별 비닐 소포장 치즈 스틱",
+      "ambiguity_note": "상자 내부 개별 소포장(20g 스틱) 중 잔여 수량은 창 너머로 일부만 확인 가능하나 제품 자체는 100% 명확함"
+    }
+  ],
+  "original_file": "20260928_161344.jpg"
+}

@@ -1,0 +1,1310 @@
+[
+  {
+    "scenario_id": "scenario_1_typical_meal",
+    "scenario_name": "1. Standard Single-Person Fridge",
+    "description": "Standard home inventory evaluating basic dinner meal recommendation.",
+    "input_items": [
+      "돼지고기",
+      "신김치",
+      "두부",
+      "대파",
+      "다진마늘"
+    ],
+    "user_allergies": [],
+    "metrics": [
+      {
+        "pipeline_name": "P0: Baseline (Closed BBox + Naive SQL)",
+        "scenario_name": "1. Standard Single-Person Fridge",
+        "total_latency_ms": 0.12,
+        "vision_latency_ms": 0.03,
+        "matching_latency_ms": 0.02,
+        "recommendation_latency_ms": 0.06,
+        "estimated_tokens": 225,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.35,
+        "allergen_violation_count": 0,
+        "summary": "P0: Resolved 5/5. Top1: 돼지고기 김치찌개",
+        "details": {
+          "top_3": [
+            "돼지고기 김치찌개",
+            "초간단 참치 김치볶음밥",
+            "맑은 두부 계란국"
+          ]
+        }
+      },
+      {
+        "pipeline_name": "P1: Target Production (Open-Vocab + VectorDB + Category SQL)",
+        "scenario_name": "1. Standard Single-Person Fridge",
+        "total_latency_ms": 9.47,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 9.36,
+        "recommendation_latency_ms": 0.11,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.85,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P1: Open-Vocab Dense VectorDB + Categorical SQL.",
+        "details": {
+          "돼지고기": {
+            "resolved_id": 1,
+            "score": 1.0
+          },
+          "신김치": {
+            "resolved_id": 20,
+            "score": 1.0
+          },
+          "두부": {
+            "resolved_id": 4,
+            "score": 1.0
+          },
+          "대파": {
+            "resolved_id": 21,
+            "score": 1.0
+          },
+          "다진마늘": {
+            "resolved_id": 44,
+            "score": 1.0
+          }
+        }
+      },
+      {
+        "pipeline_name": "P2: Ablation 1 (Learned Metric Adaptation)",
+        "scenario_name": "1. Standard Single-Person Fridge",
+        "total_latency_ms": 13.08,
+        "vision_latency_ms": 0.02,
+        "matching_latency_ms": 12.96,
+        "recommendation_latency_ms": 0.1,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 1.0,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P2: Learned Metric Adaptation. Separates sibling confusables in latent vector space without string rules.",
+        "details": {
+          "돼지고기": {
+            "resolved_id": 1,
+            "score": 1.0
+          },
+          "신김치": {
+            "resolved_id": 20,
+            "score": 1.0
+          },
+          "두부": {
+            "resolved_id": 4,
+            "score": 1.0
+          },
+          "대파": {
+            "resolved_id": 21,
+            "score": 1.0
+          },
+          "다진마늘": {
+            "resolved_id": 44,
+            "score": 1.0
+          }
+        }
+      },
+      {
+        "pipeline_name": "P3: Ablation 2 (Data-Driven Calibrated Gating)",
+        "scenario_name": "1. Standard Single-Person Fridge",
+        "total_latency_ms": 8.27,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 8.15,
+        "recommendation_latency_ms": 0.11,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P3: Data-Driven Calibrated Gating (tau_reject=0.8634, AUC=0.9531). Eliminates magic numbers.",
+        "details": {
+          "tau_reject": 0.8634,
+          "tau_confirm": 0.8836,
+          "roc_auc": 0.9531,
+          "rejected": [
+            "돼지고기",
+            "신김치",
+            "두부",
+            "대파",
+            "다진마늘"
+          ]
+        }
+      },
+      {
+        "pipeline_name": "P4: Ablation 3 (Lexicographical Structural Utility)",
+        "scenario_name": "1. Standard Single-Person Fridge",
+        "total_latency_ms": 10.05,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 9.88,
+        "recommendation_latency_ms": 0.16,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P4: Zero-Magic-Number Lexicographical Recommender (Core > Sub > Pantry).",
+        "details": {
+          "돼지고기": {
+            "resolved_id": 1,
+            "score": 1.0
+          },
+          "신김치": {
+            "resolved_id": 20,
+            "score": 1.0
+          },
+          "두부": {
+            "resolved_id": 4,
+            "score": 1.0
+          },
+          "대파": {
+            "resolved_id": 21,
+            "score": 1.0
+          },
+          "다진마늘": {
+            "resolved_id": 44,
+            "score": 1.0
+          }
+        }
+      },
+      {
+        "pipeline_name": "P5: Fusion Stack (P2 Metric Adapter + P4 Lexicographical DAG)",
+        "scenario_name": "1. Standard Single-Person Fridge",
+        "total_latency_ms": 19.7,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 19.57,
+        "recommendation_latency_ms": 0.12,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 1.0,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P5: Fusion (Metric Adapter + Lexicographical DAG) - Latency: 19.7ms, CoreUtil: 0.95",
+        "details": {
+          "돼지고기": {
+            "resolved_id": 1,
+            "score": 1.0
+          },
+          "신김치": {
+            "resolved_id": 20,
+            "score": 1.0
+          },
+          "두부": {
+            "resolved_id": 4,
+            "score": 1.0
+          },
+          "대파": {
+            "resolved_id": 21,
+            "score": 1.0
+          },
+          "다진마늘": {
+            "resolved_id": 44,
+            "score": 1.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "scenario_id": "scenario_2_condiment_spam",
+    "scenario_name": "2. Condiment-Heavy / Pantry Spam Stress Test",
+    "description": "Pantry-only inventory testing whether dipping sauces spam the top recommendation.",
+    "input_items": [
+      "진간장",
+      "식초",
+      "설탕",
+      "다진마늘",
+      "참기름"
+    ],
+    "user_allergies": [],
+    "metrics": [
+      {
+        "pipeline_name": "P0: Baseline (Closed BBox + Naive SQL)",
+        "scenario_name": "2. Condiment-Heavy / Pantry Spam Stress Test",
+        "total_latency_ms": 0.05,
+        "vision_latency_ms": 0.02,
+        "matching_latency_ms": 0.01,
+        "recommendation_latency_ms": 0.03,
+        "estimated_tokens": 225,
+        "canonical_recall": 0.6,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 1.0,
+        "top1_is_main_dish": false,
+        "core_dinner_utility": 0.35,
+        "allergen_violation_count": 0,
+        "summary": "P0: Resolved 3/5. Top1: 만능 마늘간장 비빔장",
+        "details": {
+          "top_3": [
+            "만능 마늘간장 비빔장",
+            "새우젓 애호박볶음",
+            "아삭한 콩나물 무침"
+          ]
+        }
+      },
+      {
+        "pipeline_name": "P1: Target Production (Open-Vocab + VectorDB + Category SQL)",
+        "scenario_name": "2. Condiment-Heavy / Pantry Spam Stress Test",
+        "total_latency_ms": 11.37,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 11.28,
+        "recommendation_latency_ms": 0.08,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.85,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.5,
+        "allergen_violation_count": 0,
+        "summary": "P1: Open-Vocab Dense VectorDB + Categorical SQL.",
+        "details": {
+          "진간장": {
+            "resolved_id": 40,
+            "score": 1.0
+          },
+          "식초": {
+            "resolved_id": 50,
+            "score": 1.0
+          },
+          "설탕": {
+            "resolved_id": 49,
+            "score": 1.0
+          },
+          "다진마늘": {
+            "resolved_id": 44,
+            "score": 1.0
+          },
+          "참기름": {
+            "resolved_id": 46,
+            "score": 1.0
+          }
+        }
+      },
+      {
+        "pipeline_name": "P2: Ablation 1 (Learned Metric Adaptation)",
+        "scenario_name": "2. Condiment-Heavy / Pantry Spam Stress Test",
+        "total_latency_ms": 18.39,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 18.28,
+        "recommendation_latency_ms": 0.1,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 1.0,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.5,
+        "allergen_violation_count": 0,
+        "summary": "P2: Learned Metric Adaptation. Separates sibling confusables in latent vector space without string rules.",
+        "details": {
+          "진간장": {
+            "resolved_id": 40,
+            "score": 1.0
+          },
+          "식초": {
+            "resolved_id": 50,
+            "score": 1.0
+          },
+          "설탕": {
+            "resolved_id": 49,
+            "score": 1.0
+          },
+          "다진마늘": {
+            "resolved_id": 44,
+            "score": 1.0
+          },
+          "참기름": {
+            "resolved_id": 46,
+            "score": 1.0
+          }
+        }
+      },
+      {
+        "pipeline_name": "P3: Ablation 2 (Data-Driven Calibrated Gating)",
+        "scenario_name": "2. Condiment-Heavy / Pantry Spam Stress Test",
+        "total_latency_ms": 8.75,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 8.65,
+        "recommendation_latency_ms": 0.09,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.5,
+        "allergen_violation_count": 0,
+        "summary": "P3: Data-Driven Calibrated Gating (tau_reject=0.8634, AUC=0.9531). Eliminates magic numbers.",
+        "details": {
+          "tau_reject": 0.8634,
+          "tau_confirm": 0.8836,
+          "roc_auc": 0.9531,
+          "rejected": [
+            "진간장",
+            "식초",
+            "다진마늘",
+            "참기름"
+          ]
+        }
+      },
+      {
+        "pipeline_name": "P4: Ablation 3 (Lexicographical Structural Utility)",
+        "scenario_name": "2. Condiment-Heavy / Pantry Spam Stress Test",
+        "total_latency_ms": 9.51,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 9.39,
+        "recommendation_latency_ms": 0.1,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P4: Zero-Magic-Number Lexicographical Recommender (Core > Sub > Pantry).",
+        "details": {
+          "진간장": {
+            "resolved_id": 40,
+            "score": 1.0
+          },
+          "식초": {
+            "resolved_id": 50,
+            "score": 1.0
+          },
+          "설탕": {
+            "resolved_id": 49,
+            "score": 1.0
+          },
+          "다진마늘": {
+            "resolved_id": 44,
+            "score": 1.0
+          },
+          "참기름": {
+            "resolved_id": 46,
+            "score": 1.0
+          }
+        }
+      },
+      {
+        "pipeline_name": "P5: Fusion Stack (P2 Metric Adapter + P4 Lexicographical DAG)",
+        "scenario_name": "2. Condiment-Heavy / Pantry Spam Stress Test",
+        "total_latency_ms": 8.26,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 8.14,
+        "recommendation_latency_ms": 0.11,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 1.0,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P5: Fusion (Metric Adapter + Lexicographical DAG) - Latency: 8.3ms, CoreUtil: 0.95",
+        "details": {
+          "진간장": {
+            "resolved_id": 40,
+            "score": 1.0
+          },
+          "식초": {
+            "resolved_id": 50,
+            "score": 1.0
+          },
+          "설탕": {
+            "resolved_id": 49,
+            "score": 1.0
+          },
+          "다진마늘": {
+            "resolved_id": 44,
+            "score": 1.0
+          },
+          "참기름": {
+            "resolved_id": 46,
+            "score": 1.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "scenario_id": "scenario_3_allergen_safety",
+    "scenario_name": "3. Derivative Allergen Safety Challenge",
+    "description": "User with Crustacean (갑각류) allergy; tests whether hidden fermented 새우젓 is caught.",
+    "input_items": [
+      "계란",
+      "대파",
+      "새우젓",
+      "두부"
+    ],
+    "user_allergies": [
+      "갑각류"
+    ],
+    "metrics": [
+      {
+        "pipeline_name": "P0: Baseline (Closed BBox + Naive SQL)",
+        "scenario_name": "3. Derivative Allergen Safety Challenge",
+        "total_latency_ms": 0.05,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 0.01,
+        "recommendation_latency_ms": 0.03,
+        "estimated_tokens": 190,
+        "canonical_recall": 0.75,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.35,
+        "allergen_violation_count": 2,
+        "summary": "P0: Resolved 3/4. Top1: 맑은 두부 계란국",
+        "details": {
+          "top_3": [
+            "맑은 두부 계란국",
+            "폭신폭신 대파 계란말이",
+            "돼지고기 김치찌개"
+          ]
+        }
+      },
+      {
+        "pipeline_name": "P1: Target Production (Open-Vocab + VectorDB + Category SQL)",
+        "scenario_name": "3. Derivative Allergen Safety Challenge",
+        "total_latency_ms": 11.52,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 11.44,
+        "recommendation_latency_ms": 0.07,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.85,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P1: Open-Vocab Dense VectorDB + Categorical SQL.",
+        "details": {
+          "계란": {
+            "resolved_id": 6,
+            "score": 1.0
+          },
+          "대파": {
+            "resolved_id": 21,
+            "score": 1.0
+          },
+          "새우젓": {
+            "resolved_id": 51,
+            "score": 1.0
+          },
+          "두부": {
+            "resolved_id": 4,
+            "score": 1.0
+          }
+        }
+      },
+      {
+        "pipeline_name": "P2: Ablation 1 (Learned Metric Adaptation)",
+        "scenario_name": "3. Derivative Allergen Safety Challenge",
+        "total_latency_ms": 9.03,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 8.94,
+        "recommendation_latency_ms": 0.09,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 1.0,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P2: Learned Metric Adaptation. Separates sibling confusables in latent vector space without string rules.",
+        "details": {
+          "계란": {
+            "resolved_id": 6,
+            "score": 1.0
+          },
+          "대파": {
+            "resolved_id": 21,
+            "score": 1.0
+          },
+          "새우젓": {
+            "resolved_id": 51,
+            "score": 1.0
+          },
+          "두부": {
+            "resolved_id": 4,
+            "score": 1.0
+          }
+        }
+      },
+      {
+        "pipeline_name": "P3: Ablation 2 (Data-Driven Calibrated Gating)",
+        "scenario_name": "3. Derivative Allergen Safety Challenge",
+        "total_latency_ms": 5.9,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 5.82,
+        "recommendation_latency_ms": 0.08,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P3: Data-Driven Calibrated Gating (tau_reject=0.8634, AUC=0.9531). Eliminates magic numbers.",
+        "details": {
+          "tau_reject": 0.8634,
+          "tau_confirm": 0.8836,
+          "roc_auc": 0.9531,
+          "rejected": [
+            "계란",
+            "대파",
+            "새우젓",
+            "두부"
+          ]
+        }
+      },
+      {
+        "pipeline_name": "P4: Ablation 3 (Lexicographical Structural Utility)",
+        "scenario_name": "3. Derivative Allergen Safety Challenge",
+        "total_latency_ms": 8.21,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 8.09,
+        "recommendation_latency_ms": 0.11,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P4: Zero-Magic-Number Lexicographical Recommender (Core > Sub > Pantry).",
+        "details": {
+          "계란": {
+            "resolved_id": 6,
+            "score": 1.0
+          },
+          "대파": {
+            "resolved_id": 21,
+            "score": 1.0
+          },
+          "새우젓": {
+            "resolved_id": 51,
+            "score": 1.0
+          },
+          "두부": {
+            "resolved_id": 4,
+            "score": 1.0
+          }
+        }
+      },
+      {
+        "pipeline_name": "P5: Fusion Stack (P2 Metric Adapter + P4 Lexicographical DAG)",
+        "scenario_name": "3. Derivative Allergen Safety Challenge",
+        "total_latency_ms": 18.61,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 18.5,
+        "recommendation_latency_ms": 0.11,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 1.0,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P5: Fusion (Metric Adapter + Lexicographical DAG) - Latency: 18.6ms, CoreUtil: 0.95",
+        "details": {
+          "계란": {
+            "resolved_id": 6,
+            "score": 1.0
+          },
+          "대파": {
+            "resolved_id": 21,
+            "score": 1.0
+          },
+          "새우젓": {
+            "resolved_id": 51,
+            "score": 1.0
+          },
+          "두부": {
+            "resolved_id": 4,
+            "score": 1.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "scenario_id": "scenario_4_noisy_brands",
+    "scenario_name": "4. Visual Modifiers & Open-Vocab Brand Stress Test",
+    "description": "Real grocery packaging mentions with brand names, weights, and packaging terms.",
+    "input_items": [
+      "제주산 흑돼지 삼겹살 500g",
+      "비비고 썰은배추김치 400g",
+      "백설 진간장 금F",
+      "CJ 부침용 단단한두부",
+      "손질 흙대파 한단"
+    ],
+    "user_allergies": [],
+    "metrics": [
+      {
+        "pipeline_name": "P0: Baseline (Closed BBox + Naive SQL)",
+        "scenario_name": "4. Visual Modifiers & Open-Vocab Brand Stress Test",
+        "total_latency_ms": 0.04,
+        "vision_latency_ms": 0.0,
+        "matching_latency_ms": 0.01,
+        "recommendation_latency_ms": 0.02,
+        "estimated_tokens": 225,
+        "canonical_recall": 0.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.35,
+        "allergen_violation_count": 0,
+        "summary": "P0: Resolved 0/5. Top1: 돼지고기 김치찌개",
+        "details": {
+          "top_3": [
+            "돼지고기 김치찌개",
+            "구수한 차돌 된장찌개",
+            "매콤 제육볶음"
+          ]
+        }
+      },
+      {
+        "pipeline_name": "P1: Target Production (Open-Vocab + VectorDB + Category SQL)",
+        "scenario_name": "4. Visual Modifiers & Open-Vocab Brand Stress Test",
+        "total_latency_ms": 12.88,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 12.8,
+        "recommendation_latency_ms": 0.07,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.85,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P1: Open-Vocab Dense VectorDB + Categorical SQL.",
+        "details": {
+          "제주산 흑돼지 삼겹살 500g": {
+            "resolved_id": 8,
+            "score": 0.8629
+          },
+          "비비고 썰은배추김치 400g": {
+            "resolved_id": 20,
+            "score": 0.729
+          },
+          "백설 진간장 금F": {
+            "resolved_id": 8,
+            "score": 0.9246
+          },
+          "CJ 부침용 단단한두부": {
+            "resolved_id": 5,
+            "score": 0.8262
+          },
+          "손질 흙대파 한단": {
+            "resolved_id": 40,
+            "score": 0.7454
+          }
+        }
+      },
+      {
+        "pipeline_name": "P2: Ablation 1 (Learned Metric Adaptation)",
+        "scenario_name": "4. Visual Modifiers & Open-Vocab Brand Stress Test",
+        "total_latency_ms": 12.07,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 11.97,
+        "recommendation_latency_ms": 0.08,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 1.0,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P2: Learned Metric Adaptation. Separates sibling confusables in latent vector space without string rules.",
+        "details": {
+          "제주산 흑돼지 삼겹살 500g": {
+            "resolved_id": 1,
+            "score": 0.8386
+          },
+          "비비고 썰은배추김치 400g": {
+            "resolved_id": 20,
+            "score": 0.9077
+          },
+          "백설 진간장 금F": {
+            "resolved_id": 40,
+            "score": 0.8435
+          },
+          "CJ 부침용 단단한두부": {
+            "resolved_id": 8,
+            "score": 0.6441
+          },
+          "손질 흙대파 한단": {
+            "resolved_id": 8,
+            "score": 0.7606
+          }
+        }
+      },
+      {
+        "pipeline_name": "P3: Ablation 2 (Data-Driven Calibrated Gating)",
+        "scenario_name": "4. Visual Modifiers & Open-Vocab Brand Stress Test",
+        "total_latency_ms": 14.35,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 14.26,
+        "recommendation_latency_ms": 0.08,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P3: Data-Driven Calibrated Gating (tau_reject=0.8634, AUC=0.9531). Eliminates magic numbers.",
+        "details": {
+          "tau_reject": 0.8634,
+          "tau_confirm": 0.8836,
+          "roc_auc": 0.9531,
+          "rejected": [
+            "제주산 흑돼지 삼겹살 500g",
+            "비비고 썰은배추김치 400g",
+            "CJ 부침용 단단한두부",
+            "손질 흙대파 한단"
+          ]
+        }
+      },
+      {
+        "pipeline_name": "P4: Ablation 3 (Lexicographical Structural Utility)",
+        "scenario_name": "4. Visual Modifiers & Open-Vocab Brand Stress Test",
+        "total_latency_ms": 18.22,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 18.06,
+        "recommendation_latency_ms": 0.15,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P4: Zero-Magic-Number Lexicographical Recommender (Core > Sub > Pantry).",
+        "details": {
+          "제주산 흑돼지 삼겹살 500g": {
+            "resolved_id": 8,
+            "score": 0.8629
+          },
+          "비비고 썰은배추김치 400g": {
+            "resolved_id": 20,
+            "score": 0.729
+          },
+          "백설 진간장 금F": {
+            "resolved_id": 8,
+            "score": 0.9246
+          },
+          "CJ 부침용 단단한두부": {
+            "resolved_id": 5,
+            "score": 0.8262
+          },
+          "손질 흙대파 한단": {
+            "resolved_id": 40,
+            "score": 0.7454
+          }
+        }
+      },
+      {
+        "pipeline_name": "P5: Fusion Stack (P2 Metric Adapter + P4 Lexicographical DAG)",
+        "scenario_name": "4. Visual Modifiers & Open-Vocab Brand Stress Test",
+        "total_latency_ms": 13.63,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 13.51,
+        "recommendation_latency_ms": 0.1,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 1.0,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P5: Fusion (Metric Adapter + Lexicographical DAG) - Latency: 13.6ms, CoreUtil: 0.95",
+        "details": {
+          "제주산 흑돼지 삼겹살 500g": {
+            "resolved_id": 1,
+            "score": 0.8386
+          },
+          "비비고 썰은배추김치 400g": {
+            "resolved_id": 20,
+            "score": 0.9077
+          },
+          "백설 진간장 금F": {
+            "resolved_id": 40,
+            "score": 0.8435
+          },
+          "CJ 부침용 단단한두부": {
+            "resolved_id": 8,
+            "score": 0.6441
+          },
+          "손질 흙대파 한단": {
+            "resolved_id": 8,
+            "score": 0.7606
+          }
+        }
+      }
+    ]
+  },
+  {
+    "scenario_id": "scenario_5_confusables",
+    "scenario_name": "5. Fine-Grained Sibling Confusables Stress Test",
+    "description": "Linguistic culinary siblings that generic pre-trained SBERT confuses (국간장 vs 진간장, 단호박 vs 애호박).",
+    "input_items": [
+      "백설 맑은 국간장 500ml",
+      "달콤한 미니 단호박 1통",
+      "청정원 남해안 멸치액젓"
+    ],
+    "user_allergies": [],
+    "metrics": [
+      {
+        "pipeline_name": "P0: Baseline (Closed BBox + Naive SQL)",
+        "scenario_name": "5. Fine-Grained Sibling Confusables Stress Test",
+        "total_latency_ms": 0.03,
+        "vision_latency_ms": 0.0,
+        "matching_latency_ms": 0.01,
+        "recommendation_latency_ms": 0.02,
+        "estimated_tokens": 155,
+        "canonical_recall": 0.0,
+        "confusable_accuracy": 0.0,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.35,
+        "allergen_violation_count": 0,
+        "summary": "P0: Resolved 0/3. Top1: 돼지고기 김치찌개",
+        "details": {
+          "top_3": [
+            "돼지고기 김치찌개",
+            "구수한 차돌 된장찌개",
+            "매콤 제육볶음"
+          ]
+        }
+      },
+      {
+        "pipeline_name": "P1: Target Production (Open-Vocab + VectorDB + Category SQL)",
+        "scenario_name": "5. Fine-Grained Sibling Confusables Stress Test",
+        "total_latency_ms": 10.62,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 10.51,
+        "recommendation_latency_ms": 0.1,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P1: Open-Vocab Dense VectorDB + Categorical SQL.",
+        "details": {
+          "백설 맑은 국간장 500ml": {
+            "resolved_id": 7,
+            "score": 0.7862
+          },
+          "달콤한 미니 단호박 1통": {
+            "resolved_id": 8,
+            "score": 0.925
+          },
+          "청정원 남해안 멸치액젓": {
+            "resolved_id": 52,
+            "score": 0.9304
+          }
+        }
+      },
+      {
+        "pipeline_name": "P2: Ablation 1 (Learned Metric Adaptation)",
+        "scenario_name": "5. Fine-Grained Sibling Confusables Stress Test",
+        "total_latency_ms": 10.74,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 10.65,
+        "recommendation_latency_ms": 0.08,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 1.0,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P2: Learned Metric Adaptation. Separates sibling confusables in latent vector space without string rules.",
+        "details": {
+          "백설 맑은 국간장 500ml": {
+            "resolved_id": 41,
+            "score": 0.8543
+          },
+          "달콤한 미니 단호박 1통": {
+            "resolved_id": 26,
+            "score": 0.575
+          },
+          "청정원 남해안 멸치액젓": {
+            "resolved_id": 52,
+            "score": 0.8933
+          }
+        }
+      },
+      {
+        "pipeline_name": "P3: Ablation 2 (Data-Driven Calibrated Gating)",
+        "scenario_name": "5. Fine-Grained Sibling Confusables Stress Test",
+        "total_latency_ms": 13.82,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 13.72,
+        "recommendation_latency_ms": 0.08,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P3: Data-Driven Calibrated Gating (tau_reject=0.8634, AUC=0.9531). Eliminates magic numbers.",
+        "details": {
+          "tau_reject": 0.8634,
+          "tau_confirm": 0.8836,
+          "roc_auc": 0.9531,
+          "rejected": [
+            "백설 맑은 국간장 500ml",
+            "달콤한 미니 단호박 1통",
+            "청정원 남해안 멸치액젓"
+          ]
+        }
+      },
+      {
+        "pipeline_name": "P4: Ablation 3 (Lexicographical Structural Utility)",
+        "scenario_name": "5. Fine-Grained Sibling Confusables Stress Test",
+        "total_latency_ms": 15.36,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 15.23,
+        "recommendation_latency_ms": 0.12,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P4: Zero-Magic-Number Lexicographical Recommender (Core > Sub > Pantry).",
+        "details": {
+          "백설 맑은 국간장 500ml": {
+            "resolved_id": 7,
+            "score": 0.7862
+          },
+          "달콤한 미니 단호박 1통": {
+            "resolved_id": 8,
+            "score": 0.925
+          },
+          "청정원 남해안 멸치액젓": {
+            "resolved_id": 52,
+            "score": 0.9304
+          }
+        }
+      },
+      {
+        "pipeline_name": "P5: Fusion Stack (P2 Metric Adapter + P4 Lexicographical DAG)",
+        "scenario_name": "5. Fine-Grained Sibling Confusables Stress Test",
+        "total_latency_ms": 10.55,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 10.43,
+        "recommendation_latency_ms": 0.11,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 1.0,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P5: Fusion (Metric Adapter + Lexicographical DAG) - Latency: 10.5ms, CoreUtil: 0.95",
+        "details": {
+          "백설 맑은 국간장 500ml": {
+            "resolved_id": 41,
+            "score": 0.8543
+          },
+          "달콤한 미니 단호박 1통": {
+            "resolved_id": 26,
+            "score": 0.575
+          },
+          "청정원 남해안 멸치액젓": {
+            "resolved_id": 52,
+            "score": 0.8933
+          }
+        }
+      }
+    ]
+  },
+  {
+    "scenario_id": "scenario_6_oov_noise",
+    "scenario_name": "6. Open-World Clutter & Non-Food Hallucination Stress Test",
+    "description": "Visual scene containing non-food household items, plastic wrap, and a single valid food item.",
+    "input_items": [
+      "삼성 스마트 TV 리모컨",
+      "크린랩 롤 비닐백",
+      "깨끗한 물티슈 100매",
+      "신선 계란 10구"
+    ],
+    "user_allergies": [],
+    "metrics": [
+      {
+        "pipeline_name": "P0: Baseline (Closed BBox + Naive SQL)",
+        "scenario_name": "6. Open-World Clutter & Non-Food Hallucination Stress Test",
+        "total_latency_ms": 0.03,
+        "vision_latency_ms": 0.0,
+        "matching_latency_ms": 0.01,
+        "recommendation_latency_ms": 0.02,
+        "estimated_tokens": 190,
+        "canonical_recall": 0.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.35,
+        "allergen_violation_count": 0,
+        "summary": "P0: Resolved 0/4. Top1: 돼지고기 김치찌개",
+        "details": {
+          "top_3": [
+            "돼지고기 김치찌개",
+            "구수한 차돌 된장찌개",
+            "매콤 제육볶음"
+          ]
+        }
+      },
+      {
+        "pipeline_name": "P1: Target Production (Open-Vocab + VectorDB + Category SQL)",
+        "scenario_name": "6. Open-World Clutter & Non-Food Hallucination Stress Test",
+        "total_latency_ms": 16.11,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 16.01,
+        "recommendation_latency_ms": 0.08,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.85,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 1.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P1: Open-Vocab Dense VectorDB + Categorical SQL.",
+        "details": {
+          "삼성 스마트 TV 리모컨": {
+            "resolved_id": 7,
+            "score": 0.5902
+          },
+          "크린랩 롤 비닐백": {
+            "resolved_id": 5,
+            "score": 0.8838
+          },
+          "깨끗한 물티슈 100매": {
+            "resolved_id": 8,
+            "score": 0.8932
+          },
+          "신선 계란 10구": {
+            "resolved_id": 6,
+            "score": 0.8394
+          }
+        }
+      },
+      {
+        "pipeline_name": "P2: Ablation 1 (Learned Metric Adaptation)",
+        "scenario_name": "6. Open-World Clutter & Non-Food Hallucination Stress Test",
+        "total_latency_ms": 11.06,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 10.97,
+        "recommendation_latency_ms": 0.09,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 1.0,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 1.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P2: Learned Metric Adaptation. Separates sibling confusables in latent vector space without string rules.",
+        "details": {
+          "삼성 스마트 TV 리모컨": {
+            "resolved_id": 25,
+            "score": 0.5405
+          },
+          "크린랩 롤 비닐백": {
+            "resolved_id": 20,
+            "score": 0.8437
+          },
+          "깨끗한 물티슈 100매": {
+            "resolved_id": 41,
+            "score": 0.6152
+          },
+          "신선 계란 10구": {
+            "resolved_id": 6,
+            "score": 0.8682
+          }
+        }
+      },
+      {
+        "pipeline_name": "P3: Ablation 2 (Data-Driven Calibrated Gating)",
+        "scenario_name": "6. Open-World Clutter & Non-Food Hallucination Stress Test",
+        "total_latency_ms": 14.07,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 13.97,
+        "recommendation_latency_ms": 0.09,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 1.0,
+        "hallucination_rate": 0.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P3: Data-Driven Calibrated Gating (tau_reject=0.8634, AUC=0.9531). Eliminates magic numbers.",
+        "details": {
+          "tau_reject": 0.8634,
+          "tau_confirm": 0.8836,
+          "roc_auc": 0.9531,
+          "rejected": [
+            "삼성 스마트 TV 리모컨",
+            "크린랩 롤 비닐백",
+            "깨끗한 물티슈 100매",
+            "신선 계란 10구"
+          ]
+        }
+      },
+      {
+        "pipeline_name": "P4: Ablation 3 (Lexicographical Structural Utility)",
+        "scenario_name": "6. Open-World Clutter & Non-Food Hallucination Stress Test",
+        "total_latency_ms": 11.16,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 11.02,
+        "recommendation_latency_ms": 0.13,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 0.5,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 1.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P4: Zero-Magic-Number Lexicographical Recommender (Core > Sub > Pantry).",
+        "details": {
+          "삼성 스마트 TV 리모컨": {
+            "resolved_id": 7,
+            "score": 0.5902
+          },
+          "크린랩 롤 비닐백": {
+            "resolved_id": 5,
+            "score": 0.8838
+          },
+          "깨끗한 물티슈 100매": {
+            "resolved_id": 8,
+            "score": 0.8932
+          },
+          "신선 계란 10구": {
+            "resolved_id": 6,
+            "score": 0.8394
+          }
+        }
+      },
+      {
+        "pipeline_name": "P5: Fusion Stack (P2 Metric Adapter + P4 Lexicographical DAG)",
+        "scenario_name": "6. Open-World Clutter & Non-Food Hallucination Stress Test",
+        "total_latency_ms": 23.07,
+        "vision_latency_ms": 0.01,
+        "matching_latency_ms": 22.96,
+        "recommendation_latency_ms": 0.1,
+        "estimated_tokens": 45,
+        "canonical_recall": 1.0,
+        "confusable_accuracy": 1.0,
+        "oov_rejection_rate": 0.0,
+        "hallucination_rate": 1.0,
+        "condiment_spam_rate": 0.0,
+        "top1_is_main_dish": true,
+        "core_dinner_utility": 0.95,
+        "allergen_violation_count": 0,
+        "summary": "P5: Fusion (Metric Adapter + Lexicographical DAG) - Latency: 23.1ms, CoreUtil: 0.95",
+        "details": {
+          "삼성 스마트 TV 리모컨": {
+            "resolved_id": 25,
+            "score": 0.5405
+          },
+          "크린랩 롤 비닐백": {
+            "resolved_id": 20,
+            "score": 0.8437
+          },
+          "깨끗한 물티슈 100매": {
+            "resolved_id": 41,
+            "score": 0.6152
+          },
+          "신선 계란 10구": {
+            "resolved_id": 6,
+            "score": 0.8682
+          }
+        }
+      }
+    ]
+  }
+]
