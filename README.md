@@ -16,11 +16,42 @@ Historical P0–P5 research and prior project records remain in Git history and 
 
 ## Source layout
 
-- `android/`: Android app, Gradle build and client tests.
-- `server/app`, `server/recipe_filtering`, `server/recipe_revision`: runtime API and shared algorithms.
-- `server/db`, `server/fixtures`: database preparation and mock-provider input.
-- `server/tests`, `server/evaluation`, `server/experiments`: development checks and offline evaluation; excluded from the server deployment archive.
-- `scripts/`: local setup, source integrity and runtime packaging.
+Tracked source below; generated build/cache/environment directories and private datasets are omitted. The repository includes development tools; the server deployment archive contains only the runtime subset.
+
+```text
+.
+├── .github/workflows/ci.yml       # Server checks, Android checks and artifacts
+├── README.md                     # Setup and source navigation
+├── android/                      # Android Gradle project
+│   ├── app/src/
+│   │   ├── main/                 # Compose UI, navigation, data and domain code
+│   │   ├── test/                 # Local JVM tests
+│   │   └── androidTest/          # Device and backend integration tests
+│   └── gradle/                   # Wrapper, version catalog and JVM criteria
+├── scripts/
+│   ├── run-local-demo.sh         # Import private data and launch the local demo
+│   ├── check_integration_policy.py # Protect existing tests and references
+│   └── package_server.py         # Package committed runtime files with hashes
+└── server/
+    ├── app/                      # FastAPI configuration, vision and recipe APIs
+    ├── recipe_filtering/         # Runtime filtering and ranking algorithms
+    ├── recipe_revision/          # Runtime revision logic and provider adapters
+    ├── db/                       # Schema and offline CSV importer
+    ├── fixtures/
+    │   ├── vision/               # Recorded candidates used by the mock provider
+    │   └── demo/                 # Synthetic photo for local integration checks
+    ├── tests/                    # Automated server tests and protected references
+    ├── evaluation/               # Photo benchmark and explicit live integration check
+    ├── experiments/              # Filtering/revision experiment runners and tests
+    ├── pyproject.toml            # Runtime and development dependency definitions
+    ├── uv.lock                   # Locked dependency versions
+    ├── .env.example              # Provider and database configuration template
+    └── README.md                 # Server-specific setup and API details
+```
+
+`tests/` verifies behavior with assertions. `evaluation/` measures recorded-photo recognition and checks live integration; `experiments/` runs filtering/revision scenarios and produces comparison or human-review inputs. These tools depend on runtime code; runtime code does not import them. All three directories are excluded from the server deployment archive.
+
+In `evaluation/`, `vision_benchmark.py` compares candidates against the 11-photo `ground_truth.json`, reports accepted-name matches, misses, unmatched candidates, latency and direct-call token usage. Matching accepts substrings and can credit one candidate to multiple expected items, so the reported recall is diagnostic rather than strict object-level accuracy or precision. Photos and generated reports are not committed. `integration_live_check.py` explicitly requires `--live` and checks vision → catalog IDs → at most one recipe revision using the real providers; it records responses without establishing semantic correctness. These commands can make external model calls; normal startup and CI do not run them.
 
 ## Run locally
 
