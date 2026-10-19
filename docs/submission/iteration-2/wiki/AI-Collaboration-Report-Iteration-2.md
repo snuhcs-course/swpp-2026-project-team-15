@@ -10,9 +10,7 @@ Claude Code assisted the original FastAPI/SQLModel recognition backend, Android 
 
 Selected user inputs are preserved verbatim:
 
-- “아니 모든 작업은 일단 llm wiki 완성 및 정합성 검토한 다음 나에게 허락 받고 해”
 - “타 작업자의 변경사항 존중하여 가능한 원본 유지라는 policy 하에, handover DAG 전부 수행”
-- “중간에 내 판단 필요하면 말하고, 아니면 계속 자율진행. 너가 언급한데로 test 강화 및 pre-commit까지만 도입하고, docker 등 SW는 iter3을 위하여 남겨놓음”
 - “무료  quota 소진까지는 나에게 문의 없이 자율 진행”
 
 The separate Prompt Log preserves more original inputs. Available interaction records and contributor notes were reviewed; other members’ full Iteration 2 sessions were not provided, so this remains a contribution draft for team consolidation. Private session history and credentials are not published wholesale.
@@ -27,7 +25,7 @@ Earlier report drafts overstated simulated research results, generalized image-t
 
 ## 5. Prompt revisions
 
-The user first requested broad DAG execution, then clarified preservation of other contributors' work, test strengthening/pre-commit, deferral of deployment software, PDF priority and official-document consultation. These refinements narrowed integration toward additive adapters and observable scenarios. The question about reusing the existing Gemini key corrected an unnecessary request for separate credentials. Explicit free-quota authorization allowed bounded real checks while leaving ordinary development and CI on mock providers. External Wiki/Sheet/portal changes remained read-only and were prepared as user-action drafts.
+The user first requested broad DAG execution, then clarified preservation of other contributors' work, test strengthening/pre-commit, deferral of deployment software, PDF priority and official-document consultation. These refinements narrowed integration toward additive adapters and observable scenarios. The question about reusing the existing Gemini key corrected an unnecessary request for separate credentials. Explicit free-quota authorization allowed bounded real checks while leaving ordinary development and CI on mock providers. A later user correction added document ownership, duplicate-source cleanup and consistency checks as explicit pre-PR DAG gates. External Wiki/Sheet/portal changes remained read-only and were prepared as user-action drafts.
 
 ## 6. Manual fixes and why
 

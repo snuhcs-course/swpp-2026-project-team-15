@@ -161,3 +161,7 @@ for failures before an attempt. Credentials are excluded from saved artifacts.
 
 See [cases.py](cases.py) for fixed inputs, [reports.py](reports.py) for CSV generation,
 and [server/recipe_revision](../../server/recipe_revision/) for reusable revision logic.
+
+## Current integrated environment
+
+The current reproducible Python environment is server/pyproject.toml plus server/uv.lock. From repository root, run `uv sync --project server --locked` and invoke the experiment with `uv run --project server --locked python ...`. server/requirements.txt alone is not the full server/experiment environment. The historical data/recipes defaults remain unchanged; for the integrated 560-item catalog explicitly pass `--db data/recipes-iter2/recipes.sqlite3`. Never mix the old 701-item IDs with the new catalog.

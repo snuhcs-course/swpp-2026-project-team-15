@@ -16,3 +16,5 @@ Updated 2026-10-20. Start with the [root README](../README.md) for current setup
 The [official Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki) is a separate Git repository and remained at its October 9 revision when checked October 20; Testing/Iteration 2 AI pages were not published. Local drafts, publication and PDF/eTL submission are distinct states. Summarize necessary meeting decisions rather than committing raw private conversations.
 
 [Iteration 2 integration evidence](iterations/iteration-2/README.md) · [Iteration 2 publication sources](submission/iteration-2/README.md)
+
+[Documentation ownership and publication](documentation-layout.md): current source, historical records, generated previews and separate official Wiki publication.

@@ -51,6 +51,10 @@ Errors expose only `code`, `stage`, sanitized `message`, nullable `http_status` 
 
 Stages distinguish `configuration`, `api_request`, `provider_response`, `response_parsing` and `revision`. HTTP 401/403/429/5xx identify shared failures; quota/configuration subtypes use recognized provider codes. An ambiguous 429 is `rate_limit`. Raw provider errors, raw model text, prompts and secrets are not returned in error diagnostics. The independent experiment CLI retains its existing stop-on-first-error policy.
 
+## Dependency source
+
+Use pyproject.toml and uv.lock through `uv sync --locked` for the complete server/development environment. requirements.txt only declares the historical experiment runner's dotenv requirement; it is not a complete server installation manifest.
+
 ## Offline tests
 
 From `server/`, run `uv run pytest`. Tests inject temporary DBs, Mock LLMs and fake HTTP transports. Interactive OpenAPI documentation is available at `/docs`; The integrated Android app uses the new endpoint through its dedicated RecipeSource adapter.

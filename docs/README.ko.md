@@ -16,3 +16,5 @@
 한국어 대응본도 Git에 이미 포함돼 있다. 코드 PR과 별도인 [공식 Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki)는 10-20 확인 기준 10-09 revision이며 Testing/Iter2 AI 페이지는 아직 없다. 로컬 최신 초안·게시·PDF/eTL 제출을 구분한다. raw 개인 대화 대신 필요한 회의 요약을 기록한다.
 
 [Iteration 2 integration evidence](iterations/iteration-2/README.md) · [Iteration 2 publication sources](submission/iteration-2/README.md)
+
+[Documentation ownership and publication](documentation-layout.md): current source, historical records, generated previews and separate official Wiki publication.

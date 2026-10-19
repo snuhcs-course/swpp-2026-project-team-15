@@ -35,3 +35,10 @@ These inputs authorize local planning/documentation work; they are not evidence 
 - “revision 과정은 기존 gemini key로 안되나?”
 - “뭘 하던 외부 공식문서 확인은 매우 권장”
 - “무료  quota 소진까지는 나에게 문의 없이 자율 진행”
+
+## Documentation and DAG correction — 2026-10-20
+
+- “handover DAG 전부 수행”
+- “프로젝트 문서 등 개선할거면 DAG에 PR 전에 추가해서 작업하는게 낫지 않나?”
+
+This correction added document-source ownership and consistency verification before the final clone/report/PR gates. It did not authorize external Wiki/Sheet writes or remove the need for actual peer review.

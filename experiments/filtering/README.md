@@ -128,3 +128,7 @@ Run the focused regression tests from the repository root:
 ```powershell
 python -m unittest discover -s experiments/filtering -p "test_*.py" -v
 ```
+
+## Current integrated environment
+
+The current reproducible Python environment is server/pyproject.toml plus server/uv.lock. From repository root, run `uv sync --project server --locked` and invoke the experiment with `uv run --project server --locked python ...`. server/requirements.txt alone is not the full server/experiment environment. The historical data/recipes defaults remain unchanged; for the integrated 560-item catalog explicitly pass `--db data/recipes-iter2/recipes.sqlite3`. Never mix the old 701-item IDs with the new catalog.

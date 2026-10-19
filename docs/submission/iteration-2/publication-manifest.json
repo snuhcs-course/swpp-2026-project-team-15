@@ -2,9 +2,9 @@
   "status": "local sources, not published",
   "official_baseline": "739c0a635e57c253dd0953b928f2ef3e9b4eda99",
   "files": {
-    "AI-Collaboration-Report-Iteration-2-Prompt-Log.md": "c10313c89c4a4f4f338a3e792b3857104b925af71d0857927cadd1ab651deb88",
+    "AI-Collaboration-Report-Iteration-2-Prompt-Log.md": "622b0aab514a9695e0fb56b822ce1999412523213c7abaca9b3d166ddfefcc5f",
     "AI-Collaboration-Report-Iteration-2-ko.md": "95b364cb6f4192d592f87e56afea1d278f615b12e75cdfe4c0dad5525431ddd0",
-    "AI-Collaboration-Report-Iteration-2.md": "d1b6f905b2ed21f802ace5c61984cc7602e0fa26a8e97d37f41e36d7e89ca209",
+    "AI-Collaboration-Report-Iteration-2.md": "46197c61dbc6ff62f5b3402c6e7da1dc7a56441a465f1fd110ba98fcf29783dd",
     "Design-Documentation-ko.md": "7c4787a75e2a6f2e30c0083175a0f8299ff9306b66139c8d420f11324527e3d4",
     "Design-Documentation.md": "480c5081a537e420616fc2e8a5b3e7579356b873efd586dd0fca1fc78fb83df5",
     "Home.md": "5c99d9fbc1e82b551fdfa23750cdf3a6029040b1b68f5531d7b7a7c48809885b",
@@ -20,5 +20,23 @@
     "images/coverage-server-integrated.png": "b75883dd7de4de43f406e96c1b75a2f0677af205a95b7ea953e8b2ecb208d520",
     "images/database-iter2.svg": "57153ba3c0ef6a3900b596d6cdcbf0111f03d2e4cdff8f82b4004e24fb739c62",
     "images/flow-iter2.svg": "68c2afa81a735d68834126f3f17ae9588a2f2e4cc105258038ffce8ea5bf2eeb"
-  }
+  },
+  "preserved_wiki_pages": [
+    "AI-Collaboration-Report-Iteration-1",
+    "AI-Collaboration-Report-Iteration-1-Prompt-Log",
+    "AI-Collaboration-Report-Iteration-1-ko",
+    "Design-Documentation",
+    "Design-Documentation-ko",
+    "Home",
+    "Pipeline-Candidate-Comparative-Evaluation",
+    "Project-Management",
+    "Recipe-Database",
+    "Requirements-and-Specifications",
+    "Requirements-and-Specifications-ko",
+    "Vision-to-Recipe-Research-Design",
+    "_Footer",
+    "_Sidebar"
+  ],
+  "source_directory": "docs/submission/iteration-2/wiki",
+  "publication_status": "not published; baseline is read-only evidence"
 }
