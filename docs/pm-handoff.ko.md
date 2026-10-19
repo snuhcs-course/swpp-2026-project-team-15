@@ -6,7 +6,7 @@
 
 ## 현재 인수인계
 
-PR #6은 main `a27bf0a`에 병합됐다. Android·DB·연구가 main에 있고 로컬 FastAPI 흐름은 상세까지 동작한다. 혁준 DataStore/정렬 #9/#10과 수현 ID 추천/revision은 미병합이다. catalog·이름→ID·DTO·상태·정렬·요청수명·저장복원 계약이 남았다. clean merge만으로 통합검증을 대신하지 않는다. [root README](../README.md)에 SHA·실행·제약이 있다.
+PR #6은 main `a27bf0a`에 병합됐다. Android·DB·연구가 main에 있고 로컬 FastAPI 흐름은 상세까지 동작한다. 이 feature branch에는 혁준88d3380(backend1edadc0·#9/#10 포함)과 수현89fc8ba를 원작 이력 보존으로 통합했다. catalog·이름→ID·DTO·상태·정렬·요청수명·즐겨찾기 원본복원을 구현·검증했다. main 병합/타인review·공식문서게시와 별도다. [통합근거](iterations/iteration-2/README.md)를 참조한다. [root README](../README.md)에 SHA·실행·제약이 있다.
 
 ## 근거와 절차
 

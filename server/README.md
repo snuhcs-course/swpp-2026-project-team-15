@@ -1,6 +1,6 @@
 # Recipe Server
 
-FastAPI serves recipe recommendations and ingredient recognition. Recipe data is read from the existing local SQLite database; see [DB setup](db/README.md). The legacy `POST /recipes/recommend` name-based API remains available for the current Android client.
+FastAPI serves recipe recommendations and ingredient recognition. Recipe data is read from the existing local SQLite database; see [DB setup](db/README.md). The legacy `POST /recipes/recommend` name-based API remains available for compatibility; the integrated Android app uses the ID-based API below.
 
 ## Run locally
 
@@ -53,4 +53,4 @@ Stages distinguish `configuration`, `api_request`, `provider_response`, `respons
 
 ## Offline tests
 
-From `server/`, run `uv run pytest`. Tests inject temporary DBs, Mock LLMs and fake HTTP transports. Interactive OpenAPI documentation is available at `/docs`; Android migration to the new endpoint is a separate task.
+From `server/`, run `uv run pytest`. Tests inject temporary DBs, Mock LLMs and fake HTTP transports. Interactive OpenAPI documentation is available at `/docs`; The integrated Android app uses the new endpoint through its dedicated RecipeSource adapter.

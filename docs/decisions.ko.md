@@ -18,8 +18,14 @@
 | Catalog | old 701/new 560; 공유 ID의미변경. matching schema/importer·별도 DB 검증필요. 재배포권한미확인 |
 | AI 보고 | 최신 v1.1. 모든 AI 파일표기의무없음, 수동수정위치주석은 유용한경우. 과거 attribution/prompt 보존 |
 
-## 남은 통합 선택
+## 2026-10-20 feature branch 통합 결정
 
-이름→ID의모호함/unknown·catalog 검증, 새 original/revisionDTO, partial/refused/failed/not_attempted·empty·transport 구분, 정렬/count·전체 timeout/cancel/retry·favorite 상세복원이 남았다. revised는 의미정확/안전보증아니다. 도구/알레르기 data·분량·안전한 AI 수정범위/고지/비용, public deployment/공유동기화는 별도근거가 필요하다.
+혁준88d3380/1edadc0·수현89fc8ba의 commit/tests를 보존해 main a27bf0a 기반으로 병합했다. 위 표는 main 기본판의 기존 결정이며 현재 feature branch의 변경은 다음과 같다.
 
-다른팀원에 새의무·마감을 부여하지 않는다. 실제정책변경의 날짜·이유·PR/근거·결과를 기록하고 공식 Wiki를 별도갱신한다. 코드 PR은 Wiki 게시가 아니다.
+- 별도560종 DB·catalog version과 이름→ID adapter로 구형701종 ID 혼용을 차단한다. unknown/ambiguous 이름을 고지하며 이름 기반 DataStore를 유지한다.
+- 신규 ID API/DTO를 실제 앱에 연결하고 legacy API는 호환용으로 보존했다. 물만 가정하며 정렬용 부족 count와 전체 미보유 목록을 구분한다.
+- original/AI 상태·제안을 분리하고 read210/call240초, cancellation/generation guard·자동재시도없음으로 요청을 관리한다. 즐겨찾기는 AI 호출 없이 원본을 복원한다.
+- 원본테스트 유지·확대 runtime coverage·결합flow/reopen/device 시나리오 및 pre-commit을 검증했다. [계약](iterations/iteration-2/integration-contract.md)·[실행기록](iterations/iteration-2/execution-report.md) 참조.
+- 도구/알레르기·1인분/출처URL·의미평가는 미완성이다. Docker/nginx는 사용자 결정으로 Iter3 준비에 이월한다.
+
+main 병합·공식 Wiki·타인review는 별도이며 팀원에게 새의무/마감을 부여하지 않는다.

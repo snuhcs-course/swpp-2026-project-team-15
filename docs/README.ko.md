@@ -2,7 +2,7 @@
 
 [English](README.md) · [한국어](README.ko.md)
 
-갱신 2026-10-20. 현재 실행·기능·제약은 [root README](../README.md)를 우선한다. PR #6의 연결 기본판은 main에 병합됐고 최신 persistence/정렬·ID 추천/revision은 미병합이다. 이 폴더의 Iter1 상태·제출물은 그 날짜의 기록이며 현재 완료 목록이 아니다.
+갱신 2026-10-20. 현재 실행·기능·제약은 [root README](../README.md)를 우선한다. PR #6의 연결 기본판은 main에 병합됐고 이 feature branch에는 최신 persistence/정렬·ID 추천/revision을 원작 이력 보존으로 통합했다. main 병합은 별도 대기다. 이 폴더의 Iter1 상태·제출물은 그 날짜의 기록이며 현재 완료 목록이 아니다.
 
 | 문서 | 범위 |
 | --- | --- |
@@ -14,3 +14,5 @@
 | [Iteration 1 AI report](ai-collaboration/iteration-1/team15-iter1-AI-collaboration-report-draft.ko.md) | 당시 contributor 기록 |
 
 한국어 대응본도 Git에 이미 포함돼 있다. 코드 PR과 별도인 [공식 Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki)는 10-20 확인 기준 10-09 revision이며 Testing/Iter2 AI 페이지는 아직 없다. 로컬 최신 초안·게시·PDF/eTL 제출을 구분한다. raw 개인 대화 대신 필요한 회의 요약을 기록한다.
+
+[Iteration 2 integration evidence](iterations/iteration-2/README.md) · [Iteration 2 publication sources](submission/iteration-2/README.md)

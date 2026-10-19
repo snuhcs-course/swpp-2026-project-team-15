@@ -6,9 +6,9 @@ Updated 2026-10-20, Iteration 2. The prior schedule names Hyeokjun as Iteration 
 
 ## Current handoff
 
-PR #6 is merged into main `a27bf0a`. Android, database and historical research artifacts are now included; the local baseline reaches recipe detail through FastAPI. Hyeokjun's latest DataStore/sorting branches (#9/#10) and Suhyeon's new ID-based recommendation/revision branch remain unmerged. Their contracts and catalog versions differ. See the [root README](../README.md) for exact heads, setup and limits.
+PR #6 is merged into main `a27bf0a`. Android, database and historical research artifacts are now included; the local baseline reaches recipe detail through FastAPI. This feature branch preserves and integrates Hyeokjun88d3380 (including backend1edadc0, PRs #9/#10) and Suhyeon89fc8ba. Main merge and peer review remain pending. See the [root README](../README.md) for exact heads, setup and limits.
 
-The next integration needs a consistent ingredient catalog, name-to-ID mapping, new DTOs/status handling, ordering, request lifetime and persistence restoration. A clean merge preview is not runtime verification. Record actual decisions and results once made; do not turn proposed behavior into completed features.
+Catalog versioning, name-to-ID mapping, DTO/status handling, ordering, request guards and favorite-original restoration are implemented and tested. See [integration evidence](iterations/iteration-2/README.md) and [publication sources](submission/iteration-2/README.md). Allergy/tool matching, authoritative one-serving amounts and semantic AI quality remain incomplete.
 
 ## Sources and evidence
 
