@@ -1,12 +1,12 @@
 # Recipe filtering development runner
 
-Read-only SQLite adapter and comparative diagnostics for server/recipe_filtering. FastAPI uses the shared core directly; this CLI and its unchanged regression tests are development tools excluded from the runtime archive.
+Read-only SQLite adapter and comparative diagnostics for server/recipe_filtering. FastAPI uses the shared core directly; this CLI and its unchanged regression tests in server/tests/experiments/filtering are development tools excluded from the runtime archive.
 
 From repository root:
 
 ```sh
 uv sync --project server --locked
-uv run --project server --locked python server/experiments/filtering/run_experiment.py --db data/recipes-iter2/recipes.sqlite3 --fridge-ids 70 32 223 345
+uv run --project server --locked python research/experiments/filtering/run_experiment.py --db data/recipes-iter2/recipes.sqlite3 --fridge-ids 70 32 223 345
 ```
 
 Use the matching560-item catalog; old701-item IDs are incompatible. The original default DB location remains unchanged for compatibility, so pass --db explicitly. --help lists thresholds, exclusions, human annotation and output options. Generated CSV/metadata stay under ignored data/. Labels and threshold comparisons are experimental choices, not measured precision/recall or validated semantic corrections.

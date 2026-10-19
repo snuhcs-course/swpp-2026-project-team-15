@@ -10,7 +10,7 @@ ANDROID_DIR="$REPO_ROOT/android"
 RECIPE_DIR="$REPO_ROOT/data/recipes-iter2"
 RECIPE_DB="$RECIPE_DIR/recipes.sqlite3"
 HOST_PORT="${PORT:-8000}"
-DEVICE_PORT=8000 # Fixed in the app (ApiClient.BASE_URL).
+DEVICE_PORT=8000 # Default BuildConfig.SERVER_BASE_URL uses localhost:8000.
 APP_ACTIVITY="com.example.mylittlechef/.MainActivity"
 
 step() { printf '\n==> %s\n' "$1"; }

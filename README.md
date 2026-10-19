@@ -16,42 +16,47 @@ Historical P0–P5 research and prior project records remain in Git history and 
 
 ## Source layout
 
-Tracked source below; generated build/cache/environment directories and private datasets are omitted. The repository includes development tools; the server deployment archive contains only the runtime subset.
+Selected tracked source below; generated environments, builds and private datasets are omitted. Development tools stay in the repository; deployment packages contain only runtime files.
 
 ```text
 .
-├── .github/workflows/ci.yml       # Server checks, Android checks and artifacts
+├── .github/workflows/ci.yml       # Server/Android checks and artifacts
 ├── README.md                     # Setup and source navigation
 ├── android/                      # Android Gradle project
 │   ├── app/src/
 │   │   ├── main/                 # Compose UI, navigation, data and domain code
-│   │   ├── test/                 # Local JVM tests
+│   │   ├── test/                 # JVM tests
 │   │   └── androidTest/          # Device and backend integration tests
-│   └── gradle/                   # Wrapper, version catalog and JVM criteria
-├── scripts/
-│   ├── run-local-demo.sh         # Import private data and launch the local demo
-│   ├── check_integration_policy.py # Protect existing tests and references
-│   └── package_server.py         # Package committed runtime files with hashes
+│   └── gradle/                   # Wrapper, versions and JVM criteria
+├── research/                     # Feature exploration and reproducible comparisons
+│   ├── evaluation/               # Photo-recognition benchmark and ground truth
+│   └── experiments/
+│       ├── filtering/            # Filtering comparisons using the server core
+│       └── revision/             # Revision cases, adapters and observation runner
+├── scripts/                      # Local demo, source integrity and runtime packaging
 └── server/
     ├── app/                      # FastAPI configuration, vision and recipe APIs
     ├── recipe_filtering/         # Runtime filtering and ranking algorithms
     ├── recipe_revision/          # Runtime revision logic and provider adapters
     ├── db/                       # Schema and offline CSV importer
     ├── fixtures/
-    │   ├── vision/               # Recorded candidates used by the mock provider
+    │   ├── vision/               # Recorded candidates for the runtime mock provider
     │   └── demo/                 # Synthetic photo for local integration checks
-    ├── tests/                    # Automated server tests and protected references
-    ├── evaluation/               # Photo benchmark and explicit live integration check
-    ├── experiments/              # Filtering/revision experiment runners and tests
-    ├── pyproject.toml            # Runtime and development dependency definitions
+    ├── tests/                    # All automated Python checks
+    │   ├── experiments/          # Preserved filtering/revision regression tests
+    │   ├── manual/               # Explicit live integration check; not auto-collected
+    │   ├── recipes/              # Recipe API and integration contracts
+    │   ├── references/           # Protected specifications and test hashes
+    │   └── vision/               # Vision provider and API tests
+    ├── pyproject.toml            # Runtime/development dependencies and pytest config
     ├── uv.lock                   # Locked dependency versions
     ├── .env.example              # Provider and database configuration template
-    └── README.md                 # Server-specific setup and API details
+    └── README.md                 # Server setup and API details
 ```
 
-`tests/` verifies behavior with assertions. `evaluation/` measures recorded-photo recognition and checks live integration; `experiments/` runs filtering/revision scenarios and produces comparison or human-review inputs. These tools depend on runtime code; runtime code does not import them. All three directories are excluded from the server deployment archive.
+`server/tests/` asserts expected behavior with pytest. `research/` holds prototypes, measurements and comparison tools for feature development; adopted logic belongs in the Android/server implementation with regression tests. Existing research tools reuse server modules. Their Python namespaces (`evaluation`, `experiments`) are preserved, so the original regression tests remain byte-for-byte unchanged; pytest adds research/ to its import path. See [research setup](research/README.md) for commands and the development workflow.
 
-In `evaluation/`, `vision_benchmark.py` compares candidates against the 11-photo `ground_truth.json`, reports accepted-name matches, misses, unmatched candidates, latency and direct-call token usage. Matching accepts substrings and can credit one candidate to multiple expected items, so the reported recall is diagnostic rather than strict object-level accuracy or precision. Photos and generated reports are not committed. `integration_live_check.py` explicitly requires `--live` and checks vision → catalog IDs → at most one recipe revision using the real providers; it records responses without establishing semantic correctness. These commands can make external model calls; normal startup and CI do not run them.
+The photo benchmark compares candidates against 11 ground-truth photos, reporting accepted-name matches, misses, unmatched candidates, latency and direct-call token usage. Substring matching can credit one candidate to multiple expected items, so its recall is diagnostic rather than strict object-level accuracy or precision. Photos and reports stay outside Git. The manual live integration check requires `--live` and records vision → catalog IDs → at most one recipe revision. Research/live commands can call external providers; normal startup and CI do not run them. Neither parsing success nor an HTTP response establishes semantic correctness.
 
 ## Run locally
 

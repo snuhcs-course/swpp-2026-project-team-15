@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 # Preserve original baseline names/hashes while checking their relocated files.
-RELOCATIONS = {"android/MyLittleChef/": "android/", "experiments/": "server/experiments/"}
+RELOCATIONS = {"android/MyLittleChef/": "android/", "experiments/": "server/tests/experiments/"}
 
 
 def main() -> None:

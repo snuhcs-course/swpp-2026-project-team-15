@@ -25,8 +25,8 @@ dev = [
 package = false
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "experiments/filtering", "experiments/revision"]
-pythonpath = [".", ".."]
+testpaths = ["tests"]
+pythonpath = [".", "..", "../research"]
 
 [tool.coverage.run]
 source = ["app", "recipe_filtering", "recipe_revision"]
@@ -36,7 +36,7 @@ branch = true
 line-length = 100
 target-version = "py312"
 # Preserve contributor importer/experiment formatting; their original tests run in pytest.
-extend-exclude = ["db", "experiments"]
+extend-exclude = ["db", "tests/experiments"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]

@@ -5,12 +5,13 @@ Each photo is sent unchanged. A ground-truth item counts as found when one of it
 names appears in a returned candidate name. Candidates that match no item are listed for
 manual review; they may be real items the ground truth omits.
 
-Usage:
+Usage from repository root (see research/README.md):
+    export PYTHONPATH=server:research
     # through a running server (VISION_PROVIDER=gemini)
-    uv run python -m evaluation.vision_benchmark PHOTO_DIR [--server URL] [--out FILE]
-    # direct Gemini call to compare models and prompts (reads GEMINI_API_KEY)
-    uv run --env-file .env python -m evaluation.vision_benchmark PHOTO_DIR \\
-        --model gemini-3.5-flash --prompt clues [--out FILE]
+    uv run --project server python -m evaluation.vision_benchmark PHOTO_DIR --server URL
+    # direct call; load the key from server/.env or the environment
+    uv run --project server --env-file server/.env python -m evaluation.vision_benchmark \\
+        PHOTO_DIR --model gemini-3.5-flash --prompt clues [--out FILE]
 PHOTO_DIR holds one folder per image (e.g. 04_garlic_eggs/garlic_eggs.jpg), as in the
 benchmark archive. Photos are not committed.
 """

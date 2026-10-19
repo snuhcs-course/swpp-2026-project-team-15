@@ -28,7 +28,7 @@ def main() -> None:
     parser.add_argument("--image", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
     settings = Settings.from_env()
     engine = read_only_sqlite_engine(settings.recipe_db_path)
     provider = genai.Client(
