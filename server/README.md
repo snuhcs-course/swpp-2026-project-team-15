@@ -1,6 +1,6 @@
 # Recipe Server
 
-FastAPI serves recipe recommendations and ingredient recognition. Recipe data is read from the existing local SQLite database; see [DB setup](db/README.md). The legacy `POST /recipes/recommend` name-based API remains available for compatibility; the integrated Android app uses the ID-based API below.
+FastAPI serves recipe recommendations and ingredient recognition. Recipe data is read from the existing local SQLite database; the source checkout contains the [DB preparation tool](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/cc5e739/server/db/README.md); a runtime archive uses a separately imported DB. The legacy `POST /recipes/recommend` name-based API remains available for compatibility; the integrated Android app uses the ID-based API below.
 
 ## Run locally
 
@@ -53,8 +53,12 @@ Stages distinguish `configuration`, `api_request`, `provider_response`, `respons
 
 ## Dependency source
 
-Use pyproject.toml and uv.lock through `uv sync --locked` for the complete server/development environment. requirements.txt only declares the historical experiment runner's dotenv requirement; it is not a complete server installation manifest.
+Use pyproject.toml and uv.lock through `uv sync --locked` for the complete server/development environment. The optional experiment environment uses the same locked dev group; no separate requirements file is maintained.
 
 ## Offline tests
 
 From `server/`, run `uv run pytest`. Tests inject temporary DBs, Mock LLMs and fake HTTP transports. Interactive OpenAPI documentation is available at `/docs`; The integrated Android app uses the new endpoint through its dedicated RecipeSource adapter.
+
+## Runtime deployment
+
+The runtime artifact is built from committed source with `python3 scripts/package_server.py` at repository root. Extract it, enter server/, run `uv sync --locked --no-dev`, provide RECIPE_DB_PATH as an absolute path to the matching imported560-item DB, and start `uv run --locked --no-dev uvicorn app.main:create_app_from_env --factory --host 0.0.0.0 --port 8000`. Provider variables are supplied by the target environment; .env.example documents them. No development/evaluation code, credentials or recipe dataset is bundled.

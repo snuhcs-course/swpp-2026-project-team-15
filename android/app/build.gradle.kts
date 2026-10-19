@@ -1,6 +1,17 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+}
+
+val serverBaseUrl = providers.gradleProperty("serverBaseUrl")
+    .orElse("http://127.0.0.1:8000/").get()
+val serverEndpoint = URI(serverBaseUrl)
+require(serverEndpoint.scheme in listOf("http", "https") && serverEndpoint.host != null &&
+    serverEndpoint.userInfo == null && serverEndpoint.rawQuery == null &&
+    serverEndpoint.rawFragment == null && serverBaseUrl.endsWith("/")) {
+    "serverBaseUrl must be an HTTP(S) URL ending in /, without credentials, query or fragment"
 }
 
 android {
@@ -15,6 +26,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("String", "SERVER_BASE_URL", "\"$serverBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -36,6 +48,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

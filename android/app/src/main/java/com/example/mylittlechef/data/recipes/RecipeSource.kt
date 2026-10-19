@@ -1,5 +1,6 @@
 package com.example.mylittlechef.data.recipes
 
+import com.example.mylittlechef.BuildConfig
 import com.example.mylittlechef.model.Recipe
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -39,7 +40,7 @@ object IntegratedApiClient {
     val api: IdRecipeApi by lazy {
         val transport = OkHttpClient.Builder().readTimeout(210, TimeUnit.SECONDS)
             .callTimeout(240, TimeUnit.SECONDS).retryOnConnectionFailure(false).build()
-        Retrofit.Builder().baseUrl("http://127.0.0.1:8000/").client(transport)
+        Retrofit.Builder().baseUrl(BuildConfig.SERVER_BASE_URL).client(transport)
             .addConverterFactory(GsonConverterFactory.create()).build().create(IdRecipeApi::class.java)
     }
 }

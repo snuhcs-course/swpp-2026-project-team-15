@@ -37,7 +37,7 @@ def test_fresh_demo_imports_separate_catalog_and_keeps_existing_database(recipe_
     legacy = root / "data/recipes/recipes.sqlite3"
     legacy.parent.mkdir(parents=True)
     legacy.write_bytes(b"existing legacy database must survive")
-    android = root / "android/MyLittleChef"
+    android = root / "android"
     android.mkdir(parents=True)
     (android / "gradlew").write_text("#!/bin/sh\nexit 0\n")
     sdk = tmp_path / "sdk/platform-tools"

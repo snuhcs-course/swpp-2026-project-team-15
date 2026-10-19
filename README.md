@@ -12,7 +12,15 @@ This branch merges Hyeokjun's `88d3380` (including `1edadc0`) and Suhyeon's `89f
 - Loading, empty results, mapping warnings, errors and retry differ. Latest-request guards prevent older responses replacing newer inventory results. New recommendation transport allows the existing three sequential60-second revision attempts; no automatic retry.
 - Tool/allergy metadata are empty: suitability and cooking safety are **not verified**. Semantic revision correctness and authoritative one-serving conversion are not established features.
 
-P0–P5 is a [historical simulation archive](research/README.md). Prior implementation records remain in Git history and the Wiki.
+Historical P0–P5 research and prior project records remain in Git history and the Wiki. The source tree contains the app, server and development checks.
+
+## Source layout
+
+- `android/`: Android app, Gradle build and client tests.
+- `server/app`, `server/recipe_filtering`, `server/recipe_revision`: runtime API and shared algorithms.
+- `server/db`, `server/fixtures`: database preparation and mock-provider input.
+- `server/tests`, `server/evaluation`, `server/experiments`: development checks and offline evaluation; excluded from the server deployment archive.
+- `scripts/`: local setup, source integrity and runtime packaging.
 
 ## Run locally
 
@@ -50,7 +58,7 @@ From the repository root:
 uv run --project server --locked pre-commit install --allow-missing-config
 uv run --project server --locked pre-commit run --all-files
 (cd server && uv run --locked pytest --cov --cov-report=term-missing --cov-report=html --junitxml=test-results.xml)
-(cd android/MyLittleChef && sh ./gradlew lintDebug testDebugUnitTest createDebugUnitTestCoverageReport assembleDebug)
+(cd android && sh ./gradlew lintDebug testDebugUnitTest createDebugUnitTestCoverageReport assembleDebug)
 ```
 
 CI collects original server and experiment tests, covers app/filtering/revision, and saves server reports and Android reports/debug APK. Pre-commit uses the same quick lint/format and protected-reference integrity checks, without running Gradle or live AI. Existing contributor tests are preserved byte-for-byte. Protected specification/test references live in `server/tests/references`; CI checks their unchanged contents.
@@ -58,12 +66,26 @@ CI collects original server and experiment tests, covers app/filtering/revision,
 For connected tests, start the server with both providers=mock and the matching560-item DB, authorize USB and configure reverse8000, then run:
 
 ```sh
-(cd android/MyLittleChef && sh ./gradlew connectedDebugAndroidTest)
+(cd android && sh ./gradlew connectedDebugAndroidTest)
 ```
 
 The device suite includes photo upload→reviewed names→catalog→new recommendations→rendered original detail. Confirmation is scripted in the network/render test; manual camera/gallery/navigation usability remains separate. UI tests also check original/suggestion toggling with synthetic fixtures. Do not interpret mock success as recognition accuracy or safe revisions. See the Wiki Testing Documentation for measured results and remaining gaps.
 
 Docker/nginx/deployment stack is deferred to Iteration3 planning by the user. This is a local runnable increment with CI, not a production deployment.
+
+## Build a server deployment artifact
+
+```sh
+python3 scripts/package_server.py --output dist/server.tar.gz
+# Extract on the target; supply the separately imported matching DB:
+cd server
+uv sync --locked --no-dev
+RECIPE_DB_PATH=/absolute/path/recipes.sqlite3 uv run --locked --no-dev uvicorn app.main:create_app_from_env --factory --host 0.0.0.0 --port 8000
+```
+
+The archive contains only committed runtime code, vision fixtures, locked dependency metadata and server setup instructions, with a commit/file-hash manifest. Tests, experiments, research, local config/keys and recipe data are excluded. Configure provider variables from server/.env.example through the target environment. Mock defaults need no API keys.
+
+Build the phone app for that endpoint with `cd android && sh ./gradlew assembleDebug -PserverBaseUrl=https://your-api.example/`. Both API clients share this build setting; the default remains USB localhost. Docker/nginx/cloud provisioning is Iteration3 preparation, outside this increment.
 
 ## Project documents
 

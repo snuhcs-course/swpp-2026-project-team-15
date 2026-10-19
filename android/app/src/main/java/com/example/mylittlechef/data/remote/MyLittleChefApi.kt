@@ -1,6 +1,7 @@
 // AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 package com.example.mylittlechef.data.remote
 
+import com.example.mylittlechef.BuildConfig
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -22,7 +23,7 @@ interface MyLittleChefApi {
 
 object ApiClient {
     // The phone reaches the laptop's server through `adb reverse tcp:8000 tcp:8000`.
-    private const val BASE_URL = "http://127.0.0.1:8000/"
+    private const val BASE_URL = BuildConfig.SERVER_BASE_URL
 
     val api: MyLittleChefApi by lazy {
         val http = OkHttpClient.Builder()

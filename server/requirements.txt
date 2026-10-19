@@ -1,2 +1,0 @@
-# Local recipe revision runner environment-file loading.
-python-dotenv>=1.0,<2

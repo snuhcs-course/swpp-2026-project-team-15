@@ -605,6 +605,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "google-genai" },
+    { name = "httpx" },
     { name = "python-multipart" },
     { name = "sqlmodel" },
     { name = "uvicorn" },
@@ -612,7 +613,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -624,6 +624,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.143.0" },
     { name = "google-genai", specifier = ">=2.29.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "python-multipart", specifier = ">=0.0.32" },
     { name = "sqlmodel", specifier = ">=0.0.48" },
     { name = "uvicorn", specifier = ">=0.54.0" },
@@ -631,7 +632,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "httpx", specifier = ">=0.28.1" },
     { name = "pre-commit", specifier = ">=4.7.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
