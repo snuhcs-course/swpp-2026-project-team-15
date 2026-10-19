@@ -1,6 +1,6 @@
 # My Little Chef — Testing Documentation
 
-**Team 15 · Iteration 2 · 2026-10-20 · version 0.3 · LOCAL PUBLICATION SOURCE**
+**Team 15 · Iteration 2 · 2026-10-20 · version 0.4 · LOCAL PUBLICATION SOURCE**
 
 ## Document Revision History
 
@@ -9,6 +9,8 @@
 | 0.1 | October 14 | Initial baseline draft plan/results |
 | 0.2 | October 20 | Historical and cached baseline results separated |
 | 0.3 | October 20 | Combined branches, flow/state tests, expanded coverage and live/mock evidence |
+
+| 0.4 | October 20 | Fresh-clone setup defect, explicit importer paths and shell-level regression |
 
 ## 1. Responsibility and Schedule
 
@@ -51,7 +53,7 @@ A forced `testDebugUnitTest --rerun-tasks` run additionally established fresh JV
 | --- | --- | --- |
 | Vision/API |90% prior draft |98.37% combined statement/branch |
 | Server wiring |60% prior draft |93.59% combined |
-| Runtime app/filtering/revision |80% personal integration plan |98% combined; line98.73%, branch94.44%;180 passed |
+| Runtime app/filtering/revision |80% personal integration plan |98% combined; line98.73%, branch94.44%;181 passed |
 | Android overall JVM |No agreed numeric target |13.66% lines;34 passed in fresh run |
 | Android domain / local repositories |No new team target |97.50% /92.31% lines |
 | Android new recipe adapter / ViewModels |No new team target |81.74% /87.69% lines |
@@ -91,3 +93,5 @@ Plan Iteration 3; results Iteration 4. Existing stories remain human-owned; no c
 ## 5. Alpha/Beta
 
 Iteration 5. No completed alpha/beta claimed.
+
+The first remote fresh clone999c79a failed before app installation because the launcher omitted importer path arguments. The original importer remains unchanged; the launcher now passes the separate CSV/DB paths. test_demo_launcher.py runs the real shell/importer with synthetic CSVs and stub platform tools, preserves a legacy DB sentinel and verifies idempotent rerun. This case increases the local total from180 to181; final corrected-clone evidence is recorded separately.

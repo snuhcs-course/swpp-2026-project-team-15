@@ -39,3 +39,9 @@ Official Wiki/Sheet/Figma/eTL are read-only for agents. English Requirements/Des
 ## DAG continuation check — 2026-10-20
 
 Fetched inputs remain main a27bf0a, client88d3380/backend1edadc0 and recipe89fc8ba. Locked server pytest at runtime9454e4c plus the pending synthetic-input regression executed180 tests and106 subtests,0 failed/0 skipped; the coverage invocation emitted38 warnings (existing deprecation/ResourceWarnings). A separate plain invocation emitted one deprecation warning. Coverage remains932/944 lines and187/198 branches. Neither run calls paid providers. Fresh-clone results and exact final candidate are recorded in fresh-clone-validation.md after execution.
+
+## Fresh-clone defect and fix
+
+Candidate999c79a failed during first-time setup: the launcher extracted the private bundle into data/recipes-iter2 but invoked the original importer with its data/recipes defaults. Existing local DBs had hidden this integration defect. The launcher now supplies --csv-dir and --db explicitly, preserving Suhyeon's importer defaults and the old DB. A shell-level regression runs the actual launcher/importer with synthetic CSVs, stubs only platform tools, verifies the new water catalog and untouched old database, and repeats setup without a ZIP to verify no overwrite. The failed clone is retained as failure evidence; a corrected remote candidate is cloned anew for the final gate.
+
+Corrected launcher local check:181 passed/106 subtests,98% combined runtime coverage (932/944 lines,187/198 branches);39 warnings during this invocation, with warning counts dependent on existing fixture finalization. No source importer or protected contributor tests changed.

@@ -16,7 +16,7 @@ P0–P5 is a [historical simulation archive](research/README.md). [Iteration1 st
 
 ## Run locally
 
-Requires uv/Python≥3.12, Android SDK37, JDK21, and an authorized USB-debugging phone. App minSdk26/target36/compile37. The **October19 560-ingredient entity ZIP**, distributed privately, must match this schema/importer. From repository root:
+Requires uv/Python≥3.12, Android SDK37, JDK21 for the entry environment, and an authorized USB-debugging phone. The existing Gradle daemon criteria select/provision JDK25 independently of JAVA_HOME. App minSdk26/target36/compile37. The **October19 560-ingredient entity ZIP**, distributed privately, must match this schema/importer. From repository root:
 
 ```sh
 sh scripts/run-local-demo.sh path/to/entities-2026-10-19.zip

@@ -75,7 +75,8 @@ if [ ! -f "$RECIPE_DB" ]; then
         mkdir -p "$RECIPE_DIR"
         (cd "$SERVER_DIR" && uv run python -c "import sys, zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" "$1" "$RECIPE_DIR")
     fi
-    (cd "$SERVER_DIR" && uv run python db/import_recipes.py)
+    # The importer preserves its original data/recipes defaults; this increment uses a separate DB.
+    (cd "$SERVER_DIR" && uv run python db/import_recipes.py --csv-dir "$RECIPE_DIR" --db "$RECIPE_DB")
 fi
 
 # Fail before installing the app or making any provider request if IDs use another catalog.
