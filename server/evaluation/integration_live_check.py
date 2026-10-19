@@ -65,11 +65,17 @@ def main() -> None:
                 catalog = client.get("/recipes/catalog").json()
                 known = {row["name"]: row["ingredient_id"] for row in catalog["ingredients"]}
                 names = [row["name"] for row in candidates]
-                # Scripted confirmation accepts only exact catalog names; nothing is guessed.
-                accepted = list(dict.fromkeys(known[name] for name in names if name in known))
+                # Match the documented client rule: exact name, then the existing egg alias.
+                resolved = {
+                    name: known.get(name, known.get("계란") if name == "달걀" else None)
+                    for name in names
+                }
+                accepted = list(
+                    dict.fromkeys(value for value in resolved.values() if value is not None)
+                )
                 report["candidate_names"] = names
                 report["confirmed_ids"] = accepted
-                report["unmapped"] = [name for name in names if name not in known]
+                report["unmapped"] = [name for name, value in resolved.items() if value is None]
                 result = client.post(
                     "/recipes/recommendations",
                     json={"ingredient_ids": accepted, "revision_limit": 1},
