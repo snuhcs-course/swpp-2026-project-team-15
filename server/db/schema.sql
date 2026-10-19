@@ -8,9 +8,7 @@ CREATE TABLE recipe (
     cooking_time VARCHAR(20),
     calories VARCHAR(20),
     servings VARCHAR(20),
-    difficulty VARCHAR(50),
-    main_image_url VARCHAR(2048),
-    source_url VARCHAR(2048)
+    difficulty VARCHAR(50)
 );
 
 CREATE TABLE recipe_step (
@@ -18,7 +16,6 @@ CREATE TABLE recipe_step (
     recipe_id INTEGER NOT NULL REFERENCES recipe(recipe_id),
     step_number INTEGER NOT NULL,
     instruction TEXT NOT NULL,
-    image_url VARCHAR(2048),
     tip TEXT
 );
 
