@@ -21,7 +21,6 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: python ../scripts/check_integration_policy.py
-      - run: python ../scripts/check_publication.py
       - run: uv run pytest --cov --cov-report=term-missing --cov-report=xml --cov-report=html --junitxml=test-results.xml
       - uses: actions/upload-artifact@v4
         if: always()

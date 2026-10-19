@@ -18,12 +18,6 @@ repos:
         entry: python3 scripts/check_integration_policy.py
         language: system
         pass_filenames: false
-      - id: publication-sources
-        name: Verify local Wiki source manifest and links
-        entry: python3 scripts/check_publication.py
-        language: system
-        pass_filenames: false
-        files: ^(docs/submission/iteration-2/|docs/acceptance/|scripts/check_publication\.py)
       - id: whitespace
         name: Git whitespace check
         entry: git diff --cached --check

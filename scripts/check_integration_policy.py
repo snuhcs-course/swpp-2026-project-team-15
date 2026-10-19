@@ -1,7 +1,7 @@
 """Verify preserved human specification references and original contributor tests.
 
 CI is a detectable integrity check, not a substitute for human review or branch
-protection. The agent must not edit docs/acceptance or its approved references.
+protection. The agent must not edit server/tests/references or its approved references.
 """
 
 import hashlib
@@ -12,10 +12,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> None:
-    for manifest in ("docs/acceptance/manifest.json", "docs/iterations/iteration-2/test-baseline.json"):
+    for manifest, relative_base in (
+        ("server/tests/references/specification-manifest.json", "server/tests/references"),
+        ("server/tests/references/contributor-tests.json", "."),
+    ):
         path = ROOT / manifest
         files = json.loads(path.read_text())
-        base = path.parent if "acceptance" in manifest else ROOT
+        base = ROOT / relative_base
         for name, expected in files.items():
             source = base / name
             if not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest() != expected:

@@ -23,7 +23,7 @@ def test_fresh_demo_imports_separate_catalog_and_keeps_existing_database(recipe_
         "server/db/import_recipes.py",
         "server/db/schema.sql",
         "server/.env.example",
-        "docs/demo/mock-photo.png",
+        "server/fixtures/demo/mock-photo.png",
     ):
         target = root / name
         target.parent.mkdir(parents=True, exist_ok=True)

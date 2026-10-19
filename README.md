@@ -4,7 +4,7 @@ SNU SWPP Fall 2026 · Team15. Review photo ingredient candidates, maintain a loc
 
 ## Iteration2 integration branch
 
-This branch merges Hyeokjun's `88d3380` (including `1edadc0`) and Suhyeon's `89fc8ba` on main `a27bf0a`, preserving their original commits, repositories, filtering/revision and tests. Integration adds a versioned ingredient catalog and Android adapter, source restoration, state handling and scenario tests. [Contract and test plan](docs/iterations/iteration-2/integration-contract.md).
+This branch merges Hyeokjun's `88d3380` (including `1edadc0`) and Suhyeon's `89fc8ba` on main `a27bf0a`, preserving their original commits, repositories, filtering/revision and tests. Integration adds a versioned ingredient catalog and Android adapter, source restoration, state handling and scenario tests. Project documents and meeting summaries are maintained in the [official Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki).
 
 - DataStore persists fridge/profile/onboarding/favorite IDs. Favorite originals restore from the server without invoking AI; old AI suggestions are not persisted.
 - Reviewed names resolve to the current catalog before ID requests. Unknown/ambiguous names are disclosed; no arbitrary IDs are invented. Only water is assumed available.
@@ -12,7 +12,7 @@ This branch merges Hyeokjun's `88d3380` (including `1edadc0`) and Suhyeon's `89f
 - Loading, empty results, mapping warnings, errors and retry differ. Latest-request guards prevent older responses replacing newer inventory results. New recommendation transport allows the existing three sequential60-second revision attempts; no automatic retry.
 - Tool/allergy metadata are empty: suitability and cooking safety are **not verified**. Semantic revision correctness and authoritative one-serving conversion are not established features.
 
-P0–P5 is a [historical simulation archive](research/README.md). [Iteration1 status](docs/iterations/iteration-1-status.md) remains a dated record.
+P0–P5 is a [historical simulation archive](research/README.md). Prior implementation records remain in Git history and the Wiki.
 
 ## Run locally
 
@@ -53,7 +53,7 @@ uv run --project server --locked pre-commit run --all-files
 (cd android/MyLittleChef && sh ./gradlew lintDebug testDebugUnitTest createDebugUnitTestCoverageReport assembleDebug)
 ```
 
-CI collects original server and experiment tests, covers app/filtering/revision, and saves server reports and Android reports/debug APK. Pre-commit uses the same quick lint/format and protected-reference integrity checks, without running Gradle or live AI. Existing contributor tests are preserved byte-for-byte. [Quality environment](docs/iterations/iteration-2/quality-environment.md).
+CI collects original server and experiment tests, covers app/filtering/revision, and saves server reports and Android reports/debug APK. Pre-commit uses the same quick lint/format and protected-reference integrity checks, without running Gradle or live AI. Existing contributor tests are preserved byte-for-byte. Protected specification/test references live in `server/tests/references`; CI checks their unchanged contents.
 
 For connected tests, start the server with both providers=mock and the matching560-item DB, authorize USB and configure reverse8000, then run:
 
@@ -61,12 +61,12 @@ For connected tests, start the server with both providers=mock and the matching5
 (cd android/MyLittleChef && sh ./gradlew connectedDebugAndroidTest)
 ```
 
-The device suite includes photo upload→reviewed names→catalog→new recommendations→rendered original detail. Confirmation is scripted in the network/render test; manual camera/gallery/navigation usability remains separate. UI tests also check original/suggestion toggling with synthetic fixtures. Do not interpret mock success as recognition accuracy or safe revisions. [Testing evidence](docs/iterations/iteration-2/README.md).
+The device suite includes photo upload→reviewed names→catalog→new recommendations→rendered original detail. Confirmation is scripted in the network/render test; manual camera/gallery/navigation usability remains separate. UI tests also check original/suggestion toggling with synthetic fixtures. Do not interpret mock success as recognition accuracy or safe revisions. See the Wiki Testing Documentation for measured results and remaining gaps.
 
 Docker/nginx/deployment stack is deferred to Iteration3 planning by the user. This is a local runnable increment with CI, not a production deployment.
 
-## Documents and external records
+## Project documents
 
-[Documentation index](docs/README.md) · [decisions](docs/decisions.md) · [PM handoff](docs/pm-handoff.md) · [official Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki).
+Course documents and concise meeting summaries belong in the [official Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki). The code repository keeps setup instructions, executable tests, their immutable references and runtime fixtures. It does not maintain another copy of the Wiki or private agent/session records.
 
-Wiki/Sheet/Figma/eTL are agent read-only. Updated document sources are prepared locally for the user to publish; a code PR does not publish them. Review/merge, actual Wiki revisions, iteration-2-demo/video, PDF/XLSX exports and eTL upload require separate completion evidence. Preserve original authorship/history and use a main-targeting PR; do not force-push or commit private data/credentials/raw messages.
+The latest Iteration2 Wiki update is prepared separately and has not yet been officially published. Wiki publication, peer review/main merge, iteration-2-demo/video and PDF/XLSX/eTL submission require their own completion evidence. Agents treat Wiki/Sheet/Figma/eTL as read-only. Preserve original authorship/history; use a main-targeting PR without force-push or committing private data/credentials/raw messages.

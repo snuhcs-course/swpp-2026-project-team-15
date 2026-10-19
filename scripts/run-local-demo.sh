@@ -88,7 +88,7 @@ step "Preparing the server"
 
 step "Building and installing the app"
 (cd "$ANDROID_DIR" && sh ./gradlew --quiet installDebug)
-"$ADB" push "$REPO_ROOT/docs/demo/mock-photo.png" /sdcard/Pictures/MyLittleChef-mock.png >/dev/null
+"$ADB" push "$REPO_ROOT/server/fixtures/demo/mock-photo.png" /sdcard/Pictures/MyLittleChef-mock.png >/dev/null
 "$ADB" shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
     -d file:///sdcard/Pictures/MyLittleChef-mock.png >/dev/null
 "$ADB" reverse "tcp:$DEVICE_PORT" "tcp:$HOST_PORT" >/dev/null
