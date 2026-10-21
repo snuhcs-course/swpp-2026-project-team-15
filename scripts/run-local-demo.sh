@@ -10,8 +10,8 @@ ANDROID_DIR="$REPO_ROOT/android"
 RECIPE_DIR="$REPO_ROOT/data/recipes-iter2"
 RECIPE_DB="$RECIPE_DIR/recipes.sqlite3"
 HOST_PORT="${PORT:-8000}"
-DEVICE_PORT=8000 # Default BuildConfig.SERVER_BASE_URL uses localhost:8000.
-APP_ACTIVITY="com.example.mylittlechef/.MainActivity"
+DEVICE_PORT=8000 # Explicit localhost override; the regular debug default is the cloud API.
+APP_ACTIVITY="com.example.mylittlechef.cloudtest/com.example.mylittlechef.MainActivity"
 
 step() { printf '\n==> %s\n' "$1"; }
 fail() { printf 'ERROR: %s\n' "$1" >&2; exit 1; }
@@ -87,7 +87,7 @@ step "Preparing the server"
 (cd "$SERVER_DIR" && uv sync --quiet)
 
 step "Building and installing the app"
-(cd "$ANDROID_DIR" && sh ./gradlew --quiet installDebug)
+(cd "$ANDROID_DIR" && sh ./gradlew --quiet installCloudTest "-PserverBaseUrl=http://127.0.0.1:$DEVICE_PORT/")
 "$ADB" push "$REPO_ROOT/server/fixtures/demo/mock-photo.png" /sdcard/Pictures/MyLittleChef-mock.png >/dev/null
 "$ADB" shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
     -d file:///sdcard/Pictures/MyLittleChef-mock.png >/dev/null

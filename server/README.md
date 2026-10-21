@@ -1,6 +1,6 @@
 # Recipe Server
 
-FastAPI serves recipe recommendations and ingredient recognition. Recipe data is read from the existing local SQLite database; the source checkout contains the [DB preparation tool](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/cc5e739/server/db/README.md); a runtime archive uses a separately imported DB. The legacy `POST /recipes/recommend` name-based API remains available for compatibility; the integrated Android app uses the ID-based API below.
+FastAPI serves recipe recommendations and ingredient recognition. Local operation reads the existing SQLite database; the Compose deployment uses PostgreSQL via `DATABASE_URL`. For SQLite, the source checkout contains the [DB preparation tool](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/cc5e739/server/db/README.md); a runtime archive uses a separately imported DB. The legacy `POST /recipes/recommend` name-based API remains available for compatibility; the integrated Android app uses the ID-based API below.
 
 ## Run locally
 
@@ -62,3 +62,9 @@ From `server/`, run `uv run pytest`. Tests inject temporary DBs, Mock LLMs and f
 ## Runtime deployment
 
 The runtime artifact is built from committed source with `python3 scripts/package_server.py` at repository root. Extract it, enter server/, run `uv sync --locked --no-dev`, provide RECIPE_DB_PATH as an absolute path to the matching imported560-item DB, and start `uv run --locked --no-dev uvicorn app.main:create_app_from_env --factory --host 0.0.0.0 --port 8000`. Provider variables are supplied by the target environment; .env.example documents them. No development/evaluation code, credentials or recipe dataset is bundled.
+
+## OpenRouter and PostgreSQL deployment
+
+`VISION_PROVIDER=openrouter` requires `OPENROUTER_API_KEY` and `OPENROUTER_VISION_MODEL`. Live Revision keeps its existing endpoint/model settings and accepts `OPENROUTER_API_KEY` when `REVISION_LLM_API_KEY` is empty. A nonempty `DATABASE_URL` selects PostgreSQL; an empty value keeps the local SQLite path.
+
+In a full source checkout, `deploy/README.md` describes Compose deployment and `deploy/runtime.env.example` supplies its variables. The runtime archive omits deploy/. Private settings and ZIPs stay outside the checkout/image/APK. This does not change the preserved filtering/revision API contract above.
