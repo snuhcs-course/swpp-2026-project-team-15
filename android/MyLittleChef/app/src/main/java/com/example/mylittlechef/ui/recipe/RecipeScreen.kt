@@ -1,4 +1,5 @@
 // Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
+// AI-assisted with Codex (GPT-6.1 Sol), 2026-10-14; human review pending.
 package com.example.mylittlechef.ui.recipe
 
 import androidx.compose.foundation.Image
@@ -39,6 +40,7 @@ import com.example.mylittlechef.viewmodel.UserViewModel
 import androidx.compose.ui.unit.dp
 import com.example.mylittlechef.R
 import com.example.mylittlechef.model.Ingredient
+import com.example.mylittlechef.domain.RecipeSortType
 import com.example.mylittlechef.ui.components.LikeButton
 import com.example.mylittlechef.ui.components.RecipeBodyText
 import com.example.mylittlechef.ui.components.RecipeSubtitleText
@@ -155,7 +157,9 @@ fun RecipeContent(
                 RecipeCardList(
                     user = user,
                     fridge = fridge,
-                    recipes = recipes.recommended,
+                    recipes = recipes.sortedRecommended(fridge.ingredients),
+                    sortType = recipes.sortType,
+                    onSortSelected = recipes::selectSort,
                     onRecipeCardClick = onRecipeCardClick,
                     onLikeClick = onLikeClick
                 )
@@ -164,7 +168,9 @@ fun RecipeContent(
                 RecipeCardList(
                     user = user,
                     fridge = fridge,
-                    recipes = recipes.liked(user.likes),
+                    recipes = recipes.liked(user.likes, fridge.ingredients),
+                    sortType = recipes.sortType,
+                    onSortSelected = recipes::selectSort,
                     onRecipeCardClick = onRecipeCardClick,
                     onLikeClick = onLikeClick
                 )
@@ -178,14 +184,13 @@ fun RecipeCardList(
     user: UserViewModel,
     fridge: FridgeViewModel,
     recipes: List<Recipe>,
+    sortType: RecipeSortType,
+    onSortSelected: (RecipeSortType) -> Unit,
     onRecipeCardClick: (Recipe) -> Unit,
     onLikeClick: (Recipe) -> Unit
 )
 {
-    // TODO: drop down
-
-    // scroll view
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(
@@ -193,10 +198,16 @@ fun RecipeCardList(
             )
     )
     {
+        RecipeSortDropdown(
+            selected = sortType,
+            onSelected = onSortSelected,
+            modifier = Modifier.align(Alignment.End)
+        )
         // scroll content
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .weight(1f)
                 .verticalScroll(rememberScrollState())
         )
         {
