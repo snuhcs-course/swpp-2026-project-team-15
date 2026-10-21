@@ -1,16 +1,16 @@
 #!/usr/bin/env sh
 # AI-generated with Claude Code (Opus 5.5), 2026-10-11 to 2026-10-14; reviewed by Jaehyuk Choi.
 # Starts the backend on this computer and installs/launches the app on a USB-connected phone.
-# Usage: sh scripts/run-local-demo.sh [path/to/recipes_csv_with_ingredients.zip]
+# Usage: sh scripts/run-local-demo.sh [path/to/entities-2026-10-19.zip]
 set -eu
 
 REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 SERVER_DIR="$REPO_ROOT/server"
-ANDROID_DIR="$REPO_ROOT/android/MyLittleChef"
-RECIPE_DIR="$REPO_ROOT/data/recipes"
+ANDROID_DIR="$REPO_ROOT/android"
+RECIPE_DIR="$REPO_ROOT/data/recipes-iter2"
 RECIPE_DB="$RECIPE_DIR/recipes.sqlite3"
 HOST_PORT="${PORT:-8000}"
-DEVICE_PORT=8000 # Fixed in the app (ApiClient.BASE_URL).
+DEVICE_PORT=8000 # Default BuildConfig.SERVER_BASE_URL uses localhost:8000.
 APP_ACTIVITY="com.example.mylittlechef/.MainActivity"
 
 step() { printf '\n==> %s\n' "$1"; }
@@ -71,12 +71,16 @@ echo "Using $("$ADB" shell getprop ro.product.model | tr -d '\r') ($ANDROID_SERI
 step "Preparing the recipe database"
 if [ ! -f "$RECIPE_DB" ]; then
     if [ ! -f "$RECIPE_DIR/Recipe.csv" ]; then
-        [ $# -ge 1 ] || fail "Recipe CSVs are distributed outside Git. Re-run with the zip path: sh scripts/run-local-demo.sh path/to/recipes_csv_with_ingredients.zip"
+        [ $# -ge 1 ] || fail "Recipe CSVs are distributed outside Git. Re-run with the zip path: sh scripts/run-local-demo.sh path/to/entities-2026-10-19.zip"
         mkdir -p "$RECIPE_DIR"
         (cd "$SERVER_DIR" && uv run python -c "import sys, zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" "$1" "$RECIPE_DIR")
     fi
-    (cd "$SERVER_DIR" && uv run python db/import_recipes.py)
+    # The importer preserves its original data/recipes defaults; this increment uses a separate DB.
+    (cd "$SERVER_DIR" && uv run python db/import_recipes.py --csv-dir "$RECIPE_DIR" --db "$RECIPE_DB")
 fi
+
+# Fail before installing the app or making any provider request if IDs use another catalog.
+(cd "$SERVER_DIR" && uv run python -c 'import sqlite3,sys; db=sqlite3.connect(sys.argv[1]); row=db.execute("SELECT name FROM ingredient WHERE ingredient_id=204").fetchone(); assert row == ("물",), "Expected the Iteration 2 water catalog; preserve the old DB and import the matching bundle"' "$RECIPE_DB")
 
 step "Preparing the server"
 [ -f "$SERVER_DIR/.env" ] || cp "$SERVER_DIR/.env.example" "$SERVER_DIR/.env"
@@ -84,6 +88,9 @@ step "Preparing the server"
 
 step "Building and installing the app"
 (cd "$ANDROID_DIR" && sh ./gradlew --quiet installDebug)
+"$ADB" push "$REPO_ROOT/server/fixtures/demo/mock-photo.png" /sdcard/Pictures/MyLittleChef-mock.png >/dev/null
+"$ADB" shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
+    -d file:///sdcard/Pictures/MyLittleChef-mock.png >/dev/null
 "$ADB" reverse "tcp:$DEVICE_PORT" "tcp:$HOST_PORT" >/dev/null
 "$ADB" shell am start -n "$APP_ACTIVITY" >/dev/null
 

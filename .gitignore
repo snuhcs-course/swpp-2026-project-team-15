@@ -11,6 +11,9 @@ venv/
 *.egg-info/
 dist/
 
+# Local environment configuration
+.env
+
 # Android
 .gradle/
 build/
@@ -44,3 +47,8 @@ output/
 # Secrets & local databases
 .env
 *.db
+
+# Local compiler and verification output
+.kotlin/
+coverage.xml
+test-results.xml

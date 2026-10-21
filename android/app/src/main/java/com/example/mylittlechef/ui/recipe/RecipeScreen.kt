@@ -1,0 +1,383 @@
+// Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
+// AI-assisted with Codex (GPT-6.1 Sol), 2026-10-14; human review pending.
+package com.example.mylittlechef.ui.recipe
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
+import com.example.mylittlechef.model.Recipe
+import com.example.mylittlechef.viewmodel.UserViewModel
+import androidx.compose.ui.unit.dp
+import com.example.mylittlechef.R
+import com.example.mylittlechef.model.Ingredient
+import com.example.mylittlechef.domain.RecipeSortType
+import com.example.mylittlechef.ui.components.LikeButton
+import com.example.mylittlechef.ui.components.RecipeBodyText
+import com.example.mylittlechef.ui.components.RecipeSubtitleText
+import com.example.mylittlechef.ui.components.RecipeTabButton
+import com.example.mylittlechef.ui.components.SubtitleText
+import com.example.mylittlechef.ui.components.TitleText
+import com.example.mylittlechef.ui.theme.DeepGreen
+import com.example.mylittlechef.ui.theme.Gray
+import com.example.mylittlechef.ui.theme.GreenGray
+import com.example.mylittlechef.viewmodel.FridgeViewModel
+import com.example.mylittlechef.viewmodel.RecipeViewModel
+
+@Composable
+fun RecipeScreen(
+    user: UserViewModel,
+    fridge: FridgeViewModel,
+    recipes: RecipeViewModel,
+    onRecipeCardClick: (Recipe) -> Unit,
+    onLikeClick: (Recipe) -> Unit,
+    modifier: Modifier = Modifier
+)
+{
+    LaunchedEffect(fridge.ingredients) {
+        recipes.refresh(fridge.ingredients)
+    }
+
+    LaunchedEffect(user.likes) { recipes.restoreFavorites(user.likes) }
+
+    RecipeContent(
+        user,
+        fridge,
+        recipes,
+        onRecipeCardClick,
+        onLikeClick
+    )
+}
+
+enum class RecipeTab {
+    RECOMMENDED,
+    LIKE
+}
+
+@Composable
+fun RecipeContent(
+    user: UserViewModel,
+    fridge: FridgeViewModel,
+    recipes: RecipeViewModel,
+    onRecipeCardClick: (Recipe) -> Unit,
+    onLikeClick: (Recipe) -> Unit,
+    modifier: Modifier = Modifier
+)
+{
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .padding(
+                horizontal = 29.dp
+            )
+    )
+    {
+        Spacer(Modifier.height(32.dp))
+
+        TitleText(
+            text = "${user.nickname} 님을 위한 레시피예요", // TODO: Color tag
+            color = Color.Black
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        SubtitleText(
+            text = "AI가 ${user.nickname} 님의 냉장고를 분석했어요", // TODO: Color tag
+            color = Color.Black
+        )
+
+        var selectedTab by remember {
+            mutableStateOf(RecipeTab.RECOMMENDED)
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    top = 16.dp
+                )
+        )
+        {
+            RecipeTabButton(
+                text = "추천",
+                selected = selectedTab == RecipeTab.RECOMMENDED,
+                buttonColorOn = DeepGreen,
+                buttonColorOff = Color.White,
+                textColorOn = Color.Black,
+                textColorOff = GreenGray,
+                onClick = {
+                    selectedTab = RecipeTab.RECOMMENDED
+                },
+                dividerWidth = 35.dp
+            )
+
+            RecipeTabButton(
+                text = "즐겨찾기",
+                selected = selectedTab == RecipeTab.LIKE,
+                buttonColorOn = DeepGreen,
+                buttonColorOff = Color.White,
+                textColorOn = Color.Black,
+                textColorOff = GreenGray,
+                onClick = {
+                    selectedTab = RecipeTab.LIKE
+                },
+                dividerWidth = 70.dp
+            )
+        }
+
+        RecipeRequestStatus(recipes, selectedTab == RecipeTab.LIKE) {
+            if (selectedTab == RecipeTab.LIKE) recipes.restoreFavorites(user.likes)
+            else recipes.refresh(fridge.ingredients)
+        }
+        when (selectedTab) {
+            RecipeTab.RECOMMENDED -> {
+                RecipeCardList(
+                    user = user,
+                    fridge = fridge,
+                    recipes = recipes.sortedRecommended(fridge.ingredients),
+                    sortType = recipes.sortType,
+                    onSortSelected = recipes::selectSort,
+                    onRecipeCardClick = onRecipeCardClick,
+                    onLikeClick = onLikeClick
+                )
+            }
+            RecipeTab.LIKE -> {
+                RecipeCardList(
+                    user = user,
+                    fridge = fridge,
+                    recipes = recipes.liked(user.likes, fridge.ingredients),
+                    sortType = recipes.sortType,
+                    onSortSelected = recipes::selectSort,
+                    onRecipeCardClick = onRecipeCardClick,
+                    onLikeClick = onLikeClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RecipeCardList(
+    user: UserViewModel,
+    fridge: FridgeViewModel,
+    recipes: List<Recipe>,
+    sortType: RecipeSortType,
+    onSortSelected: (RecipeSortType) -> Unit,
+    onRecipeCardClick: (Recipe) -> Unit,
+    onLikeClick: (Recipe) -> Unit
+)
+{
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(
+                top = 2.dp
+            )
+    )
+    {
+        RecipeSortDropdown(
+            selected = sortType,
+            onSelected = onSortSelected,
+            modifier = Modifier.align(Alignment.End)
+        )
+        // scroll content
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+        )
+        {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = 8.dp,
+                        end = 8.dp
+                    ),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            )
+            {
+                Spacer(Modifier.height(24.dp))
+                recipes.forEach { recipe ->
+                    RecipeCard(
+                        user = user,
+                        fridge = fridge,
+                        recipe = recipe,
+                        onRecipeCardClick = onRecipeCardClick,
+                        onLikeClick = onLikeClick
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RecipeCard(
+    user: UserViewModel,
+    fridge: FridgeViewModel,
+    recipe: Recipe,
+    onRecipeCardClick: (Recipe) -> Unit,
+    onLikeClick: (Recipe) -> Unit,
+    imageSize: Dp = 96.dp
+)
+{
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(Gray)
+    )
+    {
+        Row(
+            modifier = Modifier
+                .fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        )
+        {
+            if (recipe.imageRes != null) {
+                Image(
+                    painter = painterResource(recipe.imageRes),
+                    contentDescription = recipe.name,
+                    modifier = Modifier
+                        .size(imageSize)
+                        .clip(RoundedCornerShape(24.dp))
+                )
+            }
+            else {
+                Box(
+                    modifier = Modifier
+                        .size(imageSize)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(DeepGreen)
+                )
+            }
+
+            Spacer(Modifier.weight(0.1f))
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+            )
+            {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                )
+                {
+                    RecipeSubtitleText(recipe.name)
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = "${recipe.time}분",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Black
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                RecipeDescriptionText(
+                    fridgeIngredients = fridge.ingredients,
+                    recipeIngredients = recipe.ingredients,
+                    serverMissing = recipe.missing,
+                availabilityOnly = recipe.source != null
+                )
+            }
+
+            Spacer(Modifier.weight(0.05f))
+
+            VerticalDivider(
+                thickness = 1.dp,
+                color = GreenGray
+            )
+
+            IconButton(
+                onClick = {
+                    onRecipeCardClick(recipe)
+                }
+            )
+            {
+                Icon(
+                    painter = painterResource(R.drawable.ic_more),
+                    contentDescription = "more",
+                    tint = Color.Black
+                )
+            }
+
+        }
+
+        // like button
+        LikeButton(
+            selected = recipe.id in user.likes,
+            onClick = {
+                if (recipe.id in user.likes) {
+                    user.removeLikes(recipe.id)
+                }
+                else {
+                    user.addLikes(recipe.id)
+                }
+            },
+            modifier = Modifier.align(Alignment.TopStart)
+        )
+    }
+}
+
+@Composable
+private fun RecipeDescriptionText(
+    fridgeIngredients: List<Ingredient>,
+    recipeIngredients: List<Ingredient>,
+    serverMissing: List<Ingredient>?,
+    availabilityOnly: Boolean = false
+)
+{
+    val missingIngredients = serverMissing ?: recipeIngredients.filter { recipeIngredient ->
+        fridgeIngredients.none { fridgeIngredient ->
+            fridgeIngredient.name == recipeIngredient.name
+        }
+    }
+
+    RecipeBodyText(
+        text = if (missingIngredients.isEmpty()) {
+            if (availabilityOnly) "등록한 재료는 모두 있어요. 도구·알레르기는 별도 확인해 주세요." else "지금 바로 만들 수 있어요"
+        } else {
+            val lastChar = missingIngredients.last().name.last()
+
+            fun hasFinalConsonant(char: Char): Boolean {
+                return (char.code - '가'.code) % 28 != 0
+            }
+
+            val particle = if (hasFinalConsonant(lastChar)) "이" else "가"
+
+            "${missingIngredients.joinToString(", ") { "${it.name}" }}${particle} 없어요"
+        }
+    )
+}

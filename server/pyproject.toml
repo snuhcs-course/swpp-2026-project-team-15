@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.143.0",
     "google-genai>=2.29.0",
+    "httpx>=0.28.1",
     "python-multipart>=0.0.32",
     "sqlmodel>=0.0.48",
     "uvicorn>=0.54.0",
@@ -13,9 +14,10 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28.1",
+    "pre-commit>=4.7.0",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
+    "python-dotenv>=1.0,<2",
     "ruff>=0.17.0",
 ]
 
@@ -24,17 +26,17 @@ package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", "..", "../research"]
 
 [tool.coverage.run]
-source = ["app"]
+source = ["app", "recipe_filtering", "recipe_revision"]
 branch = true
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-# db/ is the recipe importer owned by the data workstream; lint it there, not here.
-extend-exclude = ["db"]
+# Preserve contributor importer/experiment formatting; their original tests run in pytest.
+extend-exclude = ["db", "tests/experiments"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
