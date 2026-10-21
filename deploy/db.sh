@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Usage from checkout: bash deploy/db.sh init|reset dataset.zip
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd -P "$(dirname "$0")/.."
 export HOST_UID=${HOST_UID:-$(id -u)} HOST_GID=${HOST_GID:-$(id -g)}
 export APP_IMAGE=${APP_IMAGE:-mylittlechef:$(git rev-parse HEAD)}
 action=${1:?Usage: db.sh init|reset dataset.zip}

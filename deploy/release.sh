@@ -4,7 +4,7 @@
 set -euo pipefail
 sha=${1:?40-character commit SHA required}
 [[ $sha =~ ^[a-f0-9]{40}$ ]] || exit 2
-cd "$(dirname "$0")/.."
+cd -P "$(dirname "$0")/.."
 [[ $(git rev-parse HEAD) == "$sha" && -z $(git status --porcelain --untracked-files=no) ]] || { echo 'Clean matching revision required'; exit 2; }
 exec 9>/opt/mylittlechef/deploy.lock
 flock -n 9 || { echo 'Another deployment is running'; exit 1; }
