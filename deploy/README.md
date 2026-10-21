@@ -57,9 +57,8 @@ one transaction, and restarts the API even on failure. Invalid CSV/foreign keys 
 failed PostgreSQL writes preserve the old dataset. Never use `down -v` to reset data.
 ZIP must contain the eight canonical CSV basenames at its root, at most 32 MiB
 compressed / 64 MiB expanded. Water must be ingredient 204; recipe sources must be complete.
-The APK resolves fridge ingredient names against the versioned catalog each request;
-stale catalog headers return 409. Favorites are recipe IDs: retain recipe identity
-across datasets, or clear favorites in the isolated test app when IDs are reassigned.
+The APK uses the original name-based recommendation API. Favorites remain local
+recipe IDs; preserve recipe identity when replacing datasets.
 
 To restore a backup, stop API, then feed the dump into
 `docker compose exec -T postgres pg_restore -U chef -d chef --clean --if-exists --single-transaction`,
@@ -68,8 +67,9 @@ and start API. Backups can contain project data; keep them private and prune man
 `/health` is liveness; `/ready` checks DB/catalog and complete recipe sources.
 Nginx limits AI requests per IP and upload bodies to 16 MiB. AI routes use a
 210-second upstream read timeout; this is an idle-read timeout, not an overall
-request deadline. The app requests three sequential revision attempts by default;
-the API permits five, which can exceed that wait when providers are slow.
+request deadline. The separate ID-based revision API defaults to three sequential attempts and
+permits five, which can exceed that wait when providers are slow. The app uses
+the name-based endpoint and does not request revisions.
 Recognition and revision errors stay visible to the client;
 there is no paid automatic retry or mock fallback. This small development service
 has no user authentication; monitor OpenRouter usage and stop the API when not in use.
@@ -91,11 +91,11 @@ See [Android setup](../android/README.md) for endpoint configuration and
 private, read-only dataset mount without widening directory permissions.
 
 The preserved `ExampleInstrumentedTest` asserts the original package name and is
-excluded only for the isolated `.cloudtest` package. Nine functional fixture tests
-remain; the paid cloud smoke skips unless explicitly enabled. For the live smoke,
+excluded only for the isolated `.cloudtest` package. The photo/name-API fixture test runs against a mock server; the live cloud smoke
+skips unless explicitly enabled. For the live smoke,
 install the default cloud APK/test APK, place a real JPEG at the test app's
 `cache/cloud-smoke.jpg`, then run instrumentation with
 `-e class com.example.mylittlechef.integration.CloudEndpointSmokeTest -e liveCloud true`.
-It checks photo review before saving and one structurally validated revision result on the
-public cloud endpoint. Wi-Fi/Internet on the device is required; no USB tunnel is
+It checks live photo recognition, explicit review/save, name-based recommendation
+and the original detail screen on the public cloud endpoint. Wi-Fi/Internet on the device is required; no USB tunnel is
 used by this test. Screenshots/results are written to the test app cache.

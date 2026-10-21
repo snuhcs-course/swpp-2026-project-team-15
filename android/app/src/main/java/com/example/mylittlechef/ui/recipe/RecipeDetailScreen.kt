@@ -112,15 +112,11 @@ fun RecipeDetailScreen(
                     )
                 }
 
-                if (recipe.source != null) {
-                    IntegratedRecipeDetail(recipe)
-                } else {
-                    RecipeMeta(recipe.time)
-                    HorizontalDivider()
-                    RecipeIngredients(recipe.ingredients)
-                    HorizontalDivider()
-                    RecipeSteps(recipe.steps)
-                }
+                RecipeMeta(recipe.time)
+                HorizontalDivider()
+                RecipeIngredients(recipe.ingredients)
+                HorizontalDivider()
+                RecipeSteps(recipe.steps)
             }
         }
     }

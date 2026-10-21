@@ -19,11 +19,10 @@ uv sync --project server --locked
 uv run --project server --locked python research/experiments/filtering/run_experiment.py --help
 PYTHONPATH=research uv run --project server --locked python -m experiments.revision.run_experiment --help
 PYTHONPATH=server:research uv run --project server --locked python -m evaluation.vision_benchmark --help
-(cd server && uv run --locked python -m tests.manual.integration_live_check --help)
 # All Python assertions, including research-tool regressions:
 (cd server && uv run --locked pytest)
 ```
 
-`--help` does not call external providers. Revision experiments default to a labeled mock refusal; see each runner's README for the matching private DB and invocation options. The photo benchmark calls the selected server, or Gemini directly with `--model`; it is not a mock-only test. The manual integration check is outside automatic pytest discovery and requires `--live`. Review the selected provider before running a live measurement.
+`--help` does not call external providers. Revision experiments default to a labeled mock refusal; see each runner's README for the matching private DB and invocation options. The photo benchmark calls the selected server, or Gemini directly with `--model`; it is not a mock-only test. Review the selected provider before running a live measurement.
 
 Private photos, recipe data, credentials and generated reports stay outside tracked source; existing runners write under ignored data/ or an explicitly supplied output path. Do not check in a second runtime implementation or generated environment. If a new topic actually needs additional dependencies, declare them explicitly without expanding the server runtime requirements. Research and test code are excluded from the server runtime archive. Dependency declarations and the full lockfile are included; `uv sync --locked --no-dev` omits development dependencies.

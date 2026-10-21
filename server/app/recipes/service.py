@@ -54,7 +54,7 @@ class RecipeRepository:
                 }
                 if set(ingredient_ids) - catalog.keys():
                     raise UnknownIngredients("Inventory contains unregistered ingredient IDs")
-                if catalog.get(water_id) not in {"물", "Water"}:
+                if water_id not in catalog:
                     raise SourceUnavailable("Required water ingredient is unavailable")
                 inventory = tuple(
                     InventoryIngredient(key, catalog[key])

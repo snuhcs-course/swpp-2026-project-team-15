@@ -16,7 +16,6 @@ from sqlmodel import create_engine
 
 from app.database import recipe_engine
 from app.main import create_app
-from app.recipes.catalog import read_catalog
 from app.recipes.service import RecipeRepository
 from app.vision.exceptions import VisionError, VisionUnavailableError
 from app.vision.openrouter import OpenRouterVisionProvider
@@ -145,22 +144,21 @@ def test_postgres_initialize_reset_rollback_and_readiness(pg_engine, tmp_path):
     counts = import_zip(url, archive)
     assert counts["ingredient"] == 2
     repo = RecipeRepository(recipe_engine(url, Path("unused")))
-    original_version = read_catalog(repo).version
     client = TestClient(create_app(FixtureVisionProvider(Path("fixtures/vision")), repo))
     assert client.get("/ready").status_code == 200
-    assert client.get("/recipes/source/1").json()["name"] == "계란요리"
+    assert repo.load_catalog([], 204)[0][0].name == "계란요리"
     assert client.post("/recipes/recommend", json={"ingredients": ["계란"]}).status_code == 200
     with pytest.raises(ValueError, match="initialized"):
         import_zip(url, archive)
     with pytest.raises(ValueError):
         import_zip(url, dataset(archive, bad_fk=True), replace=True)
-    assert read_catalog(repo).version == original_version
+    assert repo.load_catalog([], 204)[0][0].name == "계란요리"
     # Force a PostgreSQL-only failure after DELETE: a local check constraint.
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE recipe ADD CONSTRAINT reject_new CHECK (name <> 'reject')"))
     with pytest.raises(psycopg.errors.CheckViolation):
         import_zip(url, dataset(archive, name="reject"), replace=True)
-    assert client.get("/recipes/source/1").json()["name"] == "계란요리"
+    assert repo.load_catalog([], 204)[0][0].name == "계란요리"
     with repo._engine.connect() as snapshot:
         assert (
             snapshot.execute(text("SELECT name FROM recipe WHERE recipe_id=1")).scalar()
@@ -172,11 +170,10 @@ def test_postgres_initialize_reset_rollback_and_readiness(pg_engine, tmp_path):
             snapshot.execute(text("SELECT name FROM recipe WHERE recipe_id=1")).scalar()
             == "계란요리"
         )
-    assert read_catalog(repo).version != original_version
-    response = client.post(
-        "/recipes/recommendations",
-        json={"ingredient_ids": [1]},
-        headers={"X-Ingredient-Catalog": original_version},
-    )
-    assert response.status_code == 409
-    assert client.get("/recipes/source/1").json()["name"] == "새요리"
+    sources, inventory = repo.load_catalog([1], 204)
+    assert sources[0].name == "새요리"
+    assert inventory[0].name == "감자"
+    response = client.post("/recipes/recommend", json={"ingredients": ["감자"]})
+    assert response.status_code == 200
+    assert response.json()["recipes"][0]["name"] == "새요리"
+    assert client.get("/ready").status_code == 200

@@ -1,6 +1,6 @@
 # Recipe Server
 
-FastAPI serves recipe recommendations and ingredient recognition. Local operation reads the existing SQLite database; the Compose deployment uses PostgreSQL via `DATABASE_URL`. For SQLite, the source checkout contains the [DB preparation tool](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/cc5e739/server/db/README.md); a runtime archive uses a separately imported DB. The legacy `POST /recipes/recommend` name-based API remains available for compatibility; the integrated Android app uses the ID-based API below.
+FastAPI serves recipe recommendations and ingredient recognition. Local operation reads the existing SQLite database; the Compose deployment uses PostgreSQL via `DATABASE_URL`. For SQLite, the source checkout contains the [DB preparation tool](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/cc5e739/server/db/README.md); a runtime archive uses a separately imported DB. The legacy `POST /recipes/recommend` name-based API remains available for compatibility; the Android app uses this name-based API. The contributor ID-based filtering/revision API below remains separately available.
 
 ## Run locally
 
@@ -17,7 +17,7 @@ uv run --env-file .env uvicorn app.main:create_app_from_env --factory
 
 Live Revision requires explicit `REVISION_PROVIDER=live` plus `REVISION_LLM_ENDPOINT`, `REVISION_LLM_MODEL` and `REVISION_LLM_API_KEY` in the server environment. The endpoint must support HTTPS Chat Completions with Structured Outputs. Each selected recipe has one attempt with a 60-second transport timeout, no retry. Keep credentials out of Git and client requests.
 
-## Integrated recommendations
+## ID-based recommendations
 
 `POST /recipes/recommendations` uses registered normalized ingredient IDs:
 
@@ -57,7 +57,7 @@ Use pyproject.toml and uv.lock through `uv sync --locked` for the complete serve
 
 ## Offline tests
 
-From `server/`, run `uv run pytest`. Tests inject temporary DBs, Mock LLMs and fake HTTP transports. Interactive OpenAPI documentation is available at `/docs`; The integrated Android app uses the new endpoint through its dedicated RecipeSource adapter.
+From `server/`, run `uv run pytest`. Tests inject temporary DBs, Mock LLMs and fake HTTP transports. Interactive OpenAPI documentation is available at `/docs`; The Android app uses `POST /recipes/recommend`; it does not invoke the ID-based revision endpoint.
 
 ## Runtime deployment
 
