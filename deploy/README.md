@@ -80,5 +80,5 @@ Install only `app-cloudTest.apk` for shared device testing; it preserves the exi
 `com.example.mylittlechef` application and its data. Device tests can use controlled
 local fixtures; cloud smoke results must explicitly identify mock versus live calls.
 
-The importer runs as host UID/GID 1000 so it can read the private, read-only dataset
-mount. Set `HOST_UID`/`HOST_GID` if the deployment user has different IDs.
+`db.sh` passes the deployment user UID/GID to the importer so it can read the
+private, read-only dataset mount without widening directory permissions.
