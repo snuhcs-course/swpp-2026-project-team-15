@@ -136,6 +136,12 @@ def pg_engine():
 def test_postgres_initialize_reset_rollback_and_readiness(pg_engine, tmp_path):
     url, engine = pg_engine
     archive = dataset(tmp_path / "dataset.zip")
+    empty_repo = RecipeRepository(recipe_engine(url, Path("unused")))
+    empty_client = TestClient(
+        create_app(FixtureVisionProvider(Path("fixtures/vision")), empty_repo)
+    )
+    assert empty_client.get("/health").status_code == 200
+    assert empty_client.get("/ready").status_code == 503
     counts = import_zip(url, archive)
     assert counts["ingredient"] == 2
     repo = RecipeRepository(recipe_engine(url, Path("unused")))

@@ -5,6 +5,8 @@ cd "$(dirname "$0")/.."
 export HOST_UID=${HOST_UID:-$(id -u)} HOST_GID=${HOST_GID:-$(id -g)}
 export APP_IMAGE=${APP_IMAGE:-mylittlechef:$(git rev-parse HEAD)}
 action=${1:?Usage: db.sh init|reset dataset.zip}
+exec 9>/opt/mylittlechef/deploy.lock
+flock -n 9 || { echo "Deployment or DB operation is running"; exit 1; }
 archive=${2:?ZIP basename inside DATASET_DIR required}
 [[ $archive == "$(basename "$archive")" && $archive == *.zip ]] || { echo 'Use a ZIP basename'; exit 2; }
 case "$action" in
