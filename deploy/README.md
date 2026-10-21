@@ -105,6 +105,8 @@ passed the existing revision validator. An initial provider 429 was retained as 
 visible failure; there is no automatic retry. Real host reset/invalid ZIP rollback
 and readiness-triggered previous-release rollback were exercised.
 
-S22: nine fixture device tests passed over an explicit USB/SSH tunnel; the opt-in
-paid test skipped. Direct default-cloud device smoke is pending phone Wi-Fi. The
-original package/data were preserved and only `.cloudtest` was installed.
+S22: nine fixture device tests passed over an explicit USB/SSH tunnel. After Wi-Fi
+connection, the opt-in default-cloud smoke also passed without a USB tunnel:
+photo recognition → explicit review/save → live revision (`revised`, recipe 291)
+→ original/AI detail toggle. The original package/data were preserved; only
+`.cloudtest` was installed. Screenshots and test logs remain private evidence.
