@@ -2,6 +2,7 @@
 # Usage from checkout: bash deploy/db.sh init|reset dataset.zip
 set -euo pipefail
 cd "$(dirname "$0")/.."
+export APP_IMAGE=${APP_IMAGE:-mylittlechef:$(git rev-parse HEAD)}
 action=${1:?Usage: db.sh init|reset dataset.zip}
 archive=${2:?ZIP basename inside DATASET_DIR required}
 [[ $archive == "$(basename "$archive")" && $archive == *.zip ]] || { echo 'Use a ZIP basename'; exit 2; }

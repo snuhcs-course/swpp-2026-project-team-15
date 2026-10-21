@@ -56,6 +56,7 @@ services:
       options: {max-size: 10m, max-file: "3"}
   importer:
     <<: *api
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     profiles: [tools]
     volumes: ["${DATASET_DIR:-/opt/mylittlechef/datasets}:/datasets:ro"]
     entrypoint: [python, -m, db.postgres]
