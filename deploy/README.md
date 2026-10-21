@@ -72,7 +72,10 @@ image/config if a candidate fails. Deployment never imports or resets a dataset.
 ```bash
 cd android
 ./gradlew assembleCloudTest                  # separate .cloudtest package
-./gradlew -PcloudDeviceTest connectedCloudTestAndroidTest
+# Fixture device tests: providers=mock, local API or explicit tunnel, adb reverse8000.
+./gradlew -PcloudDeviceTest -PserverBaseUrl=http://127.0.0.1:8000/ \
+  -Pandroid.testInstrumentationRunnerArguments.notClass=com.example.mylittlechef.ExampleInstrumentedTest \
+  connectedCloudTestAndroidTest
 ./gradlew -PserverBaseUrl=http://127.0.0.1:8000/ assembleDebug # adb reverse for local API
 ```
 
@@ -82,3 +85,26 @@ local fixtures; cloud smoke results must explicitly identify mock versus live ca
 
 `db.sh` passes the deployment user UID/GID to the importer so it can read the
 private, read-only dataset mount without widening directory permissions.
+
+The preserved `ExampleInstrumentedTest` asserts the original package name and is
+excluded only for the isolated `.cloudtest` package. Nine functional fixture tests
+remain; the paid cloud smoke skips unless explicitly enabled. For the live smoke,
+install the default cloud APK/test APK, place a real JPEG at the test app's
+`cache/cloud-smoke.jpg`, then run instrumentation with
+`-e class com.example.mylittlechef.integration.CloudEndpointSmokeTest -e liveCloud true`.
+It checks photo review before saving and one validated revision result on the
+public cloud endpoint. Wi-Fi/Internet on the device is required; no USB tunnel is
+used by this test. Screenshots/results are written to the test app cache.
+
+## Candidate verification (2026-10-22)
+
+Python: 189 tests + 106 subtests with PostgreSQL; Android: 34 JVM tests and lint.
+ARM host: 188 tests + 106 subtests; the PostgreSQL integration test also runs in CI.
+Live OpenRouter photo recognition returned garlic/eggs. A real revision response
+passed the existing revision validator. An initial provider 429 was retained as a
+visible failure; there is no automatic retry. Real host reset/invalid ZIP rollback
+and readiness-triggered previous-release rollback were exercised.
+
+S22: nine fixture device tests passed over an explicit USB/SSH tunnel; the opt-in
+paid test skipped. Direct default-cloud device smoke is pending phone Wi-Fi. The
+original package/data were preserved and only `.cloudtest` was installed.

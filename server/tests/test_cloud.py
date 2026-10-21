@@ -161,7 +161,17 @@ def test_postgres_initialize_reset_rollback_and_readiness(pg_engine, tmp_path):
     with pytest.raises(psycopg.errors.CheckViolation):
         import_zip(url, dataset(archive, name="reject"), replace=True)
     assert client.get("/recipes/source/1").json()["name"] == "계란요리"
-    import_zip(url, dataset(archive, name="새요리", ingredient="감자"), replace=True)
+    with repo._engine.connect() as snapshot:
+        assert (
+            snapshot.execute(text("SELECT name FROM recipe WHERE recipe_id=1")).scalar()
+            == "계란요리"
+        )
+        import_zip(url, dataset(archive, name="새요리", ingredient="감자"), replace=True)
+        # Existing readers retain one source snapshot across an atomic replacement.
+        assert (
+            snapshot.execute(text("SELECT name FROM recipe WHERE recipe_id=1")).scalar()
+            == "계란요리"
+        )
     assert read_catalog(repo).version != original_version
     response = client.post(
         "/recipes/recommendations",
