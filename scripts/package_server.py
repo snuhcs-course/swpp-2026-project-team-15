@@ -15,6 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_DIRECTORIES = (
     "server/app/",
+    "server/db/",
     "server/recipe_filtering/",
     "server/recipe_revision/",
     "server/fixtures/vision/",

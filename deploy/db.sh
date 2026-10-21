@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Usage from checkout: bash deploy/db.sh init|reset dataset.zip
+set -euo pipefail
+cd "$(dirname "$0")/.."
+action=${1:?Usage: db.sh init|reset dataset.zip}
+archive=${2:?ZIP basename inside DATASET_DIR required}
+[[ $archive == "$(basename "$archive")" && $archive == *.zip ]] || { echo 'Use a ZIP basename'; exit 2; }
+case "$action" in
+  init) docker compose --profile tools run --rm --no-deps importer "/datasets/$archive" ;;
+  reset)
+    # Keep requests from crossing a dataset change. Backup before stopping API.
+    mkdir -p /opt/mylittlechef/backups
+    backup="/opt/mylittlechef/backups/recipes-$(date -u +%Y%m%dT%H%M%S)-$$.dump"
+    umask 077
+    docker compose exec -T postgres pg_dump -U chef -d chef -Fc > "$backup"
+    docker compose stop api
+    trap 'docker compose start api' EXIT
+    docker compose --profile tools run --rm --no-deps importer "/datasets/$archive" --replace ;;
+  *) echo 'Use init or reset'; exit 2 ;;
+esac

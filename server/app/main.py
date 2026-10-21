@@ -10,18 +10,20 @@ Run: uv run --env-file .env uvicorn app.main:create_app_from_env --factory
 
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from google import genai
 from google.genai import types
 
 from app.config import Settings
-from app.database import read_only_sqlite_engine
+from app.database import recipe_engine
+from app.recipes.catalog import read_catalog
 from app.recipes.catalog import router as catalog_router
 from app.recipes.providers import revision_factory
 from app.recipes.recommendations import RecommendationService
 from app.recipes.router import router as recipes_router
-from app.recipes.service import RecipeRepository
+from app.recipes.service import RecipeRepository, SourceUnavailable
 from app.vision.gemini import REQUEST_TIMEOUT_MS, GeminiVisionProvider
+from app.vision.openrouter import OpenRouterVisionProvider
 from app.vision.providers import FixtureVisionProvider, VisionProvider
 from app.vision.router import router as vision_router
 
@@ -50,13 +52,24 @@ def create_app(
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    @app.get("/ready", tags=["health"], summary="Database and recipe readiness")
+    def ready() -> dict[str, str]:
+        try:
+            read_catalog(recipes)
+            sources, _ = recipes.load_catalog([], 204)
+            if not sources:
+                raise SourceUnavailable("Empty recipe source")
+        except SourceUnavailable:
+            raise HTTPException(503, "Recipe database is not ready") from None
+        return {"status": "ready"}
+
     return app
 
 
 def create_app_from_env() -> FastAPI:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
     settings = Settings.from_env()
-    recipes = RecipeRepository(read_only_sqlite_engine(settings.recipe_db_path))
+    recipes = RecipeRepository(recipe_engine(settings.database_url, settings.recipe_db_path))
     return create_app(
         _build_vision(settings),
         recipes,
@@ -65,6 +78,10 @@ def create_app_from_env() -> FastAPI:
 
 
 def _build_vision(settings: Settings) -> VisionProvider:
+    if settings.vision_provider == "openrouter":
+        return OpenRouterVisionProvider(
+            settings.openrouter_api_key, settings.openrouter_vision_model
+        )
     if settings.vision_provider == "gemini":
         client = genai.Client(
             api_key=settings.gemini_api_key,

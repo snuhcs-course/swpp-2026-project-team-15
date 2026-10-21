@@ -33,7 +33,9 @@ def analyze(
         raise HTTPException(
             status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, f"Unsupported image type: {image.content_type}"
         )
-    data = image.file.read()
+    data = image.file.read(16 * 1024 * 1024 + 1)
+    if len(data) > 16 * 1024 * 1024:
+        raise HTTPException(413, "Image exceeds 16 MiB")
     if not data:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Empty image")
     try:

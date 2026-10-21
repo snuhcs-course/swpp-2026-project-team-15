@@ -128,3 +128,9 @@ Build the phone app for that endpoint with `cd android && sh ./gradlew assembleD
 Course documents and concise meeting summaries belong in the [official Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki). The code repository keeps setup instructions, executable tests, their immutable references and runtime fixtures. It does not maintain another copy of the Wiki or private agent/session records.
 
 The latest Iteration2 Wiki update is prepared separately and has not yet been officially published. Wiki publication, peer review/main merge, iteration-2-demo/video and PDF/XLSX/eTL submission require their own completion evidence. Agents treat Wiki/Sheet/Figma/eTL as read-only. Preserve original authorship/history; use a main-targeting PR without force-push or committing private data/credentials/raw messages.
+
+## Oracle ARM deployment
+
+See [deployment and DB reset commands](deploy/README.md). Docker Compose runs
+nginx, FastAPI and PostgreSQL. Debug APKs default to the cloud development endpoint;
+`assembleCloudTest` builds an isolated test application alongside the existing app.

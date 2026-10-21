@@ -47,7 +47,8 @@ class RecipeRepository:
         """
         try:
             with Session(self._engine) as session:
-                session.exec(text("BEGIN"))
+                if self._engine.dialect.name == "sqlite":
+                    session.exec(text("BEGIN"))
                 catalog = {
                     row.ingredient_id: row.name for row in session.exec(select(Ingredient)).all()
                 }

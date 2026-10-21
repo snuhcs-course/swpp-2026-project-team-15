@@ -124,6 +124,8 @@ class ChatCompletionsLLM:
             payload["temperature"] = self.temperature
         if self.max_completion_tokens is not None:
             payload["max_completion_tokens"] = self.max_completion_tokens
+        if urlsplit(self.endpoint).hostname == "openrouter.ai":
+            payload["provider"] = {"require_parameters": True}
         http_request = Request(
             self.endpoint,
             method="POST",
