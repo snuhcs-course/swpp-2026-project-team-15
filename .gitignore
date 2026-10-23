@@ -52,3 +52,6 @@ output/
 .kotlin/
 coverage.xml
 test-results.xml
+
+# Synthetic demo fixtures are source assets, not private photo inputs.
+!/server/fixtures/demo/*.png

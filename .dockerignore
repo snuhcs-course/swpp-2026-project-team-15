@@ -1,0 +1,13 @@
+**
+!Dockerfile
+!server/
+!server/pyproject.toml
+!server/uv.lock
+!server/app/**
+!server/recipe_filtering/**
+!server/recipe_revision/**
+!server/fixtures/
+!server/fixtures/vision/**
+!server/db/**
+**/__pycache__
+**/*.pyc

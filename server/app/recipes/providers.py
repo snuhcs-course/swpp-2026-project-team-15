@@ -38,6 +38,7 @@ def revision_factory(settings: Settings) -> Callable[[], LLM]:
             settings.revision_llm_endpoint,
             settings.revision_llm_model,
             settings.revision_llm_api_key,
+            max_completion_tokens=4096,
         )
 
     return build

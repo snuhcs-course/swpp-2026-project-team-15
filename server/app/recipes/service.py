@@ -47,13 +47,14 @@ class RecipeRepository:
         """
         try:
             with Session(self._engine) as session:
-                session.exec(text("BEGIN"))
+                if self._engine.dialect.name == "sqlite":
+                    session.exec(text("BEGIN"))
                 catalog = {
                     row.ingredient_id: row.name for row in session.exec(select(Ingredient)).all()
                 }
                 if set(ingredient_ids) - catalog.keys():
                     raise UnknownIngredients("Inventory contains unregistered ingredient IDs")
-                if catalog.get(water_id) not in {"물", "Water"}:
+                if water_id not in catalog:
                     raise SourceUnavailable("Required water ingredient is unavailable")
                 inventory = tuple(
                     InventoryIngredient(key, catalog[key])

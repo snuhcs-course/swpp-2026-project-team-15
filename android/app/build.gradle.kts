@@ -6,7 +6,7 @@ plugins {
 }
 
 val serverBaseUrl = providers.gradleProperty("serverBaseUrl")
-    .orElse("http://127.0.0.1:8000/").get()
+    .orElse("http://158.101.141.165/").get()
 val serverEndpoint = URI(serverBaseUrl)
 require(serverEndpoint.scheme in listOf("http", "https") && serverEndpoint.host != null &&
     serverEndpoint.userInfo == null && serverEndpoint.rawQuery == null &&
@@ -31,12 +31,23 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    testBuildType = if (providers.gradleProperty("cloudDeviceTest").isPresent) "cloudTest" else "debug"
+
     buildTypes {
         debug {
             // JaCoCo report: ./gradlew createDebugUnitTestCoverageReport
             enableUnitTestCoverage = true
         }
+        create("cloudTest") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".cloudtest"
+            versionNameSuffix = "-cloud-test"
+            matchingFallbacks += listOf("debug")
+            enableUnitTestCoverage = false
+            resValue("string", "app_name", "MyLittleChef Cloud Test")
+        }
         release {
+            buildConfigField("String", "SERVER_BASE_URL", "\"${providers.gradleProperty("releaseServerBaseUrl").orElse("https://localhost/").get()}\"")
             optimization {
                 enable = false
             }
@@ -49,6 +60,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
 }
 
@@ -68,6 +80,8 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+    add("cloudTestImplementation", libs.androidx.compose.ui.test.manifest)
+    add("cloudTestImplementation", libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.lifecycle.runtime.compose)

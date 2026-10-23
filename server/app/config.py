@@ -17,7 +17,7 @@ REPO_ROOT = SERVER_DIR.parent
 
 @dataclass(frozen=True)
 class Settings:
-    vision_provider: Literal["mock", "gemini"]
+    vision_provider: Literal["mock", "gemini", "openrouter"]
     recipe_db_path: Path
     vision_fixture_dir: Path
     gemini_api_key: str
@@ -27,11 +27,17 @@ class Settings:
     revision_llm_model: str = ""
     revision_llm_api_key: str = ""
 
+    database_url: str = ""
+    openrouter_api_key: str = ""
+    openrouter_vision_model: str = ""
+
     @classmethod
     def from_env(cls, env: Mapping[str, str] = os.environ) -> "Settings":
         provider = env.get("VISION_PROVIDER", "mock")
-        if provider not in ("mock", "gemini"):
-            raise ValueError(f"VISION_PROVIDER must be 'mock' or 'gemini', got {provider!r}")
+        if provider not in ("mock", "gemini", "openrouter"):
+            raise ValueError(
+                f"VISION_PROVIDER must be 'mock', 'gemini' or 'openrouter', got {provider!r}"
+            )
         settings = cls(
             vision_provider=provider,
             recipe_db_path=REPO_ROOT
@@ -42,8 +48,18 @@ class Settings:
             revision_provider=env.get("REVISION_PROVIDER", "mock"),
             revision_llm_endpoint=env.get("REVISION_LLM_ENDPOINT", ""),
             revision_llm_model=env.get("REVISION_LLM_MODEL", ""),
-            revision_llm_api_key=env.get("REVISION_LLM_API_KEY", ""),
+            revision_llm_api_key=env.get("REVISION_LLM_API_KEY", "")
+            or env.get("OPENROUTER_API_KEY", ""),
+            database_url=env.get("DATABASE_URL", ""),
+            openrouter_api_key=env.get("OPENROUTER_API_KEY", ""),
+            openrouter_vision_model=env.get("OPENROUTER_VISION_MODEL", ""),
         )
         if provider == "gemini" and not (settings.gemini_api_key and settings.gemini_model):
             raise ValueError("VISION_PROVIDER=gemini requires GEMINI_API_KEY and GEMINI_MODEL")
+        if provider == "openrouter" and not (
+            settings.openrouter_api_key and settings.openrouter_vision_model
+        ):
+            raise ValueError(
+                "OpenRouter vision requires OPENROUTER_API_KEY and OPENROUTER_VISION_MODEL"
+            )
         return settings

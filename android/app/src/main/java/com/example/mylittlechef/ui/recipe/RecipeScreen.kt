@@ -67,8 +67,6 @@ fun RecipeScreen(
         recipes.refresh(fridge.ingredients)
     }
 
-    LaunchedEffect(user.likes) { recipes.restoreFavorites(user.likes) }
-
     RecipeContent(
         user,
         fridge,
@@ -154,10 +152,6 @@ fun RecipeContent(
             )
         }
 
-        RecipeRequestStatus(recipes, selectedTab == RecipeTab.LIKE) {
-            if (selectedTab == RecipeTab.LIKE) recipes.restoreFavorites(user.likes)
-            else recipes.refresh(fridge.ingredients)
-        }
         when (selectedTab) {
             RecipeTab.RECOMMENDED -> {
                 RecipeCardList(
@@ -308,8 +302,7 @@ fun RecipeCard(
                 RecipeDescriptionText(
                     fridgeIngredients = fridge.ingredients,
                     recipeIngredients = recipe.ingredients,
-                    serverMissing = recipe.missing,
-                availabilityOnly = recipe.source != null
+                    serverMissing = recipe.missing
                 )
             }
 
@@ -355,8 +348,7 @@ fun RecipeCard(
 private fun RecipeDescriptionText(
     fridgeIngredients: List<Ingredient>,
     recipeIngredients: List<Ingredient>,
-    serverMissing: List<Ingredient>?,
-    availabilityOnly: Boolean = false
+    serverMissing: List<Ingredient>?
 )
 {
     val missingIngredients = serverMissing ?: recipeIngredients.filter { recipeIngredient ->
@@ -367,7 +359,7 @@ private fun RecipeDescriptionText(
 
     RecipeBodyText(
         text = if (missingIngredients.isEmpty()) {
-            if (availabilityOnly) "등록한 재료는 모두 있어요. 도구·알레르기는 별도 확인해 주세요." else "지금 바로 만들 수 있어요"
+            "지금 바로 만들 수 있어요"
         } else {
             val lastChar = missingIngredients.last().name.last()
 

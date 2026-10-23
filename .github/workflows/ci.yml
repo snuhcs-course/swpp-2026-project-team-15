@@ -6,11 +6,20 @@ name: ci
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, "feat/**"]
 
 jobs:
   server:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_PASSWORD: localtest
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://postgres:localtest@localhost:5432/postgres
     defaults:
       run:
         working-directory: server
@@ -45,7 +54,7 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
-      - run: sh ./gradlew lintDebug testDebugUnitTest createDebugUnitTestCoverageReport assembleDebug
+      - run: sh ./gradlew lintDebug testDebugUnitTest createDebugUnitTestCoverageReport assembleDebug assembleCloudTest
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -53,3 +62,14 @@ jobs:
           path: |
             android/app/build/reports
             android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/apk/cloudTest/*.apk
+
+  arm:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --project server --locked
+      - run: uv run --project server pytest server/tests -q
+      - run: docker build -t mylittlechef:ci .
+      - run: docker run --rm mylittlechef:ci python -c "import app.main, psycopg; print('ARM runtime imports OK')"

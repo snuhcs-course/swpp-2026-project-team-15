@@ -7,9 +7,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.mylittlechef.data.recipes.RecipeSource
-import com.example.mylittlechef.data.recipes.RecipeBatch
-import kotlinx.coroutines.CancellationException
 import com.example.mylittlechef.data.remote.ApiClient
 import com.example.mylittlechef.data.remote.MyLittleChefApi
 import com.example.mylittlechef.data.remote.RecommendRequest
@@ -22,8 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class RecipeViewModel(
-    private val api: MyLittleChefApi = ApiClient.api,
-    private val integrated: RecipeSource? = null
+    private val api: MyLittleChefApi = ApiClient.api
 ) : ViewModel() {
     var recommended by mutableStateOf<List<Recipe>>(emptyList())
         private set
@@ -34,65 +30,16 @@ class RecipeViewModel(
     // Every recipe seen so far, so favorites and details survive a changed recommendation list.
     private val seen = mutableMapOf<Long, Recipe>()
     private var refreshJob: Job? = null
-    private var generation = 0L
-    private val restoring = mutableSetOf<Long>()
-    private var restoredVersion by mutableStateOf(0)
-    var isLoading by mutableStateOf(false)
-        private set
-    var errorMessage by mutableStateOf<String?>(null)
-        private set
-    var unmapped by mutableStateOf<List<String>>(emptyList())
-        private set
-    var favoriteError by mutableStateOf<String?>(null)
-        private set
 
     fun refresh(fridge: List<Ingredient>) {
-        val request = ++generation
+        // Only the latest fridge state may update the list.
         refreshJob?.cancel()
-        isLoading = true
-        errorMessage = null
         refreshJob = viewModelScope.launch {
-            try {
-                val batch = integrated?.recommend(fridge.map { it.name }) ?: RecipeBatch(
-                    api.recommend(RecommendRequest(fridge.map { it.name })).recipes.map { it.toRecipe() }
-                )
-                if (request == generation) {
-                    batch.recipes.forEach { seen[it.id] = it }
-                    recommended = batch.recipes
-                    unmapped = batch.unmapped
-                }
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (failure: Exception) {
-                if (request == generation) {
-                    recommended = emptyList()
-                    unmapped = emptyList()
-                    errorMessage = "추천을 불러오지 못했어요. 서버 연결과 재료 목록을 확인하고 다시 시도해 주세요."
-                }
-            } finally {
-                if (request == generation) isLoading = false
-            }
-        }
-    }
-
-    fun restoreFavorites(ids: List<Long>) {
-        val source = integrated ?: return
-        ids.filter { it !in seen && it !in restoring }.forEach { id ->
-            restoring += id
-            viewModelScope.launch {
-                try {
-                    val original = source.original(id)
-                    if (id !in seen) seen[id] = original
-                    restoredVersion++
-                    favoriteError = null
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (failure: Exception) {
-                    favoriteError = "일부 즐겨찾기 원본을 불러오지 못했어요. 서버 연결을 확인해 주세요."
-                } finally {
-                    restoring -= id
-                }
-            }
+            val recipes = runCatching {
+                api.recommend(RecommendRequest(fridge.map { it.name })).recipes.map { it.toRecipe() }
+            }.getOrDefault(emptyList())
+            recipes.forEach { seen[it.id] = it }
+            recommended = recipes
         }
     }
 
@@ -103,8 +50,8 @@ class RecipeViewModel(
     fun sortedRecommended(fridge: List<Ingredient>): List<Recipe> =
         sortRecipes(recommended, sortType, fridge.map { it.name })
 
-    fun find(id: Long?): Recipe? { restoredVersion; return seen[id] }
+    fun find(id: Long?): Recipe? = seen[id]
 
     fun liked(likes: List<Long>, fridge: List<Ingredient> = emptyList()): List<Recipe> =
-        sortRecipes(likes.mapNotNull { restoredVersion; seen[it] }, sortType, fridge.map { it.name })
+        sortRecipes(likes.mapNotNull { seen[it] }, sortType, fridge.map { it.name })
 }
