@@ -14,15 +14,40 @@ from .models import Recipe, hit_fields
 
 API_URL = "https://pixabay.com/api/"
 TIMEOUT = 10
+SEARCH_LANGUAGE = "ko"
 
-def read_cache(path: Path, query: str, now: datetime | None = None) -> list[dict[str, Any]] | None:
+def _pixabay_key() -> str | None:
+    """Read the process environment first, then the repository's server/.env file."""
+    key = os.environ.get("PIXABAY_KEY")
+    if key:
+        return key
+    env_file = Path(__file__).resolve().parents[3] / ".env"
+    try:
+        lines = env_file.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        name, separator, value = stripped.partition("=")
+        if separator and name.strip().removeprefix("export ").strip() == "PIXABAY_KEY":
+            value = value.strip()
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                value = value[1:-1]
+            return value or None
+    return None
+
+def read_cache(path: Path, query: str, now: datetime | None = None,
+               lang: str = SEARCH_LANGUAGE) -> list[dict[str, Any]] | None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
         fetched = datetime.fromisoformat(payload["fetched_at"])
         if fetched.tzinfo is None:
             fetched = fetched.replace(tzinfo=UTC)
         current = now or datetime.now(UTC)
-        if payload.get("query") == query and timedelta(0) <= current - fetched < timedelta(hours=24):
+        if (payload.get("query") == query and payload.get("lang") == lang
+                and timedelta(0) <= current - fetched < timedelta(hours=24)):
             hits = payload.get("hits")
             return hits if isinstance(hits, list) else None
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
@@ -40,7 +65,7 @@ def _wait_reset(response: requests.Response, sleep=time.sleep) -> None:
 def search_recipe(recipe: Recipe, cache_dir: Path, force: bool = False, confirm_recent: bool = False,
                   session: requests.Session | None = None, sleep=time.sleep) -> tuple[list[dict[str, Any]], bool]:
     cache_path = cache_dir / f"{recipe.id}.json"
-    cached = read_cache(cache_path, recipe.query)
+    cached = read_cache(cache_path, recipe.query, lang=SEARCH_LANGUAGE)
     if cached is not None and not force:
         return cached, True
     if force and cache_path.exists():
@@ -54,12 +79,12 @@ def search_recipe(recipe: Recipe, cache_dir: Path, force: bool = False, confirm_
             recent = False
         if recent and not confirm_recent:
             raise ValueError("Recent cache exists; interactive confirmation is required to force refresh")
-    key = os.environ.get("PIXABAY_KEY")
+    key = _pixabay_key()
     if not key:
         raise ValueError("PIXABAY_KEY environment variable is required")
     client = session or requests.Session()
     params = {"key": key, "q": recipe.query, "category": "food", "image_type": "photo",
-              "per_page": 5, "safesearch": "true", "min_width": 800, "lang": "en"}
+              "per_page": 5, "safesearch": "true", "min_width": 800, "lang": SEARCH_LANGUAGE}
     last_error: Exception | None = None
     last_request = 0.0
     for attempt in range(3):
@@ -79,7 +104,8 @@ def search_recipe(recipe: Recipe, cache_dir: Path, force: bool = False, confirm_
             hits = [hit_fields(hit) for hit in payload.get("hits", []) if isinstance(hit, dict)]
             cache_dir.mkdir(parents=True, exist_ok=True)
             cache_path.write_text(json.dumps({"fetched_at": datetime.now(UTC).isoformat(),
-                "query": recipe.query, "hits": hits}, ensure_ascii=False, indent=2), encoding="utf-8")
+                "query": recipe.query, "lang": SEARCH_LANGUAGE, "hits": hits},
+                ensure_ascii=False, indent=2), encoding="utf-8")
             remaining = response.headers.get("X-RateLimit-Remaining")
             if remaining and remaining.isdigit() and int(remaining) <= 5:
                 _wait_reset(response, sleep)

@@ -2,22 +2,19 @@
 from __future__ import annotations
 
 import html
-import json
 from datetime import UTC, datetime
 from pathlib import Path
 
 from .models import Recipe
+from .search import SEARCH_LANGUAGE, read_cache
 
 
 def build_sheet(batch: int, recipes: list[Recipe], cache_dir: Path, output: Path) -> None:
     stamp = datetime.now(UTC).isoformat(timespec="seconds")
     sections: list[str] = []
     for recipe in recipes:
-        try:
-            payload = json.loads((cache_dir / f"{recipe.id}.json").read_text(encoding="utf-8"))
-            hits = payload.get("hits", [])
-        except (OSError, ValueError, AttributeError):
-            hits = []
+        hits = read_cache(cache_dir / f"{recipe.id}.json", recipe.query,
+                          lang=SEARCH_LANGUAGE) or []
         cards = []
         for i, hit in enumerate(hits):
             ident = html.escape(str(hit.get("id", "")), quote=True)

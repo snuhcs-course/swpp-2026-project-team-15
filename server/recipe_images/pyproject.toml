@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "recipe-images"
+name = "recipe_images"
 version = "0.1.0"
 description = "Human-reviewed Pixabay recipe image selection and processing CLI"
 requires-python = ">=3.11"
@@ -14,7 +14,7 @@ dev = ["pytest>=8", "ruff>=0.5"]
 hash = ["blurhash-python>=1.2"]
 
 [project.scripts]
-recipe-images = "recipe_images.cli:app"
+recipe_images = "recipe_images.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["src"]
