@@ -15,6 +15,7 @@ import com.example.mylittlechef.domain.RecipeSortType
 import com.example.mylittlechef.domain.sortRecipes
 import com.example.mylittlechef.model.Ingredient
 import com.example.mylittlechef.model.Recipe
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -30,14 +31,21 @@ class RecipeViewModel(
     // Every recipe seen so far, so favorites and details survive a changed recommendation list.
     private val seen = mutableMapOf<Long, Recipe>()
     private var refreshJob: Job? = null
+    private var refreshGeneration = 0L
 
     fun refresh(fridge: List<Ingredient>) {
-        // Only the latest fridge state may update the list.
+        val generation = ++refreshGeneration
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
-            val recipes = runCatching {
+            val recipes = try {
                 api.recommend(RecommendRequest(fridge.map { it.name })).recipes.map { it.toRecipe() }
-            }.getOrDefault(emptyList())
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                emptyList()
+            }
+            // A provider can finish after cancellation; only the current inventory may win.
+            if (generation != refreshGeneration) return@launch
             recipes.forEach { seen[it.id] = it }
             recommended = recipes
         }
