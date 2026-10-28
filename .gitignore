@@ -55,3 +55,7 @@ test-results.xml
 
 # Synthetic demo fixtures are source assets, not private photo inputs.
 !/server/fixtures/demo/*.png
+recipe-images/cache/
+recipe-images/sheets/
+recipe-images/downloads/
+recipe-images/.env
