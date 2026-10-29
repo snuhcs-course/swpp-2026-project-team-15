@@ -47,8 +47,9 @@ class RecipeRepository:
         with Session(self._engine) as session:
             recipe_names = dict(session.exec(select(Recipe.recipe_id, Recipe.name)).all())
             ingredient_rows = session.exec(
-                select(RecipeIngredient.recipe_id, Ingredient.name)
-                .join(Ingredient, RecipeIngredient.ingredient_id == Ingredient.ingredient_id)
+                select(RecipeIngredient.recipe_id, Ingredient.name).join(
+                    Ingredient, RecipeIngredient.ingredient_id == Ingredient.ingredient_id
+                )
             ).all()
 
         required_by_recipe: dict[int, set[str]] = {}
@@ -62,23 +63,18 @@ class RecipeRepository:
         for group in groups:
             if group <= available or any(group < other for other in groups):
                 continue
-            covered_ids = set().union(
-                *(recipe_ids_by_name.get(name, set()) for name in group)
-            )
+            covered_ids = set().union(*(recipe_ids_by_name.get(name, set()) for name in group))
             if len(covered_ids) < min_recipe_count:
                 continue
             display_name = min(
                 (
                     name
                     for name in group
-                    if name in recipe_ids_by_name
-                    and frozenset(with_synonyms([name])) == group
+                    if name in recipe_ids_by_name and frozenset(with_synonyms([name])) == group
                 ),
                 key=lambda name: (-len(recipe_ids_by_name[name]), len(name), name),
             )
-            anchors_after = owned_anchors | (
-                set(group) - set(STAPLE_SEASONINGS)
-            )
+            anchors_after = owned_anchors | (set(group) - set(STAPLE_SEASONINGS))
             available_after = available | set(group)
             ready_ids = sorted(
                 recipe_id
@@ -96,9 +92,7 @@ class RecipeRepository:
                 )
             )
 
-        suggestions.sort(
-            key=lambda item: (-item.ready_recipe_count, -item.recipe_count, item.name)
-        )
+        suggestions.sort(key=lambda item: (-item.ready_recipe_count, -item.recipe_count, item.name))
         return suggestions[:limit]
 
     def load_catalog(

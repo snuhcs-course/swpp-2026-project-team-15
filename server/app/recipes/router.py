@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, HTTPException
 
 from app.recipes.constants import STAPLE_SEASONINGS
@@ -55,5 +54,5 @@ def ingredient_suggestions(
     request: IngredientSuggestionRequest, recipes: RecipeRepositoryDep
 ) -> IngredientSuggestionResponse:
     return IngredientSuggestionResponse(
-    suggestions=recipes.ingredient_suggestions(request.ingredients)
-)
+        suggestions=recipes.ingredient_suggestions(request.ingredients)
+    )
