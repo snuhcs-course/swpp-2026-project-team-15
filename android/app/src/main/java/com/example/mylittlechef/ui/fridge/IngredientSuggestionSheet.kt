@@ -35,12 +35,12 @@ fun IngredientSuggestionSheet(
         Text("식재료 추천", style = MaterialTheme.typography.headlineSmall, color = Color.Black)
         Spacer(Modifier.height(8.dp))
         Text(
-            "지금 냉장고에 재료 하나를 더했을 때 바로 만들 수 있는 요리가 많은 순서예요.",
+            "지금 냉장고에 해당 재료를 더했을 때 바로 만들 수 있는 요리가 많은 순서예요.",
             style = MaterialTheme.typography.bodyMedium
         )
         Spacer(Modifier.height(20.dp))
         when {
-            suggestions.isLoading -> Text("추천을 계산하고 있어요…")
+            suggestions.isLoading -> Text("추천을 계산 중…")
             suggestions.error != null -> {
                 Text(suggestions.error!!)
                 Spacer(Modifier.height(8.dp))
