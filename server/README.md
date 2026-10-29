@@ -68,3 +68,15 @@ The runtime artifact is built from committed source with `python3 scripts/packag
 `VISION_PROVIDER=openrouter` requires `OPENROUTER_API_KEY` and `OPENROUTER_VISION_MODEL`. Live Revision keeps its existing endpoint/model settings and accepts `OPENROUTER_API_KEY` when `REVISION_LLM_API_KEY` is empty. A nonempty `DATABASE_URL` selects PostgreSQL; an empty value keeps the local SQLite path.
 
 In a full source checkout, `deploy/README.md` describes Compose deployment and `deploy/runtime.env.example` supplies its variables. The runtime archive omits deploy/. Private settings and ZIPs stay outside the checkout/image/APK. This does not change the preserved filtering/revision API contract above.
+
+
+## Client pantry entry and ingredient-addition suggestions
+
+The restored client uses two additional read-only endpoints:
+
+- `GET /recipes/ingredients`: returns `{ "names": [...] }`, sorted unique source ingredient names for manual entry and recognition-result correction.
+- `POST /recipes/ingredient-suggestions`, body `{ "ingredients": ["두부", "김치"] }`: returns up to five `suggestions`. Candidates must appear in at least five source recipes. Sort by `ready_recipe_count` descending, then `recipe_count` descending, then name. The first count means newly complete recipes after this single addition; the second means all source recipes containing the ingredient (including supported equivalent/prepared forms). `ready_recipe_names` contains up to three examples.
+
+Both counts use the existing name-based endpoint's `STAPLE_SEASONINGS` assumption. They do not apply allergy/utensil filtering or AI revision, and do not change `/recipes/recommendations`. Owning 대파 can cover 다진파; owning 다진파 does not imply owning 대파. Suggested purchase names must cover the capabilities used in their counts. Duplicate source rows count once per recipe.
+
+These endpoints require the updated server code; the existing cloud deployment is not automatically updated by local Android work. Use the local mock server and loopback APK instructions in [the restoration review guide](../docs/iterations/iteration-3-restoration-review.ko.md) before deploying changes.

@@ -1,8 +1,3 @@
-# AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
-
-# Modified with Codex (GPT-6.1 Sol), 2026-10-17; reviewed by Soohyun An.
-# Changes: Add read-only loading and validation of recipes and inventory, including water.
-
 """Read-only recipe queries over the database built by server/db/import_recipes.py."""
 
 import re
@@ -14,7 +9,7 @@ from sqlmodel import Session, col, select
 
 from app.recipes.constants import STAPLE_SEASONINGS, with_synonyms
 from app.recipes.models import Ingredient, Recipe, RecipeIngredient, RecipeStep
-from app.recipes.schemas import RecipeRecommendation
+from app.recipes.schemas import IngredientSuggestion, RecipeRecommendation
 from recipe_revision.models import InventoryIngredient, SourceIngredient, SourceRecipe, SourceStep
 
 _LEADING_NUMBER = re.compile(r"\d+")
@@ -36,6 +31,69 @@ def _leading_int(text: str | None) -> int | None:
 class RecipeRepository:
     def __init__(self, engine: Engine) -> None:
         self._engine = engine
+
+    def ingredient_names(self) -> list[str]:
+        """Names available for client entry completion."""
+        with Session(self._engine) as session:
+            return sorted(set(session.exec(select(Ingredient.name)).all()))
+
+    def ingredient_suggestions(
+        self, fridge: list[str], min_recipe_count: int = 5, limit: int = 5
+    ) -> list[IngredientSuggestion]:
+        """Rank one-ingredient additions by newly ready meals, then source recipe frequency."""
+        available = with_synonyms(fridge) | set(STAPLE_SEASONINGS)
+        owned_anchors = available - set(STAPLE_SEASONINGS)
+
+        with Session(self._engine) as session:
+            recipe_names = dict(session.exec(select(Recipe.recipe_id, Recipe.name)).all())
+            ingredient_rows = session.exec(
+                select(RecipeIngredient.recipe_id, Ingredient.name).join(
+                    Ingredient, RecipeIngredient.ingredient_id == Ingredient.ingredient_id
+                )
+            ).all()
+
+        required_by_recipe: dict[int, set[str]] = {}
+        recipe_ids_by_name: dict[str, set[int]] = {}
+        for recipe_id, name in ingredient_rows:
+            required_by_recipe.setdefault(recipe_id, set()).add(name)
+            recipe_ids_by_name.setdefault(name, set()).add(recipe_id)
+
+        groups = {frozenset(with_synonyms([name])) for name in recipe_ids_by_name}
+        suggestions: list[IngredientSuggestion] = []
+        for group in groups:
+            if group <= available or any(group < other for other in groups):
+                continue
+            covered_ids = set().union(*(recipe_ids_by_name.get(name, set()) for name in group))
+            if len(covered_ids) < min_recipe_count:
+                continue
+            display_name = min(
+                (
+                    name
+                    for name in group
+                    if name in recipe_ids_by_name and frozenset(with_synonyms([name])) == group
+                ),
+                key=lambda name: (-len(recipe_ids_by_name[name]), len(name), name),
+            )
+            anchors_after = owned_anchors | (set(group) - set(STAPLE_SEASONINGS))
+            available_after = available | set(group)
+            ready_ids = sorted(
+                recipe_id
+                for recipe_id in covered_ids
+                if required_by_recipe[recipe_id] <= available_after
+                and not required_by_recipe[recipe_id] <= available
+                and required_by_recipe[recipe_id] & anchors_after
+            )
+            suggestions.append(
+                IngredientSuggestion(
+                    name=display_name,
+                    ready_recipe_count=len(ready_ids),
+                    recipe_count=len(covered_ids),
+                    ready_recipe_names=[recipe_names[recipe_id] for recipe_id in ready_ids[:3]],
+                )
+            )
+
+        suggestions.sort(key=lambda item: (-item.ready_recipe_count, -item.recipe_count, item.name))
+        return suggestions[:limit]
 
     def load_catalog(
         self, ingredient_ids: list[int], water_id: int

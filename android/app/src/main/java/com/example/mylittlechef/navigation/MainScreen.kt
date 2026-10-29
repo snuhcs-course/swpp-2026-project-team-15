@@ -1,5 +1,6 @@
 // AI-generated initial navigation scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
+// Pantry edit navigation added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.navigation
 
 import androidx.annotation.DrawableRes // drawable 리소스 ID 파라미터 표시
@@ -33,6 +34,7 @@ import com.example.mylittlechef.ui.recipe.RecipeScreen
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.ui.theme.DeepGreen
 import com.example.mylittlechef.viewmodel.FridgeViewModel
+import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
 import com.example.mylittlechef.viewmodel.RecipeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
@@ -58,7 +60,9 @@ fun MainScreen(
     onEditUtensilClick: () -> Unit,
     onEditAllergyClick: () -> Unit,
     onRecipeCardClick: (Recipe) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    ingredientSuggestions: IngredientSuggestionViewModel? = null,
+    onEditPantryClick: () -> Unit = {}
 ) {
     // 탭 전환만 담당하는 NavController (최상위 NavController와 별개)
     val tabNavController = rememberNavController()
@@ -117,6 +121,7 @@ fun MainScreen(
                 FridgeScreen(
                     user = user,
                     fridge = fridge,
+                    ingredientSuggestions = ingredientSuggestions,
                     onAddIngredientClick = onAddIngredientClick
                 )
             }
@@ -132,9 +137,11 @@ fun MainScreen(
             composable(Routes.PROFILE) {
                 ProfileScreen(
                     user = user,
+                    fridge = fridge,
                     onEditNicknameClick = onEditNicknameClick,
                     onEditUtensilClick = onEditUtensilClick,
-                    onEditAllergyClick = onEditAllergyClick
+                    onEditAllergyClick = onEditAllergyClick,
+                    onEditPantryClick = onEditPantryClick
                 )
             }
         }

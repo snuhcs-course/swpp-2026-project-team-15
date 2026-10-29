@@ -1,3 +1,4 @@
+# AI-assisted integration with Codex, 2026-10-29; human review pending.
 # AI-generated with Claude Code (Opus 5.5), 2026-10-11 to 2026-10-14; reviewed by Jaehyuk Choi.
 
 # Modified with Codex (GPT-6.1 Sol), 2026-10-17; reviewed by Soohyun An.
@@ -167,3 +168,22 @@ class RecommendationsResponse(BaseModel):
     recipes: list[RecommendationEntry]
     revision_summary: RevisionSummary
     assumed_ingredient_ids: list[int]
+
+
+class IngredientSuggestionRequest(SQLModel):
+    ingredients: list[str] = Field(description="Confirmed names in the user's fridge")
+
+
+class IngredientSuggestion(SQLModel):
+    name: str
+    ready_recipe_count: int
+    recipe_count: int
+    ready_recipe_names: list[str]
+
+
+class IngredientSuggestionResponse(SQLModel):
+    suggestions: list[IngredientSuggestion]
+
+
+class IngredientCatalogResponse(SQLModel):
+    names: list[str]
