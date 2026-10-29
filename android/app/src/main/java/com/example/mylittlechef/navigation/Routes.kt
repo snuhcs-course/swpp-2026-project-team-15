@@ -1,4 +1,5 @@
 // AI-generated initial navigation scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
+// Pantry edit route added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.navigation
 
 import android.net.Uri
@@ -19,6 +20,7 @@ object Routes {
     const val EDIT_NICKNAME = "edit_nickname"
     const val EDIT_UTENSIL = "edit_utensil"
     const val EDIT_ALLERGY = "edit_allergy"
+    const val EDIT_PANTRY = "edit_pantry"
 
     const val RECIPE_DETAIL = "recipe_detail" // TODO: recipe 하위 route가 되어야 함
 

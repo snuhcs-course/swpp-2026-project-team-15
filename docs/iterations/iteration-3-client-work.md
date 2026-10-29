@@ -42,3 +42,10 @@ Use the isolated cloudTest package. Automated checks use controlled local APIs. 
 
 Actual evidence: [AI work log](../ai-collaboration/iteration-3/hyeokjun-work-log.md).
 Original inputs: [prompt log](../ai-collaboration/iteration-3/hyeokjun-prompts-2026-10-28.md).
+
+
+## 2026-10-29 restoration checkpoint
+
+Earlier local pantry/suggestions/autocomplete restoration is in progress and paused at user request. See [checkpoint](iteration-3-restoration-checkpoint.ko.md); latest added tests and full runtime verification remain pending. This is not a completed feature claim.
+
+Restoration resumed on 2026-10-29. Pantry/profile editing, suggestions and catalog completion are integrated locally; see [review guide](iteration-3-restoration-review.ko.md) for actual tests and limitations. Keep the existing staple policy and deployment untouched; new endpoints are local until separately deployed. Human acceptance remains pending.

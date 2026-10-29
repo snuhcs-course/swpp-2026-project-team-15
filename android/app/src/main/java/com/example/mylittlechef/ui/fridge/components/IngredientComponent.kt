@@ -1,10 +1,12 @@
 // AI-generated initial IngredientItem, EditableIngredientList, IngredientRow, and IngredientEditorState drafts with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
+// Ingredient name completion added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.ui.fridge.components
 
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -106,6 +108,7 @@ fun IngredientItem(
 @Composable
 fun EditableIngredientList(
     editor: IngredientEditorState,
+    ingredientNames: List<String> = emptyList(),
     modifier: Modifier = Modifier
 )
 {
@@ -128,6 +131,29 @@ fun EditableIngredientList(
                 onNameChange = { editor.rename(i, it) },
                 onEditClick = { editor.toggleEdit(i) },
                 onRemoveClick = { editor.remove(i) },
+                suggestions = if (editor.editingIndex == i) {
+                    ingredientNames
+                        .asSequence()
+                        .filter { name ->
+                            ingredient.name.trim().isNotEmpty() &&
+                                !name.equals(ingredient.name.trim(), ignoreCase = true) &&
+                                name.contains(ingredient.name.trim(), ignoreCase = true) &&
+                                editor.ingredients.none { it.name == name }
+                        }
+                        .sortedWith(
+                            compareBy<String> {
+                                !it.startsWith(ingredient.name.trim(), ignoreCase = true)
+                            }.thenBy { it.length }.thenBy { it }
+                        )
+                        .take(5)
+                        .toList()
+                } else {
+                    emptyList()
+                },
+                onSuggestionSelected = { selected ->
+                    editor.rename(i, selected)
+                    editor.finishEdit()
+                },
                 imageRes = ingredient.imageRes
             )
         }
@@ -148,14 +174,17 @@ fun IngredientRow(
     onNameChange: (String) -> Unit,
     onEditClick: () -> Unit, // when the edit icon is clicked
     onRemoveClick: () -> Unit, // when the remove icon is clicked
+    suggestions: List<String> = emptyList(),
+    onSuggestionSelected: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     @DrawableRes imageRes: Int? = null
 )
 {
-    Box(
+    Column(
         modifier = modifier.fillMaxWidth()
     )
     {
+        Box {
         // Row for ingredient content
         Row(
             modifier = Modifier
@@ -243,6 +272,29 @@ fun IngredientRow(
                     contentDescription = "remove",
                     tint = Color.Unspecified
                 )
+            }
+        }
+        }
+
+        if (isEditing && suggestions.isNotEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Gray)
+            ) {
+                suggestions.forEach { suggestion ->
+                    Text(
+                        text = suggestion,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSuggestionSelected(suggestion) }
+                            .padding(horizontal = 20.dp, vertical = 12.dp)
+                    )
+                }
             }
         }
     }

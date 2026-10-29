@@ -1,6 +1,17 @@
+// AI-assisted with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.model
 
 object Preset {
+    // Frequent recipe ingredients that are practical to confirm once during onboarding.
+    val pantrySeasonings = listOf(
+        "소금", "설탕", "간장", "식용유", "참기름", "후춧가루",
+        "다진마늘", "고춧가루", "깨소금", "식초", "고추장", "된장"
+    )
+
+    val pantryBasics = listOf(
+        "양파", "대파", "당근", "계란", "밥", "두부", "감자", "김치"
+    )
+
     val utensils = listOf(
         "가스레인지",
         "인덕션",

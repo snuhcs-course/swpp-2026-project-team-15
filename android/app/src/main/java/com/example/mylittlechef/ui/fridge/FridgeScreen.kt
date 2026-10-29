@@ -25,16 +25,23 @@ import com.example.mylittlechef.ui.fridge.components.FridgeShelves
 import com.example.mylittlechef.ui.theme.DeepBrown
 import com.example.mylittlechef.ui.theme.DeepGreen
 import com.example.mylittlechef.ui.theme.Gray
+import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FridgeScreen(
     user: UserViewModel,
     fridge: FridgeViewModel,
     onAddIngredientClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    ingredientSuggestions: IngredientSuggestionViewModel? = null
 ) {
+    var showSuggestions by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(showSuggestions, fridge.ingredients) {
+        if (showSuggestions) ingredientSuggestions?.refresh(fridge.ingredients)
+    }
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(fridge.removalError) {
         fridge.removalError?.let { message ->
@@ -46,11 +53,17 @@ fun FridgeScreen(
         FridgeContent(
             nickname = user.nickname,
             ingredients = fridge.ingredients,
-            controlsEnabled = fridge.removingIngredient == null,
+            controlsEnabled = fridge.removingIngredient == null && !fridge.isSavingPantry,
             onRemoveIngredient = fridge::removeIngredient,
-            onAddIngredientClick = onAddIngredientClick
+            onAddIngredientClick = onAddIngredientClick,
+            onSuggestionsClick = { showSuggestions = true }
         )
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
+    }
+    if (showSuggestions && ingredientSuggestions != null) {
+        ModalBottomSheet(onDismissRequest = { showSuggestions = false }) {
+            IngredientSuggestionSheet(ingredientSuggestions, onRetry = { ingredientSuggestions.refresh(fridge.ingredients) })
+        }
     }
 }
 
@@ -61,6 +74,7 @@ private fun FridgeContent(
     controlsEnabled: Boolean,
     onRemoveIngredient: (String) -> Unit,
     onAddIngredientClick: () -> Unit,
+    onSuggestionsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var managing by rememberSaveable { mutableStateOf(false) }
@@ -79,6 +93,9 @@ private fun FridgeContent(
                 color = Color.Black,
                 modifier = Modifier.weight(1f)
             )
+            TextButton(onClick = onSuggestionsClick, enabled = controlsEnabled) {
+                Text("추천", color = DeepGreen)
+            }
             TextButton(
                 onClick = { managing = !managing },
                 enabled = controlsEnabled && ingredients.isNotEmpty()
