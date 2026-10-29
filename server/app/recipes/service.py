@@ -1,9 +1,3 @@
-# AI-assisted integration with Codex, 2026-10-29; human review pending.
-# AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
-
-# Modified with Codex (GPT-6.1 Sol), 2026-10-17; reviewed by Soohyun An.
-# Changes: Add read-only loading and validation of recipes and inventory, including water.
-
 """Read-only recipe queries over the database built by server/db/import_recipes.py."""
 
 import re
@@ -63,8 +57,6 @@ class RecipeRepository:
             required_by_recipe.setdefault(recipe_id, set()).add(name)
             recipe_ids_by_name.setdefault(name, set()).add(recipe_id)
 
-        # Equivalent names share one card. A purchasable base form (대파) wins over
-        # a narrower prepared form (다진파) when it covers every recipe the latter does.
         groups = {frozenset(with_synonyms([name])) for name in recipe_ids_by_name}
         suggestions: list[IngredientSuggestion] = []
         for group in groups:
@@ -76,7 +68,12 @@ class RecipeRepository:
             if len(covered_ids) < min_recipe_count:
                 continue
             display_name = min(
-                (name for name in group if name in recipe_ids_by_name and frozenset(with_synonyms([name])) == group),
+                (
+                    name
+                    for name in group
+                    if name in recipe_ids_by_name
+                    and frozenset(with_synonyms([name])) == group
+                ),
                 key=lambda name: (-len(recipe_ids_by_name[name]), len(name), name),
             )
             anchors_after = owned_anchors | (

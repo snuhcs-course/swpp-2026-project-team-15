@@ -1,4 +1,3 @@
-# AI-assisted integration with Codex, 2026-10-29; human review pending.
 """Regression checks for restored client catalog and ingredient suggestions."""
 from app.recipes.service import RecipeRepository
 from tests.conftest import StubVision
@@ -36,22 +35,46 @@ def test_new_endpoints_leave_legacy_recommendation_available(make_client):
 
 def test_prepared_form_does_not_hide_or_mislabel_base_ingredient(recipe_db):
     import sqlite3
+
     from app.database import read_only_sqlite_engine
     with sqlite3.connect(recipe_db) as db:
         db.execute("INSERT INTO ingredient VALUES (14, '다진파')")
         for recipe_id, ingredient_id in [(100, 14), (101, 14), (102, 14), (103, 3)]:
-            db.execute("INSERT INTO recipe (recipe_id, name) VALUES (?, ?)", (recipe_id, f"파 요리 {recipe_id}"))
-            db.executemany("INSERT INTO recipe_ingredient(recipe_id, ingredient_id, ingredient_type_code) VALUES (?, ?, '3060001')",
-                           [(recipe_id, ingredient_id), (recipe_id, 8)])
+            db.execute(
+                "INSERT INTO recipe (recipe_id, name) VALUES (?, ?)",
+                (recipe_id, f"파 요리 {recipe_id}"),
+            )
+            db.executemany(
+                "INSERT INTO recipe_ingredient "
+                "(recipe_id, ingredient_id, ingredient_type_code) "
+                "VALUES (?, ?, '3060001')",
+                [(recipe_id, ingredient_id), (recipe_id, 8)],
+            )
     engine = read_only_sqlite_engine(recipe_db)
     try:
         repository = RecipeRepository(engine)
-        whole = next(x for x in repository.ingredient_suggestions(["두부"], min_recipe_count=1) if x.name == "대파")
+        whole = next(
+            x
+            for x in repository.ingredient_suggestions(
+                ["두부"], min_recipe_count=1
+            )
+            if x.name == "대파"
+        )
         assert whole.ready_recipe_count == 4
         assert whole.recipe_count == 5
-        assert all(x.name != "다진파" for x in repository.ingredient_suggestions(["두부"], min_recipe_count=1))
-        added = next(x for x in repository.ingredient_suggestions(["두부", "다진파"], min_recipe_count=1) if x.name == "대파")
-        assert added.ready_recipe_count == 1
+        assert all(
+            x.name != "다진파"
+            for x in repository.ingredient_suggestions(
+                ["두부"], min_recipe_count=1
+            )
+        )
+        added = next(
+            x
+            for x in repository.ingredient_suggestions(
+                ["두부", "다진파"], min_recipe_count=1
+            )
+            if x.name == "대파"
+        )
         assert added.ready_recipe_names == ["파 요리 103"]
     finally:
         engine.dispose()

@@ -1,8 +1,3 @@
-# AI-assisted integration with Codex, 2026-10-29; human review pending.
-# AI-generated with Claude Code (Opus 5.5), 2026-10-11 to 2026-10-14; reviewed by Jaehyuk Choi.
-
-# Modified with Codex (GPT-6.1 Sol), 2026-10-17; reviewed by Soohyun An.
-# Changes: Add the recommendations endpoint with input and database error handling.
 
 from fastapi import APIRouter, HTTPException
 
@@ -59,4 +54,6 @@ def ingredient_names(recipes: RecipeRepositoryDep) -> IngredientCatalogResponse:
 def ingredient_suggestions(
     request: IngredientSuggestionRequest, recipes: RecipeRepositoryDep
 ) -> IngredientSuggestionResponse:
-    return IngredientSuggestionResponse(suggestions=recipes.ingredient_suggestions(request.ingredients))
+    return IngredientSuggestionResponse(
+    suggestions=recipes.ingredient_suggestions(request.ingredients)
+)
