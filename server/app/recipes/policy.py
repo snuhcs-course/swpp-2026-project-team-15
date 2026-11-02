@@ -35,6 +35,9 @@ class RecommendationPolicy:
     maximum_revision_limit: int = 5
     # False keeps the legacy full-row revision request.
     compact_revision: bool = True
+    # True: the recipe's own seasoning-labelled ingredients count as available, matching how this
+    # policy excludes them from matched/missing counts. False: inventory only (strict).
+    assume_seasonings: bool = True
 
     def __post_init__(self):
         if self.general_minimum < 1 or self.main_minimum < 1:

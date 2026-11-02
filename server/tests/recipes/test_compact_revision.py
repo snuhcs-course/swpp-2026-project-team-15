@@ -1,4 +1,4 @@
-"""Compact revision request (no network)."""
+"""Compact revision request with availability status and seasoning policy (no network)."""
 
 import json
 from dataclasses import asdict
@@ -8,8 +8,13 @@ from fastapi.testclient import TestClient
 from app.main import create_app
 from app.recipes.policy import RecommendationPolicy
 from app.recipes.recommendations import RecommendationService
-from recipe_revision.compact import build_compact_request
-from recipe_revision.core import SYSTEM_PROMPT, LLMResponse, build_request, revise
+from recipe_revision.compact import (
+    SYSTEM_PROMPT_STAPLES,
+    SYSTEM_PROMPT_STRICT,
+    available_ids,
+    build_compact_request,
+)
+from recipe_revision.core import LLMResponse, build_request, revise
 from recipe_revision.models import InventoryIngredient, SourceIngredient, SourceRecipe, SourceStep
 from tests.conftest import StubVision
 
@@ -62,6 +67,8 @@ def test_compact_request_keeps_only_needed_fields():
         "ingredient_id": 345,
         "name": "양파",
         "quantity_text": "1개",
+        "role": "main",
+        "status": "owned",
     }
     by_id = {row["ingredient_id"]: row for row in original["ingredients"]}
     assert by_id[105]["as_written"] == "다진쇠고기"  # kept only when it differs from name
@@ -78,14 +85,42 @@ def test_compact_request_keeps_only_needed_fields():
     ]
 
 
-def test_compact_request_is_smaller_and_keeps_prompt_and_schema():
+def test_compact_request_is_smaller_and_keeps_schema():
     items = inventory((345, "양파"))
     legacy = build_request(recipe(), items)
     compact = build_compact_request(recipe(), items)
     assert len(compact.user) < 0.7 * len(legacy.user)
-    assert compact.system == legacy.system == SYSTEM_PROMPT
-    assert compact.to_dict() == {**legacy.to_dict(), "messages": compact.to_dict()["messages"]}
+    assert compact.to_dict()["output_schema"] == legacy.to_dict()["output_schema"]
     assert json.loads(legacy.user)["original"] == json.loads(json.dumps(asdict(recipe())))
+
+
+def test_status_follows_seasoning_policy():
+    items = inventory((345, "양파"))
+    staples = json.loads(build_compact_request(recipe(), items, assume_seasonings=True).user)
+    strict = json.loads(build_compact_request(recipe(), items, assume_seasonings=False).user)
+    status = lambda payload: {  # noqa: E731
+        row["ingredient_id"]: row["status"] for row in payload["original"]["ingredients"]
+    }
+    assert status(staples) == {
+        345: "owned",
+        147: "unavailable",
+        105: "unavailable",
+        284: "assumed",
+        103: "assumed",
+    }
+    assert status(strict)[284] == "unavailable" and status(strict)[345] == "owned"
+    assert build_compact_request(recipe(), items).system == SYSTEM_PROMPT_STAPLES
+    assert (
+        build_compact_request(recipe(), items, assume_seasonings=False).system
+        == SYSTEM_PROMPT_STRICT
+    )
+    assert "assumed" in SYSTEM_PROMPT_STAPLES and "assumed" not in SYSTEM_PROMPT_STRICT
+
+
+def test_available_ids_by_policy():
+    items = inventory((345, "양파"))
+    assert available_ids(recipe(), items, assume_seasonings=True) == {345, 204, 284, 103}
+    assert available_ids(recipe(), items, assume_seasonings=False) == {345, 204}
 
 
 class StubLLM:

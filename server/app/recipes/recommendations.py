@@ -3,6 +3,7 @@
 # 2026-10-17; reviewed by Soohyun An
 
 from collections.abc import Callable
+from functools import partial
 
 from app.recipes.policy import DEFAULT_POLICY, RecommendationPolicy
 from app.recipes.providers import MockRevisionLLM
@@ -105,7 +106,10 @@ class RecommendationService:
                     status="not_attempted", not_attempted_reason="shared_failure"
                 )
             return response
-        build = build_compact_request if self.policy.compact_revision else build_request
+        if self.policy.compact_revision:
+            build = partial(build_compact_request, assume_seasonings=self.policy.assume_seasonings)
+        else:
+            build = build_request
         for entry in selected:
             if summary.stopped_error is not None:
                 entry.revision = RecipeRevision(
