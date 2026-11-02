@@ -141,6 +141,49 @@ def build_compact_request(
     return RevisionRequest(system, user)
 
 
+def check_details(
+    result: dict,
+    recipe: SourceRecipe,
+    inventory: Sequence[InventoryIngredient],
+    *,
+    seasonings: SeasoningPolicy = ASSUME_ALL,
+) -> dict:
+    """Violation codes plus what caused them: ``{"codes": [...], "ingredients": [...], "mentions":
+    [...]}`` (names of unavailable ingredients in the ingredient list and in steps/tips)."""
+    out: dict = {"codes": [], "ingredients": [], "mentions": []}
+    if not result.get("can_revise") or not result.get("revised_recipe"):
+        return out
+    allowed = available_ids(recipe, inventory, seasonings=seasonings)
+    revised = result["revised_recipe"]
+    bad = [
+        item.get("name") or str(item["ingredient_id"])
+        for item in revised["ingredients"]
+        if item["ingredient_id"] not in allowed
+    ]
+    if bad:
+        out["codes"].append("unavailable_ingredient")
+        out["ingredients"] = bad
+    names_allowed, names_missing = set(), set()
+    for row in recipe.ingredients:
+        target = names_allowed if row.ingredient_id in allowed else names_missing
+        target.update(n for n in (row.name, row.original_name) if n and len(n) >= 2)
+    names_allowed |= {item.name for item in inventory if len(item.name) >= 2}
+    names_missing -= names_allowed | _GENERIC
+    for group in _SYNONYMS:
+        if names_allowed & group:
+            names_missing -= group
+    text = "\n".join(
+        part for step in revised["steps"] for part in (step["instruction"], step.get("tip")) if part
+    )
+    for name in sorted(names_allowed, key=len, reverse=True):
+        text = text.replace(name, "\0")
+    found = sorted(name for name in names_missing if name in text)
+    if found:
+        out["codes"].append("unavailable_in_steps")
+        out["mentions"] = found
+    return out
+
+
 def check_result(
     result: dict,
     recipe: SourceRecipe,
@@ -157,27 +200,18 @@ def check_result(
       match; the check is deliberately simple and errs toward rejecting.
     Refusals are never checked.
     """
-    if not result.get("can_revise") or not result.get("revised_recipe"):
-        return []
-    allowed = available_ids(recipe, inventory, seasonings=seasonings)
-    revised = result["revised_recipe"]
-    codes = []
-    if any(item["ingredient_id"] not in allowed for item in revised["ingredients"]):
-        codes.append("unavailable_ingredient")
-    names_allowed, names_missing = set(), set()
-    for row in recipe.ingredients:
-        target = names_allowed if row.ingredient_id in allowed else names_missing
-        target.update(n for n in (row.name, row.original_name) if n and len(n) >= 2)
-    names_allowed |= {item.name for item in inventory if len(item.name) >= 2}
-    names_missing -= names_allowed | _GENERIC
-    for group in _SYNONYMS:
-        if names_allowed & group:
-            names_missing -= group
-    text = "\n".join(
-        part for step in revised["steps"] for part in (step["instruction"], step.get("tip")) if part
-    )
-    for name in sorted(names_allowed, key=len, reverse=True):
-        text = text.replace(name, "\0")
-    if any(name in text for name in names_missing):
-        codes.append("unavailable_in_steps")
-    return codes
+    return check_details(result, recipe, inventory, seasonings=seasonings)["codes"]
+
+
+def retry_request(request: RevisionRequest, details: dict) -> RevisionRequest:
+    """The same request plus a ``feedback`` object that names what the rejected answer got wrong."""
+    data = json.loads(request.user)
+    data["feedback"] = {
+        "problem": "Your previous answer was rejected because it used unavailable ingredients. "
+        "Answer again in the same format and use none of the listed ingredients anywhere "
+        "(ingredient list, steps, tips, reasons).",
+        "unavailable_in_ingredient_list": details["ingredients"],
+        "unavailable_in_steps": details["mentions"],
+    }
+    user = json.dumps(data, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+    return RevisionRequest(request.system, user)

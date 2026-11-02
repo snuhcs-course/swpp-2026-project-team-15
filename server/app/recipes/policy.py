@@ -50,6 +50,8 @@ class RecommendationPolicy:
     # "off"; "refuse" (the candidate keeps its slot); "fill" (the next candidates take over, so the
     # model is called for ``limit`` candidates when enough exist).
     prescreen: str = "refuse"
+    # Ask the model once more, with feedback, after a rejected answer (one extra call).
+    retry_on_rejection: bool = False
     # Add an omission entry to the change list for each removed ingredient it does not mention.
     complete_changes: bool = True
 

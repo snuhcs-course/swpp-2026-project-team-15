@@ -122,6 +122,7 @@ class RecommendationService:
             return response
         steps = Steps(
             prescreen=self.policy.prescreen != "off",
+            retry=self.policy.retry_on_rejection,
             complete_changes=self.policy.complete_changes,
             seasonings=self.policy.seasonings,
         )
