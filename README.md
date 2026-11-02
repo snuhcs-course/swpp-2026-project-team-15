@@ -59,14 +59,15 @@ default to mock; configure live providers in the server environment.
 
 ## App and API
 
-The app uploads photos to `/analyze`, saves user-reviewed ingredient names and
+The app uploads a photo, or in video mode the sharpest frames of a 5 s sweep, to
+`/analyze`, saves user-reviewed ingredient names and
 requests `/recipes/recommend`. It uses the original recipe list/detail screens
 and local DataStore storage. The contributor ID-based filtering/revision endpoint
 remains available separately; the app does not call it.
 
 | Endpoint | Purpose |
 | --- | --- |
-| POST `/analyze` | Photo → ingredient candidates |
+| POST `/analyze` | Photo (`image`) or 2–15 views of one fridge (`images`) → ingredient candidates |
 | POST `/recipes/recommend` | Ingredient names → recipes for the app |
 | POST `/recipes/recommendations` | Contributor ID-based filtering/revision API |
 | GET `/health` | Liveness |
