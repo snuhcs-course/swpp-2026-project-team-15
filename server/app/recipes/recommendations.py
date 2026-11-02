@@ -4,7 +4,6 @@
 
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 
 from app.recipes.policy import DEFAULT_POLICY, RecommendationPolicy
 from app.recipes.providers import MockRevisionLLM
@@ -18,9 +17,10 @@ from app.recipes.schemas import (
     RevisionSummary,
 )
 from app.recipes.service import RecipeRepository
-from recipe_revision.compact import build_compact_request, check_result
-from recipe_revision.core import LLM, build_request, revise
+from recipe_revision.core import LLM
 from recipe_revision.failures import Failure
+from recipe_revision.pipeline import Steps, revise_with_steps
+from recipe_revision.prescreen import prescreen_refusal
 
 
 class InvalidRevisionLimit(ValueError):
@@ -51,7 +51,7 @@ class RecommendationService:
         self.repository, self.policy, self.llm_factory = repository, policy, llm_factory
 
     def recommend(self, request: RecommendationsRequest) -> RecommendationsResponse:
-        """Return every candidate, with at most n sequential attempts and no retry."""
+        """Return every candidate, with at most n model attempts and no retry."""
         limit = (
             self.policy.default_revision_limit
             if "revision_limit" not in request.model_fields_set
@@ -82,14 +82,27 @@ class RecommendationService:
                     )
                 )
         # Sorting a separate plan avoids giving API array order display semantics.
-        selected = sorted(
+        ordered = sorted(
             entries,
             key=lambda entry: (
                 entry.filtering.missing_count,
                 -entry.filtering.matched_count,
                 entry.recipe_id,
             ),
-        )[:limit]
+        )
+        selected = ordered[:limit]
+        if self.policy.prescreen == "fill":
+            # Candidates refused without a model call do not use up the limit: walk down the ranking
+            # until ``limit`` candidates need the model (selected_count can then exceed the limit).
+            selected, needing_model = [], 0
+            for entry in ordered:
+                selected.append(entry)
+                refused = prescreen_refusal(
+                    entry.original, inventory, seasonings=self.policy.seasonings
+                )
+                needing_model += refused is None
+                if needing_model == limit:
+                    break
         summary = RevisionSummary(limit=limit, selected_count=len(selected), attempted_count=0)
         response = RecommendationsResponse(
             recipes=entries,
@@ -107,13 +120,16 @@ class RecommendationService:
                     status="not_attempted", not_attempted_reason="shared_failure"
                 )
             return response
-        build = partial(build_compact_request, seasonings=self.policy.seasonings)
-        check = partial(check_result, seasonings=self.policy.seasonings)
+        steps = Steps(
+            prescreen=self.policy.prescreen != "off",
+            complete_changes=self.policy.complete_changes,
+            seasonings=self.policy.seasonings,
+        )
 
         def attempt(entry: RecommendationEntry) -> RecipeRevision:
             """One independent revision call; never raises."""
             try:
-                outcome = revise(entry.original, inventory, llm, build=build, check=check)
+                outcome = revise_with_steps(entry.original, inventory, llm, steps)
                 if outcome.status in ("revised", "refused"):
                     return RecipeRevision(status=outcome.status, result=outcome.model_result)
                 failure = outcome.failure or Failure("api_error", "api_request")

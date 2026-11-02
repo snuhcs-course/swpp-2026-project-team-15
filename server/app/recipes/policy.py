@@ -46,6 +46,12 @@ class RecommendationPolicy:
     # called after a shared failure); more calls all selected candidates at once and returns the
     # same response as the sequential loop would for the same per-call outcomes.
     revision_workers: int = 1
+    # Candidates whose dish-name ingredient is unavailable are refused without a model call.
+    # "off"; "refuse" (the candidate keeps its slot); "fill" (the next candidates take over, so the
+    # model is called for ``limit`` candidates when enough exist).
+    prescreen: str = "refuse"
+    # Add an omission entry to the change list for each removed ingredient it does not mention.
+    complete_changes: bool = True
 
     def __post_init__(self):
         if self.general_minimum < 1 or self.main_minimum < 1:
@@ -54,6 +60,8 @@ class RecommendationPolicy:
             raise ValueError("Revision limits must be within 1 through 5")
         if not 1 <= self.revision_workers <= self.maximum_revision_limit:
             raise ValueError("Revision workers must be between 1 and the maximum revision limit")
+        if self.prescreen not in ("off", "refuse", "fill"):
+            raise ValueError("prescreen must be off, refuse or fill")
         if self.water_id <= 0:
             raise ValueError("Water ID must be positive")
         if self.rule_id not in {rule.rule_id for rule in build_rules()}:
