@@ -3,6 +3,8 @@
 
 import hashlib
 import json
+from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
@@ -13,8 +15,22 @@ from app.vision.schemas import DetectedItem
 DETECTED_ITEMS = TypeAdapter(list[DetectedItem])
 
 
+@dataclass(frozen=True)
+class ImageInput:
+    """One uploaded image and its declared media type."""
+
+    data: bytes
+    mime_type: str
+
+
 class VisionProvider(Protocol):
     def detect(self, image: bytes, mime_type: str) -> list[DetectedItem]: ...
+
+
+class MultiImageVisionProvider(VisionProvider, Protocol):
+    """Optional: recognise several views of the same fridge in one request."""
+
+    def detect_many(self, images: Sequence[ImageInput]) -> list[DetectedItem]: ...
 
 
 class FixtureVisionProvider:
@@ -31,3 +47,6 @@ class FixtureVisionProvider:
     def detect(self, image: bytes, mime_type: str) -> list[DetectedItem]:
         index = int.from_bytes(hashlib.sha256(image).digest()[:4]) % len(self._fixtures)
         return self._fixtures[index]
+
+    def detect_many(self, images: Sequence[ImageInput]) -> list[DetectedItem]:
+        return [item for image in images for item in self.detect(image.data, image.mime_type)]
