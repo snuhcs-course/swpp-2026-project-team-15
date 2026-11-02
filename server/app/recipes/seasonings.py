@@ -42,3 +42,48 @@ def load_seasoning_policy(
 
 def validate_against_catalog(policy: SeasoningPolicy, catalog: Mapping[int, str]) -> None:
     policy.check_catalog(catalog)
+
+
+WATER_ID = 204
+
+
+def seasoning_labelled_ids(rows) -> set[int]:
+    """Ids the recipes label as seasoning, resolved like the filtering policy (main > secondary >
+    seasoning for conflicting rows).
+
+    ``rows``: (id, name, type code, type text) as ``RecipeRepository.ingredient_labels`` returns.
+    """
+    from app.recipes.policy import TYPE_CODES  # imported late: policy imports this module
+    from recipe_filtering.metrics import SEASONING, TYPE_PRIORITY
+
+    labels: dict[int, set[str]] = {}
+    for ingredient_id, _name, code, text in rows:
+        labels.setdefault(ingredient_id, set()).add(TYPE_CODES.get(code, text or ""))
+    resolved = {
+        i: min(known, key=TYPE_PRIORITY.__getitem__)
+        for i, found in labels.items()
+        if (known := found & TYPE_PRIORITY.keys())
+    }
+    return {i for i, kind in resolved.items() if kind == SEASONING}
+
+
+def resolve_staple_names(
+    policy: SeasoningPolicy, catalog: Mapping[int, str], labelled_ids=frozenset()
+) -> tuple[str, ...]:
+    """Names of the seasonings assumed to be at home, for the name-based recommend path.
+
+    One source of truth: the same policy object that drives candidate selection, the revision
+    request and the post-check. Water is always first. ``list``: the declared ids in config order;
+    ``all``: every seasoning-labelled ingredient (``labelled_ids``); ``none``: only water.
+    Names come from the ingredient table (``validate_against_catalog`` makes sure the config
+    agrees with it).
+    """
+    if policy.mode == "list":
+        ordered = [i for i in policy.names if i in policy.assumed_ids]
+        ordered += sorted(policy.assumed_ids - set(ordered))
+    elif policy.mode == "all":
+        ordered = sorted(labelled_ids, key=lambda i: catalog.get(i, ""))
+    else:
+        ordered = []
+    ids = list(dict.fromkeys([WATER_ID, *ordered]))
+    return tuple(catalog[i] for i in ids if i in catalog)
