@@ -24,10 +24,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +55,7 @@ import androidx.core.content.ContextCompat // 권한 상태 확인
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect // 화면이 다시 보일 때(ON_RESUME) 등에 실행
 import com.example.mylittlechef.R
+import com.example.mylittlechef.data.sweep.SweepRecorder
 import com.example.mylittlechef.ui.components.TextOnlyButton
 import com.example.mylittlechef.ui.fridge.components.AddFlowHeader
 import com.example.mylittlechef.ui.theme.MyLittleChefTheme
@@ -103,13 +106,37 @@ fun CaptureScreen(
     }
     var isCapturing by remember { mutableStateOf(false) } // 촬영 중 중복 클릭 방지
 
+    // 동영상 모드: 몇 초간 훑으면서 선명한 프레임 여러 장을 고른다. 사진 모드는 그대로다.
+    var videoMode by remember { mutableStateOf(false) }
+    var sweepProgress by remember { mutableStateOf<Float?>(null) }
+    val sweepRecorder = remember { SweepRecorder(context) }
+    DisposableEffect(sweepRecorder) { onDispose { sweepRecorder.cancel() } }
+
     CaptureContent(
         hasCameraPermission = hasCameraPermission,
         isCapturing = isCapturing,
+        videoMode = videoMode,
+        sweepProgress = sweepProgress,
+        onModeChange = { videoMode = it },
         onBackClick = onBackClick,
         onManualAddClick = onManualAddClick,
         onShutterClick = {
-            if (!isCapturing) {
+            if (!isCapturing && videoMode) {
+                isCapturing = true
+                sweepProgress = 0f
+                sweepRecorder.start(
+                    onProgress = { sweepProgress = it },
+                    onDone = { uri ->
+                        isCapturing = false
+                        sweepProgress = null
+                        if (uri != null) {
+                            onCaptured(uri)
+                        } else {
+                            Toast.makeText(context, "촬영에 실패했어요. 다시 시도해 주세요", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+            } else if (!isCapturing) {
                 isCapturing = true
                 takePhoto(
                     context = context,
@@ -139,7 +166,13 @@ fun CaptureScreen(
                 )
             )
         },
-        cameraPreview = { CameraPreview(imageCapture = imageCapture, modifier = Modifier.fillMaxSize()) }
+        cameraPreview = {
+            CameraPreview(
+                imageCapture = imageCapture,
+                modifier = Modifier.fillMaxSize(),
+                imageAnalysis = if (videoMode) sweepRecorder.analysis else null
+            )
+        }
     )
 
 
@@ -150,6 +183,9 @@ fun CaptureScreen(
 private fun CaptureContent(
     hasCameraPermission: Boolean,
     isCapturing: Boolean,
+    videoMode: Boolean,
+    sweepProgress: Float?,
+    onModeChange: (Boolean) -> Unit,
     onBackClick: () -> Unit,
     onShutterClick: () -> Unit,
     onGalleryClick: () -> Unit, // TODO: connect to gallery
@@ -187,6 +223,39 @@ private fun CaptureContent(
                     onOpenSettingsClick = onOpenSettingsClick,
                     modifier = Modifier.align(Alignment.Center)
                 )
+            }
+
+            // photo / video mode
+            ModeSwitch(
+                videoMode = videoMode,
+                enabled = !isCapturing,
+                onModeChange = onModeChange,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 12.dp)
+            )
+
+            if (sweepProgress != null) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 96.dp, start = 48.dp, end = 48.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "냉장고를 천천히 훑어 주세요",
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    LinearProgressIndicator(
+                        progress = { sweepProgress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        color = Color.White,
+                        trackColor = Color.White.copy(alpha = 0.3f)
+                    )
+                }
             }
 
             // gallery and shutter button
@@ -234,6 +303,33 @@ private fun CaptureContent(
                 .fillMaxWidth(),
             textColor = DeepGreen
         )
+    }
+}
+
+@Composable
+private fun ModeSwitch(
+    videoMode: Boolean,
+    enabled: Boolean,
+    onModeChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+)
+{
+    Row(modifier = modifier)
+    {
+        listOf(false to "사진", true to "동영상").forEach { (isVideo, label) ->
+            TextButton(
+                onClick = { onModeChange(isVideo) },
+                enabled = enabled
+            )
+            {
+                Text(
+                    text = label,
+                    color = Color.White.copy(alpha = if (videoMode == isVideo) 1f else 0.6f),
+                    style = MaterialTheme.typography.labelMedium,
+                    textDecoration = if (videoMode == isVideo) TextDecoration.Underline else null
+                )
+            }
+        }
     }
 }
 
