@@ -9,6 +9,7 @@ Run: uv run --env-file .env uvicorn app.main:create_app_from_env --factory
 """
 
 import logging
+import os
 
 from fastapi import FastAPI, HTTPException
 from google import genai
@@ -87,7 +88,7 @@ def create_app_from_env() -> FastAPI:
         recipes,
         recommendations=RecommendationService(
             recipes,
-            policy=RecommendationPolicy(seasonings=seasonings),
+            policy=RecommendationPolicy.from_env(os.environ, seasonings=seasonings),
             llm_factory=revision_factory(settings),
         ),
     )

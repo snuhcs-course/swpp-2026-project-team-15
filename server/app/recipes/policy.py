@@ -5,6 +5,7 @@ Water and the assumed seasonings (``SeasoningPolicy``) are removed from matched 
 unknown types count in totals only. This projection never changes AI inputs.
 """
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from app.recipes.seasonings import load_seasoning_policy
@@ -21,6 +22,9 @@ from recipe_filtering.rules import build_rules, evaluate_rule
 from recipe_revision.models import SourceRecipe
 from recipe_revision.seasoning import SeasoningPolicy
 
+WORKERS_ENV = "RECIPE_REVISION_WORKERS"
+PRESCREEN_ENV = "RECIPE_REVISION_PRESCREEN"
+RETRY_ENV = "RECIPE_REVISION_RETRY"
 TYPE_CODES = {"3060001": MAIN, "3060002": SECONDARY, "3060003": SEASONING}
 
 
@@ -54,6 +58,31 @@ class RecommendationPolicy:
     retry_on_rejection: bool = False
     # Add an omission entry to the change list for each removed ingredient it does not mention.
     complete_changes: bool = True
+
+    @classmethod
+    def from_env(cls, env: Mapping[str, str], **overrides) -> "RecommendationPolicy":
+        """Read the revision options that may change without a code edit; unset keeps the default.
+
+        ``RECIPE_REVISION_WORKERS`` (1-5, concurrent model calls per request),
+        ``RECIPE_REVISION_PRESCREEN`` (off, refuse or fill) and ``RECIPE_REVISION_RETRY``
+        (true or false, one extra call after a rejected answer).
+        """
+        options = dict(overrides)
+        if env.get(WORKERS_ENV):
+            try:
+                options["revision_workers"] = int(env[WORKERS_ENV])
+            except ValueError as exc:
+                raise ValueError(
+                    f"{WORKERS_ENV} must be an integer, got {env[WORKERS_ENV]!r}"
+                ) from exc
+        if env.get(PRESCREEN_ENV):
+            options["prescreen"] = env[PRESCREEN_ENV].strip().lower()
+        if env.get(RETRY_ENV):
+            value = env[RETRY_ENV].strip().lower()
+            if value not in ("true", "false", "1", "0"):
+                raise ValueError(f"{RETRY_ENV} must be true or false, got {env[RETRY_ENV]!r}")
+            options["retry_on_rejection"] = value in ("true", "1")
+        return cls(**options)
 
     def __post_init__(self):
         if self.general_minimum < 1 or self.main_minimum < 1:
