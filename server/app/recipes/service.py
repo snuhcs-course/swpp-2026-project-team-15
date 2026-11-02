@@ -37,6 +37,11 @@ class RecipeRepository:
         with Session(self._engine) as session:
             return sorted(set(session.exec(select(Ingredient.name)).all()))
 
+    def ingredient_catalog(self) -> dict[int, str]:
+        """Ingredient id to name, for validating configuration at startup."""
+        with Session(self._engine) as session:
+            return {row.ingredient_id: row.name for row in session.exec(select(Ingredient)).all()}
+
     def ingredient_suggestions(
         self, fridge: list[str], min_recipe_count: int = 5, limit: int = 5
     ) -> list[IngredientSuggestion]:

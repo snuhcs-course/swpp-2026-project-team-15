@@ -1,12 +1,13 @@
 """Initial service policy; replace through injection when comparing policies.
 
 Counts use distinct IDs and main > secondary > seasoning for conflicting rows.
-Water and resolved seasonings are removed from both matched and missing totals;
+Water and the assumed seasonings (``SeasoningPolicy``) are removed from matched and missing totals;
 unknown types count in totals only. This projection never changes AI inputs.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from app.recipes.seasonings import load_seasoning_policy
 from recipe_filtering.metrics import (
     MAIN,
     SEASONING,
@@ -18,6 +19,7 @@ from recipe_filtering.metrics import (
 from recipe_filtering.metrics import Recipe as FilteringRecipe
 from recipe_filtering.rules import build_rules, evaluate_rule
 from recipe_revision.models import SourceRecipe
+from recipe_revision.seasoning import SeasoningPolicy
 
 TYPE_CODES = {"3060001": MAIN, "3060002": SECONDARY, "3060003": SEASONING}
 
@@ -29,15 +31,19 @@ class RecommendationPolicy:
     rule_id: str = "C"
     general_minimum: int = 2
     main_minimum: int = 1
-    excluded_types: frozenset[str] = frozenset({SEASONING})
+    # Types dropped from the counts entirely. Seasonings are governed by ``seasonings`` below, not
+    # by this set, so the filter and the revision request use the same assumption.
+    excluded_types: frozenset[str] = frozenset()
     water_id: int = 204
     default_revision_limit: int = 3
     maximum_revision_limit: int = 5
     # False keeps the legacy full-row revision request.
     compact_revision: bool = True
-    # True: the recipe's own seasoning-labelled ingredients count as available, matching how this
-    # policy excludes them from matched/missing counts. False: inventory only (strict).
-    assume_seasonings: bool = True
+    # Which seasonings are assumed to be at home (the declared list in assumed_seasonings.json by
+    # default).
+    # Assumed ingredients are left out of the matched/missing counts and are marked available in the
+    # revision request and post-check; every other ingredient must be in the inventory.
+    seasonings: SeasoningPolicy = field(default_factory=load_seasoning_policy)
     # Reject a revised recipe that uses an unavailable ingredient (no retry, no extra model call).
     # Only meaningful with compact_revision, whose request tells the model what is available.
     post_check: bool = True
@@ -71,7 +77,11 @@ class RecommendationPolicy:
         for ingredient_id, labels in types.items():
             known = labels & TYPE_PRIORITY.keys()
             resolved = min(known, key=TYPE_PRIORITY.__getitem__) if known else None
-            if ingredient_id != self.water_id and resolved not in self.excluded_types:
+            if (
+                ingredient_id != self.water_id
+                and resolved not in self.excluded_types
+                and not self.seasonings.assumed(ingredient_id, resolved == SEASONING)
+            ):
                 included[ingredient_id] = frozenset(labels)
         return calculate_metrics(
             FilteringRecipe(source.recipe_id, source.name, included, names), available

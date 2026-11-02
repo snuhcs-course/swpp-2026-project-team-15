@@ -18,6 +18,7 @@ from recipe_revision.compact import (
 )
 from recipe_revision.core import LLMResponse, build_request, revise
 from recipe_revision.models import InventoryIngredient, SourceIngredient, SourceRecipe, SourceStep
+from recipe_revision.seasoning import ASSUME_ALL, ASSUME_NONE
 from tests.conftest import StubVision
 
 MAIN, SECONDARY, SEASONING = "3060001", "3060002", "3060003"
@@ -117,8 +118,8 @@ def revised(ingredient_ids, steps):
 
 def test_status_follows_seasoning_policy():
     items = inventory((345, "양파"))
-    staples = json.loads(build_compact_request(recipe(), items, assume_seasonings=True).user)
-    strict = json.loads(build_compact_request(recipe(), items, assume_seasonings=False).user)
+    staples = json.loads(build_compact_request(recipe(), items, seasonings=ASSUME_ALL).user)
+    strict = json.loads(build_compact_request(recipe(), items, seasonings=ASSUME_NONE).user)
     status = lambda payload: {  # noqa: E731
         row["ingredient_id"]: row["status"] for row in payload["original"]["ingredients"]
     }
@@ -132,7 +133,7 @@ def test_status_follows_seasoning_policy():
     assert status(strict)[284] == "unavailable" and status(strict)[345] == "owned"
     assert build_compact_request(recipe(), items).system == SYSTEM_PROMPT_STAPLES
     assert (
-        build_compact_request(recipe(), items, assume_seasonings=False).system
+        build_compact_request(recipe(), items, seasonings=ASSUME_NONE).system
         == SYSTEM_PROMPT_STRICT
     )
     assert "assumed" in SYSTEM_PROMPT_STAPLES and "assumed" not in SYSTEM_PROMPT_STRICT
@@ -140,38 +141,35 @@ def test_status_follows_seasoning_policy():
 
 def test_available_ids_by_policy():
     items = inventory((345, "양파"))
-    assert available_ids(recipe(), items, assume_seasonings=True) == {345, 204, 284, 103}
-    assert available_ids(recipe(), items, assume_seasonings=False) == {345, 204}
+    assert available_ids(recipe(), items, seasonings=ASSUME_ALL) == {345, 204, 284, 103}
+    assert available_ids(recipe(), items, seasonings=ASSUME_NONE) == {345, 204}
 
 
 @pytest.mark.parametrize(
     "ids,steps,assume,expected",
     [
-        ([345, 284], ["양파를 소금에 절여 지진다."], True, []),
+        ([345, 284], ["양파를 소금에 절여 지진다."], ASSUME_ALL, []),
         (
             [345, 284],
             ["양파를 소금에 절여 지진다."],
-            False,
+            ASSUME_NONE,
             ["unavailable_ingredient", "unavailable_in_steps"],
         ),
         (
             [345, 147],
             ["양파와 두부를 지진다."],
-            True,
+            ASSUME_ALL,
             ["unavailable_ingredient", "unavailable_in_steps"],
         ),
-        ([345], ["양파를 지진다. 두부를 곁들인다."], True, ["unavailable_in_steps"]),
-        ([345], ["양파를 지진다. 소금으로 간한다."], False, ["unavailable_in_steps"]),
-        ([345], ["양파를 지진다. 소금으로 간한다."], True, []),
-        ([345, 147], ["양파를 지진다."], True, ["unavailable_ingredient"]),
+        ([345], ["양파를 지진다. 두부를 곁들인다."], ASSUME_ALL, ["unavailable_in_steps"]),
+        ([345], ["양파를 지진다. 소금으로 간한다."], ASSUME_NONE, ["unavailable_in_steps"]),
+        ([345], ["양파를 지진다. 소금으로 간한다."], ASSUME_ALL, []),
+        ([345, 147], ["양파를 지진다."], ASSUME_ALL, ["unavailable_ingredient"]),
     ],
 )
 def test_check_result_known_answers(ids, steps, assume, expected):
     result = revised(ids, steps)
-    assert (
-        check_result(result, recipe(), inventory((345, "양파")), assume_seasonings=assume)
-        == expected
-    )
+    assert check_result(result, recipe(), inventory((345, "양파")), seasonings=assume) == expected
 
 
 def test_check_masks_available_names_and_skips_refusals():
@@ -181,7 +179,7 @@ def test_check_masks_available_names_and_skips_refusals():
     withgarlic = SourceRecipe(**{**asdict(base), "ingredients": rows, "steps": base.steps})
     items = inventory((345, "양파"), (103, "다진마늘"))
     result = revised([345, 103], ["다진마늘을 넣고 양파를 지진다."])
-    assert check_result(result, withgarlic, items, assume_seasonings=False) == []
+    assert check_result(result, withgarlic, items, seasonings=ASSUME_NONE) == []
     refusal = {"can_revise": False, "reason": "x", "changes": [], "revised_recipe": None}
     assert check_result(refusal, withgarlic, items) == []
 

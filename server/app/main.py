@@ -16,9 +16,11 @@ from google.genai import types
 
 from app.config import Settings
 from app.database import recipe_engine
+from app.recipes.policy import RecommendationPolicy
 from app.recipes.providers import revision_factory
 from app.recipes.recommendations import RecommendationService
 from app.recipes.router import router as recipes_router
+from app.recipes.seasonings import load_seasoning_policy, validate_against_catalog
 from app.recipes.service import RecipeRepository, SourceUnavailable
 from app.vision.gemini import REQUEST_TIMEOUT_MS, GeminiVisionProvider
 from app.vision.openrouter import OpenRouterVisionProvider
@@ -66,10 +68,17 @@ def create_app_from_env() -> FastAPI:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
     settings = Settings.from_env()
     recipes = RecipeRepository(recipe_engine(settings.database_url, settings.recipe_db_path))
+    seasonings = load_seasoning_policy()
+    validate_against_catalog(seasonings, recipes.ingredient_catalog())
+    logging.getLogger(__name__).info("assumed seasonings: %s", seasonings.describe())
     return create_app(
         _build_vision(settings),
         recipes,
-        recommendations=RecommendationService(recipes, llm_factory=revision_factory(settings)),
+        recommendations=RecommendationService(
+            recipes,
+            policy=RecommendationPolicy(seasonings=seasonings),
+            llm_factory=revision_factory(settings),
+        ),
     )
 
 

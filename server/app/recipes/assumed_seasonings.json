@@ -1,0 +1,16 @@
+{
+  "mode": "list",
+  "note": "Seasonings assumed to be at home when a recipe is filtered and revised. Edit this list (or point RECIPE_ASSUMED_SEASONINGS_FILE at another file); no code change is needed. 'mode': list = only these ids, all = every seasoning-labelled ingredient, none = nothing assumed. Source of the ten names: team decision D1 (2026-10-11), app/recipes/constants.py STAPLE_SEASONINGS. Water (204) is also always available regardless of this list. D1 names the ingredient '후춧가루', which is not an ingredient name in the recipe table; id 554 '후추' is its synonym group in app/recipes/constants.py (통후추 504 and 흰후추 560 are not included).",
+  "assumed": [
+    {"id": 204, "name": "물"},
+    {"id": 284, "name": "소금"},
+    {"id": 282, "name": "설탕"},
+    {"id": 9, "name": "간장"},
+    {"id": 554, "name": "후추"},
+    {"id": 313, "name": "식용유"},
+    {"id": 438, "name": "참기름"},
+    {"id": 74, "name": "깨소금"},
+    {"id": 103, "name": "다진마늘"},
+    {"id": 48, "name": "고춧가루"}
+  ]
+}

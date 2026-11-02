@@ -300,7 +300,11 @@ def test_environment_factory_wires_lazy_revision_and_independent_vision(integrat
             "REVISION_PROVIDER": "live",
         }
     )
-    with patch("app.main.Settings.from_env", return_value=settings):
+    # The built-in seasoning list names ids of the real recipe table, which this small DB lacks.
+    with (
+        patch("app.main.Settings.from_env", return_value=settings),
+        patch.dict("os.environ", {"RECIPE_SEASONING_MODE": "all"}),
+    ):
         app = create_app_from_env()
     try:
         with TestClient(app) as client:

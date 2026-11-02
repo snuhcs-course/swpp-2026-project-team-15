@@ -109,9 +109,9 @@ class RecommendationService:
             return response
         check = None
         if self.policy.compact_revision:
-            build = partial(build_compact_request, assume_seasonings=self.policy.assume_seasonings)
+            build = partial(build_compact_request, seasonings=self.policy.seasonings)
             if self.policy.post_check:
-                check = partial(check_result, assume_seasonings=self.policy.assume_seasonings)
+                check = partial(check_result, seasonings=self.policy.seasonings)
         else:
             build = build_request
 

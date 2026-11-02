@@ -7,9 +7,10 @@ computed here, so the model does not have to diff the recipe against the invento
 ``check_result`` is a deterministic post-check of a revised recipe against the same availability
 rules; it makes no model call.
 
-Seasoning policy (``assume_seasonings``): when True, the source recipe's own seasoning-labelled
-ingredients count as available even if they are not in the inventory. This is the same set the
-recommendation filter ignores when it counts matched and missing ingredients.
+Seasoning policy (``seasonings``, a ``SeasoningPolicy``): decides which of the recipe's ingredients
+count as available without being in the inventory (the declared list, every seasoning-labelled
+ingredient, or none). The recommendation filter uses the same object when it counts matched and
+missing ingredients, so selection, request and check agree.
 """
 
 # ruff: noqa: E501
@@ -18,6 +19,7 @@ from collections.abc import Sequence
 
 from .core import RevisionRequest
 from .models import InventoryIngredient, SourceRecipe
+from .seasoning import ASSUME_ALL, SeasoningPolicy
 
 COMPACT_PROMPT_VERSION = "4"
 WATER_ID = 204
@@ -74,12 +76,13 @@ def available_ids(
     recipe: SourceRecipe,
     inventory: Sequence[InventoryIngredient],
     *,
-    assume_seasonings: bool = True,
+    seasonings: SeasoningPolicy = ASSUME_ALL,
 ) -> set[int]:
     """Ingredient ids the revised recipe may contain (inventory, water, assumed seasonings)."""
     allowed = {item.ingredient_id for item in inventory} | {WATER_ID}
-    if assume_seasonings:
-        allowed |= {i for i, role in source_roles(recipe).items() if role == "seasoning"}
+    allowed |= {
+        i for i, role in source_roles(recipe).items() if seasonings.assumed(i, role == "seasoning")
+    }
     return allowed
 
 
@@ -87,7 +90,7 @@ def build_compact_request(
     recipe: SourceRecipe,
     inventory: tuple[InventoryIngredient, ...],
     *,
-    assume_seasonings: bool = True,
+    seasonings: SeasoningPolicy = ASSUME_ALL,
 ) -> RevisionRequest:
     """Build the pruned request; the prompt matches the seasoning policy."""
     owned = {item.ingredient_id for item in inventory}
@@ -107,7 +110,7 @@ def build_compact_request(
             entry["role"] = roles[row.ingredient_id]
         if row.ingredient_id in owned:
             entry["status"] = "owned"
-        elif assume_seasonings and roles[row.ingredient_id] == "seasoning":
+        elif seasonings.assumed(row.ingredient_id, roles[row.ingredient_id] == "seasoning"):
             entry["status"] = "assumed"
         else:
             entry["status"] = "unavailable"
@@ -134,7 +137,7 @@ def build_compact_request(
         ],
     }
     user = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
-    system = SYSTEM_PROMPT_STAPLES if assume_seasonings else SYSTEM_PROMPT_STRICT
+    system = SYSTEM_PROMPT_STRICT if seasonings.mode == "none" else SYSTEM_PROMPT_STAPLES
     return RevisionRequest(system, user)
 
 
@@ -143,7 +146,7 @@ def check_result(
     recipe: SourceRecipe,
     inventory: Sequence[InventoryIngredient],
     *,
-    assume_seasonings: bool = True,
+    seasonings: SeasoningPolicy = ASSUME_ALL,
 ) -> list[str]:
     """Return violation codes for a parsed result; an empty list means it may be delivered.
 
@@ -156,7 +159,7 @@ def check_result(
     """
     if not result.get("can_revise") or not result.get("revised_recipe"):
         return []
-    allowed = available_ids(recipe, inventory, assume_seasonings=assume_seasonings)
+    allowed = available_ids(recipe, inventory, seasonings=seasonings)
     revised = result["revised_recipe"]
     codes = []
     if any(item["ingredient_id"] not in allowed for item in revised["ingredients"]):
