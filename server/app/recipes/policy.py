@@ -33,6 +33,8 @@ class RecommendationPolicy:
     water_id: int = 204
     default_revision_limit: int = 3
     maximum_revision_limit: int = 5
+    # False keeps the legacy full-row revision request.
+    compact_revision: bool = True
 
     def __post_init__(self):
         if self.general_minimum < 1 or self.main_minimum < 1:

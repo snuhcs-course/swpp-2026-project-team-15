@@ -9,6 +9,7 @@ Semantic mistakes remain observations for human review, not synthetic refusals.
 
 import json
 import re
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from typing import Protocol
 
@@ -303,14 +304,21 @@ def parse_response(text: str) -> dict:
 
 
 def revise(
-    recipe: SourceRecipe, inventory: tuple[InventoryIngredient, ...], llm: LLM
+    recipe: SourceRecipe,
+    inventory: tuple[InventoryIngredient, ...],
+    llm: LLM,
+    *,
+    build: Callable[
+        [SourceRecipe, tuple[InventoryIngredient, ...]], RevisionRequest
+    ] = build_request,
 ) -> RevisionOutcome:
     """Make one attempt and return its observation; the runner decides when to stop.
 
     APIError and ResponseFormatError are adapter failures with sanitized messages.
     Unexpected programming errors propagate rather than masquerading as judgments.
+    ``build`` selects the request builder; the default keeps the full-row request.
     """
-    request = build_request(recipe, inventory)
+    request = build(recipe, inventory)
     response = None
     try:
         response = llm.generate(request)

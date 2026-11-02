@@ -75,7 +75,12 @@ def test_full_list_and_priority_are_distinct(integration_repository):
     assert response.status_code == 200
     body = response.json()
     assert len(body["recipes"]) == 6
-    assert [context["original"]["recipe_id"] for context in llm.requests] == [20, 30, 40]
+    # The compact request has no recipe_id (the model does not need it); names identify it.
+    assert [context["original"]["name"] for context in llm.requests] == [
+        "Recipe 20",
+        "Recipe 30",
+        "Recipe 40",
+    ]
     assert body["revision_summary"] == {
         "limit": 3,
         "selected_count": 3,

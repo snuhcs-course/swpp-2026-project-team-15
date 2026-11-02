@@ -16,7 +16,8 @@ from app.recipes.schemas import (
     RevisionSummary,
 )
 from app.recipes.service import RecipeRepository
-from recipe_revision.core import LLM, revise
+from recipe_revision.compact import build_compact_request
+from recipe_revision.core import LLM, build_request, revise
 from recipe_revision.failures import Failure
 
 
@@ -104,6 +105,7 @@ class RecommendationService:
                     status="not_attempted", not_attempted_reason="shared_failure"
                 )
             return response
+        build = build_compact_request if self.policy.compact_revision else build_request
         for entry in selected:
             if summary.stopped_error is not None:
                 entry.revision = RecipeRevision(
@@ -112,7 +114,7 @@ class RecommendationService:
                 continue
             summary.attempted_count += 1
             try:
-                outcome = revise(entry.original, inventory, llm)
+                outcome = revise(entry.original, inventory, llm, build=build)
                 if outcome.status in ("revised", "refused"):
                     entry.revision = RecipeRevision(
                         status=outcome.status, result=outcome.model_result
