@@ -38,6 +38,9 @@ class RecommendationPolicy:
     # True: the recipe's own seasoning-labelled ingredients count as available, matching how this
     # policy excludes them from matched/missing counts. False: inventory only (strict).
     assume_seasonings: bool = True
+    # Reject a revised recipe that uses an unavailable ingredient (no retry, no extra model call).
+    # Only meaningful with compact_revision, whose request tells the model what is available.
+    post_check: bool = True
 
     def __post_init__(self):
         if self.general_minimum < 1 or self.main_minimum < 1:
