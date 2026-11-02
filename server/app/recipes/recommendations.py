@@ -107,7 +107,7 @@ class RecommendationService:
         response = RecommendationsResponse(
             recipes=entries,
             revision_summary=summary,
-            assumed_ingredient_ids=[self.policy.water_id],
+            assumed_ingredient_ids=self.policy.assumed_ids,
         )
         if not selected:
             return response

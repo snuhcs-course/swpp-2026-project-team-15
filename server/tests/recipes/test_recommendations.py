@@ -87,7 +87,8 @@ def test_full_list_and_priority_are_distinct(integration_repository):
         "attempted_count": 3,
         "stopped_error": None,
     }
-    assert body["assumed_ingredient_ids"] == [204]
+    # water and the ten default seasonings: the client need not submit them
+    assert body["assumed_ingredient_ids"] == [204, 9, 48, 74, 103, 282, 284, 313, 438, 554]
     entries = {entry["recipe_id"]: entry for entry in body["recipes"]}
     assert entries[20]["revision"]["status"] == "revised"
     assert entries[20]["revision"]["result"]["reason"] == ""

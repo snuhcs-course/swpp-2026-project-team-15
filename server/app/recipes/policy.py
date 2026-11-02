@@ -98,6 +98,13 @@ class RecommendationPolicy:
         if self.rule_id not in {rule.rule_id for rule in build_rules()}:
             raise ValueError("Unsupported filtering rule")
 
+    @property
+    def assumed_ids(self) -> list[int]:
+        """Ingredient ids the server assumes available: water, then the declared seasonings
+        (only in list mode; in ``all`` mode the set depends on each recipe's labels)."""
+        declared = self.seasonings.assumed_ids if self.seasonings.mode == "list" else ()
+        return [self.water_id, *sorted(set(declared) - {self.water_id})]
+
     def metrics(self, source: SourceRecipe, available: frozenset[int]) -> RecipeMetrics:
         """Project source classifications into counts without modifying source rows."""
         types: dict[int, set[str]] = {}
