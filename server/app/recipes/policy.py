@@ -41,12 +41,18 @@ class RecommendationPolicy:
     # Reject a revised recipe that uses an unavailable ingredient (no retry, no extra model call).
     # Only meaningful with compact_revision, whose request tells the model what is available.
     post_check: bool = True
+    # Concurrent revision calls per request. 1 keeps the sequential loop (later candidates are not
+    # called after a shared failure); more calls all selected candidates at once and returns the
+    # same response as the sequential loop would for the same per-call outcomes.
+    revision_workers: int = 1
 
     def __post_init__(self):
         if self.general_minimum < 1 or self.main_minimum < 1:
             raise ValueError("Match thresholds must be positive")
         if not 1 <= self.default_revision_limit <= self.maximum_revision_limit <= 5:
             raise ValueError("Revision limits must be within 1 through 5")
+        if not 1 <= self.revision_workers <= self.maximum_revision_limit:
+            raise ValueError("Revision workers must be between 1 and the maximum revision limit")
         if self.water_id <= 0:
             raise ValueError("Water ID must be positive")
         if self.rule_id not in {rule.rule_id for rule in build_rules()}:

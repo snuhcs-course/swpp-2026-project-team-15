@@ -3,6 +3,7 @@
 # 2026-10-17; reviewed by Soohyun An
 
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 
 from app.recipes.policy import DEFAULT_POLICY, RecommendationPolicy
@@ -113,25 +114,32 @@ class RecommendationService:
                 check = partial(check_result, assume_seasonings=self.policy.assume_seasonings)
         else:
             build = build_request
-        for entry in selected:
+
+        def attempt(entry: RecommendationEntry) -> RecipeRevision:
+            """One independent revision call; never raises."""
+            try:
+                outcome = revise(entry.original, inventory, llm, build=build, check=check)
+                if outcome.status in ("revised", "refused"):
+                    return RecipeRevision(status=outcome.status, result=outcome.model_result)
+                failure = outcome.failure or Failure("api_error", "api_request")
+            except Exception:
+                failure = Failure("internal", "revision")
+            return RecipeRevision(status="failed", error=public_error(failure))
+
+        workers = min(self.policy.revision_workers, len(selected))
+        attempts = None
+        if workers > 1:
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                attempts = list(pool.map(attempt, selected))
+        for index, entry in enumerate(selected):
             if summary.stopped_error is not None:
                 entry.revision = RecipeRevision(
                     status="not_attempted", not_attempted_reason="shared_failure"
                 )
                 continue
             summary.attempted_count += 1
-            try:
-                outcome = revise(entry.original, inventory, llm, build=build, check=check)
-                if outcome.status in ("revised", "refused"):
-                    entry.revision = RecipeRevision(
-                        status=outcome.status, result=outcome.model_result
-                    )
-                    continue
-                failure = outcome.failure or Failure("api_error", "api_request")
-            except Exception:
-                failure = Failure("internal", "revision")
-            error = public_error(failure)
-            entry.revision = RecipeRevision(status="failed", error=error)
-            if error.scope == "shared":
+            entry.revision = attempts[index] if attempts else attempt(entry)
+            error = entry.revision.error
+            if error is not None and error.scope == "shared":
                 summary.stopped_error = error
         return response
