@@ -107,13 +107,8 @@ class RecommendationService:
                     status="not_attempted", not_attempted_reason="shared_failure"
                 )
             return response
-        check = None
-        if self.policy.compact_revision:
-            build = partial(build_compact_request, seasonings=self.policy.seasonings)
-            if self.policy.post_check:
-                check = partial(check_result, seasonings=self.policy.seasonings)
-        else:
-            build = build_request
+        build = partial(build_compact_request, seasonings=self.policy.seasonings)
+        check = partial(check_result, seasonings=self.policy.seasonings)
 
         def attempt(entry: RecommendationEntry) -> RecipeRevision:
             """One independent revision call; never raises."""

@@ -232,16 +232,13 @@ def service_for(repository, llm, **policy):
     return TestClient(create_app(StubVision(), repository, recommendations=service))
 
 
-def test_service_flag_selects_request_form(integration_repository):
-    compact, legacy = StubLLM(), StubLLM()
-    body = {"ingredient_ids": [1, 2]}
-    service_for(integration_repository, compact).post("/recipes/recommendations", json=body)
-    service_for(integration_repository, legacy, compact_revision=False).post(
-        "/recipes/recommendations", json=body
+def test_service_sends_the_compact_request(integration_repository):
+    llm = StubLLM()
+    service_for(integration_repository, llm).post(
+        "/recipes/recommendations", json={"ingredient_ids": [1, 2]}
     )
-    assert len(compact.requests) == len(legacy.requests) == 3
-    assert all("recipe_id" not in json.loads(r.user)["original"] for r in compact.requests)
-    assert all("recipe_id" in json.loads(r.user)["original"] for r in legacy.requests)
+    assert len(llm.requests) == 3
+    assert all("recipe_id" not in json.loads(r.user)["original"] for r in llm.requests)
 
 
 class ByRecipeLLM:
@@ -271,13 +268,3 @@ def test_service_rejects_noncompliant_revision_and_continues(integration_reposit
     assert failed[0]["error"]["stage"] == "revision"
     assert failed[0]["error"]["scope"] == "individual"
     assert sum(1 for e in attempted if e["revision"]["status"] == "revised") == 2
-
-
-def test_service_post_check_can_be_disabled(integration_repository):
-    body = (
-        service_for(integration_repository, ByRecipeLLM(), post_check=False)
-        .post("/recipes/recommendations", json={"ingredient_ids": [1, 2]})
-        .json()
-    )
-    statuses = [e["revision"]["status"] for e in body["recipes"]]
-    assert statuses.count("revised") == 3 and "failed" not in statuses

@@ -37,16 +37,11 @@ class RecommendationPolicy:
     water_id: int = 204
     default_revision_limit: int = 3
     maximum_revision_limit: int = 5
-    # False keeps the legacy full-row revision request.
-    compact_revision: bool = True
     # Which seasonings are assumed to be at home (the declared list in assumed_seasonings.json by
     # default).
     # Assumed ingredients are left out of the matched/missing counts and are marked available in the
     # revision request and post-check; every other ingredient must be in the inventory.
     seasonings: SeasoningPolicy = field(default_factory=load_seasoning_policy)
-    # Reject a revised recipe that uses an unavailable ingredient (no retry, no extra model call).
-    # Only meaningful with compact_revision, whose request tells the model what is available.
-    post_check: bool = True
     # Concurrent revision calls per request. 1 keeps the sequential loop (later candidates are not
     # called after a shared failure); more calls all selected candidates at once and returns the
     # same response as the sequential loop would for the same per-call outcomes.
