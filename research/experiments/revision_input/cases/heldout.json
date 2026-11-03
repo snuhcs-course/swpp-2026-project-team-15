@@ -1,0 +1,1721 @@
+{
+ "set": "heldout",
+ "generator_version": "1",
+ "seed": 20261105,
+ "strata": {
+  "S1": 6,
+  "S2": 14,
+  "S3": 14,
+  "S4": 16,
+  "S5": 10
+ },
+ "cases": [
+  {
+   "case_id": "H2-001",
+   "recipe_id": 195453,
+   "stratum": "S1",
+   "category": "부침",
+   "inventory_ids": [
+    438,
+    111,
+    345,
+    32,
+    284,
+    554,
+    486,
+    103,
+    412,
+    213,
+    544,
+    334,
+    227,
+    432,
+    129,
+    233,
+    237,
+    539
+   ],
+   "designated_absent": [],
+   "strict_missing": []
+  },
+  {
+   "case_id": "H2-002",
+   "recipe_id": 434,
+   "stratum": "S1",
+   "category": "밥",
+   "inventory_ids": [
+    223,
+    284,
+    470,
+    144,
+    12,
+    129,
+    459,
+    512,
+    345,
+    514,
+    549,
+    539,
+    554
+   ],
+   "designated_absent": [],
+   "strict_missing": []
+  },
+  {
+   "case_id": "H2-003",
+   "recipe_id": 397,
+   "stratum": "S1",
+   "category": "구이",
+   "inventory_ids": [
+    554,
+    245,
+    345,
+    438,
+    283,
+    443,
+    147,
+    1,
+    213,
+    282,
+    169,
+    48,
+    9,
+    47,
+    74
+   ],
+   "designated_absent": [],
+   "strict_missing": []
+  },
+  {
+   "case_id": "H2-004",
+   "recipe_id": 89,
+   "stratum": "S1",
+   "category": "밑반찬/김치",
+   "inventory_ids": [
+    76,
+    507,
+    430,
+    270,
+    345,
+    211,
+    74,
+    316,
+    48,
+    169,
+    368,
+    349
+   ],
+   "designated_absent": [],
+   "strict_missing": []
+  },
+  {
+   "case_id": "H2-005",
+   "recipe_id": 175,
+   "stratum": "S1",
+   "category": "찜",
+   "inventory_ids": [
+    554,
+    74,
+    223,
+    198,
+    169,
+    147,
+    334,
+    76,
+    222,
+    103,
+    284,
+    9,
+    438,
+    122,
+    109,
+    105,
+    282,
+    213,
+    227
+   ],
+   "designated_absent": [],
+   "strict_missing": []
+  },
+  {
+   "case_id": "H2-006",
+   "recipe_id": 90904,
+   "stratum": "S1",
+   "category": "볶음",
+   "inventory_ids": [
+    554,
+    149,
+    48,
+    129,
+    284,
+    345,
+    169,
+    547,
+    451,
+    103,
+    334,
+    32,
+    5,
+    9,
+    147
+   ],
+   "designated_absent": [],
+   "strict_missing": []
+  },
+  {
+   "case_id": "H2-007",
+   "recipe_id": 381,
+   "stratum": "S2",
+   "category": "볶음",
+   "inventory_ids": [
+    317,
+    451,
+    47,
+    122,
+    141,
+    370,
+    470,
+    286,
+    438,
+    345,
+    104,
+    547,
+    205,
+    539,
+    373,
+    485,
+    103,
+    209,
+    12
+   ],
+   "designated_absent": [
+    282
+   ],
+   "strict_missing": [
+    282
+   ]
+  },
+  {
+   "case_id": "H2-008",
+   "recipe_id": 146,
+   "stratum": "S2",
+   "category": "찌개/전골/스튜",
+   "inventory_ids": [
+    270,
+    233,
+    223,
+    169,
+    345,
+    523,
+    147,
+    341,
+    48,
+    380,
+    129,
+    47,
+    326,
+    206,
+    122,
+    9,
+    337,
+    213,
+    51
+   ],
+   "designated_absent": [
+    109,
+    284,
+    554
+   ],
+   "strict_missing": [
+    109,
+    284,
+    554
+   ]
+  },
+  {
+   "case_id": "H2-009",
+   "recipe_id": 36,
+   "stratum": "S2",
+   "category": "조림",
+   "inventory_ids": [
+    74,
+    383,
+    307,
+    284,
+    349,
+    147,
+    205
+   ],
+   "designated_absent": [
+    9
+   ],
+   "strict_missing": [
+    9
+   ]
+  },
+  {
+   "case_id": "H2-010",
+   "recipe_id": 379,
+   "stratum": "S2",
+   "category": "밥",
+   "inventory_ids": [
+    384,
+    213,
+    251,
+    84,
+    32,
+    169,
+    349,
+    345,
+    249,
+    368,
+    215,
+    232,
+    418,
+    141,
+    28,
+    382,
+    223,
+    470,
+    98,
+    136,
+    209
+   ],
+   "designated_absent": [
+    269,
+    480,
+    490
+   ],
+   "strict_missing": [
+    269,
+    480,
+    490
+   ]
+  },
+  {
+   "case_id": "H2-011",
+   "recipe_id": 116,
+   "stratum": "S2",
+   "category": "찜",
+   "inventory_ids": [
+    249,
+    169,
+    341,
+    198,
+    518,
+    122,
+    284,
+    47,
+    345,
+    147,
+    141,
+    223,
+    90,
+    283,
+    32
+   ],
+   "designated_absent": [
+    9,
+    554
+   ],
+   "strict_missing": [
+    9,
+    554
+   ]
+  },
+  {
+   "case_id": "H2-012",
+   "recipe_id": 159,
+   "stratum": "S2",
+   "category": "밑반찬/김치",
+   "inventory_ids": [
+    343,
+    457,
+    32,
+    129,
+    12,
+    9,
+    17,
+    169,
+    270,
+    554,
+    228,
+    141,
+    286,
+    313,
+    428,
+    47,
+    530
+   ],
+   "designated_absent": [
+    284,
+    438
+   ],
+   "strict_missing": [
+    284,
+    438
+   ]
+  },
+  {
+   "case_id": "H2-013",
+   "recipe_id": 129,
+   "stratum": "S2",
+   "category": "나물/생채/샐러드",
+   "inventory_ids": [
+    32,
+    314,
+    265,
+    269,
+    103,
+    122,
+    368,
+    74,
+    430,
+    514,
+    47,
+    227,
+    286,
+    50,
+    48,
+    236,
+    438,
+    345,
+    129
+   ],
+   "designated_absent": [
+    282
+   ],
+   "strict_missing": [
+    282
+   ]
+  },
+  {
+   "case_id": "H2-014",
+   "recipe_id": 213,
+   "stratum": "S2",
+   "category": "구이",
+   "inventory_ids": [
+    530,
+    470,
+    480,
+    169,
+    211,
+    341,
+    345,
+    141,
+    554,
+    196,
+    523,
+    375
+   ],
+   "designated_absent": [
+    47,
+    178,
+    284
+   ],
+   "strict_missing": [
+    47,
+    178,
+    284
+   ]
+  },
+  {
+   "case_id": "H2-015",
+   "recipe_id": 410,
+   "stratum": "S2",
+   "category": "튀김/커틀릿",
+   "inventory_ids": [
+    98,
+    345,
+    173,
+    313,
+    370,
+    334,
+    233
+   ],
+   "designated_absent": [
+    34,
+    282
+   ],
+   "strict_missing": [
+    34,
+    282
+   ]
+  },
+  {
+   "case_id": "H2-016",
+   "recipe_id": 152,
+   "stratum": "S2",
+   "category": "부침",
+   "inventory_ids": [
+    9,
+    284,
+    223,
+    521,
+    98,
+    129,
+    141,
+    518,
+    554,
+    93,
+    32,
+    316,
+    280,
+    103,
+    297
+   ],
+   "designated_absent": [
+    74,
+    109,
+    438
+   ],
+   "strict_missing": [
+    74,
+    109,
+    438
+   ]
+  },
+  {
+   "case_id": "H2-017",
+   "recipe_id": 84,
+   "stratum": "S2",
+   "category": "국",
+   "inventory_ids": [
+    198,
+    554,
+    384,
+    284,
+    223,
+    312,
+    438,
+    345,
+    188,
+    32,
+    109,
+    129,
+    500,
+    56,
+    126,
+    283
+   ],
+   "designated_absent": [
+    457
+   ],
+   "strict_missing": [
+    457
+   ]
+  },
+  {
+   "case_id": "H2-018",
+   "recipe_id": 12,
+   "stratum": "S2",
+   "category": "만두/면류",
+   "inventory_ids": [
+    286,
+    47,
+    169,
+    504,
+    283,
+    32,
+    514,
+    137,
+    12,
+    129,
+    284,
+    547,
+    9
+   ],
+   "designated_absent": [
+    74,
+    282,
+    438
+   ],
+   "strict_missing": [
+    74,
+    282,
+    438
+   ]
+  },
+  {
+   "case_id": "H2-019",
+   "recipe_id": 123,
+   "stratum": "S2",
+   "category": "볶음",
+   "inventory_ids": [
+    169,
+    345,
+    270,
+    47,
+    9,
+    313,
+    507,
+    554,
+    70,
+    32,
+    438,
+    286,
+    457,
+    141,
+    223,
+    454
+   ],
+   "designated_absent": [
+    284
+   ],
+   "strict_missing": [
+    284
+   ]
+  },
+  {
+   "case_id": "H2-020",
+   "recipe_id": 96,
+   "stratum": "S2",
+   "category": "찌개/전골/스튜",
+   "inventory_ids": [
+    195,
+    129,
+    89,
+    169,
+    341,
+    147,
+    144,
+    262
+   ],
+   "designated_absent": [
+    99,
+    284
+   ],
+   "strict_missing": [
+    99,
+    284
+   ]
+  },
+  {
+   "case_id": "H2-021",
+   "recipe_id": 200,
+   "stratum": "S3",
+   "category": "밑반찬/김치",
+   "inventory_ids": [
+    345,
+    129,
+    334,
+    451,
+    270,
+    514
+   ],
+   "designated_absent": [
+    284
+   ],
+   "strict_missing": [
+    9,
+    282,
+    284
+   ]
+  },
+  {
+   "case_id": "H2-022",
+   "recipe_id": 150,
+   "stratum": "S3",
+   "category": "국",
+   "inventory_ids": [
+    109,
+    384,
+    438,
+    283,
+    47,
+    554,
+    227,
+    70,
+    286,
+    313,
+    129,
+    198,
+    103
+   ],
+   "designated_absent": [
+    144,
+    284
+   ],
+   "strict_missing": [
+    74,
+    144,
+    284
+   ]
+  },
+  {
+   "case_id": "H2-023",
+   "recipe_id": 467,
+   "stratum": "S3",
+   "category": "만두/면류",
+   "inventory_ids": [
+    312,
+    307,
+    233,
+    198,
+    511,
+    349,
+    384,
+    334,
+    12,
+    232,
+    345
+   ],
+   "designated_absent": [
+    278
+   ],
+   "strict_missing": [
+    103,
+    278,
+    284,
+    554
+   ]
+  },
+  {
+   "case_id": "H2-024",
+   "recipe_id": 32,
+   "stratum": "S3",
+   "category": "볶음",
+   "inventory_ids": [
+    35,
+    523,
+    428,
+    109,
+    32,
+    384
+   ],
+   "designated_absent": [
+    129
+   ],
+   "strict_missing": [
+    9,
+    103,
+    129,
+    282,
+    284,
+    313,
+    438,
+    554
+   ]
+  },
+  {
+   "case_id": "H2-025",
+   "recipe_id": 348,
+   "stratum": "S3",
+   "category": "튀김/커틀릿",
+   "inventory_ids": [
+    470,
+    313,
+    129,
+    113,
+    223,
+    368,
+    505,
+    12
+   ],
+   "designated_absent": [
+    32,
+    213
+   ],
+   "strict_missing": [
+    32,
+    213
+   ]
+  },
+  {
+   "case_id": "H2-026",
+   "recipe_id": 203,
+   "stratum": "S3",
+   "category": "찌개/전골/스튜",
+   "inventory_ids": [
+    495,
+    144,
+    169,
+    432,
+    147,
+    213,
+    129,
+    271,
+    191
+   ],
+   "designated_absent": [
+    198,
+    547
+   ],
+   "strict_missing": [
+    198,
+    284,
+    430,
+    547
+   ]
+  },
+  {
+   "case_id": "H2-027",
+   "recipe_id": 472,
+   "stratum": "S3",
+   "category": "구이",
+   "inventory_ids": [
+    169,
+    432,
+    443,
+    143,
+    345,
+    283,
+    284,
+    539,
+    216,
+    35
+   ],
+   "designated_absent": [
+    269
+   ],
+   "strict_missing": [
+    163,
+    269,
+    375,
+    554
+   ]
+  },
+  {
+   "case_id": "H2-028",
+   "recipe_id": 153,
+   "stratum": "S3",
+   "category": "부침",
+   "inventory_ids": [
+    470,
+    109,
+    523,
+    345,
+    539,
+    402,
+    122,
+    133,
+    283,
+    286
+   ],
+   "designated_absent": [
+    368
+   ],
+   "strict_missing": [
+    74,
+    103,
+    282,
+    368,
+    430,
+    438,
+    554
+   ]
+  },
+  {
+   "case_id": "H2-029",
+   "recipe_id": 272,
+   "stratum": "S3",
+   "category": "밥",
+   "inventory_ids": [
+    514,
+    122,
+    103,
+    485,
+    334,
+    317,
+    233,
+    368,
+    213,
+    443,
+    48,
+    70,
+    223,
+    115
+   ],
+   "designated_absent": [
+    169
+   ],
+   "strict_missing": [
+    169,
+    284,
+    387,
+    507,
+    554
+   ]
+  },
+  {
+   "case_id": "H2-030",
+   "recipe_id": 374,
+   "stratum": "S3",
+   "category": "나물/생채/샐러드",
+   "inventory_ids": [
+    164,
+    443,
+    129,
+    537,
+    211,
+    307,
+    70,
+    122,
+    265,
+    223,
+    518,
+    169
+   ],
+   "designated_absent": [
+    370
+   ],
+   "strict_missing": [
+    9,
+    251,
+    313,
+    314,
+    345,
+    370,
+    560
+   ]
+  },
+  {
+   "case_id": "H2-031",
+   "recipe_id": 106,
+   "stratum": "S3",
+   "category": "찜",
+   "inventory_ids": [
+    286,
+    35,
+    147,
+    265,
+    317,
+    185,
+    498,
+    32,
+    129,
+    349
+   ],
+   "designated_absent": [
+    390,
+    401
+   ],
+   "strict_missing": [
+    266,
+    284,
+    390,
+    401
+   ]
+  },
+  {
+   "case_id": "H2-032",
+   "recipe_id": 67,
+   "stratum": "S3",
+   "category": "밑반찬/김치",
+   "inventory_ids": [
+    15,
+    62,
+    141,
+    384,
+    262,
+    349,
+    198,
+    169,
+    223
+   ],
+   "designated_absent": [
+    206,
+    317
+   ],
+   "strict_missing": [
+    48,
+    206,
+    266,
+    282,
+    284,
+    317
+   ]
+  },
+  {
+   "case_id": "H2-033",
+   "recipe_id": 177,
+   "stratum": "S3",
+   "category": "국",
+   "inventory_ids": [
+    129,
+    297,
+    523,
+    158,
+    188,
+    349,
+    122,
+    22,
+    284,
+    76,
+    9,
+    103
+   ],
+   "designated_absent": [
+    32,
+    99
+   ],
+   "strict_missing": [
+    32,
+    99
+   ]
+  },
+  {
+   "case_id": "H2-034",
+   "recipe_id": 402,
+   "stratum": "S3",
+   "category": "만두/면류",
+   "inventory_ids": [
+    262,
+    523,
+    314,
+    370,
+    283,
+    76,
+    345,
+    223,
+    159,
+    554
+   ],
+   "designated_absent": [
+    32,
+    472
+   ],
+   "strict_missing": [
+    9,
+    28,
+    32,
+    47,
+    74,
+    169,
+    282,
+    472
+   ]
+  },
+  {
+   "case_id": "H2-035",
+   "recipe_id": 305,
+   "stratum": "S4",
+   "category": "국",
+   "inventory_ids": [
+    432,
+    322,
+    144,
+    334,
+    70,
+    195,
+    129
+   ],
+   "designated_absent": [
+    333
+   ],
+   "strict_missing": [
+    169,
+    188,
+    333,
+    554
+   ]
+  },
+  {
+   "case_id": "H2-036",
+   "recipe_id": 28,
+   "stratum": "S4",
+   "category": "구이",
+   "inventory_ids": [
+    213,
+    144,
+    541,
+    374,
+    32,
+    363,
+    12,
+    129,
+    218,
+    478,
+    224,
+    375,
+    265
+   ],
+   "designated_absent": [
+    134
+   ],
+   "strict_missing": [
+    134,
+    551
+   ]
+  },
+  {
+   "case_id": "H2-037",
+   "recipe_id": 451,
+   "stratum": "S4",
+   "category": "찌개/전골/스튜",
+   "inventory_ids": [
+    32,
+    122,
+    227,
+    103,
+    451,
+    284,
+    129,
+    349,
+    195,
+    223
+   ],
+   "designated_absent": [
+    85
+   ],
+   "strict_missing": [
+    85,
+    438,
+    547
+   ]
+  },
+  {
+   "case_id": "H2-038",
+   "recipe_id": 201,
+   "stratum": "S4",
+   "category": "튀김/커틀릿",
+   "inventory_ids": [
+    547,
+    524,
+    32,
+    12,
+    76,
+    368,
+    276,
+    349,
+    284,
+    213,
+    539,
+    169,
+    313,
+    265,
+    94
+   ],
+   "designated_absent": [
+    70
+   ],
+   "strict_missing": [
+    70,
+    554
+   ]
+  },
+  {
+   "case_id": "H2-039",
+   "recipe_id": 4,
+   "stratum": "S4",
+   "category": "밥",
+   "inventory_ids": [
+    147,
+    539,
+    284,
+    223,
+    430,
+    319,
+    438,
+    504,
+    283,
+    345,
+    188
+   ],
+   "designated_absent": [
+    485
+   ],
+   "strict_missing": [
+    48,
+    74,
+    169,
+    485,
+    507
+   ]
+  },
+  {
+   "case_id": "H2-040",
+   "recipe_id": 495,
+   "stratum": "S4",
+   "category": "만두/면류",
+   "inventory_ids": [
+    314,
+    284,
+    236,
+    12,
+    268,
+    129,
+    282,
+    224,
+    103,
+    32,
+    169,
+    109,
+    122,
+    198,
+    9
+   ],
+   "designated_absent": [
+    88
+   ],
+   "strict_missing": [
+    47,
+    74,
+    88,
+    205,
+    387
+   ]
+  },
+  {
+   "case_id": "H2-041",
+   "recipe_id": 400,
+   "stratum": "S4",
+   "category": "볶음",
+   "inventory_ids": [
+    485,
+    32,
+    169,
+    547,
+    109,
+    129,
+    9,
+    70,
+    438,
+    341,
+    122,
+    345
+   ],
+   "designated_absent": [
+    370
+   ],
+   "strict_missing": [
+    47,
+    48,
+    74,
+    103,
+    282,
+    370,
+    554
+   ]
+  },
+  {
+   "case_id": "H2-042",
+   "recipe_id": 120463,
+   "stratum": "S4",
+   "category": "부침",
+   "inventory_ids": [
+    286,
+    129,
+    122,
+    12,
+    237,
+    284,
+    125,
+    345
+   ],
+   "designated_absent": [
+    123
+   ],
+   "strict_missing": [
+    123
+   ]
+  },
+  {
+   "case_id": "H2-043",
+   "recipe_id": 102,
+   "stratum": "S4",
+   "category": "밑반찬/김치",
+   "inventory_ids": [
+    32,
+    265,
+    282,
+    430,
+    74,
+    438,
+    70,
+    103,
+    122,
+    451,
+    109
+   ],
+   "designated_absent": [
+    171
+   ],
+   "strict_missing": [
+    171,
+    554
+   ]
+  },
+  {
+   "case_id": "H2-044",
+   "recipe_id": 465,
+   "stratum": "S4",
+   "category": "찜",
+   "inventory_ids": [
+    70,
+    494,
+    523,
+    313,
+    169,
+    384,
+    283,
+    122,
+    383,
+    349,
+    32
+   ],
+   "designated_absent": [
+    115
+   ],
+   "strict_missing": [
+    9,
+    115,
+    178,
+    271,
+    282,
+    457
+   ]
+  },
+  {
+   "case_id": "H2-045",
+   "recipe_id": 340,
+   "stratum": "S4",
+   "category": "나물/생채/샐러드",
+   "inventory_ids": [
+    286,
+    326,
+    349,
+    384,
+    423,
+    152,
+    479
+   ],
+   "designated_absent": [
+    262
+   ],
+   "strict_missing": [
+    48,
+    74,
+    262,
+    282,
+    314,
+    438
+   ]
+  },
+  {
+   "case_id": "H2-046",
+   "recipe_id": 457,
+   "stratum": "S4",
+   "category": "국",
+   "inventory_ids": [
+    483,
+    368,
+    334,
+    284,
+    169,
+    485
+   ],
+   "designated_absent": [
+    381
+   ],
+   "strict_missing": [
+    73,
+    277,
+    381,
+    401
+   ]
+  },
+  {
+   "case_id": "H2-047",
+   "recipe_id": 121,
+   "stratum": "S4",
+   "category": "구이",
+   "inventory_ids": [
+    317,
+    539,
+    345,
+    79,
+    297,
+    284,
+    384,
+    307
+   ],
+   "designated_absent": [
+    9
+   ],
+   "strict_missing": [
+    9,
+    270,
+    282,
+    457
+   ]
+  },
+  {
+   "case_id": "H2-048",
+   "recipe_id": 181,
+   "stratum": "S4",
+   "category": "찌개/전골/스튜",
+   "inventory_ids": [
+    370,
+    547,
+    485,
+    12,
+    103,
+    114,
+    59,
+    22,
+    443,
+    169,
+    217,
+    129,
+    147,
+    32,
+    454
+   ],
+   "designated_absent": [
+    144
+   ],
+   "strict_missing": [
+    144
+   ]
+  },
+  {
+   "case_id": "H2-049",
+   "recipe_id": 406,
+   "stratum": "S4",
+   "category": "밥",
+   "inventory_ids": [
+    129,
+    282,
+    384,
+    319,
+    227
+   ],
+   "designated_absent": [
+    93
+   ],
+   "strict_missing": [
+    93,
+    284
+   ]
+  },
+  {
+   "case_id": "H2-050",
+   "recipe_id": 205,
+   "stratum": "S4",
+   "category": "만두/면류",
+   "inventory_ids": [
+    307,
+    544,
+    384,
+    343,
+    543,
+    122,
+    70,
+    560,
+    313,
+    304,
+    341
+   ],
+   "designated_absent": [
+    47
+   ],
+   "strict_missing": [
+    47,
+    103,
+    282,
+    284,
+    345,
+    480
+   ]
+  },
+  {
+   "case_id": "H2-051",
+   "recipe_id": 315,
+   "stratum": "S5",
+   "category": "구이",
+   "inventory_ids": [
+    263,
+    12,
+    232,
+    141,
+    432,
+    233,
+    539,
+    554
+   ],
+   "designated_absent": [
+    283,
+    402
+   ],
+   "strict_missing": [
+    74,
+    103,
+    109,
+    282,
+    283,
+    284,
+    402,
+    430,
+    438
+   ]
+  },
+  {
+   "case_id": "H2-052",
+   "recipe_id": 329,
+   "stratum": "S5",
+   "category": "국",
+   "inventory_ids": [
+    384,
+    169,
+    233,
+    485,
+    554,
+    451,
+    127,
+    547,
+    518,
+    141
+   ],
+   "designated_absent": [
+    198,
+    206
+   ],
+   "strict_missing": [
+    47,
+    48,
+    198,
+    206,
+    209,
+    284
+   ]
+  },
+  {
+   "case_id": "H2-053",
+   "recipe_id": 77,
+   "stratum": "S5",
+   "category": "찌개/전골/스튜",
+   "inventory_ids": [
+    283,
+    334,
+    103,
+    227,
+    98,
+    169,
+    430,
+    76,
+    129,
+    286,
+    32,
+    47,
+    470
+   ],
+   "designated_absent": [
+    313,
+    345
+   ],
+   "strict_missing": [
+    48,
+    284,
+    313,
+    345,
+    554
+   ]
+  },
+  {
+   "case_id": "H2-054",
+   "recipe_id": 264,
+   "stratum": "S5",
+   "category": "만두/면류",
+   "inventory_ids": [
+    68,
+    223,
+    213,
+    518,
+    470,
+    12,
+    544,
+    99,
+    103,
+    188,
+    307,
+    129
+   ],
+   "designated_absent": [
+    124,
+    308,
+    345
+   ],
+   "strict_missing": [
+    124,
+    284,
+    308,
+    345,
+    387,
+    430
+   ]
+  },
+  {
+   "case_id": "H2-055",
+   "recipe_id": 454,
+   "stratum": "S5",
+   "category": "나물/생채/샐러드",
+   "inventory_ids": [
+    432,
+    314,
+    334,
+    32,
+    428,
+    345
+   ],
+   "designated_absent": [
+    206,
+    322,
+    547
+   ],
+   "strict_missing": [
+    47,
+    206,
+    282,
+    322,
+    547
+   ]
+  },
+  {
+   "case_id": "H2-056",
+   "recipe_id": 308,
+   "stratum": "S5",
+   "category": "볶음",
+   "inventory_ids": [
+    236,
+    554,
+    169,
+    377,
+    428,
+    457,
+    9,
+    94,
+    47,
+    63,
+    265,
+    539,
+    536,
+    283,
+    443
+   ],
+   "designated_absent": [
+    129,
+    313,
+    523
+   ],
+   "strict_missing": [
+    129,
+    270,
+    313,
+    438,
+    523
+   ]
+  },
+  {
+   "case_id": "H2-057",
+   "recipe_id": 90,
+   "stratum": "S5",
+   "category": "밑반찬/김치",
+   "inventory_ids": [
+    454,
+    223,
+    370,
+    232,
+    470,
+    384,
+    368
+   ],
+   "designated_absent": [
+    74,
+    317,
+    547
+   ],
+   "strict_missing": [
+    47,
+    48,
+    74,
+    103,
+    282,
+    317,
+    438,
+    547
+   ]
+  },
+  {
+   "case_id": "H2-058",
+   "recipe_id": 98,
+   "stratum": "S5",
+   "category": "튀김/커틀릿",
+   "inventory_ids": [
+    141,
+    495,
+    32,
+    223,
+    115
+   ],
+   "designated_absent": [
+    74,
+    94
+   ],
+   "strict_missing": [
+    47,
+    74,
+    94,
+    169,
+    205,
+    300,
+    430,
+    554
+   ]
+  },
+  {
+   "case_id": "H2-059",
+   "recipe_id": 165,
+   "stratum": "S5",
+   "category": "밥",
+   "inventory_ids": [
+    286,
+    284,
+    319,
+    198,
+    47,
+    444
+   ],
+   "designated_absent": [
+    320,
+    516
+   ],
+   "strict_missing": [
+    320,
+    516
+   ]
+  },
+  {
+   "case_id": "H2-060",
+   "recipe_id": 211,
+   "stratum": "S5",
+   "category": "구이",
+   "inventory_ids": [
+    129,
+    213,
+    115,
+    297,
+    9,
+    443,
+    312,
+    334,
+    345,
+    457,
+    32
+   ],
+   "designated_absent": [
+    57,
+    77,
+    547
+   ],
+   "strict_missing": [
+    57,
+    77,
+    271,
+    282,
+    438,
+    547
+   ]
+  }
+ ]
+}

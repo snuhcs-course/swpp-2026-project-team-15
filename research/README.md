@@ -7,6 +7,8 @@ Current tools retain their original Python package names to preserve contributor
 - `evaluation/`: real-photo ingredient benchmark, accepted-name ground truth and alternative prompts.
 - `experiments/filtering/`: read-only comparisons of ingredient filtering/ranking rules.
 - `experiments/revision/`: fixed revision cases, mock/provider adapters and observation reports.
+- `experiments/capture/`: frame-selection rules for a short fridge sweep, the Android demo app that measures them on a phone, and the multi-frame recognition evaluation.
+- `experiments/revision_input/`: id-only revision cases, frozen criteria and a mock-by-default harness for the revision request's size and reliability. Needs the revision pipeline from the server.
 
 New topics can use their own descriptive directory; the existing package layout is not a template requirement. Historical P0–P5 simulations remain in Git history. This directory is an active development workspace, not an archive of generated results.
 
