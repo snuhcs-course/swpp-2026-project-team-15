@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
 
-from app.recipes.constants import STAPLE_SEASONINGS
 from app.recipes.dependencies import RecipeRepositoryDep, RecommendationServiceDep
 from app.recipes.recommendations import InvalidRevisionLimit
 from app.recipes.schemas import (
@@ -21,7 +20,7 @@ router = APIRouter(prefix="/recipes", tags=["recipes"])
 def recommend(request: RecommendRequest, recipes: RecipeRepositoryDep) -> RecommendResponse:
     """Return recipes that use the given ingredients, fewest missing ingredients first."""
     return RecommendResponse(
-        staples_assumed=list(STAPLE_SEASONINGS),
+        staples_assumed=list(recipes.staples),
         recipes=recipes.recommend(request.ingredients, request.max_missing, request.limit),
     )
 

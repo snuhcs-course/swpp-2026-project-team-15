@@ -9,6 +9,7 @@ Run: uv run --env-file .env uvicorn app.main:create_app_from_env --factory
 """
 
 import logging
+import os
 
 from fastapi import FastAPI, HTTPException
 from google import genai
@@ -16,9 +17,16 @@ from google.genai import types
 
 from app.config import Settings
 from app.database import recipe_engine
+from app.recipes.policy import RecommendationPolicy
 from app.recipes.providers import revision_factory
 from app.recipes.recommendations import RecommendationService
 from app.recipes.router import router as recipes_router
+from app.recipes.seasonings import (
+    load_seasoning_policy,
+    resolve_staple_names,
+    seasoning_labelled_ids,
+    validate_against_catalog,
+)
 from app.recipes.service import RecipeRepository, SourceUnavailable
 from app.vision.gemini import REQUEST_TIMEOUT_MS, GeminiVisionProvider
 from app.vision.openrouter import OpenRouterVisionProvider
@@ -65,11 +73,24 @@ def create_app(
 def create_app_from_env() -> FastAPI:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
     settings = Settings.from_env()
-    recipes = RecipeRepository(recipe_engine(settings.database_url, settings.recipe_db_path))
+    engine = recipe_engine(settings.database_url, settings.recipe_db_path)
+    recipes = RecipeRepository(engine)
+    seasonings = load_seasoning_policy()
+    catalog = recipes.ingredient_catalog()
+    validate_against_catalog(seasonings, catalog)
+    # The name-based endpoints read the same policy, so one edit changes every path.
+    all_mode = seasonings.mode == "all"
+    labelled = seasoning_labelled_ids(recipes.ingredient_labels()) if all_mode else ()
+    recipes = RecipeRepository(engine, staples=resolve_staple_names(seasonings, catalog, labelled))
+    logging.getLogger(__name__).info("assumed seasonings: %s", seasonings.describe())
     return create_app(
         _build_vision(settings),
         recipes,
-        recommendations=RecommendationService(recipes, llm_factory=revision_factory(settings)),
+        recommendations=RecommendationService(
+            recipes,
+            policy=RecommendationPolicy.from_env(os.environ, seasonings=seasonings),
+            llm_factory=revision_factory(settings),
+        ),
     )
 
 

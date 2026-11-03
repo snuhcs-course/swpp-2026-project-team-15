@@ -13,6 +13,7 @@ from app.recipes.policy import RecommendationPolicy
 from app.recipes.schemas import RecipeRevision, RecommendationsRequest
 from app.recipes.service import SourceUnavailable, UnknownIngredients
 from recipe_revision.models import SourceIngredient
+from recipe_revision.seasoning import ASSUME_ALL
 
 
 @pytest.mark.parametrize(
@@ -100,7 +101,7 @@ def test_database_query_failure_is_sanitized(integration_repository, integration
 
 def test_projection_excludes_water_and_resolved_seasonings(integration_repository):
     recipes, _ = integration_repository.load_catalog([1, 2], 204)
-    policy = RecommendationPolicy()
+    policy = RecommendationPolicy(seasonings=ASSUME_ALL)  # every seasoning-labelled row is assumed
     counts = {row.recipe_id: policy.metrics(row, frozenset({1, 2, 204})) for row in recipes}
     assert counts[20].general_matches == 2
     assert counts[20].total_ingredients == counts[20].total_matches == 2
