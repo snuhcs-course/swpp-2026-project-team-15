@@ -1,4 +1,6 @@
 -- AI-generated initial schema with Codex (GPT-6.1 Sol), 2026-10-04 to 2026-10-06; reviewed by Soohyun An.
+-- Modified with Codex (GPT-6 Luna), 2026-11-03; reviewed by Ahyoon Choi.
+-- Changes: Add nullable recipe.main_image_url for locally hosted recipe images.
 CREATE TABLE recipe (
     recipe_id INTEGER PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -8,7 +10,8 @@ CREATE TABLE recipe (
     cooking_time VARCHAR(20),
     calories VARCHAR(20),
     servings VARCHAR(20),
-    difficulty VARCHAR(50)
+    difficulty VARCHAR(50),
+    main_image_url TEXT
 );
 
 CREATE TABLE recipe_step (

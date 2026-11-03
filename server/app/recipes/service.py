@@ -1,3 +1,11 @@
+# AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
+
+# Modified with Codex (GPT-6.1 Sol), 2026-10-17; reviewed by Soohyun An.
+# Changes: Add read-only loading and validation of recipes and inventory, including water.
+
+# Modified with Codex (GPT-6 Luna), 2026-11-03; reviewed by Ahyoon Choi.
+# Changes: Return image URLs without adding them to revision inputs.
+
 """Read-only recipe queries over the database built by server/db/import_recipes.py."""
 
 import re
@@ -186,12 +194,27 @@ class RecipeRepository:
                         raise SourceUnavailable("Recipe source is incomplete")
                     sources.append(
                         SourceRecipe(
-                            **row.model_dump(),
+                            **row.model_dump(exclude={"main_image_url"}),
                             ingredients=tuple(ingredients[row.recipe_id]),
                             steps=tuple(steps[row.recipe_id]),
                         )
                     )
                 return tuple(sources), inventory
+        except SQLAlchemyError:
+            raise SourceUnavailable("Recipe database is unavailable") from None
+
+    def load_image_urls(self, recipe_ids: list[int]) -> dict[int, str | None]:
+        """Read image URLs separately so revision source records stay image-free."""
+        if not recipe_ids:
+            return {}
+        try:
+            with Session(self._engine) as session:
+                rows = session.exec(
+                    select(Recipe.recipe_id, Recipe.main_image_url).where(
+                        col(Recipe.recipe_id).in_(recipe_ids)
+                    )
+                ).all()
+                return {recipe_id: image_url for recipe_id, image_url in rows}
         except SQLAlchemyError:
             raise SourceUnavailable("Recipe database is unavailable") from None
 
@@ -247,4 +270,5 @@ class RecipeRepository:
             ingredients=list(ingredients),
             steps=list(steps),
             missing=[item for item in ingredients if item not in available_names],
+            main_image_url=recipe.main_image_url,
         )

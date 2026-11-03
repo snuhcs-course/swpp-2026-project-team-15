@@ -23,7 +23,7 @@
   "server/tests/recipes/test_service.py": "fabc2dfe914700fbe24523bf17b9651a6d174c2db73daefc1e0190a592fa71c6",
   "server/tests/test_config.py": "ae193c27bad1b6a841103d690bb85f1096b15f3a9044dff69b2760b6c39c9cc1",
   "server/tests/test_main.py": "aa6326d83a40f94a5d7e0b708d9c8c47b292410420f68a86c8d339516109c0bb",
-  "server/tests/test_recipe_import.py": "d7f0100186326377aa09744380b34c1cccbc4249a84977b702e869e1f890414b",
+  "server/tests/test_recipe_import.py": "95bd49fdbf60e43a2d94bf319a8e7a95e5f34199af66179df76ae16b743d1b96",
   "server/tests/test_vision_benchmark.py": "e7c8e1f1a6392aa534b3fa08489ad3798d8bcaebe61cad148e6fcecdb99c320a",
   "server/tests/vision/test_providers.py": "5d8df91d07523aa8a0faee995cfdaeddf28edbb27aa0f3ffb32a869c4d259856",
   "server/tests/vision/test_router.py": "16dddf7086ae83bcfc0d180eba0dcfc1e81a7b1d0da29c7a5c3bc0318df6637a"

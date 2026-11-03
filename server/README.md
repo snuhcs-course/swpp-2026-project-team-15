@@ -17,6 +17,10 @@ uv run --env-file .env uvicorn app.main:create_app_from_env --factory
 
 Live Revision requires explicit `REVISION_PROVIDER=live` plus `REVISION_LLM_ENDPOINT`, `REVISION_LLM_MODEL` and `REVISION_LLM_API_KEY` in the server environment. The endpoint must support HTTPS Chat Completions with Structured Outputs. Each selected recipe has one attempt with a 60-second transport timeout and no retry unless `RECIPE_REVISION_RETRY` is set (see Revision settings). Keep credentials out of Git and client requests.
 
+## Recipe images
+
+Recipe records may include nullable `main_image_url`. The server exposes local files from `server/recipe_images/images/` at `GET /recipe-images/{filename}`. The Android client combines this path with `SERVER_BASE_URL` and loads it with Coil. Image assets are local and ignored by Git, so provide the files on each runtime host that should display them.
+
 ## ID-based recommendations
 
 `POST /recipes/recommendations` uses registered normalized ingredient IDs:

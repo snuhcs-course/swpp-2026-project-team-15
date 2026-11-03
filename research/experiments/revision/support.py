@@ -84,9 +84,14 @@ def model_raw(value: dict) -> str:
 
 
 def create_database(path: Path) -> None:
-    """Populate the real importer schema with all fixed IDs and source edge cases."""
+    """Populate the revision fixture schema with fixed IDs and source edge cases."""
     with closing(sqlite3.connect(path)) as connection, connection:
-        connection.executescript((ROOT / "server/db/schema.sql").read_text(encoding="utf-8"))
+        schema = (ROOT / "server/db/schema.sql").read_text(encoding="utf-8")
+        legacy_recipe_columns = "    difficulty VARCHAR(50),\n    main_image_url TEXT"
+        if legacy_recipe_columns not in schema:
+            raise AssertionError("Revision fixtures expect the pre-image recipe schema")
+        schema = schema.replace(legacy_recipe_columns, "    difficulty VARCHAR(50)", 1)
+        connection.executescript(schema)
         ingredients = dict(pair for pairs in INVENTORIES.values() for pair in pairs)
         connection.executemany("INSERT INTO ingredient VALUES (?, ?)", ingredients.items())
         for index, (recipe_id, name) in enumerate(ALL_RECIPES):

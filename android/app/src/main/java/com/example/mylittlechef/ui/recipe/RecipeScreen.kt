@@ -2,7 +2,6 @@
 // AI-assisted with Codex (GPT-6.1 Sol), 2026-10-14; human review pending.
 package com.example.mylittlechef.ui.recipe
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,8 +32,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import coil3.compose.AsyncImage
 import com.example.mylittlechef.model.Recipe
 import com.example.mylittlechef.viewmodel.UserViewModel
 import androidx.compose.ui.unit.dp
@@ -259,16 +260,16 @@ fun RecipeCard(
             verticalAlignment = Alignment.CenterVertically
         )
         {
-            if (recipe.imageRes != null) {
-                Image(
-                    painter = painterResource(recipe.imageRes),
+            if (recipe.imageUrl != null) {
+                AsyncImage(
+                    model = recipe.imageUrl,
                     contentDescription = recipe.name,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(imageSize)
                         .clip(RoundedCornerShape(24.dp))
                 )
-            }
-            else {
+            } else {
                 Box(
                     modifier = Modifier
                         .size(imageSize)

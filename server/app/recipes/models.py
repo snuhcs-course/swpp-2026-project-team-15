@@ -3,6 +3,9 @@
 # Modified with Codex (GPT-6.1 Sol), 2026-10-17; reviewed by Soohyun An.
 # Changes: Map existing recipe metadata, ingredient classifications, original names, and step tips.
 
+# Modified with Codex (GPT-6 Luna), 2026-11-03; reviewed by Ahyoon Choi.
+# Changes: add main_image_url field to Recipe class
+
 """SQLModel tables mirroring server/db/schema.sql, which remains the source of truth.
 
 Only the tables the API reads are mapped; tools and allergens are still empty.
@@ -23,6 +26,7 @@ class Recipe(SQLModel, table=True):
     calories: str | None = None
     servings: str | None = None
     difficulty: str | None = None
+    main_image_url: str | None = None
 
 
 class RecipeStep(SQLModel, table=True):
