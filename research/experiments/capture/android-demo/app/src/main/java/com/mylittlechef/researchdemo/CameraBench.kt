@@ -61,7 +61,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 /**
- * Camera-path measurements on the phone: how fast and how cheaply frames can be taken from the camera by each method.
+ * Camera stream measurements on the phone: how fast and how cheaply frames can be taken from the camera by each method.
  * Timing, throughput, memory and thermal numbers are valid for any scene. Compressed sizes, sharpness, keypoint counts
  * and anything that depends on image content are NOT representative when the camera sees a black or featureless scene;
  * those fields are listed under "content_dependent" and must not be read as results.

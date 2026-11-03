@@ -207,7 +207,7 @@ class MainActivity : ComponentActivity() {
     private fun startCameraBench() {
         if (busy) return
         busy = true
-        status.text = "Camera-path benchmark..."
+        status.text = "Camera stream benchmark..."
         CameraBench(this, this, provider, previewView) { l, f -> buildAnalysis(l, f) }.run { f ->
             main.post { status.text = "Camera benchmark done: ${f.name}"; busy = false; bindCamera() }
         }

@@ -30,7 +30,7 @@ $A --ez autorun true --es arm uniform --ei cap 12                    # save the 
 $A --ez autorun true --es live with_offline                          # also run the streaming selector
 $A --ez probe true                                                   # stream combinations, camera characteristics
 $A --ez bench true                                                   # synthetic sweep: OpenCV path check and timing
-$A --ez camera true                                                  # camera-path measurements
+$A --ez camera true                                                  # live camera stream measurements
 D=/sdcard/Android/data/com.mylittlechef.researchdemo/files/in
 adb -s $SERIAL shell mkdir -p $D; adb -s $SERIAL push clip.mp4 $D/
 $A --es video all --ei cap 8                                         # every clip in files/in
@@ -41,7 +41,7 @@ Outputs are app-private under `/sdcard/Android/data/com.mylittlechef.researchdem
 
 ## Limits
 
-- Camera-path timing, throughput, memory and thermal numbers are valid for any scene. Compressed sizes, sharpness and keypoint counts are not representative when the camera sees a black or featureless scene; those fields are marked `content_dependent` and must not be read as results.
+- Camera stream timing, throughput, memory and thermal numbers are valid for any scene. Compressed sizes, sharpness and keypoint counts are not representative when the camera sees a black or featureless scene; those fields are marked `content_dependent` and must not be read as results.
 - `single` is a stand-in for a still photo; the demo does not capture photos.
 - Video-file mode decodes through bitmaps, so luma differs slightly from the original decoder output; selections can differ from a host decode.
 - The output files contain no images except the saved JPEGs of one chosen strategy. Do not commit recordings, JPEGs or run outputs.
