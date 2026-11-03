@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; reviewed by Jaehyuk Choi.
 """Which seasonings are assumed to be at home: one object shared by candidate selection, the
 revision request and the post-check, so the three cannot disagree.
 

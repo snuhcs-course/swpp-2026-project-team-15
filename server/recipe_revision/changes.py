@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; reviewed by Jaehyuk Choi.
 """Completing the change list of a revised recipe."""
 
 import copy

@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; reviewed by Jaehyuk Choi.
 """Assumed-seasoning policy: one object for selection, request and check; data-driven list."""
 
 import json

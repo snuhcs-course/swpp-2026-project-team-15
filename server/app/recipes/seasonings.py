@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; reviewed by Jaehyuk Choi.
 """Load the assumed-seasoning policy from a small config file.
 
 The built-in file ``assumed_seasonings.json`` holds the default list. For development, either edit
