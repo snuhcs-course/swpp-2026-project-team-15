@@ -1,0 +1,11 @@
+{
+ "note": "Frame-selection variants compared. K is the frame cap (8 here, 8-15 allowed). Frames are re-encoded to 1024 px long side, JPEG quality 85, no metadata.",
+ "single": "one still photo (the current app input)",
+ "uniform": "evenly spaced in time, first and last included",
+ "time-bins": "time split into K bins, sharpest frame of each bin",
+ "overlap": "blur gate at 0.5 x clip median, overlap groups, sharpest per group, farthest-first to K; on a score tie the temporally farthest candidate is taken",
+ "overlap-strict": "overlap with the blur gate at 0.7 x clip median",
+ "all": "about 2.5 frames per second, no selection (upper bound on frame count)",
+ "merge": {"M1": "union of normalized names across per-frame calls", "M2": "names seen in two or more frames", "M3": "union plus the number of frames that saw a name"},
+ "model": "google/gemini-2.5-flash-lite through OpenRouter, temperature 0, the server's vision prompt (app.vision.gemini.PROMPT)"
+}
