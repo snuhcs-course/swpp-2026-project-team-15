@@ -1,3 +1,4 @@
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
 """Steps around one revision call: a refusal decided in code before the call, one optional retry
 after a rejected answer, and a completed change list.
 

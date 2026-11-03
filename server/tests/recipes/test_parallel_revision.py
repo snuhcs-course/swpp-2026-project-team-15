@@ -1,3 +1,4 @@
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
 """Concurrent revision calls return the same response as the sequential loop (no network)."""
 
 import json

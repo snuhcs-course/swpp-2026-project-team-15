@@ -1,3 +1,4 @@
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
 """Decisions that need no model call.
 
 ``prescreen_refusal`` refuses a recipe whose dish name contains an ingredient that is not available

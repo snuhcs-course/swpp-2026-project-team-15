@@ -1,3 +1,4 @@
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
 """Compact revision input with a role label and an availability status per ingredient row, and a
 deterministic post-check.
 
