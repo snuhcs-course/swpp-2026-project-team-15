@@ -1,5 +1,5 @@
 {
- "note": "Draft answer key written by one reviewer with a model's help. Uncertain items were checked and removed; the remaining items were not independently verified. Names are generic ingredient names a candidate may match (see score.name_matches). The sweep clips A01-A06 are grouped into scenes by visual overlap, so they are not independent samples.",
+ "note": "Draft answer key written by one reviewer with a model's help. Uncertain items were checked and removed; the remaining items were not independently verified. Names are generic ingredient names a candidate may match (see score.name_matches). The sweep clips A01-A06 are grouped into scenes by visual overlap, so they are not independent samples. Brand names were replaced by generic names.",
  "scenes": [
   [
    "A01",
@@ -28,8 +28,6 @@
     "names": [
      "커피",
      "콜드브루",
-     "칸타타",
-     "콘트라베이스",
      "아메리카노"
     ],
     "status": "visible"
@@ -65,8 +63,7 @@
    {
     "id": "flour",
     "names": [
-     "밀가루",
-     "곰표"
+     "밀가루"
     ],
     "status": "visible"
    },
@@ -97,8 +94,6 @@
     "names": [
      "커피",
      "콜드브루",
-     "칸타타",
-     "콘트라베이스",
      "아메리카노"
     ],
     "status": "visible"
@@ -134,8 +129,7 @@
    {
     "id": "flour",
     "names": [
-     "밀가루",
-     "곰표"
+     "밀가루"
     ],
     "status": "visible"
    },
@@ -163,8 +157,6 @@
     "names": [
      "커피",
      "콜드브루",
-     "칸타타",
-     "콘트라베이스",
      "아메리카노"
     ],
     "status": "visible"
@@ -200,8 +192,7 @@
    {
     "id": "flour",
     "names": [
-     "밀가루",
-     "곰표"
+     "밀가루"
     ],
     "status": "visible"
    },
@@ -223,8 +214,6 @@
     "names": [
      "커피",
      "콜드브루",
-     "칸타타",
-     "콘트라베이스",
      "아메리카노"
     ],
     "status": "visible"
@@ -260,8 +249,7 @@
    {
     "id": "flour",
     "names": [
-     "밀가루",
-     "곰표"
+     "밀가루"
     ],
     "status": "visible"
    }
@@ -326,7 +314,6 @@
     "id": "cola",
     "names": [
      "콜라",
-     "코카콜라",
      "cola"
     ],
     "status": "visible"
@@ -334,9 +321,8 @@
    {
     "id": "dr_pepper",
     "names": [
-     "닥터페퍼",
-     "dr pepper",
-     "drpepper"
+     "탄산음료",
+     "콜라"
     ],
     "status": "visible"
    },
@@ -462,8 +448,6 @@
     "id": "ramen",
     "names": [
      "라면",
-     "너구리",
-     "신라면",
      "ramen"
     ],
     "status": "visible"
@@ -482,8 +466,7 @@
     "id": "naengmyeon",
     "names": [
      "냉면",
-     "물냉면",
-     "평양"
+     "물냉면"
     ],
     "status": "visible"
    }
