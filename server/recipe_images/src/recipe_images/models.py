@@ -1,4 +1,5 @@
 """Shared data models and validated recipe input loading."""
+
 from __future__ import annotations
 
 import json
@@ -13,6 +14,7 @@ class Recipe:
     name_ko: str
     query: str
 
+
 @dataclass(frozen=True)
 class Selection:
     recipe_id: int
@@ -21,6 +23,7 @@ class Selection:
     user_id: int
     page_url: str
     tags: str
+
 
 def load_recipes(path: Path) -> list[Recipe]:
     try:
@@ -49,6 +52,16 @@ def load_recipes(path: Path) -> list[Recipe]:
         recipes.append(Recipe(recipe_id, name.strip(), query.strip()))
     return recipes
 
+
 def hit_fields(hit: dict[str, Any]) -> dict[str, Any]:
-    names = ("id", "pageURL", "webformatURL", "tags", "user", "user_id", "imageWidth", "imageHeight")
+    names = (
+        "id",
+        "pageURL",
+        "webformatURL",
+        "tags",
+        "user",
+        "user_id",
+        "imageWidth",
+        "imageHeight",
+    )
     return {name: hit.get(name, "") for name in names}

@@ -168,6 +168,7 @@ class FakeRepository:
     def load_image_urls(self, recipe_ids):
         return {recipe_id: None for recipe_id in recipe_ids}
 
+
 def catalog_recipes():
     # 버섯볶음 has the fewest missing ingredients (only 버섯, named in the dish) so it ranks first.
     mushroom = make_recipe(

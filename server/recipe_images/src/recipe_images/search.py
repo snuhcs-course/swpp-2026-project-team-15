@@ -1,4 +1,5 @@
 """Pixabay search with a 24-hour cache and conservative request pacing."""
+
 from __future__ import annotations
 
 import json
@@ -15,6 +16,7 @@ from .models import Recipe, hit_fields
 API_URL = "https://pixabay.com/api/"
 TIMEOUT = 10
 SEARCH_LANGUAGE = "ko"
+
 
 def _pixabay_key() -> str | None:
     """Read the process environment first, then the repository's server/.env file."""
@@ -38,21 +40,27 @@ def _pixabay_key() -> str | None:
             return value or None
     return None
 
-def read_cache(path: Path, query: str, now: datetime | None = None,
-               lang: str = SEARCH_LANGUAGE) -> list[dict[str, Any]] | None:
+
+def read_cache(
+    path: Path, query: str, now: datetime | None = None, lang: str = SEARCH_LANGUAGE
+) -> list[dict[str, Any]] | None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
         fetched = datetime.fromisoformat(payload["fetched_at"])
         if fetched.tzinfo is None:
             fetched = fetched.replace(tzinfo=UTC)
         current = now or datetime.now(UTC)
-        if (payload.get("query") == query and payload.get("lang") == lang
-                and timedelta(0) <= current - fetched < timedelta(hours=24)):
+        if (
+            payload.get("query") == query
+            and payload.get("lang") == lang
+            and timedelta(0) <= current - fetched < timedelta(hours=24)
+        ):
             hits = payload.get("hits")
             return hits if isinstance(hits, list) else None
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
         return None
     return None
+
 
 def _wait_reset(response: requests.Response, sleep=time.sleep) -> None:
     try:
@@ -62,6 +70,7 @@ def _wait_reset(response: requests.Response, sleep=time.sleep) -> None:
     if seconds:
         sleep(seconds)
 
+
 def _tag_match_score(query: str, tags: str) -> int:
     normalized_query = "".join(character for character in query.casefold() if character.isalnum())
     normalized_tags = "".join(character for character in tags.casefold() if character.isalnum())
@@ -69,11 +78,20 @@ def _tag_match_score(query: str, tags: str) -> int:
         return 0
     if len(normalized_query) == 1:
         return int(normalized_query in normalized_tags)
-    query_bigrams = {normalized_query[index:index + 2] for index in range(len(normalized_query) - 1)}
+    query_bigrams = {
+        normalized_query[index : index + 2] for index in range(len(normalized_query) - 1)
+    }
     return sum(bigram in normalized_tags for bigram in query_bigrams)
 
-def search_recipe(recipe: Recipe, cache_dir: Path, force: bool = False, confirm_recent: bool = False,
-                  session: requests.Session | None = None, sleep=time.sleep) -> tuple[list[dict[str, Any]], bool]:
+
+def search_recipe(
+    recipe: Recipe,
+    cache_dir: Path,
+    force: bool = False,
+    confirm_recent: bool = False,
+    session: requests.Session | None = None,
+    sleep=time.sleep,
+) -> tuple[list[dict[str, Any]], bool]:
     cache_path = cache_dir / f"{recipe.id}.json"
     cached = read_cache(cache_path, recipe.query, lang=SEARCH_LANGUAGE)
     if cached is not None and not force:
@@ -88,13 +106,23 @@ def search_recipe(recipe: Recipe, cache_dir: Path, force: bool = False, confirm_
         except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
             recent = False
         if recent and not confirm_recent:
-            raise ValueError("Recent cache exists; interactive confirmation is required to force refresh")
+            raise ValueError(
+                "Recent cache exists; interactive confirmation is required to force refresh"
+            )
     key = _pixabay_key()
     if not key:
         raise ValueError("PIXABAY_KEY environment variable is required")
     client = session or requests.Session()
-    params = {"key": key, "q": recipe.query, "category": "food", "image_type": "photo",
-              "per_page": 10, "safesearch": "true", "min_width": 800, "lang": SEARCH_LANGUAGE}
+    params = {
+        "key": key,
+        "q": recipe.query,
+        "category": "food",
+        "image_type": "photo",
+        "per_page": 10,
+        "safesearch": "true",
+        "min_width": 800,
+        "lang": SEARCH_LANGUAGE,
+    }
     last_error: Exception | None = None
     last_request = 0.0
     for attempt in range(3):
@@ -112,12 +140,25 @@ def search_recipe(recipe: Recipe, cache_dir: Path, force: bool = False, confirm_
             response.raise_for_status()
             payload = response.json()
             hits = [hit_fields(hit) for hit in payload.get("hits", []) if isinstance(hit, dict)]
-            hits.sort(key=lambda hit: _tag_match_score(recipe.query, str(hit.get("tags", ""))), reverse=True)
+            hits.sort(
+                key=lambda hit: _tag_match_score(recipe.query, str(hit.get("tags", ""))),
+                reverse=True,
+            )
             hits = hits[:5]
             cache_dir.mkdir(parents=True, exist_ok=True)
-            cache_path.write_text(json.dumps({"fetched_at": datetime.now(UTC).isoformat(),
-                "query": recipe.query, "lang": SEARCH_LANGUAGE, "hits": hits},
-                ensure_ascii=False, indent=2), encoding="utf-8")
+            cache_path.write_text(
+                json.dumps(
+                    {
+                        "fetched_at": datetime.now(UTC).isoformat(),
+                        "query": recipe.query,
+                        "lang": SEARCH_LANGUAGE,
+                        "hits": hits,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
             remaining = response.headers.get("X-RateLimit-Remaining")
             if remaining and remaining.isdigit() and int(remaining) <= 5:
                 _wait_reset(response, sleep)
@@ -125,6 +166,5 @@ def search_recipe(recipe: Recipe, cache_dir: Path, force: bool = False, confirm_
         except requests.RequestException as exc:
             last_error = exc
             if attempt < 2:
-                sleep(min(2 ** attempt, 4))
+                sleep(min(2**attempt, 4))
     raise RuntimeError(f"Pixabay request failed: {last_error}")
-
