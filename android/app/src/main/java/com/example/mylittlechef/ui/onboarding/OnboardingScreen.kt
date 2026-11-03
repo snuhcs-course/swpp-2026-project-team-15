@@ -1,4 +1,5 @@
 // AI-generated initial onboarding scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
+// Pantry step added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.ui.onboarding
 
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 
@@ -33,6 +35,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.mylittlechef.R
+import com.example.mylittlechef.model.Ingredient
 import com.example.mylittlechef.model.Preset
 import com.example.mylittlechef.ui.components.BackButton
 import com.example.mylittlechef.ui.components.NormalButton
@@ -45,15 +48,18 @@ import com.example.mylittlechef.ui.components.ToggleButton
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.ui.theme.DeepGreen
 import com.example.mylittlechef.ui.theme.Gray
+import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
 @Composable
 fun OnboardingScreen(
     user: UserViewModel,
+    fridge: FridgeViewModel,
     onFinish: () -> Unit
 )
 {
-    var stepIndex by remember { mutableStateOf(1) }
+    var stepIndex by rememberSaveable { mutableStateOf(1) }
+    var selectedPantryItems by rememberSaveable { mutableStateOf(emptyList<String>()) }
     val onNext = { stepIndex += 1 }
     val onBack = { stepIndex -= 1 }
 
@@ -72,9 +78,18 @@ fun OnboardingScreen(
             onNext = onNext,
             onBack = onBack
         )
-        4 -> OnboardingDone(
+        4 -> OnboardingPantry(
+            selected = selectedPantryItems,
+            onSelectedChange = { selectedPantryItems = it },
+            onNext = onNext,
+            onBack = onBack
+        )
+        5 -> OnboardingDone(
             user = user,
-            onNext = onFinish,
+            saveError = fridge.pantryError,
+            onNext = {
+                fridge.updatePantryItems(selectedPantryItems, onSaved = onFinish)
+            },
         )
     }
 }
@@ -287,7 +302,8 @@ fun OnboardingAllergy(
 @Composable
 fun OnboardingDone(
     user: UserViewModel,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    saveError: String? = null
 )
 {
     OnboardingScaffold(
@@ -317,7 +333,7 @@ fun OnboardingDone(
             )
 
             SubtitleText(
-                text = "입력한 정보는 언제든지 수정할 수 있어요",
+                text = saveError ?: "입력한 정보는 언제든지 수정할 수 있어요",
                 textAlign = TextAlign.Center,
                 color = Color.Black
             )

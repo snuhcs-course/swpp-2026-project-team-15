@@ -9,6 +9,7 @@ Semantic mistakes remain observations for human review, not synthetic refusals.
 
 import json
 import re
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from typing import Protocol
 
@@ -303,14 +304,24 @@ def parse_response(text: str) -> dict:
 
 
 def revise(
-    recipe: SourceRecipe, inventory: tuple[InventoryIngredient, ...], llm: LLM
+    recipe: SourceRecipe,
+    inventory: tuple[InventoryIngredient, ...],
+    llm: LLM,
+    *,
+    build: Callable[
+        [SourceRecipe, tuple[InventoryIngredient, ...]], RevisionRequest
+    ] = build_request,
+    check: Callable[[dict, SourceRecipe, tuple[InventoryIngredient, ...]], list[str]] | None = None,
 ) -> RevisionOutcome:
     """Make one attempt and return its observation; the runner decides when to stop.
 
     APIError and ResponseFormatError are adapter failures with sanitized messages.
     Unexpected programming errors propagate rather than masquerading as judgments.
+    ``build`` selects the request builder; the default keeps the full-row request. ``check`` is an
+    optional deterministic post-check of a revised recipe: violation codes turn the outcome into
+    ``check_failed`` (no retry, no model call). Refusals are never checked.
     """
-    request = build_request(recipe, inventory)
+    request = build(recipe, inventory)
     response = None
     try:
         response = llm.generate(request)
@@ -335,6 +346,18 @@ def revise(
             response.metadata if response else {},
             failure_stage=exc.stage,
             failure=Failure("response_format", exc.stage),
+        )
+    violations = check(result, recipe, inventory) if check is not None else []
+    if violations:
+        return RevisionOutcome(
+            "check_failed",
+            request,
+            response.text,
+            None,
+            "Revised recipe failed the compliance check: " + ",".join(violations),
+            response.metadata,
+            failure_stage="revision",
+            failure=Failure("response_format", "revision"),
         )
     return RevisionOutcome(
         "revised" if result["can_revise"] else "refused",

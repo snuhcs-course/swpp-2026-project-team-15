@@ -3,6 +3,7 @@
 # 2026-10-17; reviewed by Soohyun An
 
 import sqlite3
+from pathlib import Path
 
 import pytest
 
@@ -65,3 +66,13 @@ def integration_repository(integration_db):
     engine = read_only_sqlite_engine(integration_db)
     yield RecipeRepository(engine)
     engine.dispose()
+
+
+@pytest.fixture(scope="session")
+def real_catalog():
+    """Ingredient id to name of the real recipe table, when it is available in the repository."""
+    path = Path(__file__).resolve().parents[3] / "data" / "recipes-iter2" / "recipes.sqlite3"
+    if not path.exists():
+        pytest.skip("recipe database not available")
+    with sqlite3.connect(path.as_uri() + "?mode=ro", uri=True) as db:
+        return dict(db.execute("SELECT ingredient_id, name FROM ingredient"))

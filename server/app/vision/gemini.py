@@ -2,6 +2,7 @@
 """Gemini-backed recognition. Requests only the fields the app uses to keep tokens low."""
 
 import logging
+from collections.abc import Sequence
 
 import httpx
 from google import genai
@@ -9,7 +10,7 @@ from google.genai import types
 from pydantic import ValidationError
 
 from app.vision.exceptions import VisionError, VisionUnavailableError
-from app.vision.providers import DETECTED_ITEMS
+from app.vision.providers import DETECTED_ITEMS, ImageInput
 from app.vision.schemas import DetectedItem
 
 PROMPT = (
@@ -18,6 +19,18 @@ PROMPT = (
     "category (a generic Korean ingredient name usable in a recipe, e.g. 신라면 -> 라면) "
     "and confidence between 0 and 1. Omit non-food objects."
 )
+
+
+def multi_view_prompt(count: int) -> str:
+    """Prompt for several photos of one fridge: each distinct item is listed once."""
+    return (
+        f"These {count} photos show the same refrigerator or pantry from different views "
+        "and may overlap. List each distinct food item once, even if it appears in several "
+        "photos. For each item give name_raw (label text or description as seen), "
+        "category (a generic Korean ingredient name usable in a recipe, e.g. 신라면 -> 라면) "
+        "and confidence between 0 and 1. Omit non-food objects."
+    )
+
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +53,20 @@ class GeminiVisionProvider:
         self._response_schema = response_schema
 
     def detect(self, image: bytes, mime_type: str) -> list[DetectedItem]:
+        return self._generate([ImageInput(image, mime_type)], self._prompt)
+
+    def detect_many(self, images: Sequence[ImageInput]) -> list[DetectedItem]:
+        """Send all views in one request; a custom single-image prompt is not reused here."""
+        return self._generate(images, multi_view_prompt(len(images)))
+
+    def _generate(self, images: Sequence[ImageInput], prompt: str) -> list[DetectedItem]:
         try:
             response = self._client.models.generate_content(
                 model=self._model,
-                contents=[types.Part.from_bytes(data=image, mime_type=mime_type), self._prompt],
+                contents=[
+                    *(types.Part.from_bytes(data=i.data, mime_type=i.mime_type) for i in images),
+                    prompt,
+                ],
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     response_schema=self._response_schema,

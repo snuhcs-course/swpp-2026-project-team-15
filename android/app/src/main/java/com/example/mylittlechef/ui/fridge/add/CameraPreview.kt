@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
@@ -25,7 +26,9 @@ private const val TAG = "CameraPreview"
 @Composable
 fun CameraPreview(
     imageCapture: ImageCapture,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // When set (video mode) the preview is bound to this stream instead of to [imageCapture].
+    imageAnalysis: ImageAnalysis? = null
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -36,7 +39,7 @@ fun CameraPreview(
         }
     }
 
-    DisposableEffect(lifecycleOwner, imageCapture) {
+    DisposableEffect(lifecycleOwner, imageCapture, imageAnalysis) {
         val providerFuture = ProcessCameraProvider.getInstance(context)
         var provider: ProcessCameraProvider? = null
 
@@ -54,7 +57,7 @@ fun CameraPreview(
                     lifecycleOwner,
                     CameraSelector.DEFAULT_BACK_CAMERA,
                     preview,
-                    imageCapture
+                    imageAnalysis ?: imageCapture
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "fail to connect camera", e)

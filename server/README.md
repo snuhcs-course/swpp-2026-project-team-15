@@ -15,7 +15,7 @@ uv run --env-file .env uvicorn app.main:create_app_from_env --factory
 
 `REVISION_PROVIDER=mock` is the default and needs no API key. It returns labeled canned refusals to exercise the integration; these are not AI feasibility judgments. Vision has its own `VISION_PROVIDER` configuration. Keep `mock` for both when running offline. Existing shell environment variables and the launcher's environment-file loading configure the server.
 
-Live Revision requires explicit `REVISION_PROVIDER=live` plus `REVISION_LLM_ENDPOINT`, `REVISION_LLM_MODEL` and `REVISION_LLM_API_KEY` in the server environment. The endpoint must support HTTPS Chat Completions with Structured Outputs. Each selected recipe has one attempt with a 60-second transport timeout, no retry. Keep credentials out of Git and client requests.
+Live Revision requires explicit `REVISION_PROVIDER=live` plus `REVISION_LLM_ENDPOINT`, `REVISION_LLM_MODEL` and `REVISION_LLM_API_KEY` in the server environment. The endpoint must support HTTPS Chat Completions with Structured Outputs. Each selected recipe has one attempt with a 60-second transport timeout and no retry unless `RECIPE_REVISION_RETRY` is set (see Revision settings). Keep credentials out of Git and client requests.
 
 ## Recipe images
 
@@ -33,12 +33,24 @@ curl -X POST http://127.0.0.1:8000/recipes/recommendations \
 
 - `ingredient_ids` is required; duplicates count once, an empty list is valid, and unknown IDs are rejected. IDs must be positive integers. Names and preparation forms are not automatically equated.
 - `revision_limit` defaults to 3 and accepts integers 1–5. It limits selected AI attempts, not the returned recipe count. Refusals/failures do not add replacement candidates beyond that selection.
-- The response includes **every filtered recipe**, with `recipe_id`, full `original`, `filtering` counts, and `revision`. `assumed_ingredient_ids` contains water (204) only. All other ingredients, including seasonings, must be submitted.
+- The response includes **every filtered recipe**, with `recipe_id`, full `original`, `filtering` counts, and `revision`. `assumed_ingredient_ids` lists the ingredients the server assumes at home: water (204) and the configured seasonings. All other ingredients must be submitted.
 - `revision.status` is `revised`, `refused`, `failed` or `not_attempted`. Revised/refused preserve the parsed `result` (decision, reason, changes and revised recipe). Failed entries have `error`. Unattempted entries have `not_attempted_reason`: `outside_revision_limit` or `shared_failure`.
 - `revision_summary` reports `limit`, `selected_count`, `attempted_count` and nullable `stopped_error`. Configuration failures before provider construction produce zero attempts and a shared stopped error.
 - Invalid requests return 422; unavailable/incomplete source data returns sanitized 503 before AI calls. Once filtering succeeds, partial or entirely failed AI results still return 200 with the complete list.
 
 The server chooses revision priority by missing count ascending, matched count descending, then recipe ID ascending. The response array has no display-order guarantee; sorting is the client's responsibility. Original quantities/servings and source row IDs are preserved. Generated content is not safety-verified; allergy checks are not included.
+
+## Revision settings
+
+Each candidate gets a compact request: only the fields the model needs, and a status per ingredient row (`owned`, `assumed` seasoning, `unavailable`). A revised recipe that uses an unavailable ingredient, in its ingredient list or still named in a step or tip, is rejected with the existing `response_format` error at stage `revision`. A candidate whose dish name contains an unavailable ingredient is refused without a model call. A revised recipe's change list gets an `omission` entry for every removed ingredient it does not mention.
+
+| Setting | Values | Effect |
+| --- | --- | --- |
+| `server/app/recipes/assumed_seasonings.json` | ingredient ids and names | Seasonings assumed at home for filtering, the request and the check. Edit the file, or point `RECIPE_ASSUMED_SEASONINGS_FILE` at another one. The ids and names are checked against the ingredient table at startup. |
+| `RECIPE_SEASONING_MODE` | `list` (default), `all`, `none` | `all` assumes every seasoning-labelled ingredient; `none` assumes only water. |
+| `RECIPE_REVISION_PRESCREEN` | `refuse` (default), `fill`, `off` | `refuse` keeps the candidate's slot; `fill` lets the next candidates take over so the model is called for `revision_limit` candidates (`selected_count` can then exceed the limit). |
+| `RECIPE_REVISION_WORKERS` | `1` (default) to `5` | Concurrent model calls per request. More than 1 also calls the remaining candidates after a shared failure. |
+| `RECIPE_REVISION_RETRY` | `false` (default), `true` | One extra model call, with feedback, after a rejected answer. |
 
 ## Policy and failures
 
@@ -72,3 +84,15 @@ The runtime artifact is built from committed source with `python3 scripts/packag
 `VISION_PROVIDER=openrouter` requires `OPENROUTER_API_KEY` and `OPENROUTER_VISION_MODEL`. Live Revision keeps its existing endpoint/model settings and accepts `OPENROUTER_API_KEY` when `REVISION_LLM_API_KEY` is empty. A nonempty `DATABASE_URL` selects PostgreSQL; an empty value keeps the local SQLite path.
 
 In a full source checkout, `deploy/README.md` describes Compose deployment and `deploy/runtime.env.example` supplies its variables. The runtime archive omits deploy/. Private settings and ZIPs stay outside the checkout/image/APK. This does not change the preserved filtering/revision API contract above.
+
+
+## Client pantry entry and ingredient-addition suggestions
+
+The restored client uses two additional read-only endpoints:
+
+- `GET /recipes/ingredients`: returns `{ "names": [...] }`, sorted unique source ingredient names for manual entry and recognition-result correction.
+- `POST /recipes/ingredient-suggestions`, body `{ "ingredients": ["두부", "김치"] }`: returns up to five `suggestions`. Candidates must appear in at least five source recipes. Sort by `ready_recipe_count` descending, then `recipe_count` descending, then name. The first count means newly complete recipes after this single addition; the second means all source recipes containing the ingredient (including supported equivalent/prepared forms). `ready_recipe_names` contains up to three examples.
+
+Both counts use the existing name-based endpoint's `STAPLE_SEASONINGS` assumption. They do not apply allergy/utensil filtering or AI revision, and do not change `/recipes/recommendations`. Owning 대파 can cover 다진파; owning 다진파 does not imply owning 대파. Suggested purchase names must cover the capabilities used in their counts. Duplicate source rows count once per recipe.
+
+These endpoints require the updated server code; the existing cloud deployment is not automatically updated by local Android work. Use the local mock server and loopback APK instructions in [the restoration review guide](../docs/iterations/iteration-3-restoration-review.ko.md) before deploying changes.

@@ -2,13 +2,14 @@
 
 import base64
 import json
+from collections.abc import Sequence
 
 import httpx
 from pydantic import ValidationError
 
 from app.vision.exceptions import VisionError, VisionUnavailableError
-from app.vision.gemini import PROMPT
-from app.vision.providers import DETECTED_ITEMS
+from app.vision.gemini import PROMPT, multi_view_prompt
+from app.vision.providers import DETECTED_ITEMS, ImageInput
 from app.vision.schemas import DetectedItem
 
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
@@ -21,6 +22,13 @@ class OpenRouterVisionProvider:
         self._transport = transport
 
     def detect(self, image: bytes, mime_type: str) -> list[DetectedItem]:
+        return self._request([ImageInput(image, mime_type)], PROMPT)
+
+    def detect_many(self, images: Sequence[ImageInput]) -> list[DetectedItem]:
+        """Send all views in one request so the model lists each distinct item once."""
+        return self._request(images, multi_view_prompt(len(images)))
+
+    def _request(self, images: Sequence[ImageInput], prompt: str) -> list[DetectedItem]:
         schema = {
             "type": "object",
             "properties": {"items": DETECTED_ITEMS.json_schema()},
@@ -39,13 +47,17 @@ class OpenRouterVisionProvider:
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": PROMPT},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{mime_type};base64,{base64.b64encode(image).decode()}"
-                            },
-                        },
+                        {"type": "text", "text": prompt},
+                        *(
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:{i.mime_type};base64,"
+                                    f"{base64.b64encode(i.data).decode()}"
+                                },
+                            }
+                            for i in images
+                        ),
                     ],
                 }
             ],
