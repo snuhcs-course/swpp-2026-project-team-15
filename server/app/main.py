@@ -12,8 +12,8 @@ Run: uv run --env-file .env uvicorn app.main:create_app_from_env --factory
 """
 
 import logging
-from pathlib import Path
 import os
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles

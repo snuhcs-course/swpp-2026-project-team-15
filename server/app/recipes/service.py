@@ -4,7 +4,7 @@
 # Changes: Add read-only loading and validation of recipes and inventory, including water.
 
 # Modified with Codex (GPT-6 Luna), 2026-11-03; reviewed by Ahyoon Choi.
-# Changes: Load recipe image URLs for both response flows while keeping revision source records image-free.
+# Changes: Return image URLs without adding them to revision inputs.
 
 """Read-only recipe queries over the database built by server/db/import_recipes.py."""
 

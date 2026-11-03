@@ -3,7 +3,7 @@
 # 2026-10-17; reviewed by Soohyun An
 
 # Modified with Codex (GPT-6 Luna), 2026-11-03; reviewed by Ahyoon Choi.
-# Changes: Include recipe image URLs in recommendation entries without adding them to revision inputs.
+# Changes: Add recipe image URLs without changing revision inputs.
 
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
