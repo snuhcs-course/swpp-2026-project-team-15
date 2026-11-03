@@ -1,6 +1,11 @@
 // AI-generated with Claude Code (Opus 5.5), 2026-10-11 to 2026-10-14; reviewed by Jaehyuk Choi.
+
+// Modified with Codex (GPT-6 Luna), 2026-11-03; reviewed by Ahyoon Choi.
+// Changes: add mainImageUrl to RecipeDto
+
 package com.example.mylittlechef.data.remote
 
+import com.example.mylittlechef.BuildConfig
 import com.example.mylittlechef.model.Ingredient
 import com.example.mylittlechef.model.Recipe
 import com.google.gson.annotations.SerializedName
@@ -33,7 +38,8 @@ data class RecipeDto(
     val servings: Int?,
     val ingredients: List<String>,
     val steps: List<String>,
-    val missing: List<String>
+    val missing: List<String>,
+    @SerializedName("main_image_url") val mainImageUrl: String? = null
 )
 
 fun IngredientCandidateDto.toIngredient() = Ingredient(name = name)
@@ -45,5 +51,9 @@ fun RecipeDto.toRecipe() = Recipe(
     serving = servings ?: 0,
     ingredients = ingredients.map(::Ingredient),
     steps = steps,
-    missing = missing.map(::Ingredient)
+    missing = missing.map(::Ingredient),
+    imageUrl = mainImageUrl?.takeIf(String::isNotBlank)?.let { image ->
+        if (image.startsWith("http://") || image.startsWith("https://")) image
+        else "${BuildConfig.SERVER_BASE_URL.trimEnd('/')}/${image.trimStart('/')}"
+    }
 )

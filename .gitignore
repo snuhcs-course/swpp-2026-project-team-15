@@ -57,6 +57,10 @@ test-results.xml
 !/server/fixtures/demo/*.png
 server/recipe_images/cache/
 server/recipe_images/sheets/
-server/recipe_images/downloads/
+server/recipe_images/selected/
 server/recipe_images/.env
 codex_note.md
+
+# Locally supplied recipe images stay out of Git
+/server/recipe_images/images/
+/spec/

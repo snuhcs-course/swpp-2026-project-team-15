@@ -62,6 +62,16 @@ def _wait_reset(response: requests.Response, sleep=time.sleep) -> None:
     if seconds:
         sleep(seconds)
 
+def _tag_match_score(query: str, tags: str) -> int:
+    normalized_query = "".join(character for character in query.casefold() if character.isalnum())
+    normalized_tags = "".join(character for character in tags.casefold() if character.isalnum())
+    if not normalized_query:
+        return 0
+    if len(normalized_query) == 1:
+        return int(normalized_query in normalized_tags)
+    query_bigrams = {normalized_query[index:index + 2] for index in range(len(normalized_query) - 1)}
+    return sum(bigram in normalized_tags for bigram in query_bigrams)
+
 def search_recipe(recipe: Recipe, cache_dir: Path, force: bool = False, confirm_recent: bool = False,
                   session: requests.Session | None = None, sleep=time.sleep) -> tuple[list[dict[str, Any]], bool]:
     cache_path = cache_dir / f"{recipe.id}.json"
@@ -84,7 +94,7 @@ def search_recipe(recipe: Recipe, cache_dir: Path, force: bool = False, confirm_
         raise ValueError("PIXABAY_KEY environment variable is required")
     client = session or requests.Session()
     params = {"key": key, "q": recipe.query, "category": "food", "image_type": "photo",
-              "per_page": 5, "safesearch": "true", "min_width": 800, "lang": SEARCH_LANGUAGE}
+              "per_page": 10, "safesearch": "true", "min_width": 800, "lang": SEARCH_LANGUAGE}
     last_error: Exception | None = None
     last_request = 0.0
     for attempt in range(3):
@@ -102,6 +112,8 @@ def search_recipe(recipe: Recipe, cache_dir: Path, force: bool = False, confirm_
             response.raise_for_status()
             payload = response.json()
             hits = [hit_fields(hit) for hit in payload.get("hits", []) if isinstance(hit, dict)]
+            hits.sort(key=lambda hit: _tag_match_score(recipe.query, str(hit.get("tags", ""))), reverse=True)
+            hits = hits[:5]
             cache_dir.mkdir(parents=True, exist_ok=True)
             cache_path.write_text(json.dumps({"fetched_at": datetime.now(UTC).isoformat(),
                 "query": recipe.query, "lang": SEARCH_LANGUAGE, "hits": hits},
@@ -115,3 +127,4 @@ def search_recipe(recipe: Recipe, cache_dir: Path, force: bool = False, confirm_
             if attempt < 2:
                 sleep(min(2 ** attempt, 4))
     raise RuntimeError(f"Pixabay request failed: {last_error}")
+

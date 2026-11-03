@@ -7,7 +7,7 @@ set -eu
 REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 SERVER_DIR="$REPO_ROOT/server"
 ANDROID_DIR="$REPO_ROOT/android"
-RECIPE_DIR="$REPO_ROOT/data/recipes-iter2"
+RECIPE_DIR="$REPO_ROOT/data/recipes"
 RECIPE_DB="$RECIPE_DIR/recipes.sqlite3"
 HOST_PORT="${PORT:-8000}"
 DEVICE_PORT=8000 # Explicit localhost override; the regular debug default is the cloud API.

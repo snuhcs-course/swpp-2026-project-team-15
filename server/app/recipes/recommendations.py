@@ -2,6 +2,9 @@
 # AI-generated with Codex(GPT-6.1 Sol)
 # 2026-10-17; reviewed by Soohyun An
 
+# Modified with Codex (GPT-6 Luna), 2026-11-03; reviewed by Ahyoon Choi.
+# Changes: Include recipe image URLs in recommendation entries without adding them to revision inputs.
+
 from collections.abc import Callable
 
 from app.recipes.policy import DEFAULT_POLICY, RecommendationPolicy
@@ -59,6 +62,7 @@ class RecommendationService:
         sources, inventory = self.repository.load_catalog(
             request.ingredient_ids, self.policy.water_id
         )
+        image_urls = self.repository.load_image_urls([source.recipe_id for source in sources])
         available = frozenset(row.ingredient_id for row in inventory)
         entries = []
         for source in sources:
@@ -68,6 +72,7 @@ class RecommendationService:
                     RecommendationEntry(
                         recipe_id=source.recipe_id,
                         original=source,
+                        main_image_url=image_urls.get(source.recipe_id),
                         filtering=FilteringCounts(
                             matched_count=metrics.total_matches,
                             missing_count=metrics.total_ingredients - metrics.total_matches,
