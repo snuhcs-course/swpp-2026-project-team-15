@@ -4,7 +4,7 @@ package com.example.mylittlechef.model
 object Preset {
     // Frequent recipe ingredients that are practical to confirm once during onboarding.
     val pantrySeasonings = listOf(
-        "소금", "설탕", "간장", "식용유", "참기름", "후춧가루",
+        "소금", "설탕", "간장", "식용유", "참기름", "후추",
         "다진마늘", "고춧가루", "깨소금", "식초", "고추장", "된장"
     )
 
