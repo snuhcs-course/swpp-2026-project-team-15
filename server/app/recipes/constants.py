@@ -3,16 +3,17 @@
 
 # Seasonings a one-person household is assumed to always have. Chosen from the most
 # frequent seasoning rows in RecipeIngredient.csv (team decision D1, 2026-10-11).
-# This is the original team list. The running app reads the editable list in
+# The pepper is named as the recipe table names it ("후추"); the team list originally said
+# "후춧가루", which no table row carries. The running app reads the editable list in
 # assumed_seasonings.json instead (see app.recipes.seasonings) so that every path uses one source;
-# its default differs from this tuple only in spelling the pepper "후추" (the name in the recipe
-# table) instead of "후춧가루". RecipeRepository falls back to this tuple when no list is given.
+# its default names the same ten ingredients. RecipeRepository falls back to this tuple when no
+# list is given.
 STAPLE_SEASONINGS: tuple[str, ...] = (
     "물",
     "소금",
     "설탕",
     "간장",
-    "후춧가루",
+    "후추",
     "식용유",
     "참기름",
     "깨소금",

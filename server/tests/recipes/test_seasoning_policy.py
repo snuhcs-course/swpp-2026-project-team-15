@@ -215,8 +215,7 @@ def test_built_in_default_is_the_team_list_and_matches_the_legacy_names():
     policy = load_seasoning_policy({})
     assert policy.mode == "list" and len(policy.assumed_ids) == 10
     config = json.loads(DEFAULT_FILE.read_text(encoding="utf-8"))
-    # D1 calls the pepper "후춧가루"; the table calls it "후추" (same synonym group).
-    names = {("후춧가루" if e["name"] == "후추" else e["name"]) for e in config["assumed"]}
+    names = {e["name"] for e in config["assumed"]}
     assert names == set(constants.STAPLE_SEASONINGS)
 
 

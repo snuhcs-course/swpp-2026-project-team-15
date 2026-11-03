@@ -4,7 +4,7 @@
 from fastapi.testclient import TestClient
 
 from app.main import create_app
-from app.recipes.constants import STAPLE_SEASONINGS
+from app.recipes.constants import STAPLE_SEASONINGS, with_synonyms
 from app.recipes.policy import RecommendationPolicy
 from app.recipes.seasonings import (
     load_seasoning_policy,
@@ -42,11 +42,13 @@ def test_water_comes_first_and_modes_none_and_all_are_covered(integration_reposi
     assert resolve_staple_names(both, catalog) == ("Water", "Beta", "Salt")
 
 
-def test_default_list_differs_from_the_legacy_names_only_by_the_pepper_spelling(real_catalog):
+def test_default_list_names_the_same_ingredients_as_the_staple_tuple(real_catalog):
     names = resolve_staple_names(load_seasoning_policy({}), real_catalog)
-    legacy = tuple("후추" if n == "후춧가루" else n for n in STAPLE_SEASONINGS)
-    assert names == legacy
-    assert set(names) ^ set(STAPLE_SEASONINGS) == {"후추", "후춧가루"}
+    assert names == STAPLE_SEASONINGS
+
+
+def test_the_old_pepper_spelling_still_reaches_the_table_name():
+    assert "후추" in with_synonyms(["후춧가루"])
 
 
 def test_default_repository_keeps_the_legacy_names(repository):
