@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; reviewed by Jaehyuk Choi.
 """Scoring for the multi-frame recognition evaluation: matching, metrics, merges, bootstrap.
 
 The unit of analysis is the fridge (a scene). Nothing here calls a model or opens a photo; it only

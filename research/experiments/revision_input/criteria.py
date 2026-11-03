@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; reviewed by Jaehyuk Choi.
 """Pass criteria for a candidate arm against the baseline arm, from scored rows.
 
 ``evaluate`` takes the rows that ``scoring.score_record`` produced, grouped by arm and case, and

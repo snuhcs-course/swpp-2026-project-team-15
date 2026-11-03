@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; reviewed by Jaehyuk Choi.
 """Reference implementations of the frame-selection rules compared for a short fridge sweep.
 
 Pure Python (no numpy, no OpenCV) so the rules can be tested next to the server code. The overlap

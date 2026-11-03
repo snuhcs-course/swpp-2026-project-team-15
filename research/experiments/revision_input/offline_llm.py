@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; reviewed by Jaehyuk Choi.
 """Deterministic stand-in for the model, for offline plumbing checks only.
 
 It is a labelled mock: it makes no network call and its answers say nothing about model quality.

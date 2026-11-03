@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; reviewed by Jaehyuk Choi.
 """Visual overlap between two frames from ORB matches and a RANSAC homography.
 
 Needs OpenCV and numpy, which the server environment does not include:

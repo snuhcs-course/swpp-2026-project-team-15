@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; reviewed by Jaehyuk Choi.
 """Read recipes and ingredient names from a local recipe database, read-only.
 
 The database is private and never part of the repository; pass its path explicitly.

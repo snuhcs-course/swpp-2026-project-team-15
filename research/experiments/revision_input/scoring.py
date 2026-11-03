@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; reviewed by Jaehyuk Choi.
 """Score one stored call with the independent checkers.
 
 A stored call is the dict that ``run_experiment`` writes: status, parsed result, token usage,

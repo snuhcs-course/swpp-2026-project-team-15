@@ -1,4 +1,4 @@
-// AI-assisted with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
+// AI-assisted with Claude Code (Sonnet 5.5), 2026-11-03; reviewed by Jaehyuk Choi.
 package com.mylittlechef.researchdemo
 
 import android.content.Context

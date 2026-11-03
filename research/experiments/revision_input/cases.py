@@ -1,4 +1,4 @@
-# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; human review pending.
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-03; reviewed by Jaehyuk Choi.
 """Revision cases: (recipe, single-person pantry) pairs.
 
 A case is a recipe id plus the ingredient ids in the pantry (water is appended at run time, as the
