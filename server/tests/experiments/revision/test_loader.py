@@ -65,7 +65,6 @@ class LoaderTests(OfflineTestCase):
 
     def test_legacy_url_columns_are_ignored_without_changing_database(self):
         with closing(sqlite3.connect(self.database)) as connection, connection:
-            connection.execute("ALTER TABLE recipe ADD COLUMN main_image_url TEXT")
             connection.execute("ALTER TABLE recipe ADD COLUMN source_url TEXT")
             connection.execute("ALTER TABLE recipe_step ADD COLUMN image_url TEXT")
             connection.execute("UPDATE recipe SET main_image_url='https://example.test/image', "
