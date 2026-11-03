@@ -25,6 +25,13 @@ interface MyLittleChefApi {
 
 }
 
+/** Several views of the same fridge in one request. Kept apart so existing API fakes stay valid. */
+interface MultiImageApi {
+    @Multipart
+    @POST("analyze")
+    suspend fun analyzeViews(@Part images: List<MultipartBody.Part>): AnalyzeResponse
+}
+
 interface IngredientSupportApi : MyLittleChefApi {
     @GET("recipes/ingredients")
     suspend fun ingredientNames(): IngredientCatalogResponse
@@ -40,7 +47,7 @@ object ApiClient {
     // The phone reaches the laptop's server through `adb reverse tcp:8000 tcp:8000`.
     private const val BASE_URL = BuildConfig.SERVER_BASE_URL
 
-    val api: IngredientSupportApi by lazy {
+    private val retrofit: Retrofit by lazy {
         val http = OkHttpClient.Builder()
             // Image recognition can exceed OkHttp's 10 s default read timeout.
             .readTimeout(60, TimeUnit.SECONDS)
@@ -50,6 +57,9 @@ object ApiClient {
             .client(http)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(IngredientSupportApi::class.java)
     }
+
+    val api: IngredientSupportApi by lazy { retrofit.create(IngredientSupportApi::class.java) }
+
+    val multiImageApi: MultiImageApi by lazy { retrofit.create(MultiImageApi::class.java) }
 }
