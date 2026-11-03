@@ -14,6 +14,9 @@ interface FridgeRepository {
     val names: Flow<List<String>>
     suspend fun add(values: List<String>)
     suspend fun remove(value: String)
+    suspend fun replaceSelection(options: Set<String>, selected: List<String>) {
+        throw UnsupportedOperationException("Selection updates are not supported")
+    }
 }
 
 class PreferencesFridgeRepository(private val store: DataStore<Preferences>) : FridgeRepository {
@@ -37,6 +40,13 @@ class PreferencesFridgeRepository(private val store: DataStore<Preferences>) : F
     override suspend fun remove(value: String) {
         store.edit { prefs ->
             prefs[key] = gson.toJson(FridgeInventory(read(prefs[key])).remove(value).names)
+        }
+    }
+    override suspend fun replaceSelection(options: Set<String>, selected: List<String>) {
+        store.edit { prefs ->
+            val retained = read(prefs[key]).filterNot { it in options }
+            val desired = selected.filter { it in options }
+            prefs[key] = gson.toJson(FridgeInventory(retained + desired).names)
         }
     }
 }

@@ -1,6 +1,8 @@
 // AI-generated initial navigation scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 // Codex-assisted changes (GPT-6.1 Sol), 2026-10-14; human review pending.
+// Pantry edit route added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
+// Ingredient catalog wiring added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.navigation
 
 import androidx.compose.animation.EnterTransition
@@ -24,6 +26,7 @@ import com.example.mylittlechef.ui.fridge.add.ManualAddScreen
 
 import com.example.mylittlechef.ui.onboarding.OnboardingScreen
 import com.example.mylittlechef.ui.profile.EditAllergyScreen
+import com.example.mylittlechef.ui.profile.EditPantryScreen
 import com.example.mylittlechef.ui.profile.EditNicknameScreen
 import com.example.mylittlechef.ui.profile.EditUtensilScreen
 import com.example.mylittlechef.ui.recipe.RecipeDetailScreen
@@ -31,6 +34,8 @@ import com.example.mylittlechef.data.local.PreferencesFridgeRepository
 import com.example.mylittlechef.data.local.PreferencesUserRepository
 import com.example.mylittlechef.data.local.localDataStore
 import com.example.mylittlechef.viewmodel.FridgeViewModel
+import com.example.mylittlechef.viewmodel.IngredientCatalogViewModel
+import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
 import com.example.mylittlechef.viewmodel.RecipeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
@@ -60,6 +65,8 @@ fun AppNavHost(
     val user: UserViewModel = viewModel(factory = userFactory)
     val fridge: FridgeViewModel = viewModel(factory = fridgeFactory)
     val recipes: RecipeViewModel = viewModel()
+    val ingredientSuggestions: IngredientSuggestionViewModel = viewModel()
+    val ingredientCatalog: IngredientCatalogViewModel = viewModel()
 
     // Wait for persisted data before choosing the first screen or fetching recommendations.
     if (!user.isLoaded || !fridge.isLoaded) return
@@ -75,6 +82,7 @@ fun AppNavHost(
         composable(Routes.ONBOARDING) {
             OnboardingScreen(
                 user = user,
+                fridge = fridge,
                 onFinish = {
                     user.completeOnboarding()
                     navController.navigate(Routes.MAIN) {
@@ -89,6 +97,7 @@ fun AppNavHost(
                 user = user,
                 fridge = fridge,
                 recipes = recipes,
+                ingredientSuggestions = ingredientSuggestions,
                 onAddIngredientClick = {
                     navController.navigate(Routes.CAPTURE)
                 },
@@ -100,6 +109,9 @@ fun AppNavHost(
                 },
                 onEditAllergyClick = {
                     navController.navigate(Routes.EDIT_ALLERGY)
+                },
+                onEditPantryClick = {
+                    navController.navigate(Routes.EDIT_PANTRY)
                 },
                 onRecipeCardClick = {
                     recipe ->
@@ -134,6 +146,7 @@ fun AppNavHost(
         ) { backStackEntry ->
             AnalyzeScreen(
                 fridge = fridge,
+                ingredientCatalog = ingredientCatalog,
                 imageUri = backStackEntry.arguments?.getString(Routes.ARG_IMAGE_URI),
                 onBackClick = { navController.popBackStack() },
                 onManualClick = {
@@ -151,6 +164,7 @@ fun AppNavHost(
         composable(Routes.MANUAL_ADD) {
             ManualAddScreen(
                 fridge = fridge,
+                ingredientCatalog = ingredientCatalog,
                 onBackClick = {
                     navController.popBackStack()
                 },
@@ -194,6 +208,14 @@ fun AppNavHost(
                 onSaveClick = {
                     navController.popBackStack()
                 }
+            )
+        }
+
+        composable(Routes.EDIT_PANTRY) {
+            EditPantryScreen(
+                fridge = fridge,
+                onBackClick = { navController.popBackStack() },
+                onSaveClick = { navController.popBackStack() }
             )
         }
 

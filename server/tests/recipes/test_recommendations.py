@@ -75,14 +75,20 @@ def test_full_list_and_priority_are_distinct(integration_repository):
     assert response.status_code == 200
     body = response.json()
     assert len(body["recipes"]) == 6
-    assert [context["original"]["recipe_id"] for context in llm.requests] == [20, 30, 40]
+    # The compact request has no recipe_id (the model does not need it); names identify it.
+    assert [context["original"]["name"] for context in llm.requests] == [
+        "Recipe 20",
+        "Recipe 30",
+        "Recipe 40",
+    ]
     assert body["revision_summary"] == {
         "limit": 3,
         "selected_count": 3,
         "attempted_count": 3,
         "stopped_error": None,
     }
-    assert body["assumed_ingredient_ids"] == [204]
+    # water and the ten default seasonings: the client need not submit them
+    assert body["assumed_ingredient_ids"] == [204, 9, 48, 74, 103, 282, 284, 313, 438, 554]
     entries = {entry["recipe_id"]: entry for entry in body["recipes"]}
     assert entries[20]["revision"]["status"] == "revised"
     assert entries[20]["revision"]["result"]["reason"] == ""
@@ -295,7 +301,11 @@ def test_environment_factory_wires_lazy_revision_and_independent_vision(integrat
             "REVISION_PROVIDER": "live",
         }
     )
-    with patch("app.main.Settings.from_env", return_value=settings):
+    # The built-in seasoning list names ids of the real recipe table, which this small DB lacks.
+    with (
+        patch("app.main.Settings.from_env", return_value=settings),
+        patch.dict("os.environ", {"RECIPE_SEASONING_MODE": "all"}),
+    ):
         app = create_app_from_env()
     try:
         with TestClient(app) as client:

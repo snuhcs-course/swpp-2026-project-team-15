@@ -1,3 +1,4 @@
+// Pantry profile row added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.ui.profile
 
 import androidx.compose.foundation.background
@@ -23,26 +24,31 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.mylittlechef.R
-import com.example.mylittlechef.model.Ingredient
+import com.example.mylittlechef.model.Preset
 import com.example.mylittlechef.ui.components.TitleText
 import com.example.mylittlechef.ui.theme.DeepGreen
 import com.example.mylittlechef.ui.theme.GreenGray
+import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
 @Composable
 fun ProfileScreen(
     user: UserViewModel,
+    fridge: FridgeViewModel,
     onEditNicknameClick: () -> Unit,
     onEditUtensilClick: () -> Unit,
     onEditAllergyClick: () -> Unit,
+    onEditPantryClick: () -> Unit,
     modifier: Modifier = Modifier
 )
 {
     ProfileContent(
         user = user,
+        fridge = fridge,
         onEditNicknameClick = onEditNicknameClick,
         onEditUtensilClick = onEditUtensilClick,
         onEditAllergyClick = onEditAllergyClick,
+        onEditPantryClick = onEditPantryClick,
         modifier = modifier
             .background(color = Color.White)
     )
@@ -51,9 +57,11 @@ fun ProfileScreen(
 @Composable
 fun ProfileContent(
     user: UserViewModel,
+    fridge: FridgeViewModel,
     onEditNicknameClick: () -> Unit,
     onEditUtensilClick: () -> Unit,
     onEditAllergyClick: () -> Unit,
+    onEditPantryClick: () -> Unit,
     modifier: Modifier = Modifier
 )
 {
@@ -95,6 +103,20 @@ fun ProfileContent(
                 onMoreClick = onEditAllergyClick,
                 title = "알레르기",
                 contents = if (user.allergies.isEmpty()) listOf("없음") else user.allergies
+            )
+
+            val pantryOptions = Preset.pantrySeasonings + Preset.pantryBasics
+            val ownedNames = fridge.ingredients.map { it.name }.toSet()
+            val selectedPantry = pantryOptions.filter { it in ownedNames }
+            val pantrySummary = when {
+                selectedPantry.isEmpty() -> "없음"
+                selectedPantry.size <= 2 -> selectedPantry.joinToString(", ")
+                else -> "${selectedPantry.take(2).joinToString(", ")} 외 ${selectedPantry.size - 2}개"
+            }
+            ProfileItem(
+                onMoreClick = onEditPantryClick,
+                title = "기본 재료·조미료",
+                contents = listOf(pantrySummary)
             )
         }
 

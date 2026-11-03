@@ -1,5 +1,6 @@
 // AI-generated initial analysis-screen scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
+// Ingredient name completion added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.ui.fridge.add
 
 import android.net.Uri
@@ -45,6 +46,7 @@ import com.example.mylittlechef.ui.theme.Gray
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.ui.theme.MyLittleChefTheme
 import com.example.mylittlechef.viewmodel.FridgeViewModel
+import com.example.mylittlechef.viewmodel.IngredientCatalogViewModel
 import androidx.core.net.toUri
 
 sealed interface AnalyzeUiState {
@@ -61,10 +63,12 @@ fun AnalyzeScreen(
     onManualClick: () -> Unit,
     onRetakeClick: () -> Unit,
     onSaveClick: () -> Unit,
-    imageUri: String? = null
+    imageUri: String? = null,
+    ingredientCatalog: IngredientCatalogViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 )
 {
     val editor = rememberIngredientEditorState()
+    LaunchedEffect(ingredientCatalog) { ingredientCatalog.load() }
     var uiState by remember { mutableStateOf<AnalyzeUiState>(AnalyzeUiState.Loading) }
 
     val context = LocalContext.current
@@ -82,6 +86,7 @@ fun AnalyzeScreen(
         fridge = fridge,
         uiState = uiState,
         editor = editor,
+        ingredientNames = ingredientCatalog.names,
         onBackClick = onBackClick,
         onManualClick = onManualClick,
         onRetakeClick = onRetakeClick,
@@ -97,11 +102,13 @@ private fun AnalyzeContent(
     fridge: FridgeViewModel,
     uiState: AnalyzeUiState,
     editor: IngredientEditorState,
+    ingredientNames: List<String>,
     onBackClick: () -> Unit,
     onManualClick: () -> Unit,
     onRetakeClick: () -> Unit,
     onSaveClick: () -> Unit,
-    imageUri: String? = null
+    imageUri: String? = null,
+    ingredientCatalog: IngredientCatalogViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     AddFlowScaffold(
         onBackClick = onBackClick,
@@ -150,6 +157,7 @@ private fun AnalyzeContent(
             AnalyzeUiState.Failed -> FailedMessage(Modifier.align(Alignment.Center))
             AnalyzeUiState.Success -> EditableIngredientList(
                 editor = editor,
+                ingredientNames = ingredientNames,
                 modifier = Modifier.fillMaxSize()
             )
         }
