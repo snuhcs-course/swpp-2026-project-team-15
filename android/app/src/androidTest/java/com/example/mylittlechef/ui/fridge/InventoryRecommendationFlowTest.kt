@@ -53,6 +53,7 @@ class InventoryRecommendationFlowTest {
         composeRule.onNodeWithText("두부 요리").assertIsDisplayed()
         composeRule.onNodeWithText("냉장고").performClick()
         composeRule.onNodeWithTag("fridge-ingredient-두부").performTouchInput { longClick() }
+        composeRule.onNodeWithTag("delete-selected-ingredients").performClick()
         composeRule.onNodeWithTag("confirm-ingredient-delete").performClick()
         composeRule.onNodeWithText("레시피").performClick()
         composeRule.onNodeWithText("계란 요리").assertIsDisplayed()

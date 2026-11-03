@@ -1,344 +1,113 @@
-// AI-generated initial onboarding scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
-// Pantry step added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
+// Onboarding scaffold adapted and reviewed by Ahyoon Choi from an earlier Claude draft.
+// Responsive controls updated with Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.ui.onboarding
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.mylittlechef.R
-import com.example.mylittlechef.model.Ingredient
 import com.example.mylittlechef.model.Preset
-import com.example.mylittlechef.ui.components.BackButton
-import com.example.mylittlechef.ui.components.NormalButton
-import com.example.mylittlechef.ui.components.SubtitleText
-import com.example.mylittlechef.ui.components.TextOnlyButton
-
-import com.example.mylittlechef.ui.components.TitleText
-import com.example.mylittlechef.ui.components.ToggleButton
-
-import com.example.mylittlechef.ui.theme.GreenGray
-import com.example.mylittlechef.ui.theme.DeepGreen
-import com.example.mylittlechef.ui.theme.Gray
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
 @Composable
-fun OnboardingScreen(
-    user: UserViewModel,
-    fridge: FridgeViewModel,
-    onFinish: () -> Unit
-)
-{
+fun OnboardingScreen(user: UserViewModel, fridge: FridgeViewModel, onFinish: () -> Unit) {
     var stepIndex by rememberSaveable { mutableStateOf(1) }
     var selectedPantryItems by rememberSaveable { mutableStateOf(emptyList<String>()) }
     val onNext = { stepIndex += 1 }
     val onBack = { stepIndex -= 1 }
-
     when (stepIndex) {
-        1 -> OnboardingNickname(
-            user = user,
-            onNext = onNext
-        )
-        2 -> OnboardingUtensil(
-            user = user,
-            onNext = onNext,
-            onBack = onBack
-        )
-        3 -> OnboardingAllergy(
-            user = user,
-            onNext = onNext,
-            onBack = onBack
-        )
-        4 -> OnboardingPantry(
-            selected = selectedPantryItems,
-            onSelectedChange = { selectedPantryItems = it },
-            onNext = onNext,
-            onBack = onBack
-        )
-        5 -> OnboardingDone(
-            user = user,
-            saveError = fridge.pantryError,
-            onNext = {
-                fridge.updatePantryItems(selectedPantryItems, onSaved = onFinish)
-            },
+        1 -> OnboardingNickname(user, onNext)
+        2 -> OnboardingUtensil(user, onNext, onBack)
+        3 -> OnboardingAllergy(user, onNext, onBack)
+        4 -> OnboardingPantry(selectedPantryItems, { selectedPantryItems = it }, onNext, onBack)
+        5 -> OnboardingDone(user, {
+            fridge.updatePantryItems(selectedPantryItems, onSaved = onFinish)
+        }, fridge.pantryError)
+    }
+}
+
+@Composable
+fun OnboardingNickname(user: UserViewModel, onNext: () -> Unit) {
+    var nickname by rememberSaveable { mutableStateOf(user.nickname) }
+    OnboardingScaffold(
+        backActive = false, jumpActive = false, onBackClick = {},
+        onClick = { user.updateNickname(nickname); onNext() }, onJumpClick = {},
+        title = "환영해요!\n어떻게 불러드릴까요?", buttonText = "다음",
+        buttonColor = MaterialTheme.colorScheme.primary,
+        buttonTextColor = MaterialTheme.colorScheme.onPrimary
+    ) {
+        OutlinedTextField(
+            value = nickname, onValueChange = { nickname = it },
+            modifier = Modifier.fillMaxWidth(), label = { Text("별명") }, singleLine = true,
+            trailingIcon = {
+                IconButton(onClick = { nickname = "" }) {
+                    Icon(painterResource(R.drawable.ic_xcircle), "별명 지우기")
+                }
+            }
         )
     }
 }
 
 @Composable
-fun OnboardingNickname(
-    user: UserViewModel,
-    onNext: () -> Unit
-)
-{
-    var nickname by remember { mutableStateOf(user.nickname) }
-
+fun OnboardingUtensil(user: UserViewModel, onNext: () -> Unit, onBack: () -> Unit) {
+    var utensils by rememberSaveable { mutableStateOf(user.utensils) }
     OnboardingScaffold(
-        backActive = false,
-        jumpActive = false,
-        onBackClick = {},
-        onClick = {
-            user.updateNickname(nickname)
-            onNext()
-        },
-        onJumpClick = {},
-        title = "환영해요!\n어떻게 불러드릴까요?",
-        buttonText = "다음",
-        buttonColor = GreenGray,
-        buttonTextColor = Color.Black
-    )
-    {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = 30.dp,
-                    end = 30.dp,
-                    top = 50.dp
-                ),
-        )
-        {
+        backActive = true, jumpActive = true, onBackClick = onBack,
+        onClick = { user.updateUtensils(utensils); onNext() }, onJumpClick = onNext,
+        title = "집에 어떤 조리 도구가 있나요?", buttonText = "다음",
+        buttonColor = MaterialTheme.colorScheme.primary,
+        buttonTextColor = MaterialTheme.colorScheme.onPrimary
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("사용할 수 있는 조리 도구를 골라주세요.", style = MaterialTheme.typography.bodyMedium)
+            OnboardingChoiceGrid(Preset.utensils, utensils, { utensils = it })
+        }
+    }
+}
+
+@Composable
+fun OnboardingAllergy(user: UserViewModel, onNext: () -> Unit, onBack: () -> Unit) {
+    var allergies by rememberSaveable { mutableStateOf(user.allergies) }
+    OnboardingScaffold(
+        backActive = true, jumpActive = true, onBackClick = onBack,
+        onClick = { user.updateAllergies(allergies); onNext() }, onJumpClick = onNext,
+        title = "알레르기 정보를 알려주세요", buttonText = "다음",
+        buttonColor = MaterialTheme.colorScheme.primary,
+        buttonTextColor = MaterialTheme.colorScheme.onPrimary
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                text = "별명",
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.Black,
-                textAlign = TextAlign.Left,
-                modifier = Modifier
-                    .fillMaxWidth()
+                "정보를 기록해 두어요. 추천에 자동으로 제외되지 않으니 레시피의 재료를 직접 확인해 주세요.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
-            OutlinedTextField(
-                value = nickname,
-                onValueChange = {
-                    nickname = it
-                },
-                modifier = Modifier
-                    .fillMaxWidth(),
-                trailingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_xcircle),
-                        contentDescription = "clear nickname",
-                        tint = Color.Unspecified
-                    )
-                }
-            )
+            OnboardingChoiceGrid(Preset.allergies, allergies, { allergies = it })
         }
     }
 }
 
 @Composable
-fun OnboardingUtensil(
-    user: UserViewModel,
-    onNext: () -> Unit,
-    onBack: () -> Unit
-)
-{
-    var utensils by remember { mutableStateOf(user.utensils) }
-
+fun OnboardingDone(user: UserViewModel, onNext: () -> Unit, saveError: String? = null) {
     OnboardingScaffold(
-        backActive = true,
-        jumpActive = true,
-        onBackClick = onBack,
-        onClick = {
-            user.updateUtensils(utensils)
-            onNext()
-        },
-        onJumpClick = onNext,
-        title = "집에 어떤 조리 도구가\n있나요?",
-        buttonText = "다음",
-        buttonColor = GreenGray,
-        buttonTextColor = Color.Black
-    )
-    {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = 30.dp,
-                    end = 30.dp,
-                    top = 16.dp
-                )
+        backActive = false, jumpActive = false, onBackClick = {}, onClick = onNext,
+        onJumpClick = {}, title = "${user.nickname} 님,\n이제 시작할 준비가 됐어요",
+        buttonText = "시작하기", buttonColor = MaterialTheme.colorScheme.primary,
+        buttonTextColor = MaterialTheme.colorScheme.onPrimary
+    ) {
+        Text(
+            saveError ?: "입력한 정보는 언제든지 수정할 수 있어요",
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (saveError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
         )
-        {
-            SubtitleText(
-                text = "주방 사정에 딱 맞는 레시피만 골라 드릴게요",
-                textAlign = TextAlign.Left,
-                color = Color.Black
-            )
-            FlowRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        top = 20.dp
-                    ),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            )
-            {
-                Preset.utensils.forEach { utensil ->
-                    ToggleButton(
-                        text = utensil,
-                        selected = utensil in utensils,
-                        buttonColorOn = DeepGreen,
-                        buttonColorOff = Gray,
-                        textColorOn = Color.White,
-                        textColorOff = Color.Black,
-                        onClick = {
-                            if (utensil in utensils) {
-                                utensils -= utensil
-                            } else {
-                                utensils += utensil
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun OnboardingAllergy(
-    user: UserViewModel,
-    onNext: () -> Unit,
-    onBack: () -> Unit
-)
-{
-    var allergies by remember { mutableStateOf(user.allergies) }
-
-    OnboardingScaffold(
-        backActive = true,
-        jumpActive = true,
-        onBackClick = onBack,
-        onClick = {
-            user.updateAllergies(allergies)
-            onNext()
-        },
-        onJumpClick = onNext,
-        title = "알레르기 정보를\n알려주세요",
-        buttonText = "다음",
-        buttonColor = GreenGray,
-        buttonTextColor = Color.Black
-    )
-    {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = 30.dp,
-                    end = 30.dp,
-                    top = 16.dp
-                )
-        )
-        {
-            SubtitleText(
-                text = "해당하는 재료는 빼고 레시피를 추천해 드릴게요",
-                textAlign = TextAlign.Left,
-                color = Color.Black
-            )
-            FlowRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        top = 20.dp
-                    ),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            )
-            {
-                Preset.allergies.forEach { allergy ->
-                    ToggleButton(
-                        text = allergy,
-                        selected = allergy in allergies,
-                        buttonColorOn = DeepGreen,
-                        buttonColorOff = Gray,
-                        textColorOn = Color.White,
-                        textColorOff = Color.Black,
-                        onClick = {
-                            if (allergy in allergies) {
-                                allergies -= allergy
-                            }
-                            else {
-                                allergies += allergy
-                            }
-                        }
-                    )
-                }
-            }
-        }
-
-    }
-}
-
-@Composable
-fun OnboardingDone(
-    user: UserViewModel,
-    onNext: () -> Unit,
-    saveError: String? = null
-)
-{
-    OnboardingScaffold(
-        backActive = false,
-        jumpActive = false,
-        onBackClick = { },
-        onClick = onNext,
-        onJumpClick = {},
-        title = "",
-        buttonText = "시작하기",
-        buttonColor = DeepGreen,
-        buttonTextColor = Color.White
-    )
-    {
-        Column (
-            modifier = Modifier
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-
-        )
-        {
-            TitleText(
-                text = "${user.nickname} 님,\n이제 시작할 준비가 됐어요",
-                textAlign = TextAlign.Center,
-                color = Color.Black
-            )
-
-            SubtitleText(
-                text = saveError ?: "입력한 정보는 언제든지 수정할 수 있어요",
-                textAlign = TextAlign.Center,
-                color = Color.Black
-            )
-
-        }
     }
 }
 
@@ -355,84 +124,48 @@ fun OnboardingScaffold(
     buttonColor: Color,
     buttonTextColor: Color,
     content: @Composable BoxScope.() -> Unit
-)
-{
+) {
     Scaffold(
         modifier = modifier.imePadding(),
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
-            Column(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(
-                        bottom = 16.dp
-                    )
-            )
-            {
-                if (backActive) {
-                    BackButton(
-                        onClick = onBackClick
-                    )
-                }
-                else {
-                    Box(
-                        modifier = Modifier.height(24.dp)
-                    )
-                }
-
-                if (title != null) {
-                    TitleText(
-                        text = title,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                horizontal = 24.dp
-                            ),
-                        textAlign = TextAlign.Left,
-                        color = Color.Black
-                    )
+            Box(Modifier.fillMaxWidth().statusBarsPadding().height(48.dp)) {
+                if (backActive) IconButton(onBackClick, Modifier.size(48.dp)) {
+                    Icon(painterResource(R.drawable.ic_back), "뒤로", tint = MaterialTheme.colorScheme.onBackground)
                 }
             }
         },
         bottomBar = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(bottom = 16.dp),
+                Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
-            )
-            {
-                NormalButton(
-                    text = buttonText,
-                    buttonColor = buttonColor,
-                    textColor = buttonTextColor,
-                    onClick = onClick
-                )
-
-                if (jumpActive) {
-                    TextOnlyButton(
-                        text = "건너뛰기",
-                        textColor = Color.Black,
-                        onClick = onJumpClick
-                    )
-                }
-                else {
-                    Box(
-                        modifier = Modifier.height(20.dp)
-                    )
-                }
+            ) {
+                Button(
+                    onClick = onClick,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = buttonColor, contentColor = buttonTextColor)
+                ) { Text(buttonText) }
+                if (jumpActive) TextButton(
+                    onClick = onJumpClick, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                ) { Text("건너뛰기") }
             }
         }
-    )
-    {
-        innerPadding ->
-        Box(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize(),
-            content = content
-        )
+    ) { insets ->
+        BoxWithConstraints(Modifier.padding(insets).fillMaxSize()) {
+            // Bottom alignment brings short forms into thumb reach; overflow remains scrollable.
+            Column(
+                Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+                    .heightIn(min = maxHeight).padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.Bottom
+            ) {
+                if (!title.isNullOrBlank()) {
+                    Text(title, style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground)
+                    Spacer(Modifier.height(12.dp))
+                }
+                Box(Modifier.fillMaxWidth(), content = content)
+            }
+        }
     }
 }

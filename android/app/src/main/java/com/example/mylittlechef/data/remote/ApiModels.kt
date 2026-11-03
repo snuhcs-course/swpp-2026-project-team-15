@@ -1,3 +1,4 @@
+// Recipe image compatibility adapted with Codex, 2026-11-03; human review pending.
 // AI-generated with Claude Code (Opus 5.5), 2026-10-11 to 2026-10-14; reviewed by Jaehyuk Choi.
 
 // Ingredient catalog response added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
@@ -11,6 +12,8 @@ import com.example.mylittlechef.BuildConfig
 import com.example.mylittlechef.model.Ingredient
 import com.example.mylittlechef.model.Recipe
 import com.google.gson.annotations.SerializedName
+import com.example.mylittlechef.BuildConfig
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 // Field names mirror server/app/{vision,recipes}/schemas.py; a mismatch silently becomes null in Gson.
 
@@ -74,8 +77,12 @@ fun RecipeDto.toRecipe() = Recipe(
     ingredients = ingredients.map(::Ingredient),
     steps = steps,
     missing = missing.map(::Ingredient),
-    imageUrl = mainImageUrl?.takeIf(String::isNotBlank)?.let { image ->
-        if (image.startsWith("http://") || image.startsWith("https://")) image
-        else "${BuildConfig.SERVER_BASE_URL.trimEnd('/')}/${image.trimStart('/')}"
-    }
+    imageUrl = resolveRecipeImageUrl(mainImageUrl)
 )
+
+// Compatibility with the teammate's image-response branch; older servers omit the field.
+fun resolveRecipeImageUrl(value: String?): String? {
+    val path=value?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    val base=BuildConfig.SERVER_BASE_URL.toHttpUrlOrNull() ?: return null
+    return base.resolve(path)?.toString()
+}

@@ -1,3 +1,4 @@
+// UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef
 
 import android.os.Bundle
@@ -13,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.mylittlechef.navigation.AppNavHost
 import com.example.mylittlechef.ui.theme.MyLittleChefTheme
+import com.example.mylittlechef.ui.theme.AppearanceSettingsHost
 
 import com.example.mylittlechef.ui.onboarding.OnboardingNickname
 import com.example.mylittlechef.ui.onboarding.OnboardingScreen
@@ -22,7 +24,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MyLittleChefTheme {
+            AppearanceSettingsHost {
                 AppNavHost()
                 //Scaffold(modifier = Modifier.fillMaxSize())
                 //{

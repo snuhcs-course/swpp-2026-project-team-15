@@ -1,3 +1,5 @@
+// UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
+// Fridge presentation/sorting and arrival-order updates assisted by Codex, 2026-11-02; human review pending.
 // AI-generated initial IngredientItem, EditableIngredientList, IngredientRow, and IngredientEditorState drafts with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Ingredient name completion added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.ui.fridge.components
@@ -42,6 +44,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.testTag
+import com.example.mylittlechef.domain.IngredientAppearance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -63,7 +67,8 @@ import com.example.mylittlechef.ui.theme.Gray
 fun IngredientItem(
     ingredient: Ingredient,
     modifier: Modifier = Modifier,
-    imageSize: Dp = 45.dp
+    imageSize: Dp = 45.dp,
+    appearance: IngredientAppearance? = null
 )
 {
     Column(
@@ -72,7 +77,21 @@ fun IngredientItem(
     )
     {
         val imageRes = ingredient.imageRes
-        if (imageRes != null) {
+        if (appearance != null) {
+            Box(
+                modifier = Modifier.size(imageSize).clip(CircleShape)
+                    .background(Color(appearance.backgroundArgb)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(ingredientIconResource(appearance.iconKey)),
+                    contentDescription = ingredient.name,
+                    tint = Color(0xFF172C25),
+                    modifier = Modifier.size(imageSize).testTag("ingredient-icon-" + ingredient.name)
+                )
+            }
+        }
+        else if (imageRes != null) {
             Image(
                 painter = painterResource(imageRes),
                 contentDescription = ingredient.name,
@@ -96,7 +115,7 @@ fun IngredientItem(
         Text(
             text = ingredient.name,
             style = MaterialTheme.typography.labelSmall,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -136,12 +155,15 @@ fun EditableIngredientList(
                         .asSequence()
                         .filter { name ->
                             ingredient.name.trim().isNotEmpty() &&
-                                !name.equals(ingredient.name.trim(), ignoreCase = true) &&
                                 name.contains(ingredient.name.trim(), ignoreCase = true) &&
-                                editor.ingredients.none { it.name == name }
+                                editor.ingredients.withIndex().none { (index, row) ->
+                                    index != i && row.name.equals(name, ignoreCase = true)
+                                }
                         }
                         .sortedWith(
                             compareBy<String> {
+                                !it.equals(ingredient.name.trim(), ignoreCase = true)
+                            }.thenBy {
                                 !it.startsWith(ingredient.name.trim(), ignoreCase = true)
                             }.thenBy { it.length }.thenBy { it }
                         )
@@ -222,7 +244,7 @@ fun IngredientRow(
                 Text(
                     text = name,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
                     overflow = TextOverflow.Ellipsis
                 )
 
@@ -236,7 +258,7 @@ fun IngredientRow(
                     Icon(
                         painter = painterResource(R.drawable.ic_edit),
                         contentDescription = "edit",
-                        tint = Color.Black
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
@@ -288,7 +310,7 @@ fun IngredientRow(
                     Text(
                         text = suggestion,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onSuggestionSelected(suggestion) }

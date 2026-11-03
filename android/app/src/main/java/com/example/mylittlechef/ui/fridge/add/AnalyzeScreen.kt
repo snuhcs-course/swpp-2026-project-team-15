@@ -1,3 +1,4 @@
+// UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // AI-generated initial analysis-screen scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 // Ingredient name completion added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
@@ -122,20 +123,20 @@ private fun AnalyzeContent(
             when (uiState) {
                 AnalyzeUiState.Loading -> NormalButton(
                     text = "인식 중...",
-                    buttonColor = GreenGray,
-                    textColor = Color.Black,
+                    buttonColor = MaterialTheme.colorScheme.surfaceVariant,
+                    textColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     onClick = {}
                 )
                 AnalyzeUiState.Failed -> NormalButton(
                     text = "직접 입력",
                     buttonColor = DeepGreen,
-                    textColor = Color.White,
+                    textColor = MaterialTheme.colorScheme.onPrimary,
                     onClick = onManualClick
                 )
                 AnalyzeUiState.Success -> NormalButton(
                     text = "냉장고에 반영",
                     buttonColor = DeepGreen,
-                    textColor = Color.White,
+                    textColor = MaterialTheme.colorScheme.onPrimary,
                     onClick = {
                         editor.finishEdit()
                         if (editor.ingredients.isNotEmpty()) {
@@ -147,7 +148,7 @@ private fun AnalyzeContent(
             }
             TextOnlyButton(
                 text = "다시 찍기",
-                textColor = Color.Black,
+                textColor = MaterialTheme.colorScheme.onSurface,
                 onClick = onRetakeClick
             )
         }

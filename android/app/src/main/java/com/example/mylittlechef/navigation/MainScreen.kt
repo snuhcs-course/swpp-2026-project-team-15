@@ -1,3 +1,4 @@
+// UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // AI-generated initial navigation scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 // Pantry edit navigation added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
@@ -73,7 +74,7 @@ fun MainScreen(
     Scaffold(
         modifier = modifier,
         bottomBar = {
-            NavigationBar(containerColor = Color.White) {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.background) {
                 BottomTab.entries.forEach { tab ->
                     NavigationBarItem(
                         selected = currentRoute == tab.route,

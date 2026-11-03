@@ -1,3 +1,4 @@
+// UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // Ingredient suggestion UI added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.ui.fridge
 
@@ -32,7 +33,7 @@ fun IngredientSuggestionSheet(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 28.dp, vertical = 16.dp)
     ) {
-        Text("식재료 추천", style = MaterialTheme.typography.headlineSmall, color = Color.Black)
+        Text("식재료 추천", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.height(8.dp))
         Text(
             "지금 냉장고에 해당 재료를 더했을 때 바로 만들 수 있는 요리가 많은 순서예요.",

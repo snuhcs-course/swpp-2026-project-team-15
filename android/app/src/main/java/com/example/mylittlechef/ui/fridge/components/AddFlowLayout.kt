@@ -1,5 +1,8 @@
+// UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // AI-generated initial ingredient-entry layout with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 package com.example.mylittlechef.ui.fridge.components
+
+import androidx.compose.material3.MaterialTheme
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -52,7 +55,7 @@ fun AddFlowHeader(
                         horizontal = 24.dp
                     ),
                 textAlign = TextAlign.Center,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -72,7 +75,7 @@ fun AddFlowScaffold(
 {
     Scaffold(
         modifier = modifier.imePadding(),
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             AddFlowHeader(
                 onBackClick = onBackClick,
