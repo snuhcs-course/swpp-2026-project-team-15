@@ -1,6 +1,9 @@
+// UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // AI-generated initial manual-entry scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Ingredient name completion added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.ui.fridge.add
+
+import androidx.compose.material3.MaterialTheme
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
@@ -55,7 +58,7 @@ private fun ManualAddContent(
             NormalButton(
                 text = "냉장고에 반영",
                 buttonColor = DeepGreen,
-                textColor = Color.White,
+                textColor = MaterialTheme.colorScheme.onPrimary,
                 onClick = {
                     editor.finishEdit()
                     if (editor.ingredients.isNotEmpty()) {

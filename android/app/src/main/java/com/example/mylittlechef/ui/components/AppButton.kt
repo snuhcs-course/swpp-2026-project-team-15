@@ -1,3 +1,4 @@
+// UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.ui.components
 
 import android.R.attr.strokeWidth
@@ -191,8 +192,8 @@ fun LikeButton(
                 if (selected) painterResource(R.drawable.ic_star_filled)
                 else painterResource(R.drawable.ic_star)
             ,
-            contentDescription = "back",
-            tint = Color.Unspecified
+            contentDescription = if (selected) "즐겨찾기 해제" else "즐겨찾기 추가",
+            tint = MaterialTheme.colorScheme.onSurface
         )
     }
 }

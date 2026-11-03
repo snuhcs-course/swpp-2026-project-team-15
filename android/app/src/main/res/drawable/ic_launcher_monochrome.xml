@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Simplified fridge/chef silhouette for themed icons; assisted by Codex, 2026-11-03. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <group android:translateX="8.1" android:translateY="8.1" android:scaleX="0.85" android:scaleY="0.85">
+    <group android:rotation="8" android:pivotX="54" android:pivotY="39">
+        <path android:fillColor="#FFFFFFFF"
+            android:pathData="M36,44 C25,43 26,28 36,27 C39,20 48,22 50,25 C54,14 68,19 67,29 C78,26 83,39 73,43 L72,50 L36,50 Z" />
+    </group>
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+        android:pathData="M38,52 L69,52 Q73,52 73,56 L73,66 Q73,70 69,70 L38,70 Q34,70 34,66 L34,56 Q34,52 38,52 Z M39,56 L40,56 Q41,56 41,58 L41,65 Q41,67 39,67 Q38,67 38,65 L38,58 Q38,56 39,56 Z" />
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+        android:pathData="M38,72 L69,72 Q73,72 73,76 L73,87 Q73,91 69,91 L38,91 Q34,91 34,87 L34,76 Q34,72 38,72 Z M39,76 L40,76 Q41,76 41,78 L41,85 Q41,87 39,87 Q38,87 38,85 L38,78 Q38,76 39,76 Z" />
+    </group>
+</vector>

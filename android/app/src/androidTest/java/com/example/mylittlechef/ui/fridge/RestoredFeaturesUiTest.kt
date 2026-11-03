@@ -87,7 +87,8 @@ class RestoredFeaturesUiTest {
         val user = UserViewModel()
         val suggestions = IngredientSuggestionViewModel(api)
         rule.setContent { MaterialTheme { FridgeScreen(user, fridge, {}, ingredientSuggestions = suggestions) } }
-        rule.onNodeWithText("추천").performClick()
+        rule.onNodeWithTag("fridge-actions").performClick()
+        rule.onNodeWithText("부족한 재료 추천").performClick()
         rule.onNodeWithText("식재료 추천").assertIsDisplayed()
         rule.onNodeWithText("추가하면 바로 만들 수 있는 요리 2개").assertIsDisplayed()
         rule.onNodeWithText("이 재료가 들어가는 전체 레시피 10개").assertIsDisplayed()

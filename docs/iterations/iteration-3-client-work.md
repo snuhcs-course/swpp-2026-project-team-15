@@ -49,3 +49,8 @@ Original inputs: [prompt log](../ai-collaboration/iteration-3/hyeokjun-prompts-2
 Earlier local pantry/suggestions/autocomplete restoration is in progress and paused at user request. See [checkpoint](iteration-3-restoration-checkpoint.ko.md); latest added tests and full runtime verification remain pending. This is not a completed feature claim.
 
 Restoration resumed on 2026-10-29. Pantry/profile editing, suggestions and catalog completion are integrated locally; see [review guide](iteration-3-restoration-review.ko.md) for actual tests and limitations. Keep the existing staple policy and deployment untouched; new endpoints are local until separately deployed. Human acceptance remains pending.
+
+
+## 2026-11-01 original-first revision checkpoint
+
+User approved explicit per-recipe AI revision and session reuse before HE (November 3). Locally implemented and automatically verified; [review guide](iteration-3-on-demand-review.ko.md). Candidate list is AI-free; existing batch/name APIs remain unchanged. Human review, live provider quality, icons/photos, and remote publication remain separate.

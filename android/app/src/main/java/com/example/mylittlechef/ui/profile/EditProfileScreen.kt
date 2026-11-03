@@ -1,3 +1,4 @@
+// UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.ui.profile
 
 import androidx.compose.foundation.background
@@ -72,7 +73,7 @@ fun EditNicknameScreen(
             Text(
                 text = "별명",
                 style = MaterialTheme.typography.labelMedium,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Left,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -134,8 +135,8 @@ fun EditUtensilScreen(
                     selected = utensil in utensils,
                     buttonColorOn = DeepGreen,
                     buttonColorOff = Gray,
-                    textColorOn = Color.White,
-                    textColorOff = Color.Black,
+                    textColorOn = MaterialTheme.colorScheme.onPrimary,
+                    textColorOff = MaterialTheme.colorScheme.onSurface,
                     onClick = {
                         if (utensil in utensils) {
                             utensils -= utensil
@@ -186,8 +187,8 @@ fun EditAllergyScreen(
                     selected = allergy in allergies,
                     buttonColorOn = DeepGreen,
                     buttonColorOff = Gray,
-                    textColorOn = Color.White,
-                    textColorOff = Color.Black,
+                    textColorOn = MaterialTheme.colorScheme.onPrimary,
+                    textColorOff = MaterialTheme.colorScheme.onSurface,
                     onClick = {
                         if (allergy in allergies) {
                             allergies -= allergy
@@ -217,7 +218,7 @@ fun EditProfileScaffold(
 {
     Scaffold(
         modifier = modifier.imePadding(),
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Column(
                 modifier = Modifier
@@ -239,7 +240,7 @@ fun EditProfileScaffold(
                             horizontal = 24.dp
                         ),
                     textAlign = TextAlign.Center,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         },
@@ -256,8 +257,8 @@ fun EditProfileScaffold(
             {
                 NormalButton(
                     text = "저장",
-                    buttonColor = GreenGray,
-                    textColor = Color.Black,
+                    buttonColor = MaterialTheme.colorScheme.primary,
+                    textColor = MaterialTheme.colorScheme.onPrimary,
                     onClick = onSaveClick
                 )
             }

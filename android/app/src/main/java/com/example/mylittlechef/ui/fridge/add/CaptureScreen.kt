@@ -1,3 +1,4 @@
+// UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // AI-generated initial capture-flow scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 package com.example.mylittlechef.ui.fridge.add
 
@@ -199,7 +200,7 @@ private fun CaptureContent(
         modifier = modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
     )
     {
         AddFlowHeader(
@@ -343,6 +344,7 @@ private fun ShutterButton(
         modifier = Modifier
             .size(50.dp)
             .clip(CircleShape)
+            // Camera overlay controls keep a white shutter against the dark viewfinder.
             .background(Color.White)
             .clickable(
                 enabled = enabled,

@@ -1,17 +1,9 @@
+// Multi-selection regressions assisted by Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.ui.fridge
 
-import android.graphics.Bitmap
 import androidx.compose.material3.MaterialTheme
-import androidx.test.platform.app.InstrumentationRegistry
-import java.io.File
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.longClick
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTouchInput
 import com.example.mylittlechef.data.local.FridgeRepository
 import com.example.mylittlechef.model.Ingredient
 import com.example.mylittlechef.viewmodel.FridgeViewModel
@@ -24,67 +16,76 @@ import java.io.IOException
 class FridgeDeletionUiTest {
     @get:Rule val composeRule = createComposeRule()
 
-    private fun capture(name: String) {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        composeRule.waitForIdle()
-        InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(100, 3_000)
-        val bitmap = requireNotNull(InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot())
-        File(context.cacheDir, name).outputStream().use {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
-        }
-    }
-
     private fun show(vararg names: String, repository: FridgeRepository? = null) {
         val fridge = FridgeViewModel(repository)
         if (repository == null) fridge.addIngredients(names.map(::Ingredient))
         val user = UserViewModel(nickname = "테스트")
-        composeRule.setContent {
-            MaterialTheme {
-                FridgeScreen(user, fridge, {})
-            }
-        }
+        composeRule.setContent { MaterialTheme { FridgeScreen(user, fridge, {}) } }
     }
 
-    @Test fun longPressThenCancelKeepsBothIngredients() {
+    @Test fun longPressPreselectsThenTapTogglesAndCancelKeepsInventory() {
         show("두부", "김치")
         composeRule.onNodeWithTag("fridge-ingredient-두부").performTouchInput { longClick() }
-        composeRule.onNodeWithText("두부 삭제").assertIsDisplayed()
-        capture("iter3-fridge-delete-dialog.png")
+        composeRule.onNodeWithTag("fridge-ingredient-두부").assertIsSelected()
+        composeRule.onNodeWithText("1개 선택").assertIsDisplayed()
+        composeRule.onNodeWithTag("confirm-ingredient-delete").assertDoesNotExist()
+        composeRule.onNodeWithTag("fridge-ingredient-김치").performClick().assertIsSelected()
+        composeRule.onNodeWithText("2개 선택").assertIsDisplayed()
+        composeRule.onNodeWithTag("fridge-ingredient-두부").performClick().assertIsNotSelected()
         composeRule.onNodeWithText("취소").performClick()
         composeRule.onNodeWithTag("fridge-ingredient-두부").assertIsDisplayed()
         composeRule.onNodeWithTag("fridge-ingredient-김치").assertIsDisplayed()
-        capture("iter3-fridge-default.png")
     }
 
-    @Test fun managementControlDeletesOnlyTheChosenName() {
-        show("마늘", "다진마늘")
-        composeRule.onNodeWithText("관리").performClick()
-        capture("iter3-fridge-manage.png")
-        composeRule.onNodeWithTag("fridge-delete-마늘").performClick()
+    @Test fun actionMenuEntersEmptySelectionAndSingleConfirmationDeletesSelectedNames() {
+        show("마늘", "다진마늘", "두부")
+        composeRule.onNodeWithTag("fridge-actions").performClick()
+        composeRule.onNodeWithText("부족한 재료 추천").assertIsDisplayed()
+        composeRule.onNodeWithText("냉장고 재료 추가").assertIsDisplayed()
+        composeRule.onNodeWithText("냉장고 재료 삭제").performClick()
+        composeRule.onNodeWithText("0개 선택").assertIsDisplayed()
+        composeRule.onNodeWithTag("delete-selected-ingredients").assertIsNotEnabled()
+        composeRule.onNodeWithTag("fridge-ingredient-마늘").performClick()
+        composeRule.onNodeWithTag("fridge-ingredient-두부").performClick()
+        composeRule.onNodeWithTag("delete-selected-ingredients").performClick()
+        composeRule.onNodeWithText("선택한 재료 2개 삭제").assertIsDisplayed()
+        composeRule.onNodeWithText("마늘, 두부").assertIsDisplayed()
         composeRule.onNodeWithTag("confirm-ingredient-delete").performClick()
         composeRule.onNodeWithTag("fridge-ingredient-마늘").assertDoesNotExist()
-        composeRule.onNodeWithTag("fridge-ingredient-다진마늘").assertIsDisplayed()
-    }
-
-    @Test fun deletingLastIngredientKeepsTheAddActionAvailable() {
-        show("두부")
-        composeRule.onNodeWithTag("fridge-ingredient-두부").performTouchInput { longClick() }
-        composeRule.onNodeWithTag("confirm-ingredient-delete").performClick()
         composeRule.onNodeWithTag("fridge-ingredient-두부").assertDoesNotExist()
-        composeRule.onNodeWithText("냉장고가 비었어요").assertIsDisplayed()
-        composeRule.onNodeWithText("재료 추가").assertIsEnabled()
+        composeRule.onNodeWithTag("fridge-ingredient-다진마늘").assertIsDisplayed()
+        composeRule.onNodeWithTag("delete-selected-ingredients").assertDoesNotExist()
     }
 
-    @Test fun failedWriteShowsFeedbackAndKeepsTheIngredient() {
+    @Test fun selectAllAndCancelConfirmationPreserveSelectionUntilFinalConfirm() {
+        show("두부", "김치")
+        composeRule.onNodeWithTag("fridge-actions").performClick()
+        composeRule.onNodeWithText("냉장고 재료 삭제").performClick()
+        composeRule.onNodeWithText("전체 선택").performClick()
+        composeRule.onNodeWithTag("delete-selected-ingredients").performClick()
+        composeRule.onNodeWithTag("cancel-ingredient-delete").performClick()
+        composeRule.onNodeWithText("2개 선택").assertIsDisplayed()
+        composeRule.onNodeWithTag("delete-selected-ingredients").performClick()
+        composeRule.onNodeWithTag("confirm-ingredient-delete").performClick()
+        composeRule.onNodeWithText("냉장고가 비었어요").assertIsDisplayed()
+        composeRule.onNodeWithTag("fridge-actions").performClick()
+        composeRule.onNodeWithText("냉장고 재료 추가").assertIsEnabled()
+    }
+
+    @Test fun failedWriteKeepsInventoryAndSelectionForRetry() {
         val failedStore = object : FridgeRepository {
-            override val names = MutableStateFlow(listOf("두부"))
+            override val names = MutableStateFlow(listOf("두부", "김치"))
             override suspend fun add(values: List<String>) = Unit
-            override suspend fun remove(value: String) { throw IOException("Test disk failure") }
+            override suspend fun remove(value: String) = Unit
+            override suspend fun removeAll(values: Set<String>) { throw IOException("Test disk failure") }
         }
         show(repository = failedStore)
         composeRule.onNodeWithTag("fridge-ingredient-두부").performTouchInput { longClick() }
+        composeRule.onNodeWithTag("delete-selected-ingredients").performClick()
         composeRule.onNodeWithTag("confirm-ingredient-delete").performClick()
         composeRule.onNodeWithText("재료를 삭제하지 못했어요. 다시 시도해 주세요.").assertIsDisplayed()
-        composeRule.onNodeWithTag("fridge-ingredient-두부").assertIsDisplayed()
+        composeRule.onNodeWithTag("fridge-ingredient-두부").assertIsSelected()
+        composeRule.onNodeWithText("1개 선택").assertIsDisplayed()
+        composeRule.onNodeWithTag("delete-selected-ingredients").assertIsEnabled()
     }
 }

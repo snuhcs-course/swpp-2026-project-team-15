@@ -1,3 +1,5 @@
+// Atomic multi-selection deletion assisted by Codex, 2026-11-03; human review pending.
+// Fridge presentation/sorting and arrival-order updates assisted by Codex, 2026-11-02; human review pending.
 // Restored and integrated with Codex, 2026-10-29; human review pending.
 // AI-assisted with Codex (GPT-6.1 Sol), 2026-10-14; human review pending.
 package com.example.mylittlechef.viewmodel
@@ -22,6 +24,9 @@ class FridgeViewModel(private val repository: FridgeRepository? = null) : ViewMo
         private set
 
     var removingIngredient by mutableStateOf<String?>(null)
+        private set
+
+    var isRemovingIngredients by mutableStateOf(false)
         private set
 
     var removalError by mutableStateOf<String?>(null)
@@ -51,7 +56,7 @@ class FridgeViewModel(private val repository: FridgeRepository? = null) : ViewMo
 
     fun removeIngredient(name: String) {
         val selectedName = name.trim()
-        if (isSavingPantry || removingIngredient != null ||
+        if (isSavingPantry || isRemovingIngredients || removingIngredient != null ||
             ingredients.none { it.name.equals(selectedName, ignoreCase = true) }) return
 
         removalError = null
@@ -79,14 +84,41 @@ class FridgeViewModel(private val repository: FridgeRepository? = null) : ViewMo
     fun dismissRemovalError() {
         removalError = null
     }
+
+    fun removeIngredients(names: Set<String>, onRemoved: () -> Unit = {}) {
+        if (isSavingPantry || isRemovingIngredients || removingIngredient != null) return
+        val selected = ingredients.map { it.name }.filter { it in names }.toSet()
+        if (selected.isEmpty()) return
+        removalError = null
+        val source = repository
+        if (source == null) {
+            ingredients = FridgeInventory(ingredients.map { it.name }).removeAll(selected).names.map(::Ingredient)
+            onRemoved()
+            return
+        }
+        isRemovingIngredients = true
+        viewModelScope.launch {
+            try {
+                // Publish inventory through the repository flow only after its one atomic write.
+                source.removeAll(selected)
+                onRemoved()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                removalError = "재료를 삭제하지 못했어요. 다시 시도해 주세요."
+            } finally {
+                isRemovingIngredients = false
+            }
+        }
+    }
     fun updatePantryItems(selected: List<String>, onSaved: () -> Unit = {}) {
-        if (isSavingPantry || removingIngredient != null) return
+        if (isSavingPantry || isRemovingIngredients || removingIngredient != null) return
         val presets = (Preset.pantrySeasonings + Preset.pantryBasics).toSet()
         val desired = selected.filter { it in presets }.distinct()
         pantryError = null
         val source = repository
         if (source == null) {
-            ingredients = FridgeInventory(ingredients.map { it.name }.filterNot { it in presets } + desired)
+            ingredients = FridgeInventory(ingredients.map { it.name }).replaceSelection(presets, desired)
                 .names.map(::Ingredient)
             onSaved()
             return

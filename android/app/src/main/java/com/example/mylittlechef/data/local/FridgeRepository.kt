@@ -1,3 +1,5 @@
+// Atomic multi-selection deletion assisted by Codex, 2026-11-03; human review pending.
+// Fridge presentation/sorting and arrival-order updates assisted by Codex, 2026-11-02; human review pending.
 // AI-assisted with Codex (GPT-6.1 Sol), 2026-10-14; human review pending.
 package com.example.mylittlechef.data.local
 
@@ -14,6 +16,9 @@ interface FridgeRepository {
     val names: Flow<List<String>>
     suspend fun add(values: List<String>)
     suspend fun remove(value: String)
+    suspend fun removeAll(values: Set<String>) {
+        throw UnsupportedOperationException("Bulk removal is not supported")
+    }
     suspend fun replaceSelection(options: Set<String>, selected: List<String>) {
         throw UnsupportedOperationException("Selection updates are not supported")
     }
@@ -42,11 +47,14 @@ class PreferencesFridgeRepository(private val store: DataStore<Preferences>) : F
             prefs[key] = gson.toJson(FridgeInventory(read(prefs[key])).remove(value).names)
         }
     }
+    override suspend fun removeAll(values: Set<String>) {
+        store.edit { prefs ->
+            prefs[key] = gson.toJson(FridgeInventory(read(prefs[key])).removeAll(values).names)
+        }
+    }
     override suspend fun replaceSelection(options: Set<String>, selected: List<String>) {
         store.edit { prefs ->
-            val retained = read(prefs[key]).filterNot { it in options }
-            val desired = selected.filter { it in options }
-            prefs[key] = gson.toJson(FridgeInventory(retained + desired).names)
+            prefs[key] = gson.toJson(FridgeInventory(read(prefs[key])).replaceSelection(options, selected).names)
         }
     }
 }
