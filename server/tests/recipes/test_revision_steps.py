@@ -157,7 +157,7 @@ def test_pipeline_completes_changes_on_a_delivered_revision():
 
 
 class FakeRepository:
-    """Serves fixed recipes; the service only calls load_catalog."""
+    """Serves fixed recipes and image metadata for service tests."""
 
     def __init__(self, recipes, inventory_rows):
         self.recipes, self.inventory_rows = recipes, inventory_rows
@@ -165,6 +165,8 @@ class FakeRepository:
     def load_catalog(self, ingredient_ids, water_id):
         return list(self.recipes), tuple(self.inventory_rows)
 
+    def load_image_urls(self, recipe_ids):
+        return {recipe_id: None for recipe_id in recipe_ids}
 
 def catalog_recipes():
     # 버섯볶음 has the fewest missing ingredients (only 버섯, named in the dish) so it ranks first.
