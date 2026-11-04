@@ -41,7 +41,7 @@ Criteria: at least 30% fewer frames, recall drop at most 0.05, false recognition
 | uniform6 | 6.0 | 0.472 | 0.511 |
 | cluster6-pool | 6.0 | 0.656 | 0.375 |
 
-No arm passed. `cluster6-pool` is the closest: it beats random removal, but false recognition fell by 0.04 with the right sign in 3 of 6 clips. Run to run, the same arm moved by about 0.22 on both measures, more than any difference between arms. Which frames count as "similar" depends on the measure: at correlation 0.9 about 3% of the app's frames are redundant, at thresholds calibrated on adjacent frames 32 to 80%; two measures order the removals differently (Kendall tau 0.58 to 0.89). A replay of stored per-frame answers suggested that dropping similar frames loses less than dropping random ones; the live one-request runs did not reproduce that (135 requests, about $0.03).
+No arm passed. `cluster6-pool` is the closest: it beats random removal, but false recognition fell by 0.04 with the right sign in 3 of 6 clips. Run to run, the same arm moved by about 0.22 on both measures, more than any difference between arms. Which frames count as "similar" depends on the measure: at correlation 0.9 about 3% of the app's frames are redundant, at thresholds calibrated on adjacent frames 32 to 80%; measures order the removals differently (Kendall tau 0.58 to 0.89 on average per pair of measures, down to about 0.2 for single clips). A replay of stored per-frame answers suggested that dropping similar frames loses less than dropping random ones; the live one-request runs did not reproduce that (135 requests, about $0.03).
 
 ## 3. Cluster first, then time
 
