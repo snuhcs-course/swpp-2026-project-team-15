@@ -1,4 +1,5 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-10-14; reviewed by Jaehyuk Choi.
+# Modified with Codex; tools CI job for Pixabay tooling, reviewed by Ahyoon Choi.
 # Fast checks on every pull request and on main (course Week 7-1, p.39).
 # Device tests (connectedDebugAndroidTest) need an emulator and are run locally for now.
 name: ci
