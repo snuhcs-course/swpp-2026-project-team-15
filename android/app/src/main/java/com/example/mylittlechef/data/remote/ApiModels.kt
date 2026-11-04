@@ -12,7 +12,6 @@ import com.example.mylittlechef.BuildConfig
 import com.example.mylittlechef.model.Ingredient
 import com.example.mylittlechef.model.Recipe
 import com.google.gson.annotations.SerializedName
-import com.example.mylittlechef.BuildConfig
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 // Field names mirror server/app/{vision,recipes}/schemas.py; a mismatch silently becomes null in Gson.
