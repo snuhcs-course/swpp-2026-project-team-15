@@ -85,7 +85,12 @@ def build_plan(selection: dict, repeats: int, mode: str) -> list[dict]:
                         if p not in seen:
                             seen.add(p)
                             plan.append(
-                                {"fridge": fridge, "variant": None, "repeat": repeat, "paths": [p]}
+                                {
+                                    "fridge": fridge,
+                                    "variant": None,
+                                    "repeat": repeat,
+                                    "paths": [p],
+                                }
                             )
     return plan
 
@@ -107,7 +112,9 @@ def request_payload(prompt: str, images: list[bytes], model: str) -> dict:
     content = [{"type": "text", "text": prompt}] + [
         {
             "type": "image_url",
-            "image_url": {"url": "data:image/jpeg;base64," + base64.b64encode(b).decode()},
+            "image_url": {
+                "url": "data:image/jpeg;base64," + base64.b64encode(b).decode()
+            },
         }
         for b in images
     ]
@@ -130,7 +137,9 @@ def parse_response(data: dict) -> tuple[list[str], bool]:
         choice = data["choices"][0]
         items = json.loads(choice["message"]["content"])["items"]
         names = [i["category"] for i in items]
-        valid = choice.get("finish_reason") == "stop" and all(isinstance(n, str) for n in names)
+        valid = choice.get("finish_reason") == "stop" and all(
+            isinstance(n, str) for n in names
+        )
         return (names if valid else []), valid
     except (KeyError, IndexError, ValueError, TypeError):
         return [], False
@@ -197,17 +206,23 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--mode", choices=["per_frame", "multi_image"], default="per_frame")
     ap.add_argument("--repeats", type=int, default=2)
     ap.add_argument("--model", default=MODEL)
-    ap.add_argument("--allow-live-api", action="store_true", help="make real, billed requests")
+    ap.add_argument(
+        "--allow-live-api", action="store_true", help="make real, billed requests"
+    )
     args = ap.parse_args(argv)
     selection = json.loads(Path(args.selection).read_text(encoding="utf-8"))
     plan = build_plan(selection, args.repeats, args.mode)
     images = sum(len(s["paths"]) for s in plan)
     tokens = sum(expected_input_tokens(len(s["paths"])) for s in plan)
-    print(f"{len(plan)} requests, {images} images, about {tokens} input tokens ({args.model})")
+    print(
+        f"{len(plan)} requests, {images} images, about {tokens} input tokens ({args.model})"
+    )
     if not args.allow_live_api:
         print("dry run: nothing was sent; add --allow-live-api to send")
         return
-    answers = run_plan(plan, Path(args.frames_dir), send_openrouter, server_prompt(), args.model)
+    answers = run_plan(
+        plan, Path(args.frames_dir), send_openrouter, server_prompt(), args.model
+    )
     runs = per_frame_runs(selection, answers) if args.mode == "per_frame" else answers
     Path(args.out).write_text(
         json.dumps({"runs": runs}, ensure_ascii=False, indent=1), encoding="utf-8"

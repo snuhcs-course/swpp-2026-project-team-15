@@ -11,7 +11,9 @@ from . import checkers as ck
 POLICY = "list"
 
 
-def score_record(rec: dict, case: dict, recipe, names: dict, index, assumed_ids) -> dict:
+def score_record(
+    rec: dict, case: dict, recipe, names: dict, index, assumed_ids
+) -> dict:
     """Flat row of per-call measurements used by ``criteria``."""
     allowed = ck.allowed_ids(recipe, case["inventory_ids"], POLICY, assumed_ids)
     expected, _ = ck.expected_verdict(recipe, allowed)

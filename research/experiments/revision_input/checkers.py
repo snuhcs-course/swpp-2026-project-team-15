@@ -27,14 +27,18 @@ def resolved_types(recipe) -> dict[int, str | None]:
             labels[row.ingredient_id].add(t)
         else:
             labels[row.ingredient_id]
-    return {i: (min(s, key=PRIORITY.__getitem__) if s else None) for i, s in labels.items()}
+    return {
+        i: (min(s, key=PRIORITY.__getitem__) if s else None) for i, s in labels.items()
+    }
 
 
 def source_ids(recipe) -> set[int]:
     return {r.ingredient_id for r in recipe.ingredients}
 
 
-def allowed_ids(recipe, inventory_ids, policy: str, assumed_ids=frozenset()) -> set[int]:
+def allowed_ids(
+    recipe, inventory_ids, policy: str, assumed_ids=frozenset()
+) -> set[int]:
     """Ingredient ids a revision may contain.
 
     strict  : inventory (+ water)
@@ -121,14 +125,22 @@ class NameIndex:
                 self.alias[g] |= ids
         stop = self.STOP if stop is None else stop
         self.terms = sorted(
-            (t for t in self.alias if len(t) >= 2 and t not in stop), key=lambda t: (-len(t), t)
+            (t for t in self.alias if len(t) >= 2 and t not in stop),
+            key=lambda t: (-len(t), t),
         )
-        self._re = re.compile("|".join(re.escape(t) for t in self.terms)) if self.terms else None
+        self._re = (
+            re.compile("|".join(re.escape(t) for t in self.terms))
+            if self.terms
+            else None
+        )
 
     def resolve(self, text: str) -> list[tuple[str, frozenset[int]]]:
         if not text or not self._re:
             return []
-        return [(m.group(), frozenset(self.alias[m.group()])) for m in self._re.finditer(text)]
+        return [
+            (m.group(), frozenset(self.alias[m.group()]))
+            for m in self._re.finditer(text)
+        ]
 
 
 def _step_text(result) -> str:
@@ -142,7 +154,9 @@ def _step_text(result) -> str:
 
 
 def source_text(recipe) -> str:
-    parts = [s.instruction for s in recipe.steps] + [s.tip for s in recipe.steps if s.tip]
+    parts = [s.instruction for s in recipe.steps] + [
+        s.tip for s in recipe.steps if s.tip
+    ]
     return "\n".join(parts)
 
 
@@ -158,7 +172,8 @@ def id_level(result, allowed: set[int], names: dict[int, str]) -> dict:
         {
             i["ingredient_id"]
             for i in rec["ingredients"]
-            if i["ingredient_id"] in names and i["name"].strip() != names[i["ingredient_id"]]
+            if i["ingredient_id"] in names
+            and i["name"].strip() != names[i["ingredient_id"]]
         }
     )
     return {
@@ -196,7 +211,11 @@ def step_level(result, recipe, allowed: set[int], index: NameIndex) -> dict:
             stale.add(term)
         elif not (ids & src_mentioned):
             novel.add(term)
-    return {"applicable": True, "stale_missing_terms": sorted(stale), "novel_terms": sorted(novel)}
+    return {
+        "applicable": True,
+        "stale_missing_terms": sorted(stale),
+        "novel_terms": sorted(novel),
+    }
 
 
 # ---------------------------------------------------------------- structure / consistency
@@ -233,7 +252,9 @@ def structure(result, recipe) -> dict:
         out["issues"].append("undeclared_removal")
     if added and "substitution" not in kinds:
         out["issues"].append("addition_without_substitution")
-    same_steps = [s["instruction"] for s in rec["steps"]] == [s.instruction for s in recipe.steps]
+    same_steps = [s["instruction"] for s in rec["steps"]] == [
+        s.instruction for s in recipe.steps
+    ]
     if (removed or added) and "step" not in kinds and same_steps:
         out["issues"].append("ingredient_change_without_step_change")
     nums = [s["step_number"] for s in rec["steps"]]
@@ -324,7 +345,9 @@ def safety(result, recipe, names) -> dict:
     if not result.get("can_revise") or not result.get("revised_recipe"):
         return {"applicable": False}
     rec = result["revised_recipe"]
-    risk = raw_risk_ids(recipe, names) & {i["ingredient_id"] for i in rec["ingredients"]}
+    risk = raw_risk_ids(recipe, names) & {
+        i["ingredient_id"] for i in rec["ingredients"]
+    }
     if not risk:
         return {"applicable": False}
     text = _step_text(result)
