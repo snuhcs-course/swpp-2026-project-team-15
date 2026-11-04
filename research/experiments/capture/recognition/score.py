@@ -106,9 +106,7 @@ def metrics(m: dict) -> dict:
     }
 
 
-def merge(
-    frames: list[list[str]], strategy: str, alias: dict[str, str] | None = None
-) -> list[str]:
+def merge(frames: list[list[str]], strategy: str, alias: dict[str, str] | None = None) -> list[str]:
     """M1 union; M2 names seen in two or more frames; M3 union (the caller scores "to confirm").
 
     Names are deduplicated after normalization and the optional alias map (variant -> canonical).
@@ -149,9 +147,7 @@ def score_runs(
     rows = []
     for run in runs:
         items = key["fridges"][run["fridge"]]
-        m = match_fridge(
-            items, run_candidates(run, merge_strategy, alias), ambiguous_policy
-        )
+        m = match_fridge(items, run_candidates(run, merge_strategy, alias), ambiguous_policy)
         rows.append(
             {
                 "fridge": run["fridge"],
@@ -189,9 +185,7 @@ def pooled(rows: list[dict], variant: str) -> dict:
         "precision": found / n_pred if n_pred else None,
         "false_recognition": 1 - found / n_pred if n_pred else None,
         "fix_count_mean": statistics.mean(r["fix_count"] for r in sel) if sel else None,
-        "schema_valid_rate": statistics.mean(r["schema_valid"] for r in sel)
-        if sel
-        else None,
+        "schema_valid_rate": statistics.mean(r["schema_valid"] for r in sel) if sel else None,
     }
 
 
@@ -200,9 +194,7 @@ def bootstrap_ci(
 ) -> tuple[float, float]:
     rng = random.Random(seed)
     n = len(values)
-    means = sorted(
-        statistics.mean(rng.choice(values) for _ in range(n)) for _ in range(reps)
-    )
+    means = sorted(statistics.mean(rng.choice(values) for _ in range(n)) for _ in range(reps))
     return means[int((1 - level) / 2 * reps)], means[int((1 + level) / 2 * reps) - 1]
 
 
@@ -280,9 +272,7 @@ def evaluate(
     alias=None,
     seed=20261103,
 ) -> dict:
-    rows = score_runs(
-        key, runs, th.get("ambiguous_policy") or "exclude", merge_strategy, alias
-    )
+    rows = score_runs(key, runs, th.get("ambiguous_policy") or "exclude", merge_strategy, alias)
     variants = sorted({r["variant"] for r in rows})
     summary = {v: pooled(rows, v) for v in variants}
     scenes = key.get("scenes")
@@ -318,15 +308,9 @@ def main(argv: list[str] | None = None) -> None:
     key = json.loads(Path(args.key).read_text(encoding="utf-8"))
     runs = json.loads(Path(args.predictions).read_text(encoding="utf-8"))["runs"]
     th = json.loads(Path(args.thresholds).read_text(encoding="utf-8"))
-    alias = (
-        json.loads(Path(args.aliases).read_text(encoding="utf-8"))
-        if args.aliases
-        else None
-    )
+    alias = json.loads(Path(args.aliases).read_text(encoding="utf-8")) if args.aliases else None
     result = evaluate(key, runs, th, args.merge, alias, args.seed)
-    Path(args.out).write_text(
-        json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8"
-    )
+    Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
     print(
         json.dumps(
             {k: result[k] for k in ("variants", "verdict")},

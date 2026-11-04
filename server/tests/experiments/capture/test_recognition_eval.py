@@ -105,7 +105,9 @@ class StatisticsTests(unittest.TestCase):
 
     def test_single_unit_has_no_interval(self):
         rows, _, _ = self.rows([1])
-        self.assertIsNone(score.paired_difference(rows, "overlap", "single", "recall", seed=1)["ci95"])
+        self.assertIsNone(
+            score.paired_difference(rows, "overlap", "single", "recall", seed=1)["ci95"]
+        )
 
     def test_evaluate_is_deterministic_and_judges(self):
         _, key, runs = self.rows([1, 0, 1])
@@ -174,7 +176,13 @@ class AnswerKeyTests(unittest.TestCase):
 
 class PlannerTests(unittest.TestCase):
     SEL = {
-        "fridges": {"A01": {"single": ["a.jpg"], "uniform": ["a.jpg", "b.jpg"], "overlap": ["b.jpg", "c.jpg"]}}
+        "fridges": {
+            "A01": {
+                "single": ["a.jpg"],
+                "uniform": ["a.jpg", "b.jpg"],
+                "overlap": ["b.jpg", "c.jpg"],
+            }
+        }
     }
 
     def test_plan_dedupes_shared_frames(self):
@@ -219,7 +227,8 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual(len(calls[0]["messages"][0]["content"]), 2)
         runs = predict.per_frame_runs(self.SEL, answers)
         self.assertEqual(
-            {(r["variant"], r["frames_sent"]) for r in runs}, {("single", 1), ("uniform", 2), ("overlap", 2)}
+            {(r["variant"], r["frames_sent"]) for r in runs},
+            {("single", 1), ("uniform", 2), ("overlap", 2)},
         )
         self.assertTrue(all(r["schema_valid"] for r in runs))
 

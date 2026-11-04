@@ -23,8 +23,9 @@ from collections import Counter
 from pathlib import Path
 from uuid import uuid4
 
-from app.recipes.seasonings import load_seasoning_policy
 from experiments.revision.reports import redact, utc_now, write_json
+
+from app.recipes.seasonings import load_seasoning_policy
 from recipe_revision.core import revise
 from recipe_revision.pipeline import Steps, revise_with_steps
 
@@ -55,15 +56,11 @@ def arm_runner(arm: str, seasonings):
     if arm == "original":
         return lambda recipe, inventory, llm: revise(recipe, inventory, llm)
     steps = {
-        "check-only": Steps(
-            prescreen=False, complete_changes=False, seasonings=seasonings
-        ),
+        "check-only": Steps(prescreen=False, complete_changes=False, seasonings=seasonings),
         "default": Steps(seasonings=seasonings),
         "retry": Steps(retry=True, seasonings=seasonings),
     }[arm]
-    return lambda recipe, inventory, llm: revise_with_steps(
-        recipe, inventory, llm, steps
-    )
+    return lambda recipe, inventory, llm: revise_with_steps(recipe, inventory, llm, steps)
 
 
 class Meter:
@@ -88,8 +85,7 @@ def run_call(arm, case, rep, recipe, names, llm, run, price):
     cost = None
     if usage.get("prompt_tokens") is not None:
         cost = (
-            usage["prompt_tokens"] * price[0]
-            + (usage.get("completion_tokens") or 0) * price[1]
+            usage["prompt_tokens"] * price[0] + (usage.get("completion_tokens") or 0) * price[1]
         ) / 1e6
     return {
         "arm": arm,
@@ -120,15 +116,9 @@ def make_llm(args):
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawTextHelpFormatter
-    )
-    p.add_argument(
-        "--db", type=Path, required=True, help="local recipe database (read-only)"
-    )
-    p.add_argument(
-        "--set", choices=("test", "heldout"), default="test", dest="case_set"
-    )
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+    p.add_argument("--db", type=Path, required=True, help="local recipe database (read-only)")
+    p.add_argument("--set", choices=("test", "heldout"), default="test", dest="case_set")
     p.add_argument(
         "--arms",
         default=",".join(ARMS),
@@ -136,31 +126,19 @@ def main(argv: list[str] | None = None) -> int:
     )
     p.add_argument("--repeats", type=int, default=2)
     p.add_argument("--limit", type=int, help="first N cases only (smoke runs)")
-    p.add_argument(
-        "--output-dir", type=Path, default=REPO_ROOT / "data/recipes/revision-input"
-    )
-    p.add_argument(
-        "--seasoning-file", type=Path, help="alternative assumed-seasoning list"
-    )
+    p.add_argument("--output-dir", type=Path, default=REPO_ROOT / "data/recipes/revision-input")
+    p.add_argument("--seasoning-file", type=Path, help="alternative assumed-seasoning list")
     p.add_argument("--provider", choices=("mock", "chat-completions"), default="mock")
-    p.add_argument(
-        "--allow-live-api", action="store_true", help="enable potentially paid calls"
-    )
+    p.add_argument("--allow-live-api", action="store_true", help="enable potentially paid calls")
     p.add_argument("--model", help="live model; otherwise REVISION_LLM_MODEL")
     p.add_argument("--timeout", type=float, default=60)
     p.add_argument("--temperature", type=float, default=0.0)
     p.add_argument("--max-completion-tokens", type=int, default=4096)
-    p.add_argument(
-        "--price-in", type=float, default=0.10, help="USD per million input tokens"
-    )
-    p.add_argument(
-        "--price-out", type=float, default=0.40, help="USD per million output tokens"
-    )
+    p.add_argument("--price-in", type=float, default=0.10, help="USD per million input tokens")
+    p.add_argument("--price-out", type=float, default=0.40, help="USD per million output tokens")
     args = p.parse_args(argv)
     if args.provider != "mock" and not args.allow_live_api:
-        p.error(
-            "A live provider requires --allow-live-api; mock mode makes no network calls"
-        )
+        p.error("A live provider requires --allow-live-api; mock mode makes no network calls")
     if args.provider == "mock" and (args.allow_live_api or args.model):
         p.error("Live flags cannot be used in mock mode")
     arms = args.arms.split(",")
@@ -172,20 +150,14 @@ def main(argv: list[str] | None = None) -> int:
     cases = load_cases(args.case_set)[: args.limit]
     missing = [c["case_id"] for c in cases if c["recipe_id"] not in recipes]
     if missing:
-        p.error(
-            f"recipes of {len(missing)} cases are not in this database (first: {missing[0]})"
-        )
+        p.error(f"recipes of {len(missing)} cases are not in this database (first: {missing[0]})")
     index = ck.NameIndex(names, recipes)
     llm = make_llm(args)
     run_id = time.strftime("%Y%m%d-%H%M%S-") + uuid4().hex[:6]
     out = args.output_dir / run_id
     (out / "calls").mkdir(parents=True)
     config = llm.configuration() if hasattr(llm, "configuration") else {}
-    banner = (
-        "MOCK (offline, no model)"
-        if config.get("is_mock")
-        else f"LIVE {config.get('model')}"
-    )
+    banner = "MOCK (offline, no model)" if config.get("is_mock") else f"LIVE {config.get('model')}"
     print(
         f"{banner}: {len(arms)} arms x {len(cases)} cases x {args.repeats} repeats",
         flush=True,
@@ -210,9 +182,7 @@ def main(argv: list[str] | None = None) -> int:
         run = arm_runner(arm, seasonings)
         for case in cases:
             recipe = recipes[case["recipe_id"]]
-            allowed = ck.allowed_ids(
-                recipe, case["inventory_ids"], "list", seasonings.assumed_ids
-            )
+            allowed = ck.allowed_ids(recipe, case["inventory_ids"], "list", seasonings.assumed_ids)
             for rep in (1, 2, 3)[: args.repeats]:
                 if hasattr(llm, "prepare"):
                     llm.prepare(recipe, allowed)
@@ -229,19 +199,13 @@ def main(argv: list[str] | None = None) -> int:
                     ),
                     secrets,
                 )
-                write_json(
-                    out / "calls" / f"{arm}__{case['case_id']}__r{rep}.json", rec
-                )
+                write_json(out / "calls" / f"{arm}__{case['case_id']}__r{rep}.json", rec)
                 counts[(arm, rec["status"])] += 1
                 rows[arm].setdefault(case["case_id"], []).append(
-                    score_record(
-                        rec, case, recipe, names, index, seasonings.assumed_ids
-                    )
+                    score_record(rec, case, recipe, names, index, seasonings.assumed_ids)
                 )
     result = {"summary": summary(rows)}
-    result["criteria_vs_original"] = {
-        a: evaluate(rows, a) for a in arms if a != BASELINE
-    }
+    result["criteria_vs_original"] = {a: evaluate(rows, a) for a in arms if a != BASELINE}
     meta.update(
         finished_at=utc_now(),
         status_counts={f"{a}:{s}": n for (a, s), n in counts.items()},

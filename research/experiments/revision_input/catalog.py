@@ -33,10 +33,7 @@ def load_catalog(path: Path) -> tuple[dict[int, SourceRecipe], dict[int, str]]:
     con = sqlite3.connect(Path(path).resolve().as_uri() + "?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     try:
-        names = {
-            r["ingredient_id"]: r["name"]
-            for r in con.execute("SELECT * FROM ingredient")
-        }
+        names = {r["ingredient_id"]: r["name"] for r in con.execute("SELECT * FROM ingredient")}
         ingredients: dict[int, list[SourceIngredient]] = {}
         for r in con.execute(
             "SELECT ri.recipe_ingredient_id, ri.recipe_id, ri.ingredient_id, i.name,"
@@ -45,9 +42,7 @@ def load_catalog(path: Path) -> tuple[dict[int, SourceRecipe], dict[int, str]]:
             " ORDER BY ri.recipe_ingredient_id"
         ):
             row = dict(r)
-            ingredients.setdefault(row.pop("recipe_id"), []).append(
-                SourceIngredient(**row)
-            )
+            ingredients.setdefault(row.pop("recipe_id"), []).append(SourceIngredient(**row))
         steps: dict[int, list[SourceStep]] = {}
         for r in con.execute("SELECT * FROM recipe_step ORDER BY step_number, step_id"):
             row = dict(r)

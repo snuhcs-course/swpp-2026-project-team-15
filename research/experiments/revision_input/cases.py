@@ -105,9 +105,7 @@ def _groups(names):
     return out
 
 
-def build(
-    seed: int, counts: dict, exclude: set, recipes, names, set_label: str
-) -> list[dict]:
+def build(seed: int, counts: dict, exclude: set, recipes, names, set_label: str) -> list[dict]:
     rng = random.Random(seed)
     syn_groups = _groups(names)
     by_cat = {
@@ -151,9 +149,7 @@ def build(
                     continue
                 k = min(len(seas), rng.choice([1, 2, 3]))
                 absent = set(rng.sample(seas, k))
-                season_p = (
-                    1.0  # the others are present: isolates the seasoning-only effect
-                )
+                season_p = 1.0  # the others are present: isolates the seasoning-only effect
             elif stratum == "S3":
                 if rng.random() < 0.25 and main_ni and len(ids) > 3:
                     absent = {rng.choice(main_ni)}

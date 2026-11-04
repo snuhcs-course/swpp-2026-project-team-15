@@ -37,9 +37,7 @@ def median(arm_rows, cases, key: str) -> float:
     return statistics.median(xs) if xs else float("nan")
 
 
-def bootstrap(
-    fn: Callable[[list[str]], float], cases: list[str], resamples: int, seed: int
-):
+def bootstrap(fn: Callable[[list[str]], float], cases: list[str], resamples: int, seed: int):
     rng = random.Random(seed)
     xs = sorted(
         v
@@ -80,9 +78,7 @@ METRICS: dict[str, tuple[Callable, Callable]] = {
 }
 
 
-def evaluate(
-    rows: Rows, arm: str, thresholds: dict | None = None, baseline: str = BASELINE
-):
+def evaluate(rows: Rows, arm: str, thresholds: dict | None = None, baseline: str = BASELINE):
     """Return {criterion: {values, interval(s), pass}} for ``arm`` against ``baseline``."""
     t = (thresholds or load_thresholds())["criteria"]
     n = (thresholds or load_thresholds())["bootstrap"]["resamples"]

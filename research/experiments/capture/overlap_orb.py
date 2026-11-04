@@ -29,9 +29,7 @@ def features(gray, side: int = ORB_SIDE):
     cv2, _ = _cv()
     h, w = gray.shape
     scale = side / max(h, w)
-    small = cv2.resize(
-        gray, (round(w * scale), round(h * scale)), interpolation=cv2.INTER_AREA
-    )
+    small = cv2.resize(gray, (round(w * scale), round(h * scale)), interpolation=cv2.INTER_AREA)
     return cv2.ORB_create(nfeatures=500).detectAndCompute(small, None), small.shape
 
 
@@ -51,11 +49,7 @@ def overlap(fa, fb, shape: tuple[int, int]) -> tuple[float, bool]:
         return 0.0, False
     h, w = shape
     rect = np.float32([[0, 0], [w, 0], [w, h], [0, h]])
-    quad = (
-        cv2.perspectiveTransform(rect.reshape(-1, 1, 2), hom)
-        .reshape(-1, 2)
-        .astype(np.float32)
-    )
+    quad = cv2.perspectiveTransform(rect.reshape(-1, 1, 2), hom).reshape(-1, 2).astype(np.float32)
     area, _ = cv2.intersectConvexConvex(rect, quad)
     return max(0.0, min(1.0, float(area) / (w * h))), True
 

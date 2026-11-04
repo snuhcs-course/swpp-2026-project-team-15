@@ -34,9 +34,7 @@ class OfflineLLM:
         self.calls += 1
         recipe, allowed = self._recipe, self._allowed
         verdict, _ = ck.expected_verdict(recipe, allowed)
-        usable = [
-            r for r in recipe.ingredients if r.ingredient_id in allowed | {ck.WATER_ID}
-        ]
+        usable = [r for r in recipe.ingredients if r.ingredient_id in allowed | {ck.WATER_ID}]
         if verdict == "refuse" or not usable:
             result = {
                 "can_revise": False,

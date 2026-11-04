@@ -27,9 +27,7 @@ from collections.abc import Callable, Sequence
 from statistics import median
 
 GATE_RATIO = 0.5
-MIN_OVERLAP = (
-    0.5  # a frame starts a new group below this overlap with the group's first frame
-)
+MIN_OVERLAP = 0.5  # a frame starts a new group below this overlap with the group's first frame
 UNKNOWN_OVERLAP = 0.5  # overlap assumed when the estimator fails
 MAX_GAP_NS = 250_000_000  # a new group also starts after this gap
 DENSE_INTERVAL_NS = 400_000_000
@@ -116,9 +114,7 @@ def group_by_overlap(
     return groups
 
 
-def farthest_first(
-    reps: Sequence[int], k: int, pair: Pair, tie_break: bool = True
-) -> list[int]:
+def farthest_first(reps: Sequence[int], k: int, pair: Pair, tie_break: bool = True) -> list[int]:
     """Start from the first representative; add the one overlapping the chosen ones least.
 
     With ``tie_break``, equal overlap scores go to the candidate whose nearest chosen frame is
@@ -138,9 +134,7 @@ def farthest_first(
                 continue
             score = max(max(known(pair(r, c)), known(pair(c, r))) for c in chosen)
             dist = min(abs(r - c) for c in chosen) if tie_break else 0
-            if score < best_score or (
-                tie_break and score == best_score and dist > best_dist
-            ):
+            if score < best_score or (tie_break and score == best_score and dist > best_dist):
                 best, best_score, best_dist = r, score, dist
         chosen.append(best)
     return sorted(chosen)
