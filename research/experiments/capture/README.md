@@ -10,6 +10,7 @@ The app-side result of this work is the video mode of the capture screen and mul
 | `overlap_orb.py` | ORB + RANSAC overlap estimate between two frames (needs OpenCV). |
 | `android-demo/` | Separate Gradle project that measures the rules, camera stream and decoding on a phone. Not part of the app build. |
 | `recognition/` | Scorer, thresholds, answer key and protocol for comparing selection rules by recognition quality. |
+| `experiments/` | Studies that did not change the app: a prompt change for blank frames, removal of similar frames, clustering. Reproducible runner and tests. |
 | `../../../server/tests/experiments/capture/` | Offline tests for the rules above. |
 
 ## Findings
