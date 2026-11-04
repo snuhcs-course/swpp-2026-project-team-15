@@ -23,7 +23,7 @@ def _pixabay_key() -> str | None:
     key = os.environ.get("PIXABAY_KEY")
     if key:
         return key
-    env_file = Path(__file__).resolve().parents[3] / ".env"
+    env_file = Path(__file__).resolve().parents[5] / "server" / ".env"
     try:
         lines = env_file.read_text(encoding="utf-8").splitlines()
     except OSError:

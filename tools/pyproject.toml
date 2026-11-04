@@ -14,10 +14,10 @@ dev = ["pytest>=8", "ruff>=0.5"]
 hash = ["blurhash-python>=1.2"]
 
 [project.scripts]
-recipe_images = "recipe_images.cli:app"
+recipe-images = "recipe_images.cli:app"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["crawlers/pixabay/src"]
 
 [tool.ruff]
 line-length = 100
@@ -27,4 +27,4 @@ target-version = "py311"
 ignore = ["B008", "TRY004"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["crawlers/pixabay/tests"]

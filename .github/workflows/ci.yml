@@ -9,6 +9,35 @@ on:
     branches: [main, "feat/**"]
 
 jobs:
+  changed:
+    runs-on: ubuntu-latest
+    outputs:
+      tools: ${{ steps.filter.outputs.tools }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            tools:
+              - 'tools/**'
+              - '.github/workflows/ci.yml'
+
+  tools:
+    needs: changed
+    if: needs.changed.outputs.tools == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --extra dev --locked
+      - run: uv run ruff check crawlers
+      - run: uv run ruff format --check crawlers
+      - run: uv run pytest
+
   server:
     runs-on: ubuntu-latest
     services:
