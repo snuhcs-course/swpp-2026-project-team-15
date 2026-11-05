@@ -1,0 +1,19 @@
+{
+ "status": "FROZEN",
+ "frozen_on": "2026-11-02, before any result was computed",
+ "note": "A value is never changed after results exist; a revised value is added beside the original with the reason. The small evaluation has fewer fridges than evaluation_fridges_min, so every verdict is provisional.",
+ "ambiguous_policy": "exclude",
+ "metrics": {
+  "recall": {"op": ">=", "value": 0.6, "basis": "an earlier real-package run of the same model reached 0.50-0.58; a modest improvement is asked"},
+  "false_recognition": {"op": "<=", "value": 0.3, "basis": "at most about one wrong candidate in three on the confirmation screen"},
+  "fix_count_mean": {"op": "<=", "value": 6.0, "basis": "more than about six edits per scan is more work than typing"},
+  "schema_valid_rate": {"op": ">=", "value": 0.95, "basis": "format failures must be rare"}
+ },
+ "comparison_rule": {
+  "primary_metric": "recall",
+  "variant_better_if": "paired bootstrap 95% interval over scenes excludes 0 and the point estimate is at least the margin",
+  "margin": 0.1
+ },
+ "repeats_per_condition": 2,
+ "evaluation_fridges_min": 30
+}

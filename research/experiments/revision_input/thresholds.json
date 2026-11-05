@@ -1,0 +1,39 @@
+{
+  "about": "Pass criteria fixed before the final runs. Candidate arm vs baseline arm 'original' (the full-row request, no post-check), one case set at a time. Intervals are 95% case-level bootstrap intervals.",
+  "frozen": "2026-11-03, before the test and held-out sets were run with the final code",
+  "bootstrap": {"resamples": 3000},
+  "criteria": {
+    "prompt_tokens_ratio": {
+      "rule": "upper end of the interval for median prompt tokens (candidate / baseline) <= 0.60",
+      "max": 0.60, "seed": 23
+    },
+    "id_noncompliance": {
+      "rule": "revised answers that use an unavailable or unknown ingredient id: upper end of the difference (candidate - baseline) <= +0.05",
+      "max_upper": 0.05, "seed": 29
+    },
+    "format_and_consistency": {
+      "rule": "format errors (all calls) and change-list inconsistencies (revised answers): upper end of each difference <= +0.03",
+      "max_upper": 0.03, "seed": 29
+    },
+    "refusal_errors": {
+      "rule": "false refusals and false acceptances against the rule-based expectation: upper end of each difference <= +0.05",
+      "max_upper": 0.05, "seed": 29
+    },
+    "answer_quality_judge": {
+      "rule": "second-model quality judgement; not evaluated in the runs reported here",
+      "evaluated": false
+    },
+    "safety_retained": {
+      "rule": "revised answers that keep the heat-treatment steps (when raw meat or egg remains): lower end of the difference >= -0.02",
+      "min_lower": -0.02, "seed": 29
+    },
+    "rejection_of_attempts": {
+      "rule": "revision attempts the post-check rejects: value <= 0.10",
+      "max": 0.10, "seed": 31
+    },
+    "latency_cost_ratio": {
+      "rule": "median latency ratio and median cost ratio (candidate / baseline) <= 1.0",
+      "max": 1.0, "seed_latency": 37, "seed_cost": 41
+    }
+  }
+}

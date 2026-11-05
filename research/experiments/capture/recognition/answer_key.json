@@ -1,0 +1,515 @@
+{
+ "note": "Draft answer key written by one reviewer with a model's help. Uncertain items were checked and removed; the remaining items were not independently verified. Names are generic ingredient names a candidate may match (see score.name_matches). The sweep clips A01-A06 are grouped into scenes by visual overlap, so they are not independent samples. Brand names were replaced by generic names.",
+ "scenes": [
+  [
+   "A01",
+   "A02",
+   "A03",
+   "A04"
+  ],
+  [
+   "A05",
+   "A06"
+  ]
+ ],
+ "fridges": {
+  "A01": [
+   {
+    "id": "egg",
+    "names": [
+     "달걀",
+     "계란",
+     "egg"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "coffee",
+    "names": [
+     "커피",
+     "콜드브루",
+     "아메리카노"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "chicken_stock",
+    "names": [
+     "치킨스톡",
+     "치킨 스톡",
+     "닭육수",
+     "육수",
+     "chickenstock"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "minced_garlic",
+    "names": [
+     "다진마늘",
+     "다진 마늘",
+     "마늘"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "doenjang",
+    "names": [
+     "된장",
+     "재래식된장"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "flour",
+    "names": [
+     "밀가루"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "beverage",
+    "names": [
+     "음료",
+     "음료수",
+     "주스",
+     "탄산",
+     "콜라"
+    ],
+    "status": "visible"
+   }
+  ],
+  "A02": [
+   {
+    "id": "egg",
+    "names": [
+     "달걀",
+     "계란",
+     "egg"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "coffee",
+    "names": [
+     "커피",
+     "콜드브루",
+     "아메리카노"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "chicken_stock",
+    "names": [
+     "치킨스톡",
+     "치킨 스톡",
+     "닭육수",
+     "육수",
+     "chickenstock"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "minced_garlic",
+    "names": [
+     "다진마늘",
+     "다진 마늘",
+     "마늘"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "doenjang",
+    "names": [
+     "된장",
+     "재래식된장"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "flour",
+    "names": [
+     "밀가루"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "carrot",
+    "names": [
+     "당근",
+     "carrot"
+    ],
+    "status": "visible"
+   }
+  ],
+  "A03": [
+   {
+    "id": "egg",
+    "names": [
+     "달걀",
+     "계란",
+     "egg"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "coffee",
+    "names": [
+     "커피",
+     "콜드브루",
+     "아메리카노"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "chicken_stock",
+    "names": [
+     "치킨스톡",
+     "치킨 스톡",
+     "닭육수",
+     "육수",
+     "chickenstock"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "minced_garlic",
+    "names": [
+     "다진마늘",
+     "다진 마늘",
+     "마늘"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "doenjang",
+    "names": [
+     "된장",
+     "재래식된장"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "flour",
+    "names": [
+     "밀가루"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "ketchup",
+    "names": [
+     "케첩",
+     "케찹",
+     "케챱",
+     "토마토케첩",
+     "ketchup"
+    ],
+    "status": "visible"
+   }
+  ],
+  "A04": [
+   {
+    "id": "coffee",
+    "names": [
+     "커피",
+     "콜드브루",
+     "아메리카노"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "chicken_stock",
+    "names": [
+     "치킨스톡",
+     "치킨 스톡",
+     "닭육수",
+     "육수",
+     "chickenstock"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "minced_garlic",
+    "names": [
+     "다진마늘",
+     "다진 마늘",
+     "마늘"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "doenjang",
+    "names": [
+     "된장",
+     "재래식된장"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "flour",
+    "names": [
+     "밀가루"
+    ],
+    "status": "visible"
+   }
+  ],
+  "A05": [
+   {
+    "id": "bulgogi_sauce",
+    "names": [
+     "불고기",
+     "양념장",
+     "불고기양념"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "chili_flakes",
+    "names": [
+     "고춧가루",
+     "칠리",
+     "페페론치노",
+     "페퍼론치노",
+     "고추",
+     "chili",
+     "peperoncino"
+    ],
+    "status": "visible"
+   }
+  ],
+  "A06": [
+   {
+    "id": "bulgogi_sauce",
+    "names": [
+     "불고기",
+     "양념장",
+     "불고기양념"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "chili_flakes",
+    "names": [
+     "고춧가루",
+     "칠리",
+     "페페론치노",
+     "페퍼론치노",
+     "고추",
+     "chili",
+     "peperoncino"
+    ],
+    "status": "visible"
+   }
+  ],
+  "B01": [
+   {
+    "id": "milk",
+    "names": [
+     "우유"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "cola",
+    "names": [
+     "콜라",
+     "cola"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "dr_pepper",
+    "names": [
+     "탄산음료",
+     "콜라"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "wine",
+    "names": [
+     "와인",
+     "wine"
+    ],
+    "status": "visible"
+   }
+  ],
+  "B02": [
+   {
+    "id": "soymilk",
+    "names": [
+     "두유",
+     "약콩"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "slice_cheese",
+    "names": [
+     "슬라이스치즈",
+     "슬라이스 치즈",
+     "치즈"
+    ],
+    "status": "visible"
+   }
+  ],
+  "B03": [
+   {
+    "id": "hard_cheese",
+    "names": [
+     "치즈",
+     "그라나",
+     "파다노",
+     "grana"
+    ],
+    "status": "visible"
+   }
+  ],
+  "B04": [
+   {
+    "id": "minced_garlic",
+    "names": [
+     "다진마늘",
+     "다진 마늘",
+     "마늘"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "egg",
+    "names": [
+     "달걀",
+     "계란",
+     "egg"
+    ],
+    "status": "visible"
+   }
+  ],
+  "B05": [
+   {
+    "id": "apple",
+    "names": [
+     "사과",
+     "apple"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "grape",
+    "names": [
+     "포도",
+     "샤인머스캣",
+     "grape"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "egg",
+    "names": [
+     "달걀",
+     "계란",
+     "egg"
+    ],
+    "status": "visible"
+   }
+  ],
+  "B06": [
+   {
+    "id": "tuna",
+    "names": [
+     "참치",
+     "tuna"
+    ],
+    "status": "visible"
+   }
+  ],
+  "B07": [
+   {
+    "id": "steamed_egg",
+    "names": [
+     "계란찜",
+     "달걀찜",
+     "계란"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "gravy",
+    "names": [
+     "그레이비",
+     "gravy"
+    ],
+    "status": "visible"
+   }
+  ],
+  "B08": [
+   {
+    "id": "ramen",
+    "names": [
+     "라면",
+     "ramen"
+    ],
+    "status": "visible"
+   }
+  ],
+  "B09": [
+   {
+    "id": "jjamppong",
+    "names": [
+     "짬뽕",
+     "볶음짬뽕"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "naengmyeon",
+    "names": [
+     "냉면",
+     "물냉면"
+    ],
+    "status": "visible"
+   }
+  ],
+  "B10": [
+   {
+    "id": "fried_chicken",
+    "names": [
+     "치킨",
+     "순살치킨",
+     "후라이드"
+    ],
+    "status": "visible"
+   }
+  ],
+  "B11": [
+   {
+    "id": "fruit_cups",
+    "names": [
+     "과일컵",
+     "컷과일",
+     "모듬과일",
+     "과일"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "orange",
+    "names": [
+     "귤",
+     "오렌지",
+     "감귤"
+    ],
+    "status": "visible"
+   },
+   {
+    "id": "green_grape",
+    "names": [
+     "청포도",
+     "포도"
+    ],
+    "status": "visible"
+   }
+  ]
+ }
+}

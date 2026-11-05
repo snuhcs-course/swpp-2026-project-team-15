@@ -1,0 +1,19 @@
+{
+  "note": "Arms of the frame-selection studies. scheme phase: time grid shifted by replicate/replicates of a bin; cluster_first uses every replicates-th frame. prompt: current = production multi-view prompt, visible-only = adds the 'list only what you see' sentences.",
+  "arms": [
+    {"name": "base10", "type": "time_bins", "bins": 10},
+    {"name": "edge-drop2", "type": "drop_similar", "measure": "edge", "drop": 2},
+    {"name": "edge-drop4", "type": "drop_similar", "measure": "edge", "drop": 4},
+    {"name": "edge-drop6", "type": "drop_similar", "measure": "edge", "drop": 6},
+    {"name": "hist-drop4", "type": "drop_similar", "measure": "hist", "drop": 4},
+    {"name": "random-drop4", "type": "random_drop", "drop": 4, "seed": 7},
+    {"name": "uniform6", "type": "uniform", "count": 6},
+    {"name": "cluster6-pool", "type": "cluster_pool", "pool_bins": 20, "k": 6, "measure": "edge"},
+    {"name": "cluster-first6", "type": "cluster_first", "k": 6, "measure": "edge", "gap_s": 0.4, "cap": 10},
+    {"name": "cluster-first10", "type": "cluster_first", "k": 10, "measure": "edge", "gap_s": 0.4, "cap": 10},
+    {"name": "cluster-first6-hist", "type": "cluster_first", "k": 6, "measure": "hist", "gap_s": 0.4, "cap": 10},
+    {"name": "base10-visible-only", "type": "time_bins", "bins": 10, "prompt": "visible-only"},
+    {"name": "blank-current", "type": "blank", "kinds": ["black", "noise", "white", "blurred"], "frames": 8, "repeats": 5},
+    {"name": "blank-visible-only", "type": "blank", "kinds": ["black", "noise", "white", "blurred"], "frames": 8, "repeats": 5, "prompt": "visible-only"}
+  ]
+}
