@@ -6,8 +6,8 @@ import html
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .models import Recipe
-from .search import SEARCH_LANGUAGE, read_cache
+from models import Recipe
+from search import SEARCH_LANGUAGE, read_cache
 
 
 def build_sheet(batch: int, recipes: list[Recipe], cache_dir: Path, output: Path) -> None:

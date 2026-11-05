@@ -10,8 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import requests
-
-from .models import Recipe, hit_fields
+from models import Recipe, hit_fields
 
 API_URL = "https://pixabay.com/api/"
 TIMEOUT = 10
@@ -23,7 +22,7 @@ def _pixabay_key() -> str | None:
     key = os.environ.get("PIXABAY_KEY")
     if key:
         return key
-    env_file = Path(__file__).resolve().parents[5] / "server" / ".env"
+    env_file = Path(__file__).resolve().parents[4] / "server" / ".env"
     try:
         lines = env_file.read_text(encoding="utf-8").splitlines()
     except OSError:

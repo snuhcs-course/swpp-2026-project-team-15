@@ -2,9 +2,9 @@ import json
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from recipe_images.models import Recipe, load_recipes
-from recipe_images.search import _pixabay_key, read_cache
-from recipe_images.sheet import build_sheet
+from models import Recipe, load_recipes
+from search import _pixabay_key, read_cache
+from sheet import build_sheet
 
 
 def test_cache_is_valid_until_24_hour_boundary(tmp_path):
@@ -40,21 +40,12 @@ def test_pixabay_key_uses_environment_then_dotenv(tmp_path, monkeypatch):
     env_file.parent.mkdir(parents=True)
     env_file.write_text('OTHER=value\nPIXABAY_KEY="from-file"\n', encoding="utf-8")
     # Exercise the dotenv parsing without reading the developer's real secret file.
-    from recipe_images import search
+    import search
 
     monkeypatch.setattr(
         search,
         "__file__",
-        str(
-            tmp_path
-            / "repo"
-            / "tools"
-            / "crawlers"
-            / "pixabay"
-            / "src"
-            / "recipe_images"
-            / "search.py"
-        ),
+        str(tmp_path / "repo" / "tools" / "crawlers" / "pixabay" / "src" / "search.py"),
     )
     monkeypatch.delenv("PIXABAY_KEY", raising=False)
     assert _pixabay_key() == "from-file"

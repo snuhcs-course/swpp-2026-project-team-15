@@ -6,14 +6,13 @@ import csv
 from pathlib import Path
 
 import typer
-
-from .models import load_recipes
-from .process import process as run_process
-from .search import search_recipe
-from .sheet import build_sheet
+from models import load_recipes
+from process import process as run_process
+from search import search_recipe
+from sheet import build_sheet
 
 app = typer.Typer(no_args_is_help=True)
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _batch(recipes_path: Path, batch: int, size: int):

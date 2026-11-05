@@ -6,11 +6,11 @@ Python 3.11+ workflow for searching Pixabay candidates, generating a local revie
 cd tools
 uv sync --extra dev
 $env:PIXABAY_KEY = "your-key"
-uv run recipe-images search --batch 1
-uv run recipe-images sheet --batch 1
+uv run --directory crawlers/pixabay/src python cli.py search --batch 1
+uv run --directory crawlers/pixabay/src python cli.py sheet --batch 1
 ```
 
-Edit `recipes.json` with recipe IDs, Korean names, and Korean search queries. The current dataset uses each Korean recipe name as its query, and Pixabay searches use `lang=ko`. Open `sheets/sheet_01.html`, select candidates, and export the CSV into `selections/`. Open each selected Pixabay page and manually save its original to `downloads/{recipe_id}.{jpg|jpeg|png|webp}`. Then run `recipe-images process` and `recipe-images status`.
+Edit `recipes.json` with recipe IDs, Korean names, and Korean search queries. The current dataset uses each Korean recipe name as its query, and Pixabay searches use `lang=ko`. Open `sheets/sheet_01.html`, select candidates, and export the CSV into `selections/`. Open each selected Pixabay page and manually save its original to `downloads/{recipe_id}.{jpg|jpeg|png|webp}`. Then run `uv run --directory crawlers/pixabay/src python cli.py process` and `uv run --directory crawlers/pixabay/src python cli.py status` from `tools/`.
 
 The query and language cache is valid for 24 hours. A cache from a different query or language is ignored. `search --force` asks before refreshing recent cache entries. API keys are read only from `PIXABAY_KEY`; never put them in recipe files or generated pages.
 
