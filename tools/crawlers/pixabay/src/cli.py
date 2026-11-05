@@ -6,13 +6,25 @@ import csv
 from pathlib import Path
 
 import typer
+from assets import generate_url_mapping, write_recipe_csv
+from config import TOOLS_ROOT, load_config
 from models import load_recipes
 from process import process as run_process
 from search import search_recipe
 from sheet import build_sheet
 
 app = typer.Typer(no_args_is_help=True)
-ROOT = Path(__file__).resolve().parents[1]
+
+
+def _configured_path(path: Path | None, fallback: Path) -> Path:
+    if path is None:
+        return fallback
+    return path if path.is_absolute() else (TOOLS_ROOT / path).resolve()
+
+
+def _selection_files(selection: list[Path] | None, directory: Path) -> list[Path]:
+    paths = selection if selection else sorted(directory.glob("*.csv"))
+    return [path if path.is_absolute() else (TOOLS_ROOT / path).resolve() for path in paths]
 
 
 def _batch(recipes_path: Path, batch: int, size: int):
@@ -28,20 +40,21 @@ def search(
     batch: int = typer.Option(..., min=1),
     force: bool = False,
     batch_size: int = typer.Option(50, min=1),
-    recipes_file: Path = typer.Option(ROOT / "recipes.json"),
+    recipes_file: Path | None = typer.Option(None),
 ):
-    recipes = _batch(recipes_file, batch, batch_size)
+    config = load_config()
+    recipes = _batch(_configured_path(recipes_file, config.recipes_file), batch, batch_size)
     failures = []
     for index, recipe in enumerate(recipes, 1):
         typer.echo(f"[{index}/{len(recipes)}] {recipe.name_ko} ...")
         try:
             if (
                 force
-                and (ROOT / "cache" / f"{recipe.id}.json").exists()
+                and (config.cache_dir / f"{recipe.id}.json").exists()
                 and not typer.confirm("Refresh cache younger than 24 hours?", default=False)
             ):
                 continue
-            hits, cached = search_recipe(recipe, ROOT / "cache", force, confirm_recent=force)
+            hits, cached = search_recipe(recipe, config.cache_dir, force, confirm_recent=force)
             typer.echo(f"  {len(hits)} candidates ({'cache' if cached else 'fetched'})")
         except (ValueError, RuntimeError, OSError) as exc:
             failures.append(recipe.id)
@@ -54,17 +67,24 @@ def search(
 def sheet(
     batch: int = typer.Option(..., min=1),
     batch_size: int = typer.Option(50, min=1),
-    recipes_file: Path = typer.Option(ROOT / "recipes.json"),
+    recipes_file: Path | None = typer.Option(None),
 ):
-    path = ROOT / "sheets" / f"sheet_{batch:02}.html"
-    build_sheet(batch, _batch(recipes_file, batch, batch_size), ROOT / "cache", path)
+    config = load_config()
+    path = config.sheets_dir / f"sheet_{batch:02}.html"
+    build_sheet(
+        batch,
+        _batch(_configured_path(recipes_file, config.recipes_file), batch, batch_size),
+        config.cache_dir,
+        path,
+    )
     typer.echo(f"Created {path}")
 
 
 @app.command("process")
 def process_command(selection: list[Path] = typer.Option(None, "--selection"), force: bool = False):
-    files = selection or sorted((ROOT / "selections").glob("*.csv"))
-    result = run_process(files, ROOT, force)
+    config = load_config()
+    files = _selection_files(selection, config.selections_dir)
+    result = run_process(files, config.downloads_dir, config.images_dir, config.output_dir, force)
     typer.echo(
         f"Processed {result['processed']}, skipped {result['skipped']}, missing originals: {result['missing']}, output bytes: {result['bytes']}"
     )
@@ -74,14 +94,42 @@ def process_command(selection: list[Path] = typer.Option(None, "--selection"), f
         typer.echo("Optional blurhash library is unavailable; placeholders were skipped.")
 
 
+@app.command("map-urls")
+def map_urls_command(selection: list[Path] = typer.Option(None, "--selection")):
+    config = load_config()
+    result = generate_url_mapping(
+        _selection_files(selection, config.selections_dir),
+        config.images_dir,
+        config.mapping_file,
+        public_prefix=config.image_url_prefix,
+        variant=config.image_variant,
+    )
+    typer.echo(
+        f"Mapped {result['mapped']}, missing {result['missing']}; wrote {result['mapping_file']}"
+    )
+
+
+@app.command("recipe-csv")
+def recipe_csv_command():
+    config = load_config()
+    result = write_recipe_csv(
+        config.mapping_file, config.source_recipe_csv, config.output_recipe_csv
+    )
+    typer.echo(
+        f"Wrote {config.output_recipe_csv}: {result['updated']} image URLs for "
+        f"{result['recipes']} recipes"
+    )
+
+
 @app.command()
 def status(
     batch_size: int = typer.Option(50, min=1),
-    recipes_file: Path = typer.Option(ROOT / "recipes.json"),
+    recipes_file: Path | None = typer.Option(None),
 ):
-    recipes = load_recipes(recipes_file)
+    config = load_config()
+    recipes = load_recipes(_configured_path(recipes_file, config.recipes_file))
     selected = {}
-    for path in sorted((ROOT / "selections").glob("*.csv")):
+    for path in sorted(config.selections_dir.glob("*.csv")):
         try:
             with path.open(encoding="utf-8-sig", newline="") as f:
                 for row in csv.DictReader(f):
@@ -92,13 +140,13 @@ def status(
     no_original, no_candidates = [], []
     for index in range(0, len(recipes), batch_size):
         chunk = recipes[index : index + batch_size]
-        searched = sum((ROOT / "cache" / f"{r.id}.json").is_file() for r in chunk)
+        searched = sum((config.cache_dir / f"{r.id}.json").is_file() for r in chunk)
         chosen = [r.id for r in chunk if r.id in selected]
         downloaded = [
             rid
             for rid in chosen
             if any(
-                (ROOT / "downloads" / f"{rid}.{ext}").is_file()
+                (config.downloads_dir / f"{rid}.{ext}").is_file()
                 for ext in ("jpg", "jpeg", "png", "webp")
             )
         ]
@@ -106,7 +154,7 @@ def status(
             rid
             for rid in downloaded
             if all(
-                (ROOT / "output/images" / f"{rid}_{name}.webp").is_file()
+                (config.images_dir / f"{rid}_{name}.webp").is_file()
                 for name in ("thumb", "list", "detail")
             )
         ]
@@ -119,7 +167,7 @@ def status(
                 import json
 
                 if not json.loads(
-                    (ROOT / "cache" / f"{r.id}.json").read_text(encoding="utf-8")
+                    (config.cache_dir / f"{r.id}.json").read_text(encoding="utf-8")
                 ).get("hits"):
                     no_candidates.append(r.id)
             except (OSError, ValueError):

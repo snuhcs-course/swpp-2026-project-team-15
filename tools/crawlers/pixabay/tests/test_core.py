@@ -36,17 +36,13 @@ def test_cache_is_valid_until_24_hour_boundary(tmp_path):
 
 
 def test_pixabay_key_uses_environment_then_dotenv(tmp_path, monkeypatch):
-    env_file = tmp_path / "repo" / "server" / ".env"
+    env_file = tmp_path / "repo" / "tools" / ".env"
     env_file.parent.mkdir(parents=True)
     env_file.write_text('OTHER=value\nPIXABAY_KEY="from-file"\n', encoding="utf-8")
     # Exercise the dotenv parsing without reading the developer's real secret file.
-    import search
+    import config
 
-    monkeypatch.setattr(
-        search,
-        "__file__",
-        str(tmp_path / "repo" / "tools" / "crawlers" / "pixabay" / "src" / "search.py"),
-    )
+    monkeypatch.setattr(config, "TOOLS_ROOT", tmp_path / "repo" / "tools")
     monkeypatch.delenv("PIXABAY_KEY", raising=False)
     assert _pixabay_key() == "from-file"
     monkeypatch.setenv("PIXABAY_KEY", "from-process")

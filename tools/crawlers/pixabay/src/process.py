@@ -10,7 +10,7 @@ from typing import Any
 from PIL import Image, ImageOps
 
 SIZES = {"thumb": (300, 75), "list": (600, 78), "detail": (1200, 80)}
-FIELDS = ("recipe_id", "pixabay_id", "user", "user_id", "page_url", "tags")
+FIELDS = ("recipe_id", "pixabay_id", "user", "user_id", "page_url", "image_url", "tags")
 
 
 def load_selections(files: list[Path]) -> dict[int, dict[str, str]]:
@@ -25,9 +25,15 @@ def load_selections(files: list[Path]) -> dict[int, dict[str, str]]:
     return selected
 
 
-def process(files: list[Path], root: Path, force: bool = False) -> dict[str, Any]:
+def process(
+    files: list[Path],
+    downloads_dir: Path,
+    images_dir: Path,
+    metadata_dir: Path,
+    force: bool = False,
+) -> dict[str, Any]:
     selections = load_selections(files)
-    out = root / "output" / "images"
+    out = images_dir
     out.mkdir(parents=True, exist_ok=True)
     missing: list[int] = []
     processed: set[int] = set()
@@ -35,9 +41,7 @@ def process(files: list[Path], root: Path, force: bool = False) -> dict[str, Any
     attribution: dict[str, Any] = {}
     placeholders: dict[str, str] = {}
     for recipe_id, row in selections.items():
-        originals = [
-            root / "downloads" / f"{recipe_id}.{ext}" for ext in ("jpg", "jpeg", "png", "webp")
-        ]
+        originals = [downloads_dir / f"{recipe_id}.{ext}" for ext in ("jpg", "jpeg", "png", "webp")]
         source = next((p for p in originals if p.is_file()), None)
         if source is None:
             missing.append(recipe_id)
@@ -72,8 +76,8 @@ def process(files: list[Path], root: Path, force: bool = False) -> dict[str, Any
             placeholders[str(recipe_id)] = encode(image, x_components=4, y_components=3)
         except ImportError:
             pass
-    base = root / "output"
-    base.mkdir(exist_ok=True)
+    base = metadata_dir
+    base.mkdir(parents=True, exist_ok=True)
     attr_path = base / "attribution.json"
     try:
         old = json.loads(attr_path.read_text(encoding="utf-8"))
