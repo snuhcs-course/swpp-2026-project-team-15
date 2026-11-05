@@ -1,3 +1,4 @@
+// Deployed main API wiring assisted by Codex, 2026-11-03; human review pending.
 // Restored and integrated with Codex, 2026-10-29; human review pending.
 // AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 // Ingredient catalog API added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
@@ -44,13 +45,14 @@ interface IngredientSupportApi : MyLittleChefApi {
 }
 
 object ApiClient {
-    // The phone reaches the laptop's server through `adb reverse tcp:8000 tcp:8000`.
+    // Photo and revision clients share this build-time endpoint; local builds use adb reverse.
     private const val BASE_URL = BuildConfig.SERVER_BASE_URL
 
     private val retrofit: Retrofit by lazy {
         val http = OkHttpClient.Builder()
-            // Image recognition can exceed OkHttp's 10 s default read timeout.
-            .readTimeout(60, TimeUnit.SECONDS)
+            // Revision may include two 60-second provider attempts when server retry is enabled.
+            .readTimeout(150, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(false)
             .build()
         Retrofit.Builder()
             .baseUrl(BASE_URL)
@@ -59,7 +61,8 @@ object ApiClient {
             .build()
     }
 
-    val api: IngredientSupportApi by lazy { retrofit.create(IngredientSupportApi::class.java) }
+    // The default app never requires the unpublished local on-demand routes.
+    val api: DeployedRecipeApi by lazy { retrofit.create(DeployedRecipeApi::class.java) }
 
     val multiImageApi: MultiImageApi by lazy { retrofit.create(MultiImageApi::class.java) }
 }

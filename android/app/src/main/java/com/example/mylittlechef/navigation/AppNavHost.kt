@@ -7,6 +7,7 @@ package com.example.mylittlechef.navigation
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -31,6 +32,7 @@ import com.example.mylittlechef.ui.profile.EditNicknameScreen
 import com.example.mylittlechef.ui.profile.EditUtensilScreen
 import com.example.mylittlechef.ui.recipe.RecipeDetailScreen
 import com.example.mylittlechef.data.local.PreferencesFridgeRepository
+import com.example.mylittlechef.data.local.IngredientPresentationProvider
 import com.example.mylittlechef.data.local.PreferencesUserRepository
 import com.example.mylittlechef.data.local.localDataStore
 import com.example.mylittlechef.viewmodel.FridgeViewModel
@@ -64,12 +66,23 @@ fun AppNavHost(
     }
     val user: UserViewModel = viewModel(factory = userFactory)
     val fridge: FridgeViewModel = viewModel(factory = fridgeFactory)
-    val recipes: RecipeViewModel = viewModel()
+    val applicationContext = LocalContext.current.applicationContext
+    val recipeFactory = remember(applicationContext) {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                RecipeViewModel(ingredientIds = IngredientPresentationProvider.get(applicationContext).ingredientIds) as T
+        }
+    }
+    val recipes: RecipeViewModel = viewModel(factory = recipeFactory)
     val ingredientSuggestions: IngredientSuggestionViewModel = viewModel()
     val ingredientCatalog: IngredientCatalogViewModel = viewModel()
 
     // Wait for persisted data before choosing the first screen or fetching recommendations.
     if (!user.isLoaded || !fridge.isLoaded) return
+    LaunchedEffect(fridge.ingredients, user.allergies, user.utensils) {
+        recipes.updateUserContext(fridge.ingredients, user.allergies, user.utensils)
+    }
     val startDestination = remember { if (user.onboardingComplete) Routes.MAIN else Routes.ONBOARDING }
 
     NavHost(
@@ -236,7 +249,13 @@ fun AppNavHost(
                     onBackClick = {
                         navController.popBackStack()
                     },
-                    onLikeClick = {}
+                    onLikeClick = {},
+                    revisionState = recipes.revisionState(recipe.id),
+                    batchRevision = recipes.supportsBatchRevision,
+                    onRequestRevision = if (recipes.supportsRevision) ({
+                        recipes.updateUserContext(fridge.ingredients, user.allergies, user.utensils)
+                        recipes.requestRevision(recipe.id)
+                    }) else null
                 )
             }
         }

@@ -1,6 +1,9 @@
+// UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 
 val Purple80 = Color(0xFFD0BCFF)
 val PurpleGrey80 = Color(0xFFCCC2DC)
@@ -10,9 +13,13 @@ val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 
-val GreenGray = Color(0xFFC5CBB6)
-val DeepGreen = Color(0xFF105E0F)
+val GreenGray: Color
+    @Composable get() = MaterialTheme.colorScheme.outline
+val DeepGreen: Color
+    @Composable get() = MaterialTheme.colorScheme.primary
 
-val Gray = Color(0xFFF2F2F7)
+val Gray: Color
+    @Composable get() = MaterialTheme.colorScheme.surfaceVariant
 
-val DeepBrown = Color(0xFF291C0A)
+val DeepBrown: Color
+    @Composable get() = MaterialTheme.colorScheme.primary

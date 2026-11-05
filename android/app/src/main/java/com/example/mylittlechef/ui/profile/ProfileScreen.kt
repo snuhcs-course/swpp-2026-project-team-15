@@ -1,3 +1,4 @@
+// UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // Pantry profile row added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.ui.profile
 
@@ -30,6 +31,7 @@ import com.example.mylittlechef.ui.theme.DeepGreen
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
+import com.example.mylittlechef.ui.theme.LocalAppearanceSettings
 
 @Composable
 fun ProfileScreen(
@@ -50,7 +52,7 @@ fun ProfileScreen(
         onEditAllergyClick = onEditAllergyClick,
         onEditPantryClick = onEditPantryClick,
         modifier = modifier
-            .background(color = Color.White)
+            .background(color = MaterialTheme.colorScheme.background)
     )
 }
 
@@ -75,10 +77,12 @@ fun ProfileContent(
     {
         Spacer(Modifier.height(32.dp))
 
-        TitleText(
-            text = "다시 만나서 반가워요,\n${user.nickname} 님", // TODO: Color tag
-            color = Color.Black
-        )
+        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.Top) {
+            TitleText(text="다시 만나서 반가워요,\n${user.nickname} 님",
+                color=MaterialTheme.colorScheme.onBackground,modifier=Modifier.weight(1f))
+            AppearancePicker()
+        }
+        LocalAppearanceSettings.current.error?.let { Text(it,color=MaterialTheme.colorScheme.error) }
 
         Spacer(Modifier.height(32.dp))
 

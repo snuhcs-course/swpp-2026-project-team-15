@@ -1,3 +1,4 @@
+// UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // AI-generated initial text-highlighting scaffold with Claude chat (Sonnet 5.5), 2026-10-04; tag format redesigned and reviewed by Ahyoon Choi.
 package com.example.mylittlechef.ui.components
 
@@ -120,7 +121,7 @@ fun RecipeSubtitleText(
         text = text,
         style = MaterialTheme.typography.titleMedium,
         textAlign = TextAlign.Left,
-        color = Color.Black,
+        color = MaterialTheme.colorScheme.onSurface,
         overflow = TextOverflow.Clip,
         modifier = Modifier
     )
@@ -135,7 +136,7 @@ fun RecipeBodyText(
         text = text,
         style = MaterialTheme.typography.bodyMedium,
         textAlign = TextAlign.Left,
-        color = Color.Black,
+        color = MaterialTheme.colorScheme.onSurface,
         overflow = TextOverflow.Clip,
         modifier = Modifier
     )
