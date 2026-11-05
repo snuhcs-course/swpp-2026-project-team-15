@@ -1,4 +1,5 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-10-14; reviewed by Jaehyuk Choi.
+# Modified with Codex; tools CI job for Pixabay tooling, reviewed by Ahyoon Choi.
 # Fast checks on every pull request and on main (course Week 7-1, p.39).
 # Device tests (connectedDebugAndroidTest) need an emulator and are run locally for now.
 name: ci
@@ -9,6 +10,35 @@ on:
     branches: [main, "feat/**"]
 
 jobs:
+  changed:
+    runs-on: ubuntu-latest
+    outputs:
+      tools: ${{ steps.filter.outputs.tools }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            tools:
+              - 'tools/**'
+              - '.github/workflows/ci.yml'
+
+  tools:
+    needs: changed
+    if: needs.changed.outputs.tools == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --extra dev --locked
+      - run: uv run ruff check crawlers
+      - run: uv run ruff format --check crawlers
+      - run: uv run pytest
+
   server:
     runs-on: ubuntu-latest
     services:

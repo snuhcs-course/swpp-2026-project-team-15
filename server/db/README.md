@@ -41,13 +41,9 @@ All eight CSV headers are checked before database creation. Blank or whitespace-
 
 [`schema.sql`](schema.sql) defines the tables and constraints. The recipe and step CSV headers are:
 
-- `Recipe.csv`: `recipe_id,name,description,cuisine_type,category,cooking_time,calories,servings,difficulty`
+- `Recipe.csv`: `recipe_id,name,description,cuisine_type,category,cooking_time,calories,servings,difficulty,main_image_url`
 - `RecipeStep.csv`: `step_id,recipe_id,step_number,instruction,tip`
 
-`recipe.main_image_url`, `recipe.source_url` and `recipe_step.image_url` are no longer part of the schema. Older CSVs containing these columns must use the headers above before import. Recipe metadata, ingredient IDs, quantities and step tips are retained. `recipe_step.step_id` is the primary key; `step_number` gives the order within a recipe.
+`recipe.main_image_url` stores a nullable server path such as `/recipe-images/changupn-food-photography-2610863.jpg`; blank CSV cells import as SQL `NULL`. The server mounts `server/recipe_images/images` at `/recipe-images`. `recipe.source_url` and `recipe_step.image_url` are not part of the schema. For compatibility, the importer also accepts the previous `Recipe.csv` header without `main_image_url` and imports those values as NULL. `recipe_step.step_id` is the primary key; `step_number` gives the order within a recipe.
 
-An existing database already using this schema needs no rebuild. The importer
-never migrates or deletes an existing database. The Revision loader ignores
-unused URL columns in legacy databases; if physical removal is needed, prepare
-and verify a separate database before switching paths. Historical experiment
-JSON files retain their original snapshots and are not rewritten.
+The importer never migrates or deletes an existing database. For this additive column, apply `ALTER TABLE recipe ADD COLUMN main_image_url TEXT;` once to an existing database, or import into a new database path and switch the application configuration. If a schema change requires physically removing columns from an existing database, prepare and verify a separate database before switching paths. Historical experiment JSON files retain their original snapshots and are not rewritten.

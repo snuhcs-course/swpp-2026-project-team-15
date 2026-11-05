@@ -3,6 +3,9 @@
 # Modified with Codex (GPT-6.1 Sol), 2026-10-17; reviewed by Soohyun An.
 # Changes: Wire the recommendation service and provider while preserving existing app creation.
 
+# Modified with Codex (GPT-6 Luna), 2026-11-03; reviewed by Ahyoon Choi.
+# Changes: Mount local recipe images at /recipe-images.
+
 """Application factory. Collaborators are injected so tests can replace them.
 
 Run: uv run --env-file .env uvicorn app.main:create_app_from_env --factory
@@ -10,8 +13,10 @@ Run: uv run --env-file .env uvicorn app.main:create_app_from_env --factory
 
 import logging
 import os
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from google import genai
 from google.genai import types
 
@@ -44,6 +49,12 @@ def create_app(
         title="My Little Chef API",
         version="0.1.0",
         description="Ingredient recognition and recipe recommendation for one-person households.",
+    )
+    image_dir = Path(__file__).resolve().parents[1] / "recipe_images" / "images"
+    app.mount(
+        "/recipe-images",
+        StaticFiles(directory=image_dir, check_dir=False),
+        name="recipe-images",
     )
     app.state.vision_provider = vision
     app.state.recipe_repository = recipes

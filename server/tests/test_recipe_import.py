@@ -41,7 +41,7 @@ def recipe_csvs(tmp_path):
     return directory
 
 
-def test_import_preserves_recipe_data_without_url_columns(recipe_csvs, tmp_path):
+def test_import_preserves_recipe_data_with_nullable_image_url(recipe_csvs, tmp_path):
     before = {path.name: path.read_bytes() for path in recipe_csvs.iterdir()}
     database = tmp_path / "recipes.sqlite3"
     counts = create_database(recipe_csvs, database)
@@ -61,8 +61,10 @@ def test_import_preserves_recipe_data_without_url_columns(recipe_csvs, tmp_path)
             "calories",
             "servings",
             "difficulty",
+            "main_image_url",
         ]
         assert step_columns == ["step_id", "recipe_id", "step_number", "instruction", "tip"]
+        assert connection.execute("SELECT main_image_url FROM recipe").fetchone() == (None,)
         assert connection.execute("SELECT recipe_id,name,servings FROM recipe").fetchall() == [
             (9, "Fixture recipe", "4 servings")
         ]
@@ -75,10 +77,25 @@ def test_import_preserves_recipe_data_without_url_columns(recipe_csvs, tmp_path)
     assert {path.name: path.read_bytes() for path in recipe_csvs.iterdir()} == before
 
 
+def test_import_accepts_legacy_recipe_header_without_main_image_url(recipe_csvs, tmp_path):
+    path = recipe_csvs / "Recipe.csv"
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle))
+    assert rows[0][-1] == "main_image_url"
+    for row in rows:
+        row.pop()
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        csv.writer(handle).writerows(rows)
+
+    database = tmp_path / "legacy-recipes.sqlite3"
+    create_database(recipe_csvs, database)
+    with closing(sqlite3.connect(database)) as connection:
+        assert connection.execute("SELECT main_image_url FROM recipe").fetchone() == (None,)
+
+
 @pytest.mark.parametrize(
     "filename,column",
     [
-        ("Recipe.csv", "main_image_url"),
         ("Recipe.csv", "source_url"),
         ("RecipeStep.csv", "image_url"),
     ],

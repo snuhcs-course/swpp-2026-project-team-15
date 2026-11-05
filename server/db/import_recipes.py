@@ -1,6 +1,8 @@
 """Create a local SQLite recipe database from the eight entity CSV files."""
 
 # AI-generated initial importer with Codex (GPT-6.1 Sol), 2026-10-05 to 2026-10-06; reviewed by Soohyun An.
+# Modified with Codex (GPT-6 Luna), 2026-11-03; reviewed by Ahyoon Choi.
+# Changes: Import main_image_url and accept legacy Recipe.csv files without the column.
 
 from __future__ import annotations
 
@@ -29,12 +31,13 @@ TABLES = (
         (
             "recipe_id", "name", "description", "cuisine_type", "category",
             "cooking_time", "calories", "servings", "difficulty",
+            "main_image_url",
         ),
         frozenset({"recipe_id"}),
         (
             ("name", 100), ("cuisine_type", 50), ("category", 50),
             ("cooking_time", 20), ("calories", 20), ("servings", 20),
-            ("difficulty", 50),
+            ("difficulty", 50), ("main_image_url", 512),
         ),
     ),
     CsvTable(
@@ -86,10 +89,14 @@ def read_rows(csv_dir: Path, spec: CsvTable) -> list[tuple[int, tuple[object, ..
 
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
-        if reader.fieldnames != list(spec.columns):
+        expected_columns = list(spec.columns)
+        legacy_recipe_columns = expected_columns[:-1] if spec.table == "recipe" else None
+        if reader.fieldnames != expected_columns and reader.fieldnames != legacy_recipe_columns:
+            accepted = [expected_columns]
+            if legacy_recipe_columns is not None:
+                accepted.append(legacy_recipe_columns)
             raise ValueError(
-                f"{path}: expected columns {list(spec.columns)!r}; "
-                f"found {reader.fieldnames!r}"
+                f"{path}: expected columns {accepted!r}; found {reader.fieldnames!r}"
             )
 
         for record in reader:
@@ -99,7 +106,7 @@ def read_rows(csv_dir: Path, spec: CsvTable) -> list[tuple[int, tuple[object, ..
 
             values: list[object] = []
             for column in spec.columns:
-                raw = record[column]
+                raw = record.get(column, "")
                 value: object = None if not raw.strip() else raw
                 if column in spec.integer_columns and value is not None:
                     try:

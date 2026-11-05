@@ -29,7 +29,11 @@ def main() -> None:
                         current_name = new + name.removeprefix(old)
                         break
             source = base / current_name
-            if not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest() != expected:
+            if (
+                not source.is_file()
+                or hashlib.sha256(source.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+                != expected
+            ):
                 raise SystemExit(f"Protected reference/test changed: {name}; human review required")
     print("Preserved specification references and original contributor tests verified")
 

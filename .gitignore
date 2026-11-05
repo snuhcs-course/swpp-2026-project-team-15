@@ -55,3 +55,13 @@ test-results.xml
 
 # Synthetic demo fixtures are source assets, not private photo inputs.
 !/server/fixtures/demo/*.png
+tools/crawlers/pixabay/cache/
+tools/crawlers/pixabay/sheets/
+tools/crawlers/pixabay/selections/
+tools/crawlers/pixabay/downloads/
+tools/crawlers/pixabay/output/
+codex_note.md
+
+# Locally supplied recipe images stay out of Git
+/server/recipe_images/images/
+/spec/

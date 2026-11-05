@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.example.mylittlechef.model.Ingredient
 import com.example.mylittlechef.model.Recipe
 import com.example.mylittlechef.ui.components.BackButton
