@@ -94,7 +94,7 @@ def test_openrouter_rejects_truncation():
 
 def dataset(path, *, name="계란요리", ingredient="계란", bad_fk=False):
     values = {
-        "recipe": [(1, name, None, None, None, "10분", None, "1", None)],
+        "recipe": [(1, name, None, None, None, "10분", None, "1", None, None)],
         "ingredient": [(1, ingredient), (204, "물")],
         "recipe_step": [(1, 1, 1, "끓인다", None)],
         "recipe_ingredient": [(1, 999 if bad_fk else 1, 1, None, "3060001", None, None)],

@@ -4,6 +4,9 @@
 # Modified with Codex (GPT-6.1 Sol), 2026-10-17; reviewed by Soohyun An.
 # Changes: Define and validate ID-based requests, recipe results, revision statuses, and errors.
 
+# Modified with Codex (GPT-6 Luna), 2026-11-03; reviewed by Ahyoon Choi.
+# Changes: Add main_image_url to standard and ID-based recommendation response schemas.
+
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, field_validator, model_validator
@@ -36,6 +39,7 @@ class RecipeRecommendation(SQLModel):
     ingredients: list[str]
     steps: list[str]
     missing: list[str] = Field(description="Ingredients beyond the fridge and staples")
+    main_image_url: str | None = None
 
 
 class RecommendResponse(SQLModel):
@@ -151,6 +155,7 @@ class FilteringCounts(BaseModel):
 class RecommendationEntry(BaseModel):
     recipe_id: int
     original: SourceRecipe
+    main_image_url: str | None = None
     filtering: FilteringCounts
     revision: RecipeRevision
 
