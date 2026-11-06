@@ -12,7 +12,6 @@ dependencies = [
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.5"]
-hash = ["blurhash-python>=1.2"]
 
 [tool.uv]
 package = false

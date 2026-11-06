@@ -11,8 +11,6 @@ uv sync --locked
 uv run pytest
 ```
 
-Install the optional BlurHash placeholder encoder with `uv sync --group hash` when needed.
-
 Paths in `.env` can be absolute or relative to `tools/`. Process environment variables override `.env`. Keep API keys in `.env` or the process environment, never in recipe files or generated pages. The root `.gitignore` excludes `.env` and generated tool data.
 
 ## Pixabay recipe images
@@ -33,7 +31,7 @@ uv run --directory crawlers/pixabay/src python cli.py map-urls
 uv run --directory crawlers/pixabay/src python cli.py recipe-csv
 ```
 
-`process` writes the three app-sized WebP variants, attribution, and optional placeholders. `map-urls` writes `recipe_id,image_url` rows for processed selections using the configured URL prefix and variant. `recipe-csv` merges those URLs into a copy of the source `Recipe.csv`, setting `main_image_url` while preserving other columns. It writes to a separate output file and does not overwrite the source.
+`process` writes the three app-sized WebP variants and attribution metadata. `map-urls` writes `recipe_id,image_url` rows for processed selections using the configured URL prefix and variant. `recipe-csv` merges those URLs into a copy of the source `Recipe.csv`, setting `main_image_url` while preserving other columns. It writes to a separate output file and does not overwrite the source.
 
 Pixabay search results must be cached for 24 hours. The API's returned image URLs are temporary, and Pixabay disallows systematic mass downloads. This workflow therefore leaves downloading to a person through the selected Pixabay page. The app image directory must be provisioned on each server host.
 
@@ -49,8 +47,8 @@ All paths are set in `tools/.env`; defaults are relative to `tools/`.
 | `PIXABAY_SHEETS_DIR` | `crawlers/pixabay/sheets` | Generated review sheets |
 | `PIXABAY_SELECTIONS_DIR` | `crawlers/pixabay/selections` | Human-exported selection CSVs |
 | `PIXABAY_DOWNLOADS_DIR` | `crawlers/pixabay/downloads` | Manually downloaded originals, named by recipe ID |
-| `PIXABAY_IMAGES_DIR` | `../server/recipe_images/images` | Processed WebP images served by the app |
-| `PIXABAY_OUTPUT_DIR` | `crawlers/pixabay/output` | Attribution, placeholders, and generated CSVs |
+| `PIXABAY_IMAGES_DIR` | `../server/static/images/recipes` | Processed WebP images served by the app |
+| `PIXABAY_OUTPUT_DIR` | `crawlers/pixabay/output` | Attribution and generated CSVs |
 | `PIXABAY_MAPPING_FILE` | `crawlers/pixabay/output/recipe_image_urls.csv` | Recipe ID to app URL mapping |
 | `PIXABAY_SOURCE_RECIPE_CSV` | `../data/recipes/Recipe.csv` | Existing recipe rows to preserve |
 | `PIXABAY_OUTPUT_RECIPE_CSV` | `crawlers/pixabay/output/Recipe.csv` | Schema-ready CSV for DB import |

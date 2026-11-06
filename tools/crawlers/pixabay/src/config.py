@@ -55,7 +55,7 @@ def load_config() -> Config:
         sheets_dir=_path(values, "PIXABAY_SHEETS_DIR", "crawlers/pixabay/sheets"),
         selections_dir=_path(values, "PIXABAY_SELECTIONS_DIR", "crawlers/pixabay/selections"),
         downloads_dir=_path(values, "PIXABAY_DOWNLOADS_DIR", "crawlers/pixabay/downloads"),
-        images_dir=_path(values, "PIXABAY_IMAGES_DIR", "../server/recipe_images/images"),
+        images_dir=_path(values, "PIXABAY_IMAGES_DIR", "../server/static/images/recipes"),
         output_dir=_path(values, "PIXABAY_OUTPUT_DIR", "crawlers/pixabay/output"),
         mapping_file=_path(
             values, "PIXABAY_MAPPING_FILE", "crawlers/pixabay/output/recipe_image_urls.csv"

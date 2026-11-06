@@ -5,6 +5,7 @@
 
 # Modified with Codex (GPT-6 Luna), 2026-11-03; reviewed by Ahyoon Choi.
 # Changes: Mount local recipe images at /recipe-images.
+# Modified with Codex (GPT-6), 2026-11-06; reviewed by Ahyoon Choi. Changes: Serve recipe images from server/static/images/recipes.
 
 """Application factory. Collaborators are injected so tests can replace them.
 
@@ -50,7 +51,7 @@ def create_app(
         version="0.1.0",
         description="Ingredient recognition and recipe recommendation for one-person households.",
     )
-    image_dir = Path(__file__).resolve().parents[1] / "recipe_images" / "images"
+    image_dir = Path(__file__).resolve().parents[1] / "static" / "images" / "recipes"
     app.mount(
         "/recipe-images",
         StaticFiles(directory=image_dir, check_dir=False),

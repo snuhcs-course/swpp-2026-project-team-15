@@ -1,5 +1,6 @@
 # AI-generated initial implementation with Codex (GPT-6 Luna Medium),
 # 2026-11-05; reviewed by Ahyoon Choi.
+# Modified with Codex (GPT-6), 2026-11-06; reviewed by Ahyoon Choi. Changes: Remove the BlurHash availability notice.
 
 """Command line interface for candidate search, review sheets, processing, and status."""
 
@@ -91,10 +92,6 @@ def process_command(selection: list[Path] = typer.Option(None, "--selection"), f
     typer.echo(
         f"Processed {result['processed']}, skipped {result['skipped']}, missing originals: {result['missing']}, output bytes: {result['bytes']}"
     )
-    try:
-        import blurhash  # noqa: F401
-    except ImportError:
-        typer.echo("Optional blurhash library is unavailable; placeholders were skipped.")
 
 
 @app.command("map-urls")
