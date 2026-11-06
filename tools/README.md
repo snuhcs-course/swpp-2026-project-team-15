@@ -7,9 +7,11 @@ This directory is a standalone `uv` project for offline data preparation tools. 
 ```powershell
 cd tools
 Copy-Item .env.example .env
-uv sync --extra dev --locked
+uv sync --locked
 uv run pytest
 ```
+
+Install the optional BlurHash placeholder encoder with `uv sync --group hash` when needed.
 
 Paths in `.env` can be absolute or relative to `tools/`. Process environment variables override `.env`. Keep API keys in `.env` or the process environment, never in recipe files or generated pages. The root `.gitignore` excludes `.env` and generated tool data.
 
