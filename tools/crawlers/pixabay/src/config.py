@@ -1,3 +1,6 @@
+# AI-generated initial implementation with Codex (GPT-6 Luna Medium),
+# 2026-11-05; reviewed by Ahyoon Choi.
+
 """Load Pixabay tool credentials and paths from tools/.env and the process environment."""
 
 from __future__ import annotations

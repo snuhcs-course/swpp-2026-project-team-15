@@ -1,3 +1,6 @@
+# AI-generated initial implementation with Codex (GPT-6 Luna Medium),
+# 2026-11-03; reviewed by Ahyoon Choi.
+
 """Pixabay search with a 24-hour cache and conservative request pacing."""
 
 from __future__ import annotations
@@ -90,7 +93,7 @@ def search_recipe(
             raise ValueError(
                 "Recent cache exists; interactive confirmation is required to force refresh"
             )
-    key = _pixabay_key()
+    key = _pixabay_key() # pixabay api key
     if not key:
         raise ValueError("Set PIXABAY_KEY in tools/.env or the process environment")
     client = session or requests.Session()

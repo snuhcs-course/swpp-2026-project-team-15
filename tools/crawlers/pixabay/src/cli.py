@@ -1,3 +1,6 @@
+# AI-generated initial implementation with Codex (GPT-6 Luna Medium),
+# 2026-11-05; reviewed by Ahyoon Choi.
+
 """Command line interface for candidate search, review sheets, processing, and status."""
 
 from __future__ import annotations
