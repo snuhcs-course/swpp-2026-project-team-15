@@ -1,6 +1,7 @@
-# AI-generated initial implementation with Codex (GPT-6 Luna Medium),
+﻿# AI-generated initial implementation with Codex (GPT-6 Luna Medium),
 # 2026-11-05; reviewed by Ahyoon Choi.
-# Modified with Codex (GPT-6), 2026-11-06; reviewed by Ahyoon Choi. Changes: Remove the BlurHash availability notice.
+# Modified with Codex (GPT-6), 2026-11-06; reviewed by Ahyoon Choi.
+# Changes: Remove BlurHash notice and wrap CLI output.
 
 """Command line interface for candidate search, review sheets, processing, and status."""
 
@@ -90,7 +91,8 @@ def process_command(selection: list[Path] = typer.Option(None, "--selection"), f
     files = _selection_files(selection, config.selections_dir)
     result = run_process(files, config.downloads_dir, config.images_dir, config.output_dir, force)
     typer.echo(
-        f"Processed {result['processed']}, skipped {result['skipped']}, missing originals: {result['missing']}, output bytes: {result['bytes']}"
+        f"Processed {result['processed']}, skipped {result['skipped']}, "
+        f"missing originals: {result['missing']}, output bytes: {result['bytes']}"
     )
 
 
@@ -159,7 +161,9 @@ def status(
             )
         ]
         print(
-            f"{index // batch_size + 1:02}     {searched}/{len(chunk)}       {len(chosen)}/{len(chunk)}      {len(downloaded)}/{len(chosen)}       {len(complete)}/{len(downloaded)}"
+            f"{index // batch_size + 1:02}     {searched}/{len(chunk)}       "
+            f"{len(chosen)}/{len(chunk)}      {len(downloaded)}/{len(chosen)}       "
+            f"{len(complete)}/{len(downloaded)}"
         )
         no_original.extend(rid for rid in chosen if rid not in downloaded)
         for r in chunk:

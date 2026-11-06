@@ -1,6 +1,7 @@
-# AI-generated initial implementation with Codex (GPT-6 Luna Medium),
+﻿# AI-generated initial implementation with Codex (GPT-6 Luna Medium),
 # 2026-11-03; reviewed by Ahyoon Choi.
-# Modified with Codex (GPT-6), 2026-11-06; reviewed by Ahyoon Choi. Changes: Remove BlurHash placeholder generation.
+# Modified with Codex (GPT-6), 2026-11-06; reviewed by Ahyoon Choi.
+# Changes: Remove BlurHash placeholders and keep processing code within style limits.
 
 """Convert manually downloaded originals into app-sized WebP assets."""
 
@@ -44,8 +45,11 @@ def process(
     skipped = 0
     attribution: dict[str, Any] = {}
     for recipe_id, row in selections.items():
-        originals = [downloads_dir / f"{recipe_id}.{ext}" for ext in ("jpg", "jpeg", "png", "webp")]
-        source = next((p for p in originals if p.is_file()), None)
+        originals = [
+            downloads_dir / f"{recipe_id}.{ext}"
+            for ext in ("jpg", "jpeg", "png", "webp")
+        ]
+        source = next((path for path in originals if path.is_file()), None)
         if source is None:
             missing.append(recipe_id)
             continue
@@ -86,5 +90,5 @@ def process(
         "processed": len(processed),
         "skipped": skipped,
         "missing": missing,
-        "bytes": sum(p.stat().st_size for p in out.glob("*.webp")),
+        "bytes": sum(path.stat().st_size for path in out.glob("*.webp")),
     }
