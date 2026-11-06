@@ -93,7 +93,7 @@ def search_recipe(
             raise ValueError(
                 "Recent cache exists; interactive confirmation is required to force refresh"
             )
-    key = _pixabay_key() # pixabay api key
+    key = _pixabay_key()  # pixabay api key
     if not key:
         raise ValueError("Set PIXABAY_KEY in tools/.env or the process environment")
     client = session or requests.Session()
