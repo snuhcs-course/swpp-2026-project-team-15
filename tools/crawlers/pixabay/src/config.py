@@ -6,27 +6,9 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from dotenv import dotenv_values
+
 TOOLS_ROOT = Path(__file__).resolve().parents[3]
-
-
-def _dotenv(path: Path) -> dict[str, str]:
-    values: dict[str, str] = {}
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return values
-    for line in lines:
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        name, separator, value = stripped.partition("=")
-        if not separator:
-            continue
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-            value = value[1:-1]
-        values[name.strip().removeprefix("export ").strip()] = value
-    return values
 
 
 def _path(values: dict[str, str], key: str, default: str) -> Path:
@@ -54,7 +36,11 @@ class Config:
 
 def load_config() -> Config:
     """Read tools/.env first; process environment values take precedence."""
-    values = _dotenv(TOOLS_ROOT / ".env")
+    values = {
+        key: value
+        for key, value in dotenv_values(TOOLS_ROOT / ".env", encoding="utf-8").items()
+        if value is not None
+    }
     values.update(os.environ)
     variant = values.get("PIXABAY_IMAGE_VARIANT", "list").strip()
     if variant not in {"thumb", "list", "detail"}:
