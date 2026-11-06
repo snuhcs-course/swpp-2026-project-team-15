@@ -3,10 +3,16 @@ name = "recipe-tools"
 version = "0.1.0"
 description = "Offline recipe data preparation tools"
 requires-python = ">=3.11"
-dependencies = ["requests>=2.31", "Pillow>=10", "typer>=0.12", "python-dotenv>=1.0"]
+dependencies = [
+    "requests>=2.31",
+    "Pillow>=10",
+    "typer>=0.12",
+    "python-dotenv>=1.0",
+    "pytest>=8",
+]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.5"]
+dev = ["ruff>=0.5"]
 hash = ["blurhash-python>=1.2"]
 
 [tool.uv]

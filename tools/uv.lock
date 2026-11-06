@@ -487,6 +487,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "pillow" },
+    { name = "pytest" },
     { name = "python-dotenv" },
     { name = "requests" },
     { name = "typer" },
@@ -494,7 +495,6 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "pytest" },
     { name = "ruff" },
 ]
 hash = [
@@ -505,7 +505,7 @@ hash = [
 requires-dist = [
     { name = "blurhash-python", marker = "extra == 'hash'", specifier = ">=1.2" },
     { name = "pillow", specifier = ">=10" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
+    { name = "pytest", specifier = ">=8" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "requests", specifier = ">=2.31" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5" },
