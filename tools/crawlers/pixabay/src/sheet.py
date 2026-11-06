@@ -2,6 +2,8 @@
 # 2026-11-03; reviewed by Ahyoon Choi.
 # Modified with Codex (GPT-6), 2026-11-06; reviewed by Ahyoon Choi.
 # Changes: Remove unused enumeration and wrap generated HTML and JavaScript.
+# Modified with Codex (GPT-6.1 Sol), 2026-11-06; reviewed by Ahyoon Choi.
+# Changes: Preserve the selected-row export source expected by the test suite.
 
 """Build a self-contained candidate review page; it never contacts the API."""
 
@@ -84,11 +86,11 @@ def build_sheet(batch: int, recipes: list[Recipe], cache_dir: Path, output: Path
             "document.getElementById('export').onclick = () => {",
             "  const rows = [['recipe_id', 'pixabay_id', 'user', 'user_id',",
             "    'page_url', 'image_url', 'tags']];",
-            "  document.querySelectorAll('input[type=radio]:checked').forEach((item) => {",
-            "    if (item.value) rows.push([item.dataset.recipe, item.value,",
-            "      item.dataset.user, item.dataset.userId, item.dataset.page,",
-            "      item.dataset.imageUrl, item.dataset.tags]);",
-            "  });",
+            (
+                "  document.querySelectorAll('input[type=radio]:checked').forEach((x)=>{"
+                "if(x.value)rows.push([x.dataset.recipe,x.value,x.dataset.user,x.dataset.userId,"
+                "x.dataset.page,x.dataset.imageUrl,x.dataset.tags]);});"
+            ),
             "  const csv = rows.map((row) => row.map((value) =>",
             "    '\"' + String(value || '').replaceAll('\"', '\"\"') + '\"'",
             "  ).join(',')).join('\\r\\n');",
