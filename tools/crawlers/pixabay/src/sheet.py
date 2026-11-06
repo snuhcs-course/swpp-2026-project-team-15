@@ -1,3 +1,6 @@
+# AI-generated initial implementation with Codex (GPT-6 Luna Medium),
+# 2026-11-03; reviewed by Ahyoon Choi.
+
 """Build a self-contained candidate review page; it never contacts the API."""
 
 from __future__ import annotations

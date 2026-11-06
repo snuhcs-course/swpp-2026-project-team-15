@@ -1,3 +1,6 @@
+# AI-generated initial implementation with Codex (GPT-6 Luna Medium),
+# 2026-11-05; reviewed by Ahyoon Choi.
+
 """Export local image URL mappings and DB-ready recipe CSV files."""
 
 from __future__ import annotations
