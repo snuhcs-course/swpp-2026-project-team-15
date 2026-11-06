@@ -1,3 +1,8 @@
+# AI-generated initial implementation with Codex (GPT-6 Luna Medium),
+# 2026-11-03; reviewed by Ahyoon Choi.
+# Modified with Codex (GPT-6), 2026-11-06; reviewed by Ahyoon Choi.
+# Changes: Remove BlurHash placeholders and keep processing code within style limits.
+
 """Convert manually downloaded originals into app-sized WebP assets."""
 
 from __future__ import annotations
@@ -10,7 +15,7 @@ from typing import Any
 from PIL import Image, ImageOps
 
 SIZES = {"thumb": (300, 75), "list": (600, 78), "detail": (1200, 80)}
-FIELDS = ("recipe_id", "pixabay_id", "user", "user_id", "page_url", "tags")
+FIELDS = ("recipe_id", "pixabay_id", "user", "user_id", "page_url", "image_url", "tags")
 
 
 def load_selections(files: list[Path]) -> dict[int, dict[str, str]]:
@@ -25,20 +30,23 @@ def load_selections(files: list[Path]) -> dict[int, dict[str, str]]:
     return selected
 
 
-def process(files: list[Path], root: Path, force: bool = False) -> dict[str, Any]:
+def process(
+    files: list[Path],
+    downloads_dir: Path,
+    images_dir: Path,
+    metadata_dir: Path,
+    force: bool = False,
+) -> dict[str, Any]:
     selections = load_selections(files)
-    out = root / "output" / "images"
+    out = images_dir
     out.mkdir(parents=True, exist_ok=True)
     missing: list[int] = []
     processed: set[int] = set()
     skipped = 0
     attribution: dict[str, Any] = {}
-    placeholders: dict[str, str] = {}
     for recipe_id, row in selections.items():
-        originals = [
-            root / "downloads" / f"{recipe_id}.{ext}" for ext in ("jpg", "jpeg", "png", "webp")
-        ]
-        source = next((p for p in originals if p.is_file()), None)
+        originals = [downloads_dir / f"{recipe_id}.{ext}" for ext in ("jpg", "jpeg", "png", "webp")]
+        source = next((path for path in originals if path.is_file()), None)
         if source is None:
             missing.append(recipe_id)
             continue
@@ -66,14 +74,8 @@ def process(files: list[Path], root: Path, force: bool = False) -> dict[str, Any
             "page_url": row.get("page_url", ""),
             "source": "Pixabay",
         }
-        try:
-            from blurhash import encode
-
-            placeholders[str(recipe_id)] = encode(image, x_components=4, y_components=3)
-        except ImportError:
-            pass
-    base = root / "output"
-    base.mkdir(exist_ok=True)
+    base = metadata_dir
+    base.mkdir(parents=True, exist_ok=True)
     attr_path = base / "attribution.json"
     try:
         old = json.loads(attr_path.read_text(encoding="utf-8"))
@@ -81,17 +83,9 @@ def process(files: list[Path], root: Path, force: bool = False) -> dict[str, Any
         old = {}
     old.update(attribution)
     attr_path.write_text(json.dumps(old, ensure_ascii=False, indent=2), encoding="utf-8")
-    if placeholders:
-        p_path = base / "placeholders.json"
-        try:
-            old_hashes = json.loads(p_path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            old_hashes = {}
-        old_hashes.update(placeholders)
-        p_path.write_text(json.dumps(old_hashes, ensure_ascii=False, indent=2), encoding="utf-8")
     return {
         "processed": len(processed),
         "skipped": skipped,
         "missing": missing,
-        "bytes": sum(p.stat().st_size for p in out.glob("*.webp")),
+        "bytes": sum(path.stat().st_size for path in out.glob("*.webp")),
     }

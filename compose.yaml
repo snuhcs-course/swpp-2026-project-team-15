@@ -35,6 +35,8 @@ services:
       options: {max-size: 10m, max-file: "3"}
   api:
     <<: *api
+    volumes:
+      - ./server/static/images/recipes:/app/static/images/recipes:ro
     restart: unless-stopped
     depends_on:
       postgres: {condition: service_healthy}
