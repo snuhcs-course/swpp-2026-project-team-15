@@ -10,6 +10,7 @@ COPY server/recipe_filtering ./recipe_filtering
 COPY server/recipe_revision ./recipe_revision
 COPY server/fixtures/vision ./fixtures/vision
 COPY server/db ./db
+RUN mkdir -p /app/static/images/recipes
 RUN useradd --uid 10001 --create-home chef
 USER chef
 EXPOSE 8000

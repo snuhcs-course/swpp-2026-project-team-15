@@ -1,15 +1,18 @@
+# AI-generated initial implementation with Codex (GPT-6 Luna Medium),
+# 2026-11-03; reviewed by Ahyoon Choi.
+
 """Pixabay search with a 24-hour cache and conservative request pacing."""
 
 from __future__ import annotations
 
 import json
-import os
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import requests
+from config import load_config
 from models import Recipe, hit_fields
 
 API_URL = "https://pixabay.com/api/"
@@ -18,26 +21,8 @@ SEARCH_LANGUAGE = "ko"
 
 
 def _pixabay_key() -> str | None:
-    """Read the process environment first, then the repository's server/.env file."""
-    key = os.environ.get("PIXABAY_KEY")
-    if key:
-        return key
-    env_file = Path(__file__).resolve().parents[4] / "server" / ".env"
-    try:
-        lines = env_file.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return None
-    for line in lines:
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        name, separator, value = stripped.partition("=")
-        if separator and name.strip().removeprefix("export ").strip() == "PIXABAY_KEY":
-            value = value.strip()
-            if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-                value = value[1:-1]
-            return value or None
-    return None
+    """Read PIXABAY_KEY from the process environment or tools/.env."""
+    return load_config().pixabay_key
 
 
 def read_cache(
@@ -108,9 +93,9 @@ def search_recipe(
             raise ValueError(
                 "Recent cache exists; interactive confirmation is required to force refresh"
             )
-    key = _pixabay_key()
+    key = _pixabay_key()  # pixabay api key
     if not key:
-        raise ValueError("PIXABAY_KEY environment variable is required")
+        raise ValueError("Set PIXABAY_KEY in tools/.env or the process environment")
     client = session or requests.Session()
     params = {
         "key": key,

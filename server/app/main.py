@@ -5,6 +5,10 @@
 
 # Modified with Codex (GPT-6 Luna), 2026-11-03; reviewed by Ahyoon Choi.
 # Changes: Mount local recipe images at /recipe-images.
+# Modified with Codex (GPT-6), 2026-11-06; reviewed by Ahyoon Choi.
+# Changes: Serve recipe images from server/static/images/recipes.
+# Modified with Codex (GPT-6), 2026-11-06; reviewed by Ahyoon Choi.
+# Changes: Name the recipe image directory for static-route coverage.
 
 """Application factory. Collaborators are injected so tests can replace them.
 
@@ -38,6 +42,8 @@ from app.vision.openrouter import OpenRouterVisionProvider
 from app.vision.providers import FixtureVisionProvider, VisionProvider
 from app.vision.router import router as vision_router
 
+RECIPE_IMAGE_DIR = Path(__file__).resolve().parents[1] / "static" / "images" / "recipes"
+
 
 def create_app(
     vision: VisionProvider,
@@ -50,10 +56,9 @@ def create_app(
         version="0.1.0",
         description="Ingredient recognition and recipe recommendation for one-person households.",
     )
-    image_dir = Path(__file__).resolve().parents[1] / "recipe_images" / "images"
     app.mount(
         "/recipe-images",
-        StaticFiles(directory=image_dir, check_dir=False),
+        StaticFiles(directory=RECIPE_IMAGE_DIR, check_dir=False),
         name="recipe-images",
     )
     app.state.vision_provider = vision

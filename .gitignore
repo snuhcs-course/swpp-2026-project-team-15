@@ -61,7 +61,8 @@ tools/crawlers/pixabay/selections/
 tools/crawlers/pixabay/downloads/
 tools/crawlers/pixabay/output/
 codex_note.md
+AGENTS.md
 
 # Locally supplied recipe images stay out of Git
-/server/recipe_images/images/
+/server/static/images/recipes/
 /spec/

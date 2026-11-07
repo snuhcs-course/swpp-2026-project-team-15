@@ -19,7 +19,7 @@ Live Revision requires explicit `REVISION_PROVIDER=live` plus `REVISION_LLM_ENDP
 
 ## Recipe images
 
-Recipe records may include nullable `main_image_url`. The server exposes local files from `server/recipe_images/images/` at `GET /recipe-images/{filename}`. The Android client combines this path with `SERVER_BASE_URL` and loads it with Coil. Image assets are local and ignored by Git, so provide the files on each runtime host that should display them. The Pixabay preparation CLI lives in `tools/crawlers/pixabay`; its processed images must be provisioned into the server's `recipe_images/images/` directory.
+Recipe records may include nullable `main_image_url`. The server exposes local files from `server/static/images/recipes/` at `GET /recipe-images/{filename}`. The Android client combines this path with `SERVER_BASE_URL` and loads it with Coil. Image assets are local and ignored by Git, so provide the files on each runtime host that should display them. The Pixabay preparation CLI lives in `tools/crawlers/pixabay`; its processed images must be provisioned into `server/static/images/recipes/`.
 
 ## ID-based recommendations
 
