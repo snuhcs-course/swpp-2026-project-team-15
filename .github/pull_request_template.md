@@ -10,7 +10,7 @@ Attach screenshots or GIFs of any visual changes. (Only for frontend-related cha
 
 ---
 
-### Reviewer Checklist:
+#### Reviewer Checklist:
 - [ ] Code is written in clean, maintainable, and idiomatic form.
 - [ ] Automated test coverage is adequate.
 - [ ] All existing tests pass.
@@ -25,4 +25,3 @@ Add any other comments or information that might be useful for the review proces
 ---
 
 template source: Week 6, Code Review and Practices, page 29.
-test
