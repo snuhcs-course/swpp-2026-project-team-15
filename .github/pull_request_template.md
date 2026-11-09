@@ -10,7 +10,7 @@ Attach screenshots or GIFs of any visual changes. (Only for frontend-related cha
 
 ---
 
-### Reviewer Checklist:
+#### Reviewer Checklist:
 - [ ] Code is written in clean, maintainable, and idiomatic form.
 - [ ] Automated test coverage is adequate.
 - [ ] All existing tests pass.
