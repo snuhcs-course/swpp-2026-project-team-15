@@ -4,6 +4,9 @@ Stage 2 test-first contracts and synthetic fixture provenance are documented
 separately in [STAGE2.md](STAGE2.md). Stage 2 parsing is now implemented and those
 cases must pass; stage 1 remains independently testable.
 
+Stage 3 tests and their proposed interfaces are documented in [STAGE3.md](STAGE3.md).
+They are test-first and remain RED until fetching/storage/resume are implemented.
+
 These are acceptance contracts for tasks 1.1–1.4 of
 `collect-tenkrecipes-quick-recipes`. Stage 1 implements offline plan generation;
 source collection is not implemented. The initial test-only run was RED because
