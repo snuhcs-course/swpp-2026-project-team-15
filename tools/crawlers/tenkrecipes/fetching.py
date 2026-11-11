@@ -114,7 +114,7 @@ class HttpClient:
                 retry_not_before=(
                     self.utcnow() + timedelta(seconds=max(0, ready - self.monotonic()))
                 ).isoformat()
-                if status == "deferred" and ready > self.monotonic()
+                if status in ("deferred", "failed") and ready > self.monotonic()
                 else None,
             )
 
@@ -167,7 +167,9 @@ class HttpClient:
             except requests.RequestException as exc:
                 attempt.update(error=type(exc).__name__, fetched_at=self.utcnow().isoformat())
                 return result("failed", "transport_error")
-            if number == self.policy["max_attempts"]:
-                return result("failed", "retry_exhausted")
             retry_at = self.monotonic() + self._retry_delay(retry_after)
+            if number == self.policy["max_attempts"]:
+                # Exhausted attempts do not revoke the server's retry deadline.
+                ready = retry_at
+                return result("failed", "retry_exhausted")
         raise AssertionError("Unreachable retry loop")

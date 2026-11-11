@@ -1,4 +1,5 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
+# Regression coverage assisted by Codex, 2026-11-12; human review pending.
 """Tasks 3.2–3.4: durable source snapshots, recorded candidates, and safe resume."""
 
 import copy
@@ -238,3 +239,73 @@ def test_source_failure_preserves_previous_work_and_distinguishes_causes(tmp_pat
     assert len(transport.calls) == 2
     assert len(run.snapshot()["attempts"]) == 2
     assert len(list((Path(options["plan"]["output_dir"]) / "lists").rglob("*.html"))) == 2
+
+
+def test_resume_recovers_list_published_before_interrupted_manifest(tmp_path, monkeypatch):
+    """Regression: a published list must not disappear from pending work on resume."""
+    module, run, options, transport, _ = make_run(tmp_path, fixture_response("stage2_list.html"))
+    manifest = Path(options["plan"]["output_dir"]) / "manifest.json"
+    replace = os.replace
+
+    def interrupt(source, destination):
+        if Path(destination).resolve() == manifest.resolve():
+            raise OSError("synthetic checkpoint interruption")
+        return replace(source, destination)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(os, "replace", interrupt)
+        with pytest.raises(OSError):
+            run.fetch_list("52", 1)
+    transport.outcomes.extend(
+        [fixture_response("stage2_detail.html"), fixture_response("stage2_detail.html")]
+    )
+    resumed = module.CollectionRun.resume(**options)
+    resumed.resume_pending()
+    assert [call["url"] for call in transport.calls] == [
+        LIST_URL,
+        DETAIL_URL,
+        DETAIL_URL.replace("900001", "900002"),
+    ]
+    assert len(resumed.snapshot()["lists"]) == 1
+
+
+def test_resume_retains_retry_after_deadline_without_early_transport_access(tmp_path):
+    """Regression: restarting a deferred run must not bypass Retry-After."""
+    module, run, options, transport, _ = make_run(
+        tmp_path, FakeResponse(429, headers={"Retry-After": "999"})
+    )
+    assert run.fetch_list("52", 1)["status"] == "deferred"
+    transport.outcomes.append(fixture_response("stage2_list.html"))
+    resumed = module.CollectionRun.resume(**options)
+    assert resumed.fetch_list("52", 1)["status"] == "deferred"
+    assert len(transport.calls) == 1
+
+
+def test_pending_detail_failure_is_not_hidden_by_a_later_candidate_success(tmp_path):
+    """Regression: stage 3 must report failure instead of silently continuing to success."""
+    _, run, _, transport, _ = make_run(
+        tmp_path,
+        fixture_response("stage2_list.html"),
+        FakeResponse(404),
+        fixture_response("stage2_detail.html"),
+    )
+    run.fetch_list("52", 1)
+    run.resume_pending()
+    assert run.snapshot()["state"] == "failed"
+    assert run.snapshot()["reason"] == "http_error"
+    assert [call["url"] for call in transport.calls] == [LIST_URL, DETAIL_URL]
+
+
+def test_retry_after_on_last_attempt_is_retained_across_resume(tmp_path):
+    """Exhausting attempts must not allow resume to bypass the last rate-limit deadline."""
+    module, run, options, transport, _ = make_run(
+        tmp_path,
+        FakeResponse(429, headers={"Retry-After": "2"}),
+        FakeResponse(429, headers={"Retry-After": "2"}),
+        FakeResponse(429, headers={"Retry-After": "999"}),
+    )
+    assert run.fetch_list("52", 1)["status"] == "failed"
+    transport.outcomes.append(fixture_response("stage2_list.html"))
+    resumed = module.CollectionRun.resume(**options)
+    assert resumed.fetch_list("52", 1)["status"] == "deferred"
+    assert len(transport.calls) == 3
