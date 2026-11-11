@@ -1,4 +1,4 @@
-# AI-assisted with Codex, 2026-11-11; human review pending.
+# AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
 """Preview collection plans; source fetching is not implemented in stage 1."""
 
 import json

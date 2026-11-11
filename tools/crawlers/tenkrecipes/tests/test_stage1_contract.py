@@ -1,5 +1,5 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
-# Additional output-preview tests assisted by Codex, 2026-11-11; human review pending.
+# Additional output-preview tests assisted by Codex, 2026-11-11; reviewed by Soohyun An
 """Stage 1 acceptance tests derived from the approved quotas and offline boundary.
 
 The CLI JSON interface is specified in the adjacent test README. Missing implementation

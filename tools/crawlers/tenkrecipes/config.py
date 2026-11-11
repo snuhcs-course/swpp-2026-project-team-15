@@ -1,4 +1,4 @@
-# AI-assisted with Codex, 2026-11-11; human review pending.
+# AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
 """Build immutable collection plans without accessing services or loading credentials."""
 
 from collections.abc import Mapping
