@@ -16,7 +16,8 @@ The Pixabay configuration reads paths from `.env` relative to `tools/`; process 
 ## 만개의레시피 quick-recipe plans
 
 The [tenkrecipes tool](crawlers/tenkrecipes/README.md) currently provides offline
-planning for 500 source recipes across nine approved quick-recipe categories.
+planning for 500 source recipes across nine approved quick-recipe categories,
+plus offline parsing of saved list/detail HTML.
 It does not read `.env`, contact the source site, or write collection files.
 Its explicit relative output paths use the caller's current working directory.
 
@@ -24,7 +25,9 @@ Its explicit relative output paths use the caller's current working directory.
 uv run --locked python -m crawlers.tenkrecipes.cli plan
 ```
 
-Live collection and production data integration are not implemented in stage 1.
+The detail `parse --input source.html --source-url URL` command emits JSON without
+changing the input or fetching images. See the tool's schema documentation.
+Live collection and production data integration are not implemented.
 The default tools test command discovers both the Pixabay and tenkrecipes suites.
 
 ## Pixabay recipe images

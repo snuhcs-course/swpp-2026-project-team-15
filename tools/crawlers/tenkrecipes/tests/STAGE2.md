@@ -1,9 +1,9 @@
 # Stage 2 test-first contracts
 
-These tests cover tasks 2.1–2.4. No parser or parse CLI implementation is supplied.
-At this stage the new cases are expected RED: missing behavior is not skipped,
-xfail-marked, mocked into success, or implemented in the test harness.
-The completed stage 1 and existing Pixabay contracts must remain green.
+These tests cover the implemented tasks 2.1–2.4 and the offline parse CLI.
+They were first written RED, then implemented without skip/xfail or replacement
+parsers in the harness. Stage 1 and existing Pixabay contracts remain required.
+See [the runtime schema](../SCHEMA.md) for the current output and error contract.
 
 ## Fixture provenance and limits
 
@@ -17,13 +17,12 @@ structures; they do not establish compatibility with every live page layout.
 
 Variants remove or alter explicit fixture fragments, or replace only JSON-LD.
 They do not run a replacement parser or compute expected content through the
-future production parser. Expected ingredient and instruction values are stated
+production parser. Expected ingredient and instruction values are stated
 independently in the assertions.
 
-## Proposed public interface
+## Public interface
 
-The planning artifacts define behaviors rather than exact Python names or JSON
-keys. These tests propose the following concrete, minimal interface for review:
+The test-first interface is now implemented:
 
 ```python
 from crawlers.tenkrecipes.parsing import ParseError, parse_list_page, parse_recipe
@@ -34,8 +33,8 @@ record = parse_recipe(html, source_url=recipe_url)
 
 Both functions are offline and consume an HTML string. `ParseError` is the
 controlled exception for unrecognized structure or list/filter mismatches.
-The tests import the future module during individual test execution so missing
-implementation produces failures without preventing collection of other tests.
+The tests import the parser during individual test execution, preserving the
+original test-first discovery behavior.
 
 ### List output
 
@@ -110,7 +109,7 @@ adjudication are outside stage 2.
 
 ### Offline CLI
 
-From `tools/`, the proposed invocation is:
+From `tools/`, invoke:
 
 ```powershell
 python -m crawlers.tenkrecipes.cli parse --input source.html --source-url https://www.10000recipe.com/recipe/900001
@@ -127,13 +126,20 @@ The existing subprocess audit guard checks network and production-file isolation
 | Task | Cases | Main checks |
 |---|---:|---|
 | 2.1 | 14 | Combined filters, candidate observations, links/images, empty versus changed structure |
-| 2.2–2.3 | 21 | DOM precedence, metadata supplementation, mechanical title comparison, rows/quantities/notes, steps/tips, tools and source identity |
+| 2.2–2.3 | 29 | DOM precedence, metadata supplementation, mechanical title comparison including Unicode, rows/quantities/notes, steps/tips, missing-content findings, tools and source identity |
 | 2.4 | 4 | Offline parse command, missing/invalid input, source hash and no output-file side effects |
 
 ```powershell
 uv run --locked pytest crawlers/tenkrecipes/tests/test_stage2_lists.py crawlers/tenkrecipes/tests/test_stage2_details.py crawlers/tenkrecipes/tests/test_stage2_parse_cli.py -q
 ```
 
-Tasks 2.1–2.4 remain incomplete until implementation, passing tests, and the
-task's schema/command documentation are actually delivered. Creating these tests
-does not mark any stage 2 implementation task complete.
+The implementation adds four boundary cases for canonical Unicode title equality,
+a malformed script before valid metadata, JSON-LD quantity not filling a blank
+DOM quantity, and metadata not concealing missing DOM structure.
+These fixtures do not establish compatibility with every live page layout.
+
+Four regression cases reproduce a violation of the requirement that missing
+values have quality findings: empty ingredient/step containers and blank
+ingredient names/instructions. They failed before the diagnostic fix. Empty lists
+and null row values remain preserved, while absent structural elements continue
+to raise `ParseError`. Acquisition eligibility is still checked in later stages.

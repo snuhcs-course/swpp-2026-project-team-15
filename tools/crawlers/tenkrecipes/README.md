@@ -1,6 +1,6 @@
 # 만개의레시피 수집 계획 도구
 
-현재 구현 범위는 **1단계의 오프라인 계획 생성**이다. CLI import·도움말·`plan`은
+현재 구현 범위는 **1–2단계의 오프라인 계획 생성과 목록·상세 파싱**이다. CLI import·도움말·`plan`은
 네트워크, API 키, `tools/.env`, 서버 환경을 사용하지 않는다. `plan`은 JSON만 출력하며
 출력 디렉터리·DB·이미지 파일을 생성하거나 수정하지 않는다.
 
@@ -59,10 +59,36 @@ Python API `crawlers.tenkrecipes.config.build_plan(output_dir=Path(...))`는
   실질 중복 여부를 별도 검수해야 한다. 자동 의미 중복 제거는 이번 수집 범위 밖이다.
 - 재료 수량 누락 등도 원문 보존 후 검수할 항목이다. 수집 완료가 서비스 적합성을 뜻하지 않는다.
 
-목록·상세 파싱, 원문·썸네일 취득, 진행 저장·재개 및 검수 보고서는 아직 구현하지 않았다.
+원문·썸네일 취득, 진행 저장·재개 및 검수 보고서는 아직 구현하지 않았다.
 `collect` 등 live 명령도 제공하지 않는다. 실제 수집은 후속 구현과 별도 실행 요청 후 진행한다.
 기존 서비스 CSV·DB·재료 ID·이미지·Android·API·AI 프롬프트에는 변경을 가하지 않는다.
 서비스 데이터 변환·배포는 별도 작업이다.
+
+## 로컬 HTML 파싱
+
+저장된 UTF-8 상세 HTML을 읽고 JSON을 stdout으로 출력한다. BOM이 있는 UTF-8도 지원한다.
+입력 파일을 수정하거나 이미지 URL에 접근하지 않고 출력 파일도 직접 생성하지 않는다.
+목록 파싱은 Python API로 제공한다.
+
+```powershell
+uv run --locked python -m crawlers.tenkrecipes.cli parse --input source.html --source-url https://www.10000recipe.com/recipe/900001
+```
+
+```python
+from crawlers.tenkrecipes.parsing import parse_list_page, parse_recipe
+
+page = parse_list_page(list_html, source_url=list_url)
+record = parse_recipe(detail_html, source_url=recipe_url)
+```
+
+DOM을 기준으로 재료·수량·설명·단계·팁을 보존하며 JSON-LD는 설명·작성자·날짜 등
+메타데이터를 보완한다. 제목만 엔티티·Unicode NFC·공백 정규화 후 비교한다.
+차이가 있어도 DOM 제목을 사용하고 양쪽 제목·출처 URL을 finding으로 남긴다.
+수량 보완·단위 환산·재료/단계 비교·도구 추론은 하지 않는다.
+필터 소실·구조 변경은 `ParseError`, CLI 입력/파싱 오류는 nonzero 종료로 표시한다.
+
+[출력 스키마와 오류 계약](SCHEMA.md)을 참고한다. 합성 fixture에 대한 검증이며
+모든 실제 페이지와의 호환성을 보장하지 않는다. 원문 HTML 보관은 후속 저장 단계의 책임이다.
 
 ## 검사
 
@@ -75,5 +101,5 @@ uv run --locked ruff check crawlers
 uv run --locked ruff format --check crawlers
 ```
 
-신규 테스트는 네트워크와 운영 데이터 접근을 차단한 환경에서 CLI·계획을 검증한다.
+신규 테스트는 네트워크와 운영 데이터 접근을 차단한 환경에서 CLI·계획·파싱을 검증한다.
 기존 Pixabay 모듈의 bare import와 충돌하지 않도록 신규 코드에서는 패키지 상대 import를 사용한다.

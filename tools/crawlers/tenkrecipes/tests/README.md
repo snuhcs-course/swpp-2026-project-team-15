@@ -1,8 +1,8 @@
 # Stage 1 acceptance tests
 
 Stage 2 test-first contracts and synthetic fixture provenance are documented
-separately in [STAGE2.md](STAGE2.md). Those cases are intentionally RED until
-the parsing implementation is requested; stage 1 remains independently testable.
+separately in [STAGE2.md](STAGE2.md). Stage 2 parsing is now implemented and those
+cases must pass; stage 1 remains independently testable.
 
 These are acceptance contracts for tasks 1.1–1.4 of
 `collect-tenkrecipes-quick-recipes`. Stage 1 implements offline plan generation;

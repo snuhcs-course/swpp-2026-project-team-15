@@ -4,9 +4,11 @@
 import importlib
 import json
 import re
+import unicodedata
 from pathlib import Path
 
 import pytest
+from bs4 import BeautifulSoup
 
 FIXTURE = Path(__file__).parent / "fixtures/stage2_detail.html"
 SOURCE_URL = "https://www.10000recipe.com/recipe/900001"
@@ -213,6 +215,42 @@ def test_jsonld_supplements_missing_description_but_does_not_override_dom(detail
     assert record["source"]["author"] == "합성 작성자"
 
 
+def test_title_comparison_accepts_canonical_unicode_without_rewriting_dom(detail_html):
+    parser = load_parser()
+    html = detail_html.replace(
+        '"name": "감자 & 달걀밥"',
+        '"name": "' + unicodedata.normalize("NFD", "감자 & 달걀밥") + '"',
+    )
+    record = parser.parse_recipe(html, source_url=SOURCE_URL)
+    assert record["title"] == "감자 & 달걀밥"
+    assert not any(item["code"] == "source_mismatch" for item in record["findings"])
+
+
+def test_malformed_script_does_not_hide_later_valid_recipe_metadata(detail_html):
+    parser = load_parser()
+    html = detail_html.replace(
+        "<head>", '<head><script type="application/ld+json">{broken</script>'
+    )
+    record = parser.parse_recipe(html, source_url=SOURCE_URL)
+    assert record["source"]["author"] == "합성 작성자"
+    assert not any(item["code"] == "jsonld_unavailable" for item in record["findings"])
+
+
+def test_jsonld_quantity_does_not_fill_a_blank_dom_quantity(detail_html):
+    parser = load_parser()
+    html = detail_html.replace('"간장"', '"간장 3큰술"')
+    record = parser.parse_recipe(html, source_url=SOURCE_URL)
+    assert record["ingredients"][-1]["quantity_text"] is None
+    assert any(item["code"] == "missing_quantity" for item in record["findings"])
+
+
+def test_jsonld_does_not_turn_missing_dom_structure_into_success(detail_html):
+    parser = load_parser()
+    html = detail_html.replace('id="divConfirmedMaterialArea"', 'id="unknown_materials"')
+    with pytest.raises(parser.ParseError):
+        parser.parse_recipe(html, source_url=SOURCE_URL)
+
+
 def test_optional_summary_values_are_not_invented(detail_html):
     parser = load_parser()
     html = re.sub(LD_SCRIPT, "", detail_html, count=1, flags=re.DOTALL)
@@ -237,3 +275,48 @@ def test_unrelated_html_is_not_a_successful_recipe():
     parser = load_parser()
     with pytest.raises(parser.ParseError):
         parser.parse_recipe("<html><body>Service unavailable</body></html>", source_url=SOURCE_URL)
+
+
+@pytest.mark.parametrize(
+    ("selector", "field", "code"),
+    [
+        ("#divConfirmedMaterialArea", "ingredients", "missing_ingredients"),
+        (".view_step", "steps", "missing_steps"),
+    ],
+)
+def test_absent_content_in_present_container_is_preserved_and_flagged(
+    detail_html, selector, field, code
+):
+    """Reproduce missing quality findings required by the preserved-content spec."""
+    parser = load_parser()
+    soup = BeautifulSoup(detail_html, "html.parser")
+    soup.select_one(selector).clear()
+    record = parser.parse_recipe(str(soup), source_url=SOURCE_URL)
+    assert record[field] == []
+    assert {"code": code, "field": field} in record["findings"]
+
+
+@pytest.mark.parametrize(
+    ("selector", "field", "value_key", "code"),
+    [
+        (
+            "#divConfirmedMaterialArea .ingre_list_name",
+            "ingredients",
+            "name_raw",
+            "missing_ingredient_name",
+        ),
+        ('[id="stepdescr1"]', "steps", "instruction", "missing_instruction"),
+    ],
+)
+def test_absent_content_in_present_row_is_preserved_and_flagged(
+    detail_html, selector, field, value_key, code
+):
+    """A blank name or instruction must not silently pass without a diagnostic."""
+    parser = load_parser()
+    soup = BeautifulSoup(detail_html, "html.parser")
+    soup.select_one(selector).clear()
+    record = parser.parse_recipe(str(soup), source_url=SOURCE_URL)
+    assert len(record[field]) == (4 if field == "ingredients" else 3)
+    assert record[field][0][value_key] is None
+    assert {"code": code, "field": field, "order": 1} in record["findings"]
+    assert record[field][1][value_key] is not None
