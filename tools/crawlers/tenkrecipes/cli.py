@@ -1,5 +1,5 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
-"""Preview plans and parse saved source HTML without fetching source content."""
+"""Offline plan/parse commands and explicit live source snapshot collection."""
 
 import json
 from pathlib import Path
@@ -54,6 +54,91 @@ def parse(
         typer.echo(f"Parse error: {exc}", err=True)
         raise typer.Exit(1) from exc
     typer.echo(json.dumps(record, ensure_ascii=False, indent=2))
+
+
+def _source_run(
+    output_dir, live, *, resume_run, category="63", page=1, max_wait=60.0, run_budget=120.0
+):
+    """Execute one source page or drain saved candidates; never allocate quotas."""
+    if not live:
+        raise typer.BadParameter("Network access requires --live", param_hint="--live")
+    from .fetching import HttpClient
+    from .workflow import PARSER_VERSION, SCHEMA_VERSION, CollectionRun
+
+    try:
+        plan = build_plan(output_dir)
+        client = HttpClient(live=True, max_wait=max_wait, run_budget=run_budget)
+        options = dict(
+            plan=plan, client=client, parser_version=PARSER_VERSION, schema_version=SCHEMA_VERSION
+        )
+        if resume_run:
+            run = CollectionRun.resume(**options)
+        else:
+            if category not in {row["cat4"] for row in plan["categories"]} or page < 1:
+                raise ValueError("Expected a configured category and positive page")
+            run = CollectionRun.create(**options)
+            result = run.fetch_list(category, page)
+            if result["status"] in ("blocked", "deferred", "failed"):
+                typer.echo(json.dumps(dict(output_dir=plan["output_dir"], **result)))
+                raise typer.Exit(1)
+        run.resume_pending()
+        snapshot = run.snapshot()
+        typer.echo(
+            json.dumps(
+                dict(
+                    output_dir=plan["output_dir"],
+                    state=snapshot["state"],
+                    reason=snapshot["reason"],
+                    parsed_details=sum(
+                        row["state"] == "parsed" for row in snapshot["details"].values()
+                    ),
+                    acquisition_complete=False,
+                ),
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        if snapshot["state"] in ("blocked", "deferred", "failed"):
+            raise typer.Exit(1)
+    except (OSError, ValueError) as exc:
+        typer.echo(f"Collection error: {exc}", err=True)
+        raise typer.Exit(1) from exc
+
+
+@app.command()
+def collect(
+    output_dir: Path | None = typer.Option(
+        None, help="New run directory; existing runs are refused."
+    ),
+    live: bool = typer.Option(False, "--live", help="Explicitly enable source HTTP requests."),
+    category: str = typer.Option("63", help="Approved cat4 code for one source page."),
+    page: int = typer.Option(1, min=1),
+    max_wait: float = typer.Option(60.0, help="Maximum individual wait in seconds."),
+    run_budget: float = typer.Option(
+        120.0, help="HTTP time budget in seconds for this invocation."
+    ),
+) -> None:
+    """Save one list page and its candidate details; image/500-quota collection comes later."""
+    _source_run(
+        output_dir,
+        live,
+        resume_run=False,
+        category=category,
+        page=page,
+        max_wait=max_wait,
+        run_budget=run_budget,
+    )
+
+
+@app.command()
+def resume(
+    output_dir: Path = typer.Option(..., help="Existing run directory."),
+    live: bool = typer.Option(False, "--live", help="Explicitly enable pending source requests."),
+    max_wait: float = typer.Option(60.0, help="Must match the saved network policy."),
+    run_budget: float = typer.Option(120.0, help="Must match the saved network policy."),
+) -> None:
+    """Verify a saved run and process its recorded candidates without fetching new pages."""
+    _source_run(output_dir, live, resume_run=True, max_wait=max_wait, run_budget=run_budget)
 
 
 if __name__ == "__main__":

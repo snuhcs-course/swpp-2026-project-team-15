@@ -1,9 +1,8 @@
 # Stage 3 test-first contracts
 
-These tests cover tasks 3.1–3.5 without implementing fetching, storage, resume,
-or live commands. New behavior must fail visibly until implementation; no skip,
-xfail, stub production module, or live source access is used. Existing stages
-1–2 and Pixabay tests must remain green.
+These tests cover implemented tasks 3.1–3.5: fetching, storage, resume, and live
+command gates. They were written RED first; no skip, xfail, stub production module,
+or live source access is used. Existing stages 1–2 and Pixabay tests remain required.
 
 ## Inputs and isolation
 
@@ -19,11 +18,10 @@ Storage tests use disposable run paths. Live opt-in in an in-process test only
 enables the fake transport, never an HTTP session. Actual live collection remains
 a separate operator action after implementation and source-use review.
 
-## Proposed interface
+## Implemented interface
 
-Planning specifies behavior but not symbols or exact JSON keys. The following is
-the concrete test-first interface, not an already implemented API. Implementation
-may organize storage internally; no storage class hierarchy is prescribed.
+The implementation follows this test-first interface. Operator usage and saved
+artifact details are documented in [RUNS.md](../RUNS.md).
 
 ### `crawlers.tenkrecipes.fetching`
 
@@ -99,7 +97,7 @@ Those are separate stages or require additional specified scenarios.
 
 ### CLI and operator documentation
 
-Proposed commands: `collect --output-dir DIR --live`
+Commands: `collect --output-dir DIR --live`
 and `resume --output-dir DIR --live`. Help works offline;
 missing live opt-in fails before networking or run creation. Tests never
 invoke a fully enabled real live command.
@@ -108,16 +106,17 @@ Task 3.5 also needs human review of future operator documentation: immutable cac
 reuse, interrupted writes, blocked/deferred states, version mismatch, saved
 optional source-use notes, pre-run source-use checks, and exact collect/resume examples. CLI help/gate tests verify
 only the executable boundary, not the truth of prose or actual source-use rights.
-No production operator guide is added during this tests-only task.
+The operator guide now describes these procedures; no live command was executed
+as part of implementation or verification.
 
 ## Run
 
 | Task area | Cases |
 |---|---:|
 | GET policy and live guards (3.1/3.2) | 17 |
-| Saved snapshots, interruption, and resume (3.2–3.4) | 18 |
+| Saved snapshots, interruption, and resume (3.2–3.4) | 22 |
 | CLI gates and offline help (3.2/3.5) | 4 |
-| Total | 39 |
+| Total | 43 |
 
 From `tools/`:
 
@@ -125,5 +124,11 @@ From `tools/`:
 uv run --locked pytest crawlers/tenkrecipes/tests/test_stage3_fetching.py crawlers/tenkrecipes/tests/test_stage3_storage_resume.py crawlers/tenkrecipes/tests/test_stage3_cli.py -q
 ```
 
-All stage 3 implementation tasks remain unchecked until their implementation,
-documentation, and relevant verification are delivered.
+Four implementation-time regressions address clear
+resume defects: a raw list published before interrupted checkpoint replacement
+must be recovered, and a deferred Retry-After deadline must survive restart.
+The third ensures a failed pending detail stops processing instead of having its
+failure status overwritten by a later successful candidate. The fourth reproduces
+an exhausted final 429 attempt losing its Retry-After deadline across resume;
+it failed before the fix and passed afterward. No other implementation-time
+tests were added.

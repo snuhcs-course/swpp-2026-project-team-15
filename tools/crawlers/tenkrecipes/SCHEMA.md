@@ -48,7 +48,7 @@ skipped. Multiple Recipe objects are not merged. DOM structure is still required
 
 DOM text uses readable text extraction with stripped text-node boundaries and
 space separators; full markup is not reconstructed from JSON. Raw input HTML
-must be retained separately by the future storage layer. Repeated ingredient
+is retained separately by the collection storage layer. Repeated ingredient
 rows and steps remain separate. Missing quantities/notes/IDs remain null, and
 source material IDs are never service ingredient IDs. Separate tips are not
 concatenated into step instructions. Step image URLs are retained without fetching.
