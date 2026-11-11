@@ -11,7 +11,21 @@ uv sync --locked
 uv run pytest
 ```
 
-Paths in `.env` can be absolute or relative to `tools/`. Process environment variables override `.env`. Keep API keys in `.env` or the process environment, never in recipe files or generated pages. The root `.gitignore` excludes `.env` and generated tool data.
+The Pixabay configuration reads paths from `.env` relative to `tools/`; process environment variables override `.env`. Keep API keys in `.env` or the process environment, never in recipe files or generated pages. The root `.gitignore` excludes `.env` and generated tool data.
+
+## 만개의레시피 quick-recipe plans
+
+The [tenkrecipes tool](crawlers/tenkrecipes/README.md) currently provides offline
+planning for 500 source recipes across nine approved quick-recipe categories.
+It does not read `.env`, contact the source site, or write collection files.
+Its explicit relative output paths use the caller's current working directory.
+
+```powershell
+uv run --locked python -m crawlers.tenkrecipes.cli plan
+```
+
+Live collection and production data integration are not implemented in stage 1.
+The default tools test command discovers both the Pixabay and tenkrecipes suites.
 
 ## Pixabay recipe images
 

@@ -1,15 +1,16 @@
 # Stage 1 acceptance tests
 
-These are test-first contracts for tasks 1.1–1.4 of
-`collect-tenkrecipes-quick-recipes`. No crawler implementation is included.
-Missing modules, dependencies, discovery configuration, and the tool README are
-expected RED results, not skipped or xfailed tests. Stage 1 remains unfinished.
+These are acceptance contracts for tasks 1.1–1.4 of
+`collect-tenkrecipes-quick-recipes`. Stage 1 implements offline plan generation;
+source collection is not implemented. The initial test-only run was RED because
+the CLI, configuration, dependency, discovery setup, and tool README did not yet
+exist. Missing behavior is never hidden behind skipped or xfailed tests.
 
-## Proposed public test interface
+## Public test interface
 
 The planning documents specify behavior but do not fix Python symbol names or a
 plan serialization format. These tests establish the following small interface
-for the future implementation; no internal classes or parser algorithms are prescribed:
+for the implementation; no internal classes or parser algorithms are prescribed:
 
 - From `tools/`, run `python -m crawlers.tenkrecipes.cli` and `--help` for help.
 - `python -m crawlers.tenkrecipes.cli plan --output-dir <path>` writes a JSON plan
@@ -27,7 +28,7 @@ for the future implementation; no internal classes or parser algorithms are pres
   separately verifies rejection of top-level and nested mutations of one plan.
   This keeps the current built-run-plan interface; no draft/finalize API is added.
 - Output directories cannot be existing files or production source/data paths.
-- The future `tools/crawlers/tenkrecipes/README.md` includes a single-line fenced
+- The `tools/crawlers/tenkrecipes/README.md` includes a single-line fenced
   example `python -m crawlers.tenkrecipes.cli plan --output-dir {output_dir}`.
   The test substitutes a disposable path and executes it. Documentation of setup,
   source-ID identity versus pending semantic review, and integration exclusions
@@ -40,7 +41,7 @@ for the future implementation; no internal classes or parser algorithms are pres
 | 1.1 | Offline import/help/plan, tools-only parser dependency, protected output paths |
 | 1.2 | Agreed category order/quotas, total 500, request filters, plan independence, nested immutability, existing data preservation |
 | 1.3 | Real pytest discovery using copied configuration and two synthetic test trees; legacy bare-module coexistence |
-| 1.4 | Execution of the future README plan example |
+| 1.4 | Execution of the README plan example |
 
 The discovery probe uses tiny synthetic test trees so it measures pytest's
 configuration without importing optional crawler dependencies. It does not claim
@@ -60,7 +61,5 @@ uv run --locked pytest crawlers/tenkrecipes/tests -q
 uv run --locked pytest --collect-only -q
 ```
 
-Until task 1.3 is implemented, the second command will omit the new tests because
-the current default testpaths only includes Pixabay. Use the explicit path above
-to execute this RED suite. Do not change test discovery or add implementation
-stubs merely to make a tests-only request pass.
+The default testpaths now includes both crawlers. The explicit path runs only
+the tenkrecipes contracts; the second command checks the combined discovery.

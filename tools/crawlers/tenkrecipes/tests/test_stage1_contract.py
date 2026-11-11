@@ -1,4 +1,5 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
+# Additional output-preview tests assisted by Codex, 2026-11-11; human review pending.
 """Stage 1 acceptance tests derived from the approved quotas and offline boundary.
 
 The CLI JSON interface is specified in the adjacent test README. Missing implementation
@@ -158,6 +159,46 @@ def test_config_plan_is_deeply_immutable(tmp_path, monkeypatch):
         plan["categories"][0]["quota"] = 1
     assert plan["total"] == 500
     assert plan["categories"][0]["quota"] == 100
+
+
+def test_default_plan_uses_unique_ignored_run_paths_without_creating_them(monkeypatch):
+    """Default previews must stay separate from existing recipes and from each other."""
+    monkeypatch.syspath_prepend(str(TOOLS_ROOT))
+    config = importlib.import_module("crawlers.tenkrecipes.config")
+    first = Path(config.build_plan()["output_dir"])
+    second = Path(config.build_plan()["output_dir"])
+    expected_parent = TOOLS_ROOT.parent / "data/tenkrecipes/runs"
+    assert first.parent == second.parent == expected_parent
+    assert first != second
+    assert not first.exists()
+    assert not second.exists()
+
+
+def test_cli_plan_is_a_preview_and_resolves_relative_output(run_tool, tmp_path):
+    """A preview must not allocate its proposed directory or persist run metadata."""
+    plan = _plan(run_tool, Path("relative-run"))
+    expected = tmp_path / "workspace/relative-run"
+    assert Path(plan["output_dir"]) == expected.resolve()
+    assert not expected.exists()
+    assert list((tmp_path / "workspace").iterdir()) == []
+
+
+@pytest.mark.parametrize("relative", [".", "server/nested-run", "tools/crawlers/pixabay/output"])
+def test_output_boundaries_cover_ancestors_and_descendants(run_tool, relative):
+    output = TOOLS_ROOT.parent / relative
+    result = run_tool("plan", "--output-dir", str(output))
+    assert result.returncode != 0
+    assert "output" in (result.stdout + result.stderr).lower()
+    assert "FORBIDDEN_IO" not in result.stderr
+
+
+def test_output_directory_cannot_have_a_file_as_parent(run_tool, tmp_path):
+    parent = tmp_path / "Recipe.csv"
+    parent.write_bytes(b"existing recipe data")
+    result = run_tool("plan", "--output-dir", str(parent / "run"))
+    assert result.returncode != 0
+    assert "output" in (result.stdout + result.stderr).lower()
+    assert parent.read_bytes() == b"existing recipe data"
 
 
 def test_html_parser_dependency_stays_in_tools():
