@@ -1,4 +1,5 @@
 # AI-assisted with Codex, 2026-11-11; human review pending.
+# Resume consistency fixes assisted by Codex, 2026-11-12; human review pending.
 """Persist source snapshots and resume recorded work without allocating quotas."""
 
 import copy
@@ -122,6 +123,9 @@ class CollectionRun:
             if manifest_path.exists()
             else cls._empty_manifest(metadata)
         )
+        pending_failure = storage.path("failure.pending.json")
+        if pending_failure.exists():
+            manifest = storage.read_json("failure.pending.json")
         if manifest["run_id"] != metadata["run_id"]:
             raise IntegrityError("Manifest does not belong to this run")
         for entry in manifest["responses"]:
@@ -135,6 +139,8 @@ class CollectionRun:
             if image["state"] == "image_validated" and storage.path(image["path"]).exists():
                 storage.verify(image)
         run = cls(storage, metadata, manifest, client, utcnow, image_downloader)
+        if pending_failure.exists():
+            run._commit(manifest)
         # A raw list may have been published just before a failed manifest replace.
         # Replay only complete, hash-verified local lists; never fetch during open.
         sidecars = []
@@ -162,6 +168,7 @@ class CollectionRun:
     def _commit(self, manifest):
         self.storage.write_json("manifest.json", manifest)
         self._manifest = manifest
+        self.storage.path("failure.pending.json").unlink(missing_ok=True)
 
     def _source(self, relative, url):
         """Reuse a verified raw snapshot, including a publish-before-checkpoint orphan."""
@@ -221,6 +228,9 @@ class CollectionRun:
     def _failure(self, manifest, result):
         manifest.update(state=result["status"], reason=result["reason"])
         manifest["retry_not_before"] = result.get("retry_not_before")
+        # Failure bodies cannot reconstruct deadlines or requests without a body.
+        # Journal the complete outcome before replacing the main checkpoint.
+        self.storage.write_json("failure.pending.json", manifest)
         self._commit(manifest)
         return dict(status=result["status"], reason=result["reason"])
 

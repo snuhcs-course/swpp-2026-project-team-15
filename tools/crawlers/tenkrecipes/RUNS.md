@@ -67,6 +67,7 @@ Retry-After(초 또는 HTTP 날짜)를 우선하고 기본 요청 간격도 지�
 ```text
 run.json                       고정 plan, run ID, 시작 시각, parser/schema 및 네트워크 정책
 manifest.json                  후보 관찰, 목록·상세 상태, 시도 이력, 대기 시각
+failure.pending.json           실패 checkpoint 교체 중단 시 복구할 상태 (정상 게시 후 제거)
 lists/<cat4>/<page>.html        성공적으로 파싱한 목록 원본
 lists/<cat4>/*.failed-*.html    실패/차단 응답 원본 (성공 목록으로 사용하지 않음)
 details/<source_id>.html        상세 원본
@@ -86,6 +87,10 @@ manifest는 최종 URL·취득 시각·상태·본문 해시를 보존하고 응
 
 raw/JSON/manifest는 같은 디렉터리의 임시 파일을 flush/fsync한 뒤 atomic replace로
 게시한다. 파일 게시에 실패하면 이전 manifest가 유지된다. 원문은 덮어쓰지 않는다.
+실패 결과는 `failure.pending.json`에 먼저 기록한 뒤 manifest로 게시한다. manifest 교체가
+중단되면 재개 시 run ID·참조 파일을 검증하고 실패 상태·미완료 요청·대기 시각을 복구한다.
+응답 본문이 없는 전송 실패도 이 경로로 보존한다. 정상 게시 후 임시 복구 기록을 제거한다.
+이 기록이 저장되기 전의 요청/파일 저장 중단까지 보장하는 것은 아니다.
 원문 sidecar는 본문보다 먼저 저장하여, 본문 게시 후 manifest 교체가 중단돼도 저장 원본을
 검증할 수 있다. 재개는 이러한 완료 목록을 복원하고, 파싱 JSON만 없으면 저장된 상세 HTML에서
 재생성한다. 미완료 상세는 다시 취득하며 실패한 목록 요청도 기록된 범위에서 재개한다.
