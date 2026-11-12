@@ -62,3 +62,32 @@ def test_failure_checkpoint_interruption_preserves_outcome_and_pending_work(
         assert len(transport.calls) == 2
     # Successful recovery must also survive another restart.
     assert module.CollectionRun.resume(**options).snapshot() == snapshot
+
+
+@pytest.mark.parametrize("pending", ["list", "detail"])
+def test_cached_reparse_preserves_another_requests_retry_deadline(tmp_path, pending):
+    """Rebuilding derived JSON must not allow an unrelated request to run early."""
+    module, run, options, transport, _ = make_run(
+        tmp_path,
+        fixture_response("stage2_list.html"),
+        fixture_response("stage2_detail.html"),
+        FakeResponse(429, headers={"Retry-After": "999"}),
+    )
+    run.fetch_list("52", 1)
+    run.fetch_detail("900001")
+    if pending == "list":
+        assert run.fetch_list("52", 2)["status"] == "deferred"
+    else:
+        assert run.fetch_detail("900002")["status"] == "deferred"
+    before = run.snapshot()
+    run.storage.path("recipes/900001.json").unlink()
+    resumed = module.CollectionRun.resume(**options)
+    assert resumed.fetch_detail("900001")["status"] == "parsed"
+    after = resumed.snapshot()
+    assert after["retry_not_before"] == before["retry_not_before"]
+    assert (after["state"], after["reason"]) == (before["state"], before["reason"])
+    if pending == "list":
+        assert resumed.fetch_list("52", 2)["status"] == "deferred"
+    else:
+        assert resumed.fetch_detail("900002")["status"] == "deferred"
+    assert len(transport.calls) == 3

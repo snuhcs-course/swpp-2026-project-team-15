@@ -243,6 +243,11 @@ class CollectionRun:
             )
         return None
 
+    def _mark_progress(self, manifest):
+        """Advance local work without revoking an outstanding server retry deadline."""
+        if not self._deferred():
+            manifest.update(state="running", reason=None, retry_not_before=None)
+
     def fetch_list(self, category_code, page):
         """Fetch one approved list page; retain every observation without allocating it."""
         category_code = str(category_code)
@@ -293,7 +298,7 @@ class CollectionRun:
             for row in manifest["pending_lists"]
             if row != dict(category_code=category_code, page=page)
         ]
-        manifest.update(state="running", reason=None, retry_not_before=None)
+        self._mark_progress(manifest)
         self._commit(manifest)
         return parsed
 
@@ -338,7 +343,7 @@ class CollectionRun:
                 candidate["state"] = state
         if record is None:
             return self._failure(manifest, result)
-        manifest.update(state="running", reason=None, retry_not_before=None)
+        self._mark_progress(manifest)
         self._commit(manifest)
         return dict(status="parsed", record=record)
 
@@ -434,7 +439,7 @@ class CollectionRun:
         for row in manifest["candidates"]:
             if row["source_id"] == source_id:
                 row["state"] = "image_validated"
-        manifest.update(state="running", reason=None, retry_not_before=None)
+        self._mark_progress(manifest)
         self._commit(manifest)
         return dict(entry, status="image_validated")
 
