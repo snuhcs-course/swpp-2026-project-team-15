@@ -91,3 +91,44 @@ def test_cached_reparse_preserves_another_requests_retry_deadline(tmp_path, pend
     else:
         assert resumed.fetch_detail("900002")["status"] == "deferred"
     assert len(transport.calls) == 3
+
+
+@pytest.mark.parametrize("response_file", ["intact", "corrupt", "missing"])
+def test_orphan_detail_restores_and_verifies_every_retry_response(
+    tmp_path, monkeypatch, response_file
+):
+    """Recover intermediate retry bodies as well as the final successful response."""
+    module, run, options, transport, _ = make_run(
+        tmp_path,
+        fixture_response("stage2_list.html"),
+        FakeResponse(503, body=b"synthetic temporary failure"),
+        fixture_response("stage2_detail.html"),
+    )
+    run.fetch_list("52", 1)
+    interrupt_checkpoint(monkeypatch, run, lambda: run.fetch_detail("900001"))
+    provenance = run.storage.read_json("details/900001.html.meta.json")
+    attempt = next(row for row in provenance["attempts"] if row.get("status_code") == 503)
+    relative = f"attempts/{attempt['attempt_id']}.html"
+    path = run.storage.path(relative)
+    if response_file == "corrupt":
+        path.write_bytes(b"corrupt retry response")
+    elif response_file == "missing":
+        path.unlink()
+    resumed = module.CollectionRun.resume(**options)
+    if response_file != "intact":
+        before = run.storage.path("manifest.json").read_bytes()
+        with pytest.raises(module.IntegrityError):
+            resumed.fetch_detail("900001")
+        assert run.storage.path("manifest.json").read_bytes() == before
+        if response_file == "corrupt":
+            assert path.read_bytes() == b"corrupt retry response"
+    else:
+        assert resumed.fetch_detail("900001")["status"] == "parsed"
+        responses = resumed.snapshot()["responses"]
+        assert any(
+            row["path"] == relative and row["sha256"] == attempt["sha256"] for row in responses
+        )
+        assert {row["status_code"] for row in responses} == {200, 503}
+        # A second restart verifies the recovered response reference too.
+        assert module.CollectionRun.resume(**options).snapshot() == resumed.snapshot()
+    assert len(transport.calls) == 3

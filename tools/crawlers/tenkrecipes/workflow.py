@@ -182,8 +182,19 @@ class CollectionRun:
         if provenance["run_id"] != self.metadata["run_id"] or provenance["source_url"] != url:
             raise IntegrityError("Raw snapshot provenance differs from this run/source")
         body = self.storage.verify(provenance)
+        responses = []
+        for attempt in provenance["attempts"]:
+            if "sha256" in attempt:
+                # Retry bodies precede the final snapshot on disk. Restore their
+                # references too, so they remain covered by resume integrity checks.
+                entry = dict(attempt, path=f"attempts/{attempt['attempt_id']}.html")
+                responses.append(dict(attempt=attempt, body=self.storage.verify(entry)))
         return dict(
-            status="ok", reason=None, body=body, attempts=provenance["attempts"], responses=[]
+            status="ok",
+            reason=None,
+            body=body,
+            attempts=provenance["attempts"],
+            responses=responses,
         )
 
     def _retain(self, manifest, result, relative, url):
