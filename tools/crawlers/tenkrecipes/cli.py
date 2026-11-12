@@ -81,7 +81,7 @@ def _source_run(
             if result["status"] in ("blocked", "deferred", "failed"):
                 typer.echo(json.dumps(dict(output_dir=plan["output_dir"], **result)))
                 raise typer.Exit(1)
-        run.resume_pending()
+        run.resume_pending(include_images=True)
         snapshot = run.snapshot()
         typer.echo(
             json.dumps(
@@ -91,6 +91,9 @@ def _source_run(
                     reason=snapshot["reason"],
                     parsed_details=sum(
                         row["state"] == "parsed" for row in snapshot["details"].values()
+                    ),
+                    validated_images=sum(
+                        row["state"] == "image_validated" for row in snapshot["images"].values()
                     ),
                     acquisition_complete=False,
                 ),
@@ -118,7 +121,7 @@ def collect(
         120.0, help="HTTP time budget in seconds for this invocation."
     ),
 ) -> None:
-    """Save one list page and its candidate details; image/500-quota collection comes later."""
+    """Save one list page, candidate details and validated thumbnails; quotas come later."""
     _source_run(
         output_dir,
         live,

@@ -11,11 +11,12 @@ from uuid import uuid4
 
 from .config import validate_output_dir
 from .fetching import NetworkDisabled
+from .images import ImageDownloader
 from .parsing import ParseError, parse_list_page, parse_recipe
 from .storage import IntegrityError, RunStorage, digest, plain
 
 PARSER_VERSION = "tenkrecipes-dom-1"
-SCHEMA_VERSION = "1"
+SCHEMA_VERSION = "2"
 
 
 class ResumeMismatch(ValueError):
@@ -30,17 +31,28 @@ class CollectionRun:
     One operator must own a run directory; concurrent writers are not supported.
     """
 
-    def __init__(self, storage, metadata, manifest, client, utcnow):
+    def __init__(self, storage, metadata, manifest, client, utcnow, image_downloader):
         self.storage, self.metadata, self._manifest = storage, metadata, manifest
         self.client, self.utcnow = client, utcnow
+        self.image_downloader = image_downloader
 
     @classmethod
     def create(
-        cls, *, plan, client, parser_version, schema_version, utcnow=lambda: datetime.now(UTC)
+        cls,
+        *,
+        plan,
+        client,
+        parser_version,
+        schema_version,
+        utcnow=lambda: datetime.now(UTC),
+        image_downloader=None,
     ):
         """Create a new run, rejecting missing live opt-in before any directories."""
         if not client.live:
             raise NetworkDisabled("Collection requires --live")
+        image_downloader = image_downloader or ImageDownloader(client)
+        if image_downloader.client is not client:
+            raise ValueError("Source and image I/O must share one pacing client")
         frozen_plan = plain(plan)
         root = validate_output_dir(Path(frozen_plan["output_dir"]))
         root.mkdir(parents=True, exist_ok=False)
@@ -52,11 +64,12 @@ class CollectionRun:
             parser_version=parser_version,
             schema_version=schema_version,
             network_policy=plain(client.policy),
+            image_policy=plain(image_downloader.policy),
         )
         manifest = cls._empty_manifest(metadata)
         storage.write_json("run.json", metadata, immutable=True)
         storage.write_json("manifest.json", manifest)
-        return cls(storage, metadata, manifest, client, utcnow)
+        return cls(storage, metadata, manifest, client, utcnow, image_downloader)
 
     @staticmethod
     def _empty_manifest(metadata):
@@ -68,6 +81,7 @@ class CollectionRun:
             lists=[],
             candidates=[],
             details={},
+            images={},
             responses=[],
             attempts=[],
             pending_lists=[],
@@ -76,11 +90,21 @@ class CollectionRun:
 
     @classmethod
     def resume(
-        cls, *, plan, client, parser_version, schema_version, utcnow=lambda: datetime.now(UTC)
+        cls,
+        *,
+        plan,
+        client,
+        parser_version,
+        schema_version,
+        utcnow=lambda: datetime.now(UTC),
+        image_downloader=None,
     ):
         """Verify configuration and saved bytes before network calls or repair writes."""
         if not client.live:
             raise NetworkDisabled("Resume requires --live")
+        image_downloader = image_downloader or ImageDownloader(client)
+        if image_downloader.client is not client:
+            raise ValueError("Source and image I/O must share one pacing client")
         frozen_plan = plain(plan)
         storage = RunStorage(validate_output_dir(Path(frozen_plan["output_dir"])))
         metadata = storage.read_json("run.json")
@@ -89,6 +113,7 @@ class CollectionRun:
             or metadata["parser_version"] != parser_version
             or metadata["schema_version"] != schema_version
             or metadata["network_policy"] != plain(client.policy)
+            or metadata.get("image_policy") != plain(image_downloader.policy)
         ):
             raise ResumeMismatch("Run configuration or parser/schema version changed")
         manifest_path = storage.path("manifest.json")
@@ -106,7 +131,10 @@ class CollectionRun:
             # A missing derived record is recoverable from verified raw HTML.
             if record and storage.path(record["path"]).exists():
                 storage.verify(record)
-        run = cls(storage, metadata, manifest, client, utcnow)
+        for image in manifest["images"].values():
+            if image["state"] == "image_validated" and storage.path(image["path"]).exists():
+                storage.verify(image)
+        run = cls(storage, metadata, manifest, client, utcnow, image_downloader)
         # A raw list may have been published just before a failed manifest replace.
         # Replay only complete, hash-verified local lists; never fetch during open.
         sidecars = []
@@ -304,8 +332,104 @@ class CollectionRun:
         self._commit(manifest)
         return dict(status="parsed", record=record)
 
-    def resume_pending(self):
-        """Drain saved candidates in order, never discovering new list pages or images."""
+    def fetch_thumbnail(self, source_id):
+        """Save only the list-selected thumbnail; never infer full/step image URLs.
+
+        Validated originals are reused by source ID. A verified provenance sidecar
+        recovers publication interrupted before checkpoint replacement.
+        """
+        source_id = str(source_id)
+        candidate = next(
+            (row for row in self._manifest["candidates"] if row["source_id"] == source_id), None
+        )
+        if (
+            candidate is None
+            or self._manifest["details"].get(source_id, {}).get("state") != "parsed"
+        ):
+            raise ValueError("Thumbnail requires a recorded list candidate and parsed detail")
+        cached = self._manifest["images"].get(source_id)
+        if (
+            cached
+            and cached["state"] == "image_validated"
+            and self.storage.path(cached["path"]).exists()
+        ):
+            self.storage.verify(cached)
+            if any(
+                row["state"] != "image_validated"
+                for row in self._manifest["candidates"]
+                if row["source_id"] == source_id
+            ):
+                manifest = self.snapshot()
+                for row in manifest["candidates"]:
+                    if row["source_id"] == source_id:
+                        row["state"] = "image_validated"
+                self._commit(manifest)
+            return dict(cached, status="image_validated")
+        entry = None
+        for path in self.storage.root.glob(f"images/{source_id}.*.meta.json"):
+            provenance = self.storage.read_json(path.relative_to(self.storage.root).as_posix())
+            if (
+                provenance["run_id"] != self.metadata["run_id"]
+                or provenance["source_url"] != candidate["thumbnail_url"]
+            ):
+                raise IntegrityError("Thumbnail provenance differs from this run/source")
+            if self.storage.path(provenance["path"]).exists():
+                body = self.storage.verify(provenance)
+                self.image_downloader.validate(body)
+                entry = provenance
+                break
+        manifest = self.snapshot()
+        if entry is None:
+            if deferred := self._deferred():
+                return deferred
+            result = self.image_downloader.get(candidate["thumbnail_url"])
+            known = {row["attempt_id"] for row in manifest["attempts"]}
+            manifest["attempts"].extend(
+                dict(row, kind="thumbnail")
+                for row in result["attempts"]
+                if row["attempt_id"] not in known
+            )
+            if result["status"] != "image_validated":
+                manifest["images"][source_id] = dict(
+                    state=result["status"],
+                    reason=result["reason"],
+                    source_url=candidate["thumbnail_url"],
+                    source_id=source_id,
+                )
+                return self._failure(manifest, result)
+            extension = "jpg" if result["format"] == "JPEG" else result["format"].lower()
+            relative = f"images/{source_id}.{extension}"
+            entry = {
+                key: value
+                for key, value in result.items()
+                if key not in ("body", "responses", "status")
+            }
+            entry.update(
+                path=relative,
+                state="image_validated",
+                source_id=source_id,
+                run_id=self.metadata["run_id"],
+                recipe_source_url=candidate["source_url"],
+            )
+            self.storage.write_json(relative + ".meta.json", entry)
+            self.storage.write(relative, result["body"], immutable=True)
+        # Sidecar replay restores attempt history without performing a download.
+        known = {row["attempt_id"] for row in manifest["attempts"]}
+        manifest["attempts"].extend(
+            dict(row, kind="thumbnail")
+            for row in entry["attempts"]
+            if row["attempt_id"] not in known
+        )
+        manifest["images"][source_id] = entry
+        for row in manifest["candidates"]:
+            if row["source_id"] == source_id:
+                row["state"] = "image_validated"
+        manifest.update(state="running", reason=None, retry_not_before=None)
+        self._commit(manifest)
+        return dict(entry, status="image_validated")
+
+    def resume_pending(self, *, include_images=False):
+        """Drain saved candidates; optionally acquire their selected thumbnails."""
         if deferred := self._deferred():
             return [deferred]
         results, seen = [], set()
@@ -318,6 +442,11 @@ class CollectionRun:
             results.append(result)
             if result["status"] in ("blocked", "deferred", "failed"):
                 return results
+            if include_images:
+                image = self.fetch_thumbnail(source_id)
+                results.append(image)
+                if image["status"] in ("blocked", "deferred", "failed"):
+                    return results
         for pending in self.snapshot()["pending_lists"]:
             result = self.fetch_list(pending["category_code"], pending["page"])
             results.append(result)
@@ -326,5 +455,5 @@ class CollectionRun:
         if self._manifest["candidates"] and any(
             row["source_id"] not in seen for row in self._manifest["candidates"]
         ):
-            results.extend(self.resume_pending())
+            results.extend(self.resume_pending(include_images=include_images))
         return results
