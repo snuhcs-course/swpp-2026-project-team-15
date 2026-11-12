@@ -91,15 +91,15 @@ class HttpClient:
                 return 0.0
         return max(0.0, seconds) if math.isfinite(seconds) else 0.0
 
-    def get(self, url):
+    def get(self, url, *, validator=source_url, transport=None):
         """Return body, attempts and status; never retry denial or challenge responses."""
         if not self.live:
             raise NetworkDisabled("Network access requires --live")
-        source_url(url)
+        validator(url)
         with self._lock:
-            return self._get(url)
+            return self._get(url, transport=transport)
 
-    def _get(self, url):
+    def _get(self, url, *, transport=None):
         attempts, responses = [], []
         body = None
         retry_at = self.monotonic()
@@ -138,7 +138,7 @@ class HttpClient:
             attempts.append(attempt)
             retry_after = None
             try:
-                response = self.transport(
+                response = (transport or self.transport)(
                     url,
                     timeout=self.policy["timeout"],
                     headers={"User-Agent": "MyLittleChef-RecipeCollector/0.1"},
