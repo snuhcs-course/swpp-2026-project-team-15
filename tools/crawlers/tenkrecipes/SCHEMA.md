@@ -82,3 +82,7 @@ does not rewrite stored values. Ingredients, steps, and other metadata are not
 compared. A finding is a mechanical diagnostic, not a semantic judgment or an
 acquisition failure. No unit conversion, quantity completion, inferred tools,
 semantic deduplication, production normalization, or service import occurs.
+
+Validated thumbnails and image metadata are separate collection artifacts, not
+changes to immutable detail parser records. See [RUNS.md](RUNS.md) for manifest
+`images`, resource bounds, provenance, and resume behavior (run schema version 2).

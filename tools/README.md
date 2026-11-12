@@ -27,9 +27,9 @@ uv run --locked python -m crawlers.tenkrecipes.cli plan
 
 The detail `parse --input source.html --source-url URL` command emits JSON without
 changing the input or fetching images. See the tool's schema documentation.
-Stage 3 adds explicit `collect --live` (one source page and its details) and
+The collector provides explicit `collect --live` (one source page, details, and validated thumbnails) and
 `resume --live` (recorded work). See the tool's run guide before operator execution.
-Image downloads, automatic 500-recipe allocation, and production integration are not implemented.
+Automatic 500-recipe allocation and production integration are not implemented.
 The default tools test command discovers both the Pixabay and tenkrecipes suites.
 
 ## Pixabay recipe images

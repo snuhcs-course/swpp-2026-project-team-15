@@ -7,6 +7,8 @@ cases must pass; stage 1 remains independently testable.
 Stage 3 tests and their implemented interfaces are documented in [STAGE3.md](STAGE3.md).
 They were written test-first and now verify fetching/storage/resume with fake I/O.
 
+Stage 4 thumbnail acceptance cases are documented in [STAGE4.md](STAGE4.md).
+
 These are acceptance contracts for tasks 1.1–1.4 of
 `collect-tenkrecipes-quick-recipes`. Stage 1 implements offline plan generation;
 source collection is not implemented. The initial test-only run was RED because

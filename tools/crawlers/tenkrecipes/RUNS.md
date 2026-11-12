@@ -1,7 +1,7 @@
-# 원문 저장·재개 운영 안내 (3단계)
+# 원문·썸네일 저장 및 재개 운영 안내 (4단계)
 
-현재 도구는 지정 목록 **한 페이지**와 그 후보들의 상세 HTML/JSON을 취득한다.
-500개 quota 할당·자동 페이지 확장·썸네일 다운로드·서비스 반영은 후속 단계다.
+현재 도구는 지정 목록 **한 페이지**와 그 후보들의 상세 HTML/JSON·검증된 원본 썸네일을 취득한다.
+500개 quota 할당·자동 페이지 확장·서비스 반영은 후속 단계다.
 실행 결과의 `acquisition_complete`는 아직 항상 false다. 성공적으로 파싱됐다는 것은
 서비스 적합성·의미 중복 검수·이미지 검증까지 완료됐다는 뜻이 아니다.
 
@@ -56,11 +56,12 @@ Retry-After(초 또는 HTTP 날짜)를 우선하고 기본 요청 간격도 지�
 | `deferred` | 대기 상한·실행 예산 초과; 대기 시각과 이전 진행 보존 |
 | `failed` | 비재시도 HTTP 실패 또는 유한 재시도 소진 |
 | 상세 `parsed` | DOM 파싱 결과 저장; 필수 취득 조건/이미지/서비스 적합성 검증과 별개 |
+| `image_validated` | 실제 디코딩과 크기 상한을 통과한 썸네일 원본 저장 |
 
 차단 상태는 우회하지 않고 원인을 확인한다. 구조 변화가 확인되면 현 parser로 반복 실행하지
 말고 parser 변경과 새 버전의 오프라인 검증을 진행한다. CLI는 차단·대기·실패를 nonzero로
 종료하고 출력 경로·상태·원인을 JSON으로 알린다. 후보별 실패는 manifest에도 남는다.
-3단계에서는 상세 후보 취득 실패 시에도 해당 실행을 멈춘다. 실패 후보를 건너뛰어 quota를
+현재는 상세·썸네일 후보 취득 실패 시에도 해당 실행을 멈춘다. 실패 후보를 건너뛰어 quota를
 채우는 대체 후보 선택은 5단계에서 구현할 작업이다.
 
 ```text
@@ -71,6 +72,8 @@ lists/<cat4>/*.failed-*.html    실패/차단 응답 원본 (성공 목록으로
 details/<source_id>.html        상세 원본
 details/*.failed-*.html         실패/차단 상세 응답
 recipes/<source_id>.json        구조화한 파서 결과
+images/<source_id>.<format>     검증된 썸네일 원본 바이트
+images/*.meta.json             검증 정보와 중단 복구용 provenance
 attempts/<attempt_id>.html      응답이 있었던 각 HTTP 시도의 원본
 *.html.meta.json               run/source/해시/시도 provenance sidecar
 ```
@@ -95,4 +98,33 @@ raw/JSON/manifest는 같은 디렉터리의 임시 파일을 flush/fsync한 뒤 
 
 Python API는 `CollectionRun.create/resume`, `fetch_list`, `fetch_detail`, `resume_pending`,
 `snapshot`을 제공한다. API로 다음 페이지를 요청할 때도 저장 후보 처리를 우선한다.
-썸네일 파일/검증 상태는 4단계, quota·미달·검수 보고서는 5단계에서 연결한다.
+Python API의 `resume_pending()`은 기존처럼 상세만 처리한다.
+`resume_pending(include_images=True)`와 CLI는 검증된 썸네일까지 취득·재개한다.
+quota·미달·검수 보고서는 5단계에서 연결한다.
+
+## 썸네일 계약
+
+목록에서 선택해 기록한 `thumbnail_url`만 요청한다. 동영상 배지·작성자 사진·상세 대표
+이미지·단계 사진은 썸네일로 대체하지 않는다. URL 접미사를 바꾸거나 확대·재인코딩하지 않는다.
+확장자는 URL이 아닌 Pillow가 검출한 실제 형식을 사용한다(예: JPEG는 `.jpg`).
+
+기본 허용 호스트는 관찰된 `recipe1.ezmember.co.kr`과 원본 사이트
+`www.10000recipe.com`/`10000recipe.com`이다. 각 리다이렉트의 대상 URL을 요청 전에 검사한다.
+다른 호스트는 자동 허용하지 않는다. 기본 상한은 응답당 10 MiB, 20,000,000픽셀,
+리다이렉트 3회다. 이는 취득 자원 제한이며 서비스 적합성 필터가 아니다.
+API의 `ImageDownloader(..., allowed_hosts=..., max_bytes=..., max_pixels=..., max_redirects=...)`
+에서 변경할 수 있으며, 고정된 `image_policy`를 run.json에 저장한다.
+
+썸네일 요청도 HTML과 같은 `HttpClient`의 단일 동시 요청·간격·retry·전체 예산을 사용한다.
+응답을 bounded chunk로 임시 파일에 읽으며 Content-Length와 실제 바이트 수를 검사한다.
+Content-Type은 출처 정보로 보관하되 실제 형식은 Pillow로 검증하고 첫 프레임을 디코딩한다.
+과대 응답·손상·HTML·전송 중단은 정상 이미지 파일로 확정하지 않는다.
+
+manifest의 `images[source_id]`에는 상태·원본/최종 URL·레시피 출처 URL·실제 포맷·가로/세로·
+바이트 수·SHA-256·취득 시각·로컬 상대 경로·시도 이력을 저장한다. 검증된 이미지는 같은 ID로
+재다운로드하지 않고, ID가 다르면 바이트 해시가 같아도 별도 파일과 출처를 유지한다.
+게시 후 checkpoint가 중단된 이미지는 sidecar와 해시로 복원하며, 없는 파일만 다시 취득한다.
+기존 파일의 해시가 바뀌면 덮어쓰지 않고 중단한다.
+
+4단계 산출물 스키마 버전은 `2`다. 이전 버전 `1` run은 조용히 변경하지 않고 새 실행 경로를
+사용한다. 재개 시 이미지 정책도 동일해야 한다. 300×300 입력은 그대로 보존된다.
