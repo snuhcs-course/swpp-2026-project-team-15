@@ -9,6 +9,8 @@ import requests
 
 from crawlers.tenkrecipes.tests.stage3_support import FakeResponse, fixture_response
 from crawlers.tenkrecipes.tests.test_stage3_storage_resume import make_run
+from crawlers.tenkrecipes.tests.test_stage4_images import StreamResponse, make_image_run, png_bytes
+from crawlers.tenkrecipes.workflow import CollectionRun
 
 
 def interrupt_checkpoint(monkeypatch, run, action):
@@ -91,6 +93,29 @@ def test_cached_reparse_preserves_another_requests_retry_deadline(tmp_path, pend
     else:
         assert resumed.fetch_detail("900002")["status"] == "deferred"
     assert len(transport.calls) == 3
+
+
+@pytest.mark.parametrize("category,page", [("52", 2), ("63", 1)])
+def test_new_observation_reuses_validated_source_state(tmp_path, category, page):
+    """Repeated observations must agree with the already validated shared asset."""
+    _, run, options, images, html = make_image_run(tmp_path, StreamResponse(png_bytes()))
+    run.fetch_thumbnail("900001")
+    response = fixture_response("stage2_list.html")
+    response.content = response.content.replace(
+        b'name="cat4" value="52"', f'name="cat4" value="{category}"'.encode()
+    )
+    html.outcomes = [response]
+    assert run.fetch_list(category, page)["status"] == "ok"
+    resumed = CollectionRun.resume(**options)
+    manifest = resumed.snapshot()
+    observations = [row for row in manifest["candidates"] if row["source_id"] == "900001"]
+    assert [(row["category_code"], row["page"]) for row in observations] == [
+        ("52", 1),
+        (category, page),
+    ]
+    assert all(row["state"] == "image_validated" for row in observations)
+    assert manifest["images"]["900001"]["state"] == "image_validated"
+    assert len(images.calls) == 1 and len(html.calls) == 3
 
 
 @pytest.mark.parametrize("response_file", ["intact", "corrupt", "missing"])

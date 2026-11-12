@@ -301,6 +301,8 @@ class CollectionRun:
         manifest["lists"].append(entry)
         for item in parsed["items"]:
             state = manifest["details"].get(item["source_id"], {}).get("state", "discovered")
+            if manifest["images"].get(item["source_id"], {}).get("state") == "image_validated":
+                state = "image_validated"
             manifest["candidates"].append(
                 dict(item, category_code=category_code, page=page, state=state)
             )

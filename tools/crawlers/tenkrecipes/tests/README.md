@@ -9,6 +9,12 @@ They were written test-first and now verify fetching/storage/resume with fake I/
 
 Stage 4 thumbnail acceptance cases are documented in [STAGE4.md](STAGE4.md).
 
+Additional confirmed resume defects are covered by
+[test_resume_consistency.py](test_resume_consistency.py): interrupted failure
+checkpoints, retry deadlines during local recovery, retry-response references,
+and consistent states across repeated source observations. These ten cases were
+each observed failing before their respective fixes.
+
 Stage 5 allocation/report tests and proposed interfaces are documented in
 [STAGE5.md](STAGE5.md). These cases are test-first RED; stage 5 is not implemented.
 
