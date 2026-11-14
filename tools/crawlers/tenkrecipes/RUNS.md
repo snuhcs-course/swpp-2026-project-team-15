@@ -1,7 +1,7 @@
 # 원문·썸네일 저장 및 재개 운영 안내
 
 도구는 목록 한 페이지의 파일럿과 `--full`을 사용한 9개 분류·고유 출처 ID 500개 본수집을
-지원한다. 원본 HTML/JSON·검증된 썸네일·관찰 경로·실패·대체 관계를 보존하며 중단 후 재개한다.
+지원한다. 원본 HTML/JSON·검증된 썸네일·관찰 경로·개별 오류를 보존하며 중단 후 재개한다.
 `acquisition_complete`는 정확한 quota와 필수 파일 검사를 통과해야 true다. 의미 중복 검수와
 서비스 적합성 검수는 별도 작업이다. 실제 사이트 실행은 별도 요청 후 운영자가 수행한다.
 
@@ -69,7 +69,7 @@ CLI와 `resume_pending(include_images=True)`는 빈 제목·이름 있는 재료
 없거나 상세 파싱/디코딩이 실패하면 `failed / structure_mismatch`로 원본을 보존하고 같은 분류의
 다음 후보로 진행한다. 파싱 JSON이나 썸네일을 임의로 만들지 않는다. 목록 구조 이상은 중단한다.
 한 페이지 파일럿은 기록된 후보까지만 처리한다. 본수집은 승인된 분류 순서와 추천순을 유지해
-필요한 다음 페이지로 확장하고 quota 할당·대체 관계·미달을 보고한다.
+필요한 다음 페이지로 확장하고 quota 할당·개별 오류·미달을 보고한다.
 
 ## 파일럿 이후 본수집과 검수 전달
 
@@ -101,7 +101,7 @@ CLI와 `resume_pending(include_images=True)`는 빈 제목·이름 있는 재료
    code는 1, 입력 자체를 읽을 수 없으면 2다. 실행별 120초 기본 예산은 본수집 전체 시간을
    보장하지 않는다. 예산을 바꾸려면 처음부터 같은 유한 값을 사용한 새 run을 만든다.
 5. `report.json`, `review.csv`, `manifest.json`과 원본 디렉터리를 함께 검수자에게 전달한다.
-   보고서의 분류별 target/selected/deficit, failures, replacements, findings, 중단 원인을
+   보고서의 분류별 target/selected/deficit, failures, findings, 중단 원인을
    구분해 확인한다. CSV 제목 불일치의 observations 셀은 양쪽 제목·표현 종류·출처 URL의 JSON이다.
 
 ```powershell
@@ -118,8 +118,9 @@ uv run --locked python -m crawlers.tenkrecipes.cli report --output-dir ../data/t
 본수집 모드는 manifest에 기록되어 이후 `resume`에는 `--full`을 반복할 필요가 없다.
 동일 ID는 최초 성공 분류에 한 번만 할당하며, 후순위 분류는 자기 다음 후보를 검토한다.
 다른 ID는 이름·내용·이미지가 같아도 합치지 않는다. 초과 관찰은 남기되 quota에는 넣지 않는다.
-실패 이후 다음 성공 후보는 같은 분류의 대체 관계로 남고, 중단 후 같은 후보가 복구된 경우는
-자기 자신의 대체로 표시하지 않는다. 과거의 실패가 대체돼도 이력은 지우지 않는다.
+개별 후보 오류는 ID·URL·사유·분류/페이지/순서·원본 경로를 남기고 다음 후보로 진행한다.
+A→B 대체 관계는 새로 만들지 않는다. `replacements`는 기존 run 호환용 필드이며 과거 값은
+보존한다. 중단/대기는 run 상태와 요청 이력에서 확인한다.
 
 **500개는 서로 다른 출처 ID의 수이며 실질적으로 다른 요리 500개를 보장하지 않는다.**
 의미 중복 검수는 `pending`이며 서비스 반영 전 반드시 수행해야 한다. 수량 보완·도구 요구·
@@ -179,8 +180,9 @@ uv run --locked python -m crawlers.tenkrecipes.cli resume --output-dir ../data/t
 
 상세 구조 실패는 네트워크 연속 실패 횟수를 늘리거나 초기화하지 않는다. 이전 schema 4 run에
 상세가 `blocked / structure_mismatch`로 남아 있으면, 향후 실제 후보 처리 시 저장 원본의 해시를
-확인하고 재요청 없이 `failed`로 전환한다. 기존 실패 행·원본 경로를 유지하며 다음 성공 후보와
-대체 관계를 기록한다. 코드 변경이나 오프라인 validate/report만으로 run을 전환하지 않는다.
+확인하고 재요청 없이 `failed`로 전환한다. 원본을 보존하고 최종 오류를 간단히 남긴다.
+다음 성공 후보와 대체 관계를 만들지 않는다. 코드 변경이나 오프라인 validate/report만으로
+run을 전환하지 않는다.
 이 정책 변경은 schema 4·parser 출력 계약을 유지하며 별도 실수집 요청 전에는 재개하지 않는다.
 
 운영자 확인이 필요한 중단은 재실행만으로 해제되지 않는다. 원인을 확인한 뒤 다음과 같이
@@ -271,6 +273,17 @@ manifest의 `images[source_id]`에는 상태·원본/최종 URL·레시피 출�
 게시 후 checkpoint가 중단된 이미지는 sidecar와 해시로 복원하며, 없는 파일만 다시 취득한다.
 기존 파일의 해시가 바뀌면 덮어쓰지 않고 중단한다.
 
-현재 run 스키마는 `4`, parser 버전은 `tenkrecipes-dom-2`다. 할당·실패/대체·분류별 진행과
+현재 run 스키마는 `4`, parser 버전은 `tenkrecipes-dom-2`다. 할당·오류·분류별 진행과
 파일럿/본수집 모드를 저장하므로 이전 버전 run은 자동 변환하지 않고 새 실행 경로를 사용한다.
 재개 시 이미지 정책도 동일해야 한다. 300×300 입력은 그대로 보존된다.
+
+### Simple candidate errors (2026-11-15)
+
+Detail/thumbnail HTTP errors such as 404, transport errors, content failures and
+invalid images are logged once and skipped. Terminal logs and candidate outcomes
+share one checkpoint. Legacy nonterminal rows are replaced only when that candidate
+finally fails; original request/response artifacts remain intact. No new replacement
+links or terminal logs for pauses/stops are generated.
+
+429/Retry-After and run budgets, denial/challenge, list errors, image host/redirect
+limits and three consecutive recipe network failures retain their stop/defer rules.
