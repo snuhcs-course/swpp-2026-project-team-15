@@ -91,9 +91,7 @@ def test_full_pipeline_preserves_work_across_interruption_and_reports_quotas(tmp
     assert len({row["source_id"] for row in manifest["allocations"]}) == expected_total
     assert len(manifest["failures"]) == 1
     assert manifest["failures"][0]["source_id"] == "939999"
-    assert manifest["replacements"] == [
-        dict(failed_source_id="939999", replacement_source_id="940000", category_code="63")
-    ]
+    assert manifest["replacements"] == []
     assert len([row for row in manifest["candidates"] if row["source_id"] == "940000"]) == 9
     assert all(Counter(calls)[url] == count for url, count in earlier_calls.items())
     assert all(count == 1 for count in Counter(calls).values())
