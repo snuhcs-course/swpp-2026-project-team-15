@@ -1,7 +1,8 @@
 # AI-assisted with Codex, 2026-11-11; human review pending.
 # Resume consistency fixes assisted by Codex, 2026-11-12; human review pending.
 # Error-policy changes assisted by Codex, 2026-11-14; human review pending.
-"""Persist source snapshots and resume recorded work without allocating quotas."""
+# Stage 5 allocation integration assisted by Codex, 2026-11-14; human review pending.
+"""Persist source snapshots, resume acquisitions, and allocate source-ID quotas."""
 
 import copy
 import json
@@ -18,7 +19,7 @@ from .parsing import MissingTitleError, ParseError, parse_list_page, parse_recip
 from .storage import IntegrityError, RunStorage, digest, plain
 
 PARSER_VERSION = "tenkrecipes-dom-2"
-SCHEMA_VERSION = "3"
+SCHEMA_VERSION = "4"
 
 
 class ResumeMismatch(ValueError):
@@ -92,6 +93,11 @@ class CollectionRun:
             operator_notice=None,
             candidate_outcomes={},
             network_failure_streak=[],
+            allocations=[],
+            failures=[],
+            replacements=[],
+            category_outcomes=[],
+            collection_mode="pilot",
         )
 
     @classmethod
@@ -337,6 +343,8 @@ class CollectionRun:
             state = manifest["details"].get(item["source_id"], {}).get("state", "discovered")
             if manifest["images"].get(item["source_id"], {}).get("state") == "image_validated":
                 state = "image_validated"
+            if any(row["source_id"] == item["source_id"] for row in manifest["allocations"]):
+                state = "selected"
             manifest["candidates"].append(
                 dict(item, category_code=category_code, page=page, state=state)
             )
@@ -375,7 +383,9 @@ class CollectionRun:
             except (ParseError, UnicodeError):
                 result = dict(result, status="blocked", reason="structure_mismatch")
         manifest = self.snapshot()
-        entry = self._retain(manifest, result, relative, url)
+        # A readable empty-title page is still a successful immutable HTTP snapshot.
+        retained = dict(result, status="ok") if result.get("reason") == "missing_title" else result
+        entry = self._retain(manifest, retained, relative, url)
         state = result["status"]
         if record is not None:
             record_path = f"recipes/{source_id}.json"
@@ -569,6 +579,49 @@ class CollectionRun:
             return dict(status="failed", reason=entry["reason"], attempts=entry.get("attempts", []))
         return None
 
+    def _process_candidate(self, candidate):
+        """Acquire one source ID using shared essential-content and failure policies.
+
+        Terminal failures are never retried or recounted. Existing successes are
+        verified/repaired without replaying their effect on the network streak.
+        """
+        from .reporting import essential_failure
+
+        source_id = candidate["source_id"]
+        if stopped := self._operator_status() or self._deferred():
+            return stopped
+        outcome = self._manifest["candidate_outcomes"].get(source_id)
+        if outcome and outcome["status"] == "failed":
+            return dict(status="failed", reason=outcome["reason"])
+        result = self._saved_failure(self._manifest["details"].get(source_id))
+        if result is None:
+            result = self.fetch_detail(source_id)
+        if result["status"] == "parsed":
+            reason = essential_failure(result["record"])
+            if reason:
+                result = dict(status="failed", reason=reason)
+            else:
+                result = self._saved_failure(self._manifest["images"].get(source_id))
+                if result is None:
+                    result = self.fetch_thumbnail(source_id)
+        replaceable = result.get("reason") in (
+            "missing_title",
+            "missing_ingredients",
+            "missing_steps",
+            "invalid_image",
+            "image_too_large",
+            "image_too_many_pixels",
+        ) or self._network_exhausted(result)
+        if result["status"] == "image_validated" or replaceable:
+            self._finish_candidate(candidate, result)
+        return result
+
+    def collect_quotas(self):
+        """Traverse approved categories and publish source-preserving acquisition reports."""
+        from .allocation import collect_quotas
+
+        return collect_quotas(self)
+
     def _resume_candidates(self):
         """Apply collection failure policy to recorded candidates; never discover new pages."""
         results, seen = [], set()
@@ -598,31 +651,9 @@ class CollectionRun:
                     continue
             if stopped := self._operator_status() or self._deferred():
                 return results + [stopped]
-            result = self._saved_failure(self._manifest["details"].get(source_id))
-            if result is None:
-                result = self.fetch_detail(source_id)
-            if result["status"] == "parsed":
-                record = result["record"]
-                if not any(row.get("name_raw") for row in record["ingredients"]):
-                    result = dict(status="failed", reason="missing_ingredients")
-                elif not any(row.get("instruction") for row in record["steps"]):
-                    result = dict(status="failed", reason="missing_steps")
-                else:
-                    result = self._saved_failure(self._manifest["images"].get(source_id))
-                    if result is None:
-                        result = self.fetch_thumbnail(source_id)
+            result = self._process_candidate(candidate)
             results.append(result)
-            replaceable = result.get("reason") in (
-                "missing_title",
-                "missing_ingredients",
-                "missing_steps",
-                "invalid_image",
-                "image_too_large",
-                "image_too_many_pixels",
-            ) or self._network_exhausted(result)
-            if result["status"] == "image_validated" or replaceable:
-                self._finish_candidate(candidate, result)
-            else:
+            if source_id not in self._manifest["candidate_outcomes"]:
                 return results
         if stopped := self._operator_status() or self._deferred():
             return results + [stopped]
