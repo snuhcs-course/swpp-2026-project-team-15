@@ -23,9 +23,13 @@ Stage 5 allocation/report tests and implemented interfaces are documented in
 [STAGE5.md](STAGE5.md). The original 29 cases pass; implementation-time regression
 tests are limited to four reproduced resume/replacement defects.
 
+Stage 6 full synthetic pipeline checks and locked-environment commands are
+documented in [STAGE6.md](STAGE6.md). They collect 500/499 records through the real
+workflow, interrupt and resume an unfinished asset, and verify offline reports.
+
 These are acceptance contracts for tasks 1.1–1.4 of
-`collect-tenkrecipes-quick-recipes`. Stage 1 implements offline plan generation;
-source collection is not implemented. The initial test-only run was RED because
+`collect-tenkrecipes-quick-recipes`. Stage 1 covers offline plan generation;
+later stages cover collection and reporting. The initial test-only run was RED because
 the CLI, configuration, dependency, discovery setup, and tool README did not yet
 exist. Missing behavior is never hidden behind skipped or xfailed tests.
 
