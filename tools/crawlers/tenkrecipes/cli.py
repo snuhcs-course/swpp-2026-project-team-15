@@ -1,5 +1,6 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
 # Error-policy integration assisted by Codex, 2026-11-14; human review pending.
+# Stage 5 commands assisted by Codex, 2026-11-14; human review pending.
 """Offline plan/parse commands and explicit live source snapshot collection."""
 
 import json
@@ -93,8 +94,9 @@ def _source_run(
     max_wait=60.0,
     run_budget=120.0,
     acknowledge_stop=False,
+    full=False,
 ):
-    """Execute one source page or drain saved candidates; never allocate quotas."""
+    """Run a bounded one-page pilot or resume the approved full quota traversal."""
     if not live:
         raise typer.BadParameter("Network access requires --live", param_hint="--live")
     from .fetching import HttpClient
@@ -113,12 +115,21 @@ def _source_run(
         else:
             if category not in {row["cat4"] for row in plan["categories"]} or page < 1:
                 raise ValueError("Expected a configured category and positive page")
+            if full and (category != "63" or page != 1):
+                raise ValueError(
+                    "--full follows the fixed plan; do not combine with --category/--page"
+                )
             run = CollectionRun.create(**options)
-            result = run.fetch_list(category, page)
-            if result["status"] in ("blocked", "deferred", "failed"):
-                typer.echo(json.dumps(dict(output_dir=plan["output_dir"], **result)))
-                raise typer.Exit(1)
-        run.resume_pending(include_images=True)
+            if not full:
+                result = run.fetch_list(category, page)
+                if result["status"] in ("blocked", "deferred", "failed"):
+                    typer.echo(json.dumps(dict(output_dir=plan["output_dir"], **result)))
+                    raise typer.Exit(1)
+        quota_report = None
+        if full or run.snapshot().get("collection_mode") == "quota":
+            quota_report = run.collect_quotas()
+        else:
+            run.resume_pending(include_images=True)
         snapshot = run.snapshot()
         typer.echo(
             json.dumps(
@@ -139,7 +150,14 @@ def _source_run(
                     validated_images=sum(
                         row["state"] == "image_validated" for row in snapshot["images"].values()
                     ),
-                    acquisition_complete=False,
+                    selected_count=len(snapshot.get("allocations", [])),
+                    categories=quota_report["categories"] if quota_report else [],
+                    acquisition_complete=bool(
+                        quota_report and quota_report["acquisition_complete"]
+                    ),
+                    review_status="review_pending",
+                    report_path="report.json" if quota_report else None,
+                    review_path="review.csv" if quota_report else None,
                 ),
                 ensure_ascii=False,
                 indent=2,
@@ -164,8 +182,9 @@ def collect(
     run_budget: float = typer.Option(
         120.0, help="HTTP time budget in seconds for this invocation."
     ),
+    full: bool = typer.Option(False, "--full", help="Fill the fixed nine-category 500-ID plan."),
 ) -> None:
-    """Save one list page, candidate details and validated thumbnails; quotas come later."""
+    """Collect a one-page pilot, or use --full for quota traversal and JSON/CSV reports."""
     _source_run(
         output_dir,
         live,
@@ -174,6 +193,7 @@ def collect(
         page=page,
         max_wait=max_wait,
         run_budget=run_budget,
+        full=full,
     )
 
 
@@ -186,8 +206,11 @@ def resume(
     acknowledge_stop: bool = typer.Option(
         False, "--acknowledge-stop", help="Acknowledge a saved stop after operator review."
     ),
+    full: bool = typer.Option(
+        False, "--full", help="Continue a pilot toward the fixed 500-ID plan."
+    ),
 ) -> None:
-    """Verify a saved run and process its recorded candidates without fetching new pages."""
+    """Resume saved pilot work or full traversal; --full promotes a compatible pilot."""
     _source_run(
         output_dir,
         live,
@@ -195,6 +218,7 @@ def resume(
         max_wait=max_wait,
         run_budget=run_budget,
         acknowledge_stop=acknowledge_stop,
+        full=full,
     )
 
 

@@ -1,16 +1,14 @@
 # Stage 5 test-first contracts
 
-These offline acceptance tests specify tasks 5.1–5.5. Quota allocation and reports
-are not implemented yet. Shared candidate error handling is implemented in the
-single-page CLI and covered by `test_error_policy.py`. No skip/xfail, stub
-production module, or live requests are used. Stage 5 task checkboxes remain
-unchecked until their full implementation is verified.
+These offline acceptance tests verify implemented tasks 5.1–5.5. Allocation and
+reports use the same candidate error policy as the one-page pilot. No skip/xfail,
+stub production module, or live requests are used. Operator procedures for 5.6
+are in [RUNS.md](../RUNS.md) and still require human operational review.
 
-## Proposed implementation boundary
+## Implemented interface
 
 The specification defines behavior, not Python names or report serialization.
-The following small interfaces are **test proposals**, consistent with the prior
-stage contracts; they have not yet been implemented.
+The implementation follows these interfaces originally proposed by the tests.
 
 - `CollectionRun.collect_quotas()` traverses the saved plan in category order,
   using recorded work before unseen pages. It returns `status` and
@@ -74,8 +72,8 @@ and integrated CLI collection path remain stage 6 work.
 The parser now distinguishes an empty title (`MissingTitleError`) from missing
 DOM structure. Collection preserves an empty-title failure and proceeds through
 recorded same-category candidates. Raw HTML is retained; a parsed JSON is not
-required when parsing fails. Stage 5 still needs to connect this behavior to quota
-allocation, unseen-page traversal, replacement relations, and reporting.
+required when parsing fails. Quota traversal uses this same classification,
+retains all observed cards, and connects same-category replacement relations.
 
 ## Operator documentation requires human review (5.6)
 
@@ -96,5 +94,9 @@ From `tools/`:
 uv run --locked pytest crawlers/tenkrecipes/tests/test_stage5_allocation.py crawlers/tenkrecipes/tests/test_stage5_reports.py -q
 ```
 
-All cases must be collected and fail RED until stage 5 is implemented. Existing
-Pixabay and stages 1–4 must continue passing independently.
+The original 29 tests now pass, alongside Pixabay and stages 1–4. Three additional
+confirmed implementation defects are covered by `test_stage5_regressions.py`:
+missing selected JSON/image files must be repaired even in an exhausted category,
+and a recovered blocked recipe must not be recorded as replacing itself. All
+three failed before their fixes. No other stage 5 implementation-time tests were
+added. Full 500-recipe fake-transport pipeline integration remains stage 6 work.

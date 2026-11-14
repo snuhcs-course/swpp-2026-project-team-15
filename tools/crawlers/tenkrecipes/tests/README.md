@@ -11,7 +11,7 @@ Stage 4 thumbnail acceptance cases are documented in [STAGE4.md](STAGE4.md).
 
 [test_error_policy.py](test_error_policy.py) covers the approved empty-title,
 operator-stop, three-recipe network-failure, reset, and resume policies. The
-single-page CLI applies these policies; full quota allocation remains stage 5.
+pilot and full quota CLI apply these policies.
 
 Additional confirmed resume defects are covered by
 [test_resume_consistency.py](test_resume_consistency.py): interrupted failure
@@ -19,8 +19,9 @@ checkpoints, retry deadlines during local recovery, retry-response references,
 and consistent states across repeated source observations. These ten cases were
 each observed failing before their respective fixes.
 
-Stage 5 allocation/report tests and proposed interfaces are documented in
-[STAGE5.md](STAGE5.md). These cases are test-first RED; stage 5 is not implemented.
+Stage 5 allocation/report tests and implemented interfaces are documented in
+[STAGE5.md](STAGE5.md). The original 29 cases pass; implementation-time regression
+tests are limited to three reproduced resume/replacement defects.
 
 These are acceptance contracts for tasks 1.1–1.4 of
 `collect-tenkrecipes-quick-recipes`. Stage 1 implements offline plan generation;

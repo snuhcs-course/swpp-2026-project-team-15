@@ -91,7 +91,15 @@ semantic deduplication, production normalization, or service import occurs.
 Validated thumbnails and image metadata are separate collection artifacts, not
 changes to immutable detail parser records. See [RUNS.md](RUNS.md) for manifest
 `images`, candidate outcomes, network-failure streaks, operator stops, resource
-bounds, provenance, and resume behavior (run schema version 3).
+bounds, provenance, and resume behavior (run schema version 4).
+
+`allocations` contains one `{source_id, category_code}` row per selected ID.
+`failures` retains source/category/page/position/reason and available artifact
+paths. `replacements` links failed and successful IDs within a category; it does
+not imply semantic equivalence. `category_outcomes` records counts, deficits,
+last page and the reason (`quota_reached`, `exhausted`, `repeated_page`, or a stop
+cause). `collection_mode` is `pilot` or `quota` and controls subsequent CLI resume.
+These mutable checkpoints never rewrite immutable source/parsed records.
 
 ## Offline acquisition reports
 

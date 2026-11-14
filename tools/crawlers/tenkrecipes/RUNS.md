@@ -1,9 +1,9 @@
 # 원문·썸네일 저장 및 재개 운영 안내
 
-현재 도구는 지정 목록 **한 페이지**와 그 후보들의 상세 HTML/JSON·검증된 원본 썸네일을 취득한다.
-500개 quota 할당·자동 페이지 확장·서비스 반영은 후속 단계다.
-실행 결과의 `acquisition_complete`는 아직 항상 false다. 성공적으로 파싱됐다는 것은
-서비스 적합성·의미 중복 검수·이미지 검증까지 완료됐다는 뜻이 아니다.
+도구는 목록 한 페이지의 파일럿과 `--full`을 사용한 9개 분류·고유 출처 ID 500개 본수집을
+지원한다. 원본 HTML/JSON·검증된 썸네일·관찰 경로·실패·대체 관계를 보존하며 중단 후 재개한다.
+`acquisition_complete`는 정확한 quota와 필수 파일 검사를 통과해야 true다. 의미 중복 검수와
+서비스 적합성 검수는 별도 작업이다. 실제 사이트 실행은 별도 요청 후 운영자가 수행한다.
 
 ## 실행 전 확인
 
@@ -66,7 +66,65 @@ Retry-After(초 또는 HTTP 날짜)를 우선하고 기본 요청 간격도 지�
 CLI와 `resume_pending(include_images=True)`는 빈 제목·이름 있는 재료 부재·단계 본문 부재·
 손상/과대 이미지 후보를 보존하고 같은 분류의 기록된 다음 후보로 진행한다. 수량 누락이나
 등록 도구 부재는 제외 사유가 아니다. 제목 요소 자체 등 필수 DOM 구조가 없으면 차단한다.
-새 페이지 탐색·quota 할당·대체 관계를 포함한 전체 보고서는 여전히 5단계 작업이다.
+한 페이지 파일럿은 기록된 후보까지만 처리한다. 본수집은 승인된 분류 순서와 추천순을 유지해
+필요한 다음 페이지로 확장하고 quota 할당·대체 관계·미달을 보고한다.
+
+## 파일럿 이후 본수집과 검수 전달
+
+목표는 다음과 같고, 각 요청은 `cat2=18`, `order=reco`를 유지한다. 추천순을 월간 순위로
+표현하거나, 부족한 quota를 다른 분류에 옮기거나, 필터를 넓히지 않는다.
+
+| 순서 | 종류 | cat4 | 목표 |
+|---|---|---|---:|
+| 1 | 밑반찬 | 63 | 100 |
+| 2 | 메인반찬 | 56 | 90 |
+| 3 | 국/탕 | 54 | 60 |
+| 4 | 찌개 | 55 | 30 |
+| 5 | 면/만두 | 53 | 60 |
+| 6 | 밥/죽/떡 | 52 | 100 |
+| 7 | 퓨전 | 61 | 20 |
+| 8 | 양식 | 65 | 20 |
+| 9 | 샐러드 | 64 | 20 |
+
+1. 실행 전 이용 범위를 확인하고 위 한 페이지 명령으로 작은 파일럿을 실행한다. 필터·DOM·
+   이미지 호스트 및 저장된 원본/파싱 결과를 확인한다. 자동 검증이 본문·이미지 재배포나 AI
+   이용 권한 또는 원문 의미의 정확성을 승인해 주지는 않는다.
+2. 같은 스키마·parser·네트워크/이미지 정책의 파일럿이면 `resume --full`로 본수집으로 확장할
+   수 있다. 저장된 페이지와 결과를 재사용하되 할당은 아래 고정 분류 순서를 따른다. 새 실행은
+   `collect --full`을 사용한다. 본수집에 `--category`/`--page` 변경을 결합하지 않는다.
+3. 예산 초과·429는 대기 시각 이후 재개하고, 접근/구조 이상은 원인을 확인한다. 운영자 확인
+   상태는 아래 절차로 해제한다. 정상 빈 목록은 `exhausted`, 새 ID가 없는 반복 페이지는
+   `repeated_page`로 보고하고 반복 순회를 중단한다. 미달을 500개 성공으로 표시하지 않는다.
+4. 오프라인 `validate`로 파일·할당을 검사하고 `report`로 JSON/CSV를 생성한다. 미완료 exit
+   code는 1, 입력 자체를 읽을 수 없으면 2다. 실행별 120초 기본 예산은 본수집 전체 시간을
+   보장하지 않는다. 예산을 바꾸려면 처음부터 같은 유한 값을 사용한 새 run을 만든다.
+5. `report.json`, `review.csv`, `manifest.json`과 원본 디렉터리를 함께 검수자에게 전달한다.
+   보고서의 분류별 target/selected/deficit, failures, replacements, findings, 중단 원인을
+   구분해 확인한다. CSV 제목 불일치의 observations 셀은 양쪽 제목·표현 종류·출처 URL의 JSON이다.
+
+```powershell
+# New full run; retain these finite budgets unchanged on resume.
+uv run --locked python -m crawlers.tenkrecipes.cli collect --output-dir ../data/tenkrecipes/runs/full --full --live
+uv run --locked python -m crawlers.tenkrecipes.cli resume --output-dir ../data/tenkrecipes/runs/full --live
+# Alternatively, promote the compatible one-page pilot.
+uv run --locked python -m crawlers.tenkrecipes.cli resume --output-dir ../data/tenkrecipes/runs/pilot --full --live
+# These two commands are offline and do not require --live.
+uv run --locked python -m crawlers.tenkrecipes.cli validate --output-dir ../data/tenkrecipes/runs/full
+uv run --locked python -m crawlers.tenkrecipes.cli report --output-dir ../data/tenkrecipes/runs/full
+```
+
+본수집 모드는 manifest에 기록되어 이후 `resume`에는 `--full`을 반복할 필요가 없다.
+동일 ID는 최초 성공 분류에 한 번만 할당하며, 후순위 분류는 자기 다음 후보를 검토한다.
+다른 ID는 이름·내용·이미지가 같아도 합치지 않는다. 초과 관찰은 남기되 quota에는 넣지 않는다.
+실패 이후 다음 성공 후보는 같은 분류의 대체 관계로 남고, 중단 후 같은 후보가 복구된 경우는
+자기 자신의 대체로 표시하지 않는다. 과거의 실패가 대체돼도 이력은 지우지 않는다.
+
+**500개는 서로 다른 출처 ID의 수이며 실질적으로 다른 요리 500개를 보장하지 않는다.**
+의미 중복 검수는 `pending`이며 서비스 반영 전 반드시 수행해야 한다. 수량 보완·도구 요구·
+자취 적합성과 이용 범위도 사람이 별도로 검토한다. 판정 기준·중복 통합/제외·서비스 CSV 변환·
+정규화 재료 ID 매핑·DB import·이미지 배포는 이 도구의 범위에 포함되지 않는다.
+report.json/review.csv는 각각 원자적으로 게시되지만 두 파일을 묶은 트랜잭션은 아니므로,
+보고서 게시 중 중단되면 `report`를 다시 실행하고 두 파일을 함께 전달한다.
 
 ## 오류 중단과 운영자 확인
 
@@ -97,6 +155,8 @@ uv run --locked python -m crawlers.tenkrecipes.cli resume --output-dir ../data/t
 ```text
 run.json                       고정 plan, run ID, 시작 시각, parser/schema 및 네트워크 정책
 manifest.json                  후보 관찰, 목록·상세 상태, 시도 이력, 대기 시각
+report.json                    목표·파일 검사·미달·실패/대체·검수 대기 보고서
+review.csv                     검수 finding·실패 및 원본/JSON/이미지 연결
 failure.pending.json           실패 checkpoint 교체 중단 시 복구할 상태 (정상 게시 후 제거)
 lists/<cat4>/<page>.html        성공적으로 파싱한 목록 원본
 lists/<cat4>/*.failed-*.html    실패/차단 응답 원본 (성공 목록으로 사용하지 않음)
@@ -136,10 +196,10 @@ raw/JSON/manifest는 같은 디렉터리의 임시 파일을 flush/fsync한 뒤 
 않으며, 요청 중 강제 종료로 아직 응답이 저장되지 않았다면 해당 미완료 요청은 다시 필요할 수 있다.
 
 Python API는 `CollectionRun.create/resume`, `fetch_list`, `fetch_detail`, `resume_pending`,
-`snapshot`을 제공한다. API로 다음 페이지를 요청할 때도 저장 후보 처리를 우선한다.
+`collect_quotas`, `snapshot`을 제공한다. API로 다음 페이지를 요청할 때도 저장 후보 처리를 우선한다.
 Python API의 `resume_pending()`은 기존처럼 상세만 처리한다.
 `resume_pending(include_images=True)`와 CLI는 검증된 썸네일까지 취득·재개한다.
-quota·미달·검수 보고서는 5단계에서 연결한다.
+`collect_quotas()`는 고정 순서의 페이지 순회·quota 할당과 보고서 게시까지 처리한다.
 
 ## 썸네일 계약
 
@@ -165,6 +225,6 @@ manifest의 `images[source_id]`에는 상태·원본/최종 URL·레시피 출�
 게시 후 checkpoint가 중단된 이미지는 sidecar와 해시로 복원하며, 없는 파일만 다시 취득한다.
 기존 파일의 해시가 바뀌면 덮어쓰지 않고 중단한다.
 
-현재 run 스키마는 `3`, parser 버전은 `tenkrecipes-dom-2`다. 오류 집계·운영자 확인 상태와
-빈 제목의 오류 분류가 변경됐으므로 이전 버전 run은 자동 변환하지 않고 새 실행 경로를 사용한다.
+현재 run 스키마는 `4`, parser 버전은 `tenkrecipes-dom-2`다. 할당·실패/대체·분류별 진행과
+파일럿/본수집 모드를 저장하므로 이전 버전 run은 자동 변환하지 않고 새 실행 경로를 사용한다.
 재개 시 이미지 정책도 동일해야 한다. 300×300 입력은 그대로 보존된다.
