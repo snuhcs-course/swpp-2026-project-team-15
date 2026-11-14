@@ -1,6 +1,7 @@
 # AI-assisted with Codex, 2026-11-14; human review pending.
-# Detail failure reclassification assisted by Codex, 2026-11-15; human review pending.
-"""Deterministic source-ID allocation with recorded replacements and bounded traversal."""
+# Detail failure reclassification assisted by Codex, 2026-11-15; reviewed by Soohyun An.
+# Simple candidate errors assisted by Codex, 2026-11-15; human review pending.
+"""Deterministic successful source-ID allocation and bounded traversal."""
 
 from .reporting import write_report
 
@@ -27,66 +28,15 @@ def _category_outcome(run, category, reason, page):
     run._commit(manifest)
 
 
-def _record_decision(run, candidate, result):
-    """Allocate at most once, or retain a failure and link its next same-category success."""
+def _allocate_candidate(run, candidate):
+    """Record a successful ID once without coupling allocation to error history."""
     manifest = run.snapshot()
     source_id, code = candidate["source_id"], candidate["category_code"]
-    if result["status"] == "image_validated":
-        if not any(row["source_id"] == source_id for row in manifest["allocations"]):
-            manifest["allocations"].append(dict(source_id=source_id, category_code=code))
-        replaced = {
-            r["failed_source_id"] for r in manifest["replacements"] if r["category_code"] == code
-        }
-        for failure in manifest["failures"]:
-            if (
-                failure["category_code"] == code
-                and failure["source_id"] not in replaced
-                and failure["source_id"] != source_id
-                and failure["status"] == "failed"
-                and run._manifest["candidate_outcomes"].get(failure["source_id"], {}).get("status")
-                == "failed"
-            ):
-                manifest["replacements"].append(
-                    dict(
-                        failed_source_id=failure["source_id"],
-                        replacement_source_id=source_id,
-                        category_code=code,
-                    )
-                )
-        for observation in manifest["candidates"]:
-            if observation["source_id"] == source_id:
-                observation["state"] = "selected"
-    else:
-        for failure in manifest["failures"]:
-            if (
-                failure["source_id"] == source_id
-                and failure["category_code"] == code
-                and failure["status"] == "blocked"
-                and failure["reason"] == result.get("reason") == "structure_mismatch"
-                and result["status"] == "failed"
-            ):
-                # Keep the original failure/provenance row, now eligible for a replacement.
-                failure["status"] = "failed"
-        if not any(
-            row["source_id"] == source_id and row["category_code"] == code
-            for row in manifest["failures"]
-        ):
-            detail = manifest["details"].get(source_id, {})
-            image = manifest["images"].get(source_id, {})
-            manifest["failures"].append(
-                dict(
-                    source_id=source_id,
-                    category_code=code,
-                    reason=result.get("reason"),
-                    status=result["status"],
-                    source_url=candidate["source_url"],
-                    page=candidate["page"],
-                    position=candidate["position"],
-                    raw_path=(detail.get("raw") or {}).get("path"),
-                    record_path=detail.get("record", {}).get("path"),
-                    image_path=image.get("path"),
-                )
-            )
+    if not any(row["source_id"] == source_id for row in manifest["allocations"]):
+        manifest["allocations"].append(dict(source_id=source_id, category_code=code))
+    for observation in manifest["candidates"]:
+        if observation["source_id"] == source_id:
+            observation["state"] = "selected"
     run._commit(manifest)
 
 
@@ -227,7 +177,8 @@ def collect_quotas(run, *, category_code=None):
                 # Per-page repeated cards must not inflate failures or allocations.
                 observed.add(source_id)
                 outcome = run._process_candidate(candidate)
-                _record_decision(run, candidate, outcome)
+                if outcome["status"] == "image_validated":
+                    _allocate_candidate(run, candidate)
                 if (
                     run._operator_status()
                     or run._deferred()
