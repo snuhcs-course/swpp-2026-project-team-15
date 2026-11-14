@@ -3,7 +3,8 @@
 # Error-policy changes assisted by Codex, 2026-11-14; human review pending.
 # Stage 5 allocation integration assisted by Codex, 2026-11-14; human review pending.
 # Category-scoped quota execution assisted by Codex, 2026-11-14; human review pending.
-# Detail structure failure policy assisted by Codex, 2026-11-15; human review pending.
+# Detail structure failure policy assisted by Codex, 2026-11-15; reviewed by Soohyun An.
+# Rate-limit resume fix assisted by Codex, 2026-11-15; human review pending.
 """Persist source snapshots, resume acquisitions, and allocate source-ID quotas."""
 
 import copy
@@ -581,8 +582,19 @@ class CollectionRun:
         self._commit(manifest)
 
     def _saved_failure(self, entry):
-        """Finalize a saved failed attempt without repeating its exhausted HTTP budget."""
+        """Reuse terminal failures; let expired rate limits start a new request budget.
+
+        Candidate processing checks the persisted Retry-After deadline first.
+        A 429 exhaustion is a collection pause, not a terminal recipe failure.
+        """
         if entry and entry["state"] == "failed":
+            attempts = entry.get("attempts", [])
+            if (
+                entry["reason"] == "retry_exhausted"
+                and attempts
+                and attempts[-1].get("status_code") == 429
+            ):
+                return None
             return dict(status="failed", reason=entry["reason"], attempts=entry.get("attempts", []))
         return None
 
