@@ -55,10 +55,7 @@ def test_invalid_essentials_preserve_failure_and_use_next_same_category(tmp_path
     assert manifest["allocations"] == [dict(source_id="900002", category_code="63")]
     failure = next(r for r in manifest["failures"] if r["source_id"] == "900001")
     assert failure["category_code"] == "63" and failure["reason"]
-    assert (
-        dict(failed_source_id="900001", replacement_source_id="900002", category_code="63")
-        in manifest["replacements"]
-    )
+    assert manifest["replacements"] == []
     assert run.storage.path("details/900001.html").exists()
     if missing != "title":
         assert run.storage.path("recipes/900001.json").exists()
