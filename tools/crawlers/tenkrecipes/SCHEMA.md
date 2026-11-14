@@ -5,6 +5,11 @@ or writes a file. `parse --input PATH --source-url URL` reads UTF-8 detail HTML
 and emits the same detail record as JSON to stdout. Missing/unreadable inputs
 and parse errors return nonzero. The source HTML remains unchanged.
 
+An existing but blank DOM title raises `MissingTitleError`, a `ParseError`
+subclass. Collection records it as `failed / missing_title` and preserves raw
+HTML. A missing title element or required container remains a structural error.
+JSON-LD does not replace an empty DOM title.
+
 ## List observations
 
 `parse_list_page(html, source_url=...)` returns:
@@ -85,4 +90,5 @@ semantic deduplication, production normalization, or service import occurs.
 
 Validated thumbnails and image metadata are separate collection artifacts, not
 changes to immutable detail parser records. See [RUNS.md](RUNS.md) for manifest
-`images`, resource bounds, provenance, and resume behavior (run schema version 2).
+`images`, candidate outcomes, network-failure streaks, operator stops, resource
+bounds, provenance, and resume behavior (run schema version 3).

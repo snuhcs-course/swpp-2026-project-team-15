@@ -1,8 +1,10 @@
 # Stage 5 test-first contracts
 
-These offline acceptance tests specify tasks 5.1–5.5. Stage 5 production code is
-intentionally absent. No skip/xfail, stub production module, or live requests are
-used. Stage 5 task checkboxes remain unchecked until implementation is verified.
+These offline acceptance tests specify tasks 5.1–5.5. Quota allocation and reports
+are not implemented yet. Shared candidate error handling is implemented in the
+single-page CLI and covered by `test_error_policy.py`. No skip/xfail, stub
+production module, or live requests are used. Stage 5 task checkboxes remain
+unchecked until their full implementation is verified.
 
 ## Proposed implementation boundary
 
@@ -69,11 +71,11 @@ Corrupt-image bytes have a matching updated hash to require real decoding rather
 than trust an `image_validated` label. The full fake-transport 500-item collection
 and integrated CLI collection path remain stage 6 work.
 
-The current parser rejects empty titles and the workflow labels all ParseError
-as structural blockage. Task 5.2 requires an empty-title candidate to be recorded
-and replaced, while actual container loss stops collection. The new tests expose
-this distinction without changing parser behavior or old tests. An empty-title
-candidate must retain raw HTML; a parsed JSON is not required when parsing fails.
+The parser now distinguishes an empty title (`MissingTitleError`) from missing
+DOM structure. Collection preserves an empty-title failure and proceeds through
+recorded same-category candidates. Raw HTML is retained; a parsed JSON is not
+required when parsing fails. Stage 5 still needs to connect this behavior to quota
+allocation, unseen-page traversal, replacement relations, and reporting.
 
 ## Operator documentation requires human review (5.6)
 

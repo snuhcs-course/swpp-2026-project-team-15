@@ -9,6 +9,10 @@ They were written test-first and now verify fetching/storage/resume with fake I/
 
 Stage 4 thumbnail acceptance cases are documented in [STAGE4.md](STAGE4.md).
 
+[test_error_policy.py](test_error_policy.py) covers the approved empty-title,
+operator-stop, three-recipe network-failure, reset, and resume policies. The
+single-page CLI applies these policies; full quota allocation remains stage 5.
+
 Additional confirmed resume defects are covered by
 [test_resume_consistency.py](test_resume_consistency.py): interrupted failure
 checkpoints, retry deadlines during local recovery, retry-response references,

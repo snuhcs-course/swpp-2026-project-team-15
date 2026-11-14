@@ -61,6 +61,8 @@ Python API `crawlers.tenkrecipes.config.build_plan(output_dir=Path(...))`는
 
 `collect --live`는 지정 분류의 목록 한 페이지·후보 상세·검증된 원본 썸네일을 저장하고,
 `resume --live`는 저장된 후보와 이전에 요청한 실패 목록을 재개한다.
+후보 실패의 다음 후보 진행, 연속 네트워크 실패 3건 중단 및 이미지 정책 위반의 운영자 확인은
+[오류·재개 안내](RUNS.md)를 따른다. 현재 run 스키마는 3이며 이전 run은 새 경로로 시작한다.
 **500개 quota 자동 순회·검수 보고서는 아직 구현하지 않았다.**
 실제 사이트 실행은 운영자의 별도 실행으로만 진행한다.
 기존 서비스 CSV·DB·재료 ID·이미지·Android·API·AI 프롬프트에는 변경을 가하지 않는다.
