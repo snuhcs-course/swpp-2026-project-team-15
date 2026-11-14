@@ -1,6 +1,7 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
 # Error-policy integration assisted by Codex, 2026-11-14; human review pending.
 # Stage 5 commands assisted by Codex, 2026-11-14; human review pending.
+# Category-scoped quota commands assisted by Codex, 2026-11-14; human review pending.
 """Offline plan/parse commands and explicit live source snapshot collection."""
 
 import json
@@ -95,8 +96,9 @@ def _source_run(
     run_budget=120.0,
     acknowledge_stop=False,
     full=False,
+    only_category=None,
 ):
-    """Run a bounded one-page pilot or resume the approved full quota traversal."""
+    """Run a pilot, a single category quota, or the full approved traversal."""
     if not live:
         raise typer.BadParameter("Network access requires --live", param_hint="--live")
     from .fetching import HttpClient
@@ -104,6 +106,16 @@ def _source_run(
 
     try:
         plan = build_plan(output_dir)
+        codes = [row["cat4"] for row in plan["categories"]]
+        if only_category is not None:
+            if full:
+                raise ValueError("--full and --only-category are mutually exclusive")
+            if only_category not in codes:
+                raise ValueError("Expected an approved --only-category code")
+            if category != "63" or page != 1:
+                raise ValueError("Do not combine --only-category with pilot --category/--page")
+            if not resume_run and only_category != codes[0]:
+                raise ValueError(f"Start with category {codes[0]}; resume the same run afterward")
         client = HttpClient(live=True, max_wait=max_wait, run_budget=run_budget)
         options = dict(
             plan=plan, client=client, parser_version=PARSER_VERSION, schema_version=SCHEMA_VERSION
@@ -120,14 +132,17 @@ def _source_run(
                     "--full follows the fixed plan; do not combine with --category/--page"
                 )
             run = CollectionRun.create(**options)
-            if not full:
+            if not full and only_category is None:
                 result = run.fetch_list(category, page)
                 if result["status"] in ("blocked", "deferred", "failed"):
                     typer.echo(json.dumps(dict(output_dir=plan["output_dir"], **result)))
                     raise typer.Exit(1)
         quota_report = None
-        if full or run.snapshot().get("collection_mode") == "quota":
-            quota_report = run.collect_quotas()
+        scope = only_category
+        if scope is None and not full:
+            scope = run.snapshot().get("quota_category")
+        if full or scope is not None or run.snapshot().get("collection_mode") == "quota":
+            quota_report = run.collect_quotas(category_code=scope)
         else:
             run.resume_pending(include_images=True)
         snapshot = run.snapshot()
@@ -155,6 +170,8 @@ def _source_run(
                     acquisition_complete=bool(
                         quota_report and quota_report["acquisition_complete"]
                     ),
+                    requested_category=scope,
+                    category_complete=bool(quota_report and quota_report.get("category_complete")),
                     review_status="review_pending",
                     report_path="report.json" if quota_report else None,
                     review_path="review.csv" if quota_report else None,
@@ -163,7 +180,10 @@ def _source_run(
                 indent=2,
             )
         )
-        if snapshot["state"] in ("blocked", "deferred", "failed", "incomplete"):
+        if snapshot["state"] in ("blocked", "deferred", "failed") or (
+            snapshot["state"] == "incomplete"
+            and not (quota_report and quota_report.get("category_complete"))
+        ):
             raise typer.Exit(1)
     except (OSError, ValueError) as exc:
         typer.echo(f"Collection error: {exc}", err=True)
@@ -183,8 +203,11 @@ def collect(
         120.0, help="HTTP time budget in seconds for this invocation."
     ),
     full: bool = typer.Option(False, "--full", help="Fill the fixed nine-category 500-ID plan."),
+    only_category: str | None = typer.Option(
+        None, help="Fill only this category's quota, then stop; follow the fixed category order."
+    ),
 ) -> None:
-    """Collect a one-page pilot, or use --full for quota traversal and JSON/CSV reports."""
+    """Collect a pilot, one category quota, or all quotas, with explicit live opt-in."""
     _source_run(
         output_dir,
         live,
@@ -194,6 +217,7 @@ def collect(
         max_wait=max_wait,
         run_budget=run_budget,
         full=full,
+        only_category=only_category,
     )
 
 
@@ -209,8 +233,11 @@ def resume(
     full: bool = typer.Option(
         False, "--full", help="Continue a pilot toward the fixed 500-ID plan."
     ),
+    only_category: str | None = typer.Option(
+        None, help="Fill only this category's quota in the existing run, then stop."
+    ),
 ) -> None:
-    """Resume saved pilot work or full traversal; --full promotes a compatible pilot."""
+    """Resume the saved scope; choose --only-category or --full to change scope."""
     _source_run(
         output_dir,
         live,
@@ -219,6 +246,7 @@ def resume(
         run_budget=run_budget,
         acknowledge_stop=acknowledge_stop,
         full=full,
+        only_category=only_category,
     )
 
 

@@ -2,6 +2,7 @@
 # Resume consistency fixes assisted by Codex, 2026-11-12; human review pending.
 # Error-policy changes assisted by Codex, 2026-11-14; human review pending.
 # Stage 5 allocation integration assisted by Codex, 2026-11-14; human review pending.
+# Category-scoped quota execution assisted by Codex, 2026-11-14; human review pending.
 """Persist source snapshots, resume acquisitions, and allocate source-ID quotas."""
 
 import copy
@@ -616,11 +617,15 @@ class CollectionRun:
             self._finish_candidate(candidate, result)
         return result
 
-    def collect_quotas(self):
-        """Traverse approved categories and publish source-preserving acquisition reports."""
+    def collect_quotas(self, *, category_code=None):
+        """Fill all quotas or one category, publishing the canonical run report.
+
+        Scoped execution preserves the same run and does not acquire other
+        categories. Passing None explicitly uses the full traversal.
+        """
         from .allocation import collect_quotas
 
-        return collect_quotas(self)
+        return collect_quotas(self, category_code=category_code)
 
     def _resume_candidates(self):
         """Apply collection failure policy to recorded candidates; never discover new pages."""

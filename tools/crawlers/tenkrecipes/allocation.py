@@ -95,24 +95,52 @@ def _finish(run, *, stopped=False):
         run._commit(manifest)
         # Publish against the final checkpoint, not the transient running state.
         report = write_report(run.storage.root)
-    return dict(report, status=run._manifest["state"] if stopped else report["status"])
+    result = dict(report, status=run._manifest["state"] if stopped else report["status"])
+    if code := run._manifest.get("quota_category"):
+        category = next(row for row in report["categories"] if row["category_code"] == code)
+        result.update(
+            requested_category=code,
+            category_complete=not stopped and category["selected"] == category["target"],
+        )
+    return result
 
 
-def collect_quotas(run):
+def collect_quotas(run, *, category_code=None):
     """Fill categories in plan order, reusing saved pages before expanding each traversal.
 
     Repeated IDs within a category do not cause extra detail/image requests.
     Different IDs remain distinct irrespective of content equality. Exhaustion
     never lends quota to another category or broadens the source filters.
+    An optional category scope stops at that quota; predecessors must already
+    have reached quota or exhausted their candidates to preserve ID priority.
     """
+    categories = run.metadata["plan"]["categories"]
+    if category_code is not None:
+        codes = [row["cat4"] for row in categories]
+        if category_code not in codes:
+            raise ValueError("Expected an approved --only-category code")
+        for previous in categories[: codes.index(category_code)]:
+            exhausted = any(
+                row["category_code"] == previous["cat4"] and row["reason"] == "exhausted"
+                for row in run._manifest["category_outcomes"]
+            )
+            if _selected(run, previous["cat4"]) != previous["quota"] and not exhausted:
+                raise ValueError(f"Finish earlier category {previous['cat4']} first")
+        categories = [categories[codes.index(category_code)]]
     manifest = run.snapshot()
     manifest["collection_mode"] = "quota"
+    if category_code is None:
+        manifest.pop("quota_category", None)
+    else:
+        manifest["quota_category"] = category_code
     run._commit(manifest)
     if run._operator_status() or run._deferred():
         return _finish(run, stopped=True)
     # A finished/exhausted category must not hide a missing derived or image file.
     # Repair historical selections without resetting the newer failure streak.
     for selection in run._manifest["allocations"]:
+        if category_code is not None and selection["category_code"] != category_code:
+            continue
         source_id = selection["source_id"]
         detail = run._manifest["details"][source_id]
         image = run._manifest["images"][source_id]
@@ -132,7 +160,7 @@ def collect_quotas(run):
                 observation["state"] = "selected"
         run._commit(manifest)
     allocated = {row["source_id"] for row in run._manifest["allocations"]}
-    for category in run.metadata["plan"]["categories"]:
+    for category in categories:
         code, quota = category["cat4"], category["quota"]
         previous = next(
             (r for r in run._manifest["category_outcomes"] if r["category_code"] == code), {}
