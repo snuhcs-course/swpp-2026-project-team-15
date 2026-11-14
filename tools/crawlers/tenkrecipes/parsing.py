@@ -1,4 +1,5 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
+# Error-policy changes assisted by Codex, 2026-11-14; human review pending.
 """Offline extraction of source observations; no service normalization or fetching."""
 
 import copy
@@ -13,6 +14,10 @@ from bs4 import BeautifulSoup, Tag
 
 class ParseError(ValueError):
     """The input URL, source filters, or required HTML structure is unrecognized."""
+
+
+class MissingTitleError(ParseError):
+    """An existing DOM title element has no content; this candidate is unusable."""
 
 
 def _text(node: Tag | None) -> str | None:
@@ -236,9 +241,12 @@ def parse_recipe(html: str, *, source_url: str) -> dict:
     area = soup.select_one("#divConfirmedMaterialArea")
     if summary is None or area is None or soup.select_one(".view_step") is None:
         raise ParseError("Missing recipe summary, ingredient, or step structure")
-    title = _text(summary.select_one("h3"))
-    if title is None:
+    title_element = summary.select_one("h3")
+    if title_element is None:
         raise ParseError("Missing DOM recipe title")
+    title = _text(title_element)
+    if title is None:
+        raise MissingTitleError("Empty DOM recipe title")
     metadata = _metadata(soup)
     findings = []
     if not metadata:

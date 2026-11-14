@@ -1,5 +1,6 @@
 # AI-assisted with Codex, 2026-11-11; human review pending.
 # Resume consistency fixes assisted by Codex, 2026-11-12; human review pending.
+# Error-policy changes assisted by Codex, 2026-11-14; human review pending.
 """Persist source snapshots and resume recorded work without allocating quotas."""
 
 import copy
@@ -13,10 +14,10 @@ from uuid import uuid4
 from .config import validate_output_dir
 from .fetching import NetworkDisabled
 from .images import ImageDownloader
-from .parsing import ParseError, parse_list_page, parse_recipe
+from .parsing import MissingTitleError, ParseError, parse_list_page, parse_recipe
 from .storage import IntegrityError, RunStorage, digest, plain
 
-PARSER_VERSION = "tenkrecipes-dom-1"
+PARSER_VERSION = "tenkrecipes-dom-2"
 SCHEMA_VERSION = "2"
 
 
@@ -334,6 +335,8 @@ class CollectionRun:
         if result["status"] == "ok":
             try:
                 record = parse_recipe(result["body"].decode("utf-8-sig"), source_url=url)
+            except MissingTitleError:
+                result = dict(result, status="failed", reason="missing_title")
             except (ParseError, UnicodeError):
                 result = dict(result, status="blocked", reason="structure_mismatch")
         manifest = self.snapshot()
