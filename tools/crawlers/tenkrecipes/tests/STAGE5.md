@@ -94,9 +94,10 @@ From `tools/`:
 uv run --locked pytest crawlers/tenkrecipes/tests/test_stage5_allocation.py crawlers/tenkrecipes/tests/test_stage5_reports.py -q
 ```
 
-The original 29 tests now pass, alongside Pixabay and stages 1–4. Three additional
+The original 29 tests now pass, alongside Pixabay and stages 1–4. Four additional
 confirmed implementation defects are covered by `test_stage5_regressions.py`:
 missing selected JSON/image files must be repaired even in an exhausted category,
-and a recovered blocked recipe must not be recorded as replacing itself. All
-three failed before their fixes. No other stage 5 implementation-time tests were
+and a recovered blocked recipe must not be recorded as replacing itself. Resuming
+completed quotas must also preserve the recorded last-page checkpoints. All
+four failed before their fixes. No other stage 5 implementation-time tests were
 added. Full 500-recipe fake-transport pipeline integration remains stage 6 work.

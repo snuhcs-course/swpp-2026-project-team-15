@@ -137,6 +137,14 @@ def collect_quotas(run):
         previous = next(
             (r for r in run._manifest["category_outcomes"] if r["category_code"] == code), {}
         )
+        if _selected(run, code) == quota:
+            if previous.get("reason") != "quota_reached":
+                last_page = max(
+                    (r["page"] for r in run._manifest["lists"] if r["category_code"] == code),
+                    default=1,
+                )
+                _category_outcome(run, category, "quota_reached", last_page)
+            continue
         if previous.get("reason") == "exhausted" and _selected(run, code) < quota:
             continue
         page, observed = 1, set()

@@ -3,8 +3,9 @@
 
 import pytest
 
-from crawlers.tenkrecipes.tests.stage3_support import FakeResponse
-from crawlers.tenkrecipes.tests.stage5_support import scripted_run
+from crawlers.tenkrecipes.config import CATEGORIES, build_plan
+from crawlers.tenkrecipes.tests.stage3_support import FakeResponse, client_for
+from crawlers.tenkrecipes.tests.stage5_support import saved_collection, scripted_run
 from crawlers.tenkrecipes.workflow import CollectionRun
 
 
@@ -47,3 +48,25 @@ def test_recovered_blocked_candidate_is_not_its_own_replacement(tmp_path):
     resumed.collect_quotas()
     assert resumed.snapshot()["allocations"] == [dict(source_id="900001", category_code="63")]
     assert resumed.snapshot()["replacements"] == []
+
+
+def test_resuming_completed_quotas_preserves_last_page_checkpoints(tmp_path):
+    """An offline rerun must not replace recorded final pages with page zero."""
+    storage, manifest = saved_collection(tmp_path)
+    manifest["category_outcomes"] = [
+        dict(category_code=code, reason="quota_reached", page=1, selected=quota, deficit=0)
+        for _, code, quota in CATEGORIES
+    ]
+    storage.write_json("manifest.json", manifest)
+    _, client, transport, _ = client_for(run_budget=100000)
+    metadata = storage.read_json("run.json")
+    run = CollectionRun.resume(
+        plan=build_plan(storage.root),
+        client=client,
+        parser_version=metadata["parser_version"],
+        schema_version=metadata["schema_version"],
+    )
+    result = run.collect_quotas()
+    assert result["acquisition_complete"] is True
+    assert run.snapshot()["category_outcomes"] == manifest["category_outcomes"]
+    assert transport.calls == []

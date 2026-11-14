@@ -21,7 +21,7 @@ each observed failing before their respective fixes.
 
 Stage 5 allocation/report tests and implemented interfaces are documented in
 [STAGE5.md](STAGE5.md). The original 29 cases pass; implementation-time regression
-tests are limited to three reproduced resume/replacement defects.
+tests are limited to four reproduced resume/replacement defects.
 
 These are acceptance contracts for tasks 1.1–1.4 of
 `collect-tenkrecipes-quick-recipes`. Stage 1 implements offline plan generation;
