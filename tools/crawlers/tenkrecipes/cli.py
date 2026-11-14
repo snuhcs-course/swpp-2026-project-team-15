@@ -102,6 +102,11 @@ def _source_run(
                     reason=snapshot["reason"],
                     operator_review_required=snapshot.get("operator_review_required", False),
                     operator_notice=snapshot.get("operator_notice"),
+                    network_failure_streak=snapshot.get("network_failure_streak", []),
+                    failed_candidates=sum(
+                        row["status"] == "failed"
+                        for row in snapshot.get("candidate_outcomes", {}).values()
+                    ),
                     parsed_details=sum(
                         row["state"] == "parsed" for row in snapshot["details"].values()
                     ),
@@ -114,7 +119,7 @@ def _source_run(
                 indent=2,
             )
         )
-        if snapshot["state"] in ("blocked", "deferred", "failed"):
+        if snapshot["state"] in ("blocked", "deferred", "failed", "incomplete"):
             raise typer.Exit(1)
     except (OSError, ValueError) as exc:
         typer.echo(f"Collection error: {exc}", err=True)

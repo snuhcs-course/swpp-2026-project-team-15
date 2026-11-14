@@ -90,6 +90,8 @@ class CollectionRun:
             retry_not_before=None,
             operator_review_required=False,
             operator_notice=None,
+            candidate_outcomes={},
+            network_failure_streak=[],
         )
 
     @classmethod
@@ -246,7 +248,11 @@ class CollectionRun:
         # Journal the complete outcome before replacing the main checkpoint.
         self.storage.write_json("failure.pending.json", manifest)
         self._commit(manifest)
-        return dict(status=result["status"], reason=result["reason"])
+        return dict(
+            status=result["status"],
+            reason=result["reason"],
+            attempts=copy.deepcopy(result.get("attempts", [])),
+        )
 
     def _deferred(self):
         """Carry server retry deadlines across process restarts without sleeping early."""
@@ -275,8 +281,12 @@ class CollectionRun:
 
     def acknowledge_stop(self):
         """Record explicit operator acknowledgement without relaxing source/image policies."""
+        if not self._operator_status():
+            return
         manifest = self.snapshot()
-        manifest.update(operator_review_required=False, operator_notice=None)
+        manifest.update(
+            operator_review_required=False, operator_notice=None, network_failure_streak=[]
+        )
         # Acknowledgement does not revoke an unexpired Retry-After deadline.
         self._mark_progress(manifest)
         self._commit(manifest)
@@ -377,6 +387,8 @@ class CollectionRun:
         manifest["details"][source_id] = dict(
             state=state, reason=result["reason"], source_url=url, raw=entry
         )
+        if record is None:
+            manifest["details"][source_id]["attempts"] = copy.deepcopy(result["attempts"])
         if record is not None:
             manifest["details"][source_id]["record"] = entry["record"]
         for candidate in manifest["candidates"]:
@@ -453,6 +465,7 @@ class CollectionRun:
                     reason=result["reason"],
                     source_url=candidate["thumbnail_url"],
                     source_id=source_id,
+                    attempts=copy.deepcopy(result["attempts"]),
                 )
                 if result["reason"] in ("image_host_not_allowed", "image_redirect_limit"):
                     manifest.update(
@@ -497,12 +510,144 @@ class CollectionRun:
         self._commit(manifest)
         return dict(entry, status="image_validated")
 
+    @staticmethod
+    def _network_exhausted(result):
+        """Exclude rate limits and non-retryable errors from the recipe outage counter."""
+        attempts = result.get("attempts", [])
+        last = attempts[-1] if attempts else {}
+        return result.get("reason") == "retry_exhausted" and (
+            last.get("status_code") in (500, 502, 503, 504) or "error" in last
+        )
+
+    def _finish_candidate(self, candidate, result):
+        """Checkpoint a unique recipe outcome and its persisted network failure streak."""
+        manifest = self.snapshot()
+        source_id = candidate["source_id"]
+        acquired = result["status"] == "image_validated"
+        previous = manifest["candidate_outcomes"].get(source_id)
+        manifest["candidate_outcomes"][source_id] = dict(
+            status="acquired" if acquired else "failed",
+            reason=result.get("reason"),
+            category_code=candidate["category_code"],
+            source_url=candidate["source_url"],
+        )
+        if acquired:
+            if previous is None:
+                manifest["network_failure_streak"] = []
+        else:
+            for observation in manifest["candidates"]:
+                if observation["source_id"] == source_id:
+                    observation["state"] = "failed"
+            if (
+                self._network_exhausted(result)
+                and source_id not in manifest["network_failure_streak"]
+            ):
+                manifest["network_failure_streak"].append(source_id)
+        if len(manifest["network_failure_streak"]) >= 3:
+            manifest.update(
+                state="blocked",
+                reason="consecutive_network_failures",
+                operator_review_required=True,
+                operator_notice=dict(
+                    reason="consecutive_network_failures",
+                    source_id=source_id,
+                    source_ids=list(manifest["network_failure_streak"]),
+                    source_url=candidate["source_url"],
+                    message="Three consecutive recipe network failures; operator review required.",
+                ),
+            )
+        else:
+            self._mark_progress(manifest)
+        if not acquired:
+            # Persist counting/skip decisions through the same interrupted-checkpoint recovery.
+            self.storage.write_json("failure.pending.json", manifest)
+        self._commit(manifest)
+
+    def _saved_failure(self, entry):
+        """Finalize a saved failed attempt without repeating its exhausted HTTP budget."""
+        if entry and entry["state"] == "failed":
+            return dict(status="failed", reason=entry["reason"], attempts=entry.get("attempts", []))
+        return None
+
+    def _resume_candidates(self):
+        """Apply collection failure policy to recorded candidates; never discover new pages."""
+        results, seen = [], set()
+        # Category grouping keeps replacements within their original population.
+        observations = self.snapshot()["candidates"]
+        ordered = [
+            row
+            for category in self.metadata["plan"]["categories"]
+            for row in observations
+            if row["category_code"] == category["cat4"]
+        ]
+        for candidate in ordered:
+            source_id = candidate["source_id"]
+            if source_id in seen:
+                continue
+            seen.add(source_id)
+            outcome = self._manifest["candidate_outcomes"].get(source_id)
+            if outcome:
+                if outcome["status"] == "failed":
+                    continue
+                record = self._manifest["details"][source_id]["record"]
+                image = self._manifest["images"][source_id]
+                if (
+                    self.storage.path(record["path"]).exists()
+                    and self.storage.path(image["path"]).exists()
+                ):
+                    continue
+            if stopped := self._operator_status() or self._deferred():
+                return results + [stopped]
+            result = self._saved_failure(self._manifest["details"].get(source_id))
+            if result is None:
+                result = self.fetch_detail(source_id)
+            if result["status"] == "parsed":
+                record = result["record"]
+                if not any(row.get("name_raw") for row in record["ingredients"]):
+                    result = dict(status="failed", reason="missing_ingredients")
+                elif not any(row.get("instruction") for row in record["steps"]):
+                    result = dict(status="failed", reason="missing_steps")
+                else:
+                    result = self._saved_failure(self._manifest["images"].get(source_id))
+                    if result is None:
+                        result = self.fetch_thumbnail(source_id)
+            results.append(result)
+            replaceable = result.get("reason") in (
+                "missing_title",
+                "missing_ingredients",
+                "missing_steps",
+                "invalid_image",
+                "image_too_large",
+                "image_too_many_pixels",
+            ) or self._network_exhausted(result)
+            if result["status"] == "image_validated" or replaceable:
+                self._finish_candidate(candidate, result)
+            else:
+                return results
+        if stopped := self._operator_status() or self._deferred():
+            return results + [stopped]
+        pending = self.snapshot()["pending_lists"]
+        for request in pending:
+            result = self.fetch_list(request["category_code"], request["page"])
+            results.append(result)
+            if result["status"] in ("blocked", "deferred", "failed"):
+                return results
+        if pending:
+            return results + self._resume_candidates()
+        manifest = self.snapshot()
+        if any(row["status"] == "failed" for row in manifest["candidate_outcomes"].values()):
+            manifest.update(state="incomplete", reason="candidate_failures")
+            self._commit(manifest)
+        return results
+
     def resume_pending(self, *, include_images=False):
         """Drain saved candidates; optionally acquire their selected thumbnails."""
         if stopped := self._operator_status():
             return [stopped]
         if deferred := self._deferred():
             return [deferred]
+        if include_images:
+            return self._resume_candidates()
         results, seen = [], set()
         for candidate in self.snapshot()["candidates"]:
             source_id = candidate["source_id"]
@@ -513,11 +658,6 @@ class CollectionRun:
             results.append(result)
             if result["status"] in ("blocked", "deferred", "failed"):
                 return results
-            if include_images:
-                image = self.fetch_thumbnail(source_id)
-                results.append(image)
-                if image["status"] in ("blocked", "deferred", "failed"):
-                    return results
         for pending in self.snapshot()["pending_lists"]:
             result = self.fetch_list(pending["category_code"], pending["page"])
             results.append(result)
