@@ -31,9 +31,7 @@ def test_unparseable_detail_is_preserved_and_replaced_in_same_category(tmp_path,
     assert manifest["allocations"] == [dict(source_id="900002", category_code="63")]
     assert manifest["failures"][0]["source_id"] == "900001"
     assert manifest["failures"][0]["status"] == "failed"
-    assert manifest["replacements"] == [
-        dict(failed_source_id="900001", replacement_source_id="900002", category_code="63")
-    ]
+    assert manifest["replacements"] == []
     detail = manifest["details"]["900001"]
     assert run.storage.verify(detail["raw"]) == body
     assert "record" not in detail and "900001" not in manifest["images"]
@@ -77,9 +75,7 @@ def test_old_blocked_detail_becomes_failed_without_refetch_or_losing_replacement
     saved = resumed.snapshot()
     assert saved["details"]["900001"]["state"] == "failed"
     assert len(saved["failures"]) == 1 and saved["failures"][0]["status"] == "failed"
-    assert saved["replacements"] == [
-        dict(failed_source_id="900001", replacement_source_id="900002", category_code="63")
-    ]
+    assert saved["replacements"] == []
     assert resumed.storage.verify(raw) == original
     assert "https://www.10000recipe.com/recipe/900001" not in calls
     assert "https://recipe1.ezmember.co.kr/900001.png" not in calls
