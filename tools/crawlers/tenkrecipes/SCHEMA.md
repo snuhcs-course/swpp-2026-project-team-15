@@ -99,9 +99,11 @@ changes to immutable detail parser records. See [RUNS.md](RUNS.md) for manifest
 bounds, provenance, and resume behavior (run schema version 4).
 
 `allocations` contains one `{source_id, category_code}` row per selected ID.
-`failures` retains source/category/page/position/reason and available artifact
-paths. `replacements` links failed and successful IDs within a category; it does
-not imply semantic equivalence. `category_outcomes` records counts, deficits,
+`failures` records terminal candidate errors once per source/category, retaining
+URL, page/position, reason and available artifact paths. Pauses/stops remain run
+state and request evidence. Finalizing an error replaces an earlier nonterminal
+row for that source/category without changing original responses. `replacements`
+is retained only for schema-4 historical compatibility; new links are not created. `category_outcomes` records counts, deficits,
 last page and the reason (`quota_reached`, `exhausted`, `repeated_page`, or a stop
 cause). `collection_mode` is `pilot` or `quota` and controls subsequent CLI resume.
 In quota mode, optional `quota_category` remembers a single-category execution
@@ -122,7 +124,7 @@ atomically publishes each of `report.json` and UTF-8-BOM `review.csv`.
 
 The JSON separates `acquisition_complete`, `unique_success_count` (source IDs),
 category targets/selected counts/deficits, `errors`, acquisition `failures`,
-`replacements`, and source `findings`. Operator stops and retry deadlines remain
+historical `replacements`, and source `findings`. Operator stops and retry deadlines remain
 visible. Quality findings have `review_pending` status; unlisted tools are
 reported as `tools_not_listed`. Title mismatches retain both original
 observations and their URLs, including in the CSV's JSON `observations` cell.
