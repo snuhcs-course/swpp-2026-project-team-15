@@ -17,8 +17,9 @@ The implementation follows these interfaces originally proposed by the tests.
   returns `deferred`. It records `allocations`, `failures`, `replacements`, and
   `category_outcomes` in the manifest. Existing single-page methods remain usable.
 - Allocation rows expose `source_id` and `category_code`. Failure rows expose
-  those fields plus `reason`. Replacement rows expose `failed_source_id`,
-  `replacement_source_id`, and `category_code`. Category outcomes expose
+  those fields plus `reason`, source URL and available artifact paths. New errors
+  are logged only when terminal. Historical `replacements` remain compatible,
+  but collection no longer generates replacement links. Category outcomes expose
   `category_code`, `reason`, and `deficit`; tested traversal reasons are
   `exhausted` and `repeated_page`. Additional diagnostic fields are allowed.
 - `crawlers.tenkrecipes.reporting.validate_run(root)` reads existing local
@@ -28,8 +29,8 @@ The implementation follows these interfaces originally proposed by the tests.
 - The report exposes `status` (`complete`/`incomplete`),
   `acquisition_complete`, `target`, `unique_success_count`, ordered `categories`
   with `category_code`/`target`/`selected`/`deficit`, `errors`, `failures`,
-  `replacements`, and `findings`. Failure/replacement records retain the
-  manifest's causal links separately from quality findings.
+  `replacements`, and `findings`. Terminal failures and historical replacement links remain separate from quality
+  findings. Stops/deadlines are run state, not new terminal error rows.
   Findings expose `source_id`, `code`, `status: review_pending`, and original
   `observations` when applicable. `tools_not_listed` is a proposed reporting code
   for `listed_tools: null`, not an instruction to change parser output.
@@ -73,7 +74,7 @@ The parser now distinguishes an empty title (`MissingTitleError`) from missing
 DOM structure. Collection preserves an empty-title failure and proceeds through
 recorded same-category candidates. Raw HTML is retained; a parsed JSON is not
 required when parsing fails. Quota traversal uses this same classification,
-retains all observed cards, and connects same-category replacement relations.
+retains all observed cards, and records terminal errors without new replacement links.
 
 ## Operator documentation requires human review (5.6)
 
@@ -101,3 +102,12 @@ and a recovered blocked recipe must not be recorded as replacing itself. Resumin
 completed quotas must also preserve the recorded last-page checkpoints. All
 four failed before their fixes. No other stage 5 implementation-time tests were
 added. Full 500-recipe fake-transport pipeline integration remains stage 6 work.
+
+## Approved simplification (2026-11-15)
+
+`test_simple_candidate_errors.py` covers detail/image 404 and transport failures,
+pause-to-terminal/success resume, legacy rows/links and interrupted terminal log
+publication. Candidate errors are skipped and logged once; no new A-to-B links
+are generated. Existing replacement assertions in stage 5, detail-structure and
+stage 6 tests were updated for this approved policy. Operator stops and the
+three-recipe network-failure rule remain unchanged.
