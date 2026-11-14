@@ -18,7 +18,7 @@ from .parsing import MissingTitleError, ParseError, parse_list_page, parse_recip
 from .storage import IntegrityError, RunStorage, digest, plain
 
 PARSER_VERSION = "tenkrecipes-dom-2"
-SCHEMA_VERSION = "2"
+SCHEMA_VERSION = "3"
 
 
 class ResumeMismatch(ValueError):
@@ -88,6 +88,8 @@ class CollectionRun:
             attempts=[],
             pending_lists=[],
             retry_not_before=None,
+            operator_review_required=False,
+            operator_notice=None,
         )
 
     @classmethod
@@ -260,8 +262,29 @@ class CollectionRun:
         if not self._deferred():
             manifest.update(state="running", reason=None, retry_not_before=None)
 
+    def _operator_status(self):
+        """Keep a saved operator stop latched across commands and process restarts."""
+        if self._manifest.get("operator_review_required"):
+            return dict(
+                status="blocked",
+                reason=self._manifest["reason"],
+                operator_review_required=True,
+                operator_notice=copy.deepcopy(self._manifest["operator_notice"]),
+            )
+        return None
+
+    def acknowledge_stop(self):
+        """Record explicit operator acknowledgement without relaxing source/image policies."""
+        manifest = self.snapshot()
+        manifest.update(operator_review_required=False, operator_notice=None)
+        # Acknowledgement does not revoke an unexpired Retry-After deadline.
+        self._mark_progress(manifest)
+        self._commit(manifest)
+
     def fetch_list(self, category_code, page):
         """Fetch one approved list page; retain every observation without allocating it."""
+        if stopped := self._operator_status():
+            return stopped
         category_code = str(category_code)
         category = next(
             (row for row in self.metadata["plan"]["categories"] if row["cat4"] == category_code),
@@ -318,6 +341,8 @@ class CollectionRun:
 
     def fetch_detail(self, source_id):
         """Reuse verified details or save raw HTML and its DOM-derived record."""
+        if stopped := self._operator_status():
+            return stopped
         source_id = str(source_id)
         if not re.fullmatch(r"[0-9]+", source_id):
             raise ValueError("Expected numeric source recipe ID")
@@ -369,6 +394,8 @@ class CollectionRun:
         Validated originals are reused by source ID. A verified provenance sidecar
         recovers publication interrupted before checkpoint replacement.
         """
+        if stopped := self._operator_status():
+            return stopped
         source_id = str(source_id)
         candidate = next(
             (row for row in self._manifest["candidates"] if row["source_id"] == source_id), None
@@ -427,6 +454,17 @@ class CollectionRun:
                     source_url=candidate["thumbnail_url"],
                     source_id=source_id,
                 )
+                if result["reason"] in ("image_host_not_allowed", "image_redirect_limit"):
+                    manifest.update(
+                        operator_review_required=True,
+                        operator_notice=dict(
+                            reason=result["reason"],
+                            source_id=source_id,
+                            source_url=candidate["source_url"],
+                            asset_url=candidate["thumbnail_url"],
+                            message="Operator review required before resuming collection.",
+                        ),
+                    )
                 return self._failure(manifest, result)
             extension = "jpg" if result["format"] == "JPEG" else result["format"].lower()
             relative = f"images/{source_id}.{extension}"
@@ -461,6 +499,8 @@ class CollectionRun:
 
     def resume_pending(self, *, include_images=False):
         """Drain saved candidates; optionally acquire their selected thumbnails."""
+        if stopped := self._operator_status():
+            return [stopped]
         if deferred := self._deferred():
             return [deferred]
         results, seen = [], set()

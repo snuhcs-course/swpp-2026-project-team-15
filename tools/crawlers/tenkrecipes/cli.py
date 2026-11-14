@@ -1,4 +1,5 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
+# Error-policy integration assisted by Codex, 2026-11-14; human review pending.
 """Offline plan/parse commands and explicit live source snapshot collection."""
 
 import json
@@ -57,7 +58,15 @@ def parse(
 
 
 def _source_run(
-    output_dir, live, *, resume_run, category="63", page=1, max_wait=60.0, run_budget=120.0
+    output_dir,
+    live,
+    *,
+    resume_run,
+    category="63",
+    page=1,
+    max_wait=60.0,
+    run_budget=120.0,
+    acknowledge_stop=False,
 ):
     """Execute one source page or drain saved candidates; never allocate quotas."""
     if not live:
@@ -73,6 +82,8 @@ def _source_run(
         )
         if resume_run:
             run = CollectionRun.resume(**options)
+            if acknowledge_stop:
+                run.acknowledge_stop()
         else:
             if category not in {row["cat4"] for row in plan["categories"]} or page < 1:
                 raise ValueError("Expected a configured category and positive page")
@@ -89,6 +100,8 @@ def _source_run(
                     output_dir=plan["output_dir"],
                     state=snapshot["state"],
                     reason=snapshot["reason"],
+                    operator_review_required=snapshot.get("operator_review_required", False),
+                    operator_notice=snapshot.get("operator_notice"),
                     parsed_details=sum(
                         row["state"] == "parsed" for row in snapshot["details"].values()
                     ),
@@ -139,9 +152,19 @@ def resume(
     live: bool = typer.Option(False, "--live", help="Explicitly enable pending source requests."),
     max_wait: float = typer.Option(60.0, help="Must match the saved network policy."),
     run_budget: float = typer.Option(120.0, help="Must match the saved network policy."),
+    acknowledge_stop: bool = typer.Option(
+        False, "--acknowledge-stop", help="Acknowledge a saved stop after operator review."
+    ),
 ) -> None:
     """Verify a saved run and process its recorded candidates without fetching new pages."""
-    _source_run(output_dir, live, resume_run=True, max_wait=max_wait, run_budget=run_budget)
+    _source_run(
+        output_dir,
+        live,
+        resume_run=True,
+        max_wait=max_wait,
+        run_budget=run_budget,
+        acknowledge_stop=acknowledge_stop,
+    )
 
 
 if __name__ == "__main__":
