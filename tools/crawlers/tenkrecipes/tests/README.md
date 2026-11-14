@@ -35,6 +35,15 @@ exist. Missing behavior is never hidden behind skipped or xfailed tests.
 
 ## Public test interface
 
+`test_category_quota.py` covers the subsequently approved `--only-category`
+extension: stop at 100 then 90 in one run, preserve global ID identity, remember
+the scope, reject conflicting/invalid scopes before I/O, retain ordered category
+priority, and distinguish category exit success from global incompleteness.
+The 16 acceptance cases were first run RED without changing earlier tests.
+One additional confirmed preflight regression checks that a rejected later
+category leaves a pending failure checkpoint and the published manifest intact;
+it failed before moving scope validation ahead of resume recovery writes.
+
 The planning documents specify behavior but do not fix Python symbol names or a
 plan serialization format. These tests establish the following small interface
 for the implementation; no internal classes or parser algorithms are prescribed:

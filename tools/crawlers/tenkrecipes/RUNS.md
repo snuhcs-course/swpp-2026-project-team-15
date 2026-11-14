@@ -126,6 +126,41 @@ uv run --locked python -m crawlers.tenkrecipes.cli report --output-dir ../data/t
 report.json/review.csv는 각각 원자적으로 게시되지만 두 파일을 묶은 트랜잭션은 아니므로,
 보고서 게시 중 중단되면 `report`를 다시 실행하고 두 파일을 함께 전달한다.
 
+## 같은 run에서 카테고리별 quota 수집 후 종료
+
+`--only-category CODE`는 지정 분류의 기존 quota까지 페이지를 순회하고 다음 분류를 요청하지
+않은 채 종료한다. 첫 실행은 `collect`, 다음 분류부터는 같은 output 경로에 `resume`을 사용한다.
+`--category`는 기존 한 페이지 파일럿 옵션이므로 혼용하지 않는다. `--full`과도 함께 쓸 수 없다.
+고정 분류 순서·출처 ID 우선순위를 유지하므로 앞선 분류가 quota 도달 또는 소진된 후 다음
+분류를 지정한다. 앞선 분류가 미처리 상태면 요청·진행 기록 변경 전에 거부한다.
+
+```powershell
+# Fill side dishes (100), then exit. These examples are operator live commands.
+uv run --locked python -m crawlers.tenkrecipes.cli collect --output-dir ../data/tenkrecipes/runs/by-category --only-category 63 --run-budget 600 --live
+# Fill main dishes (90) in the same run, then exit.
+uv run --locked python -m crawlers.tenkrecipes.cli resume --output-dir ../data/tenkrecipes/runs/by-category --only-category 56 --run-budget 600 --live
+# Resume only the last requested category after a bounded stop.
+uv run --locked python -m crawlers.tenkrecipes.cli resume --output-dir ../data/tenkrecipes/runs/by-category --run-budget 600 --live
+# Explicitly return to full traversal if desired.
+uv run --locked python -m crawlers.tenkrecipes.cli resume --output-dir ../data/tenkrecipes/runs/by-category --full --run-budget 600 --live
+```
+
+분류 코드는 위 표의 순서인 `63 → 56 → 54 → 55 → 53 → 52 → 61 → 65 → 64`다.
+실행 예산 안에 quota를 채우지 못하면 동일한 설정으로 같은 분류를 재개한다. 마지막 지정
+분류는 manifest의 선택 필드 `quota_category`에 저장되어 옵션 없는 재개도 그 범위를 유지한다.
+`--full`은 이 범위를 해제한다. 완료 분류를 다시 지정하면 검증된 결과를 재사용하고 종료하며,
+다른 분류의 누락 자산을 네트워크로 복구하지 않는다. 원본·할당·분류 간 중복 ID 기록은 공유한다.
+
+명령의 JSON 출력은 `requested_category`와 `category_complete`를 제공한다. 지정 분류가
+검증된 quota에 도달하면 exit 0이며, 소진·차단·대기·미달은 nonzero다. 전체 `state` 및
+`report.json`/`review.csv`는 계속 500개 목표의 검증 결과를 나타내므로 분류 하나가 완료되어도
+`state=incomplete`, `acquisition_complete=false`일 수 있다. 전체 완료는 9개 quota와 파일 검사가
+모두 통과해야 한다. 기존 schema 4 run에도 적용되며 parser·네트워크/이미지 정책은 동일해야 한다.
+
+기존 카테고리별 3개 파일럿도 같은 경로에 `resume --only-category 63 --run-budget 600 --live`
+로 이어갈 수 있다. 별도로 만든 `pilot-summary.json`/`pilot-selection.csv`는 당시 27개 파일럿의
+스냅샷이며 이후 CLI 수집에서 갱신되지 않는다. 최신 상태는 manifest와 report에서 확인한다.
+
 ## 오류 중단과 운영자 확인
 
 - 허용 밖 이미지 호스트 또는 redirect 한도 초과는 즉시 `blocked`로 중단한다.
@@ -200,6 +235,9 @@ Python API는 `CollectionRun.create/resume`, `fetch_list`, `fetch_detail`, `resu
 Python API의 `resume_pending()`은 기존처럼 상세만 처리한다.
 `resume_pending(include_images=True)`와 CLI는 검증된 썸네일까지 취득·재개한다.
 `collect_quotas()`는 고정 순서의 페이지 순회·quota 할당과 보고서 게시까지 처리한다.
+`collect_quotas(category_code="63")`는 해당 분류만 처리한다. API에서 scope 사전 검증이
+필요하면 `CollectionRun.resume(..., category_code="63")`를 사용한다. API의 인자 없는
+`collect_quotas()`는 전체 순회이며, 마지막 scope를 기억하는 동작은 CLI resume가 제공한다.
 
 ## 썸네일 계약
 

@@ -99,6 +99,12 @@ paths. `replacements` links failed and successful IDs within a category; it does
 not imply semantic equivalence. `category_outcomes` records counts, deficits,
 last page and the reason (`quota_reached`, `exhausted`, `repeated_page`, or a stop
 cause). `collection_mode` is `pilot` or `quota` and controls subsequent CLI resume.
+In quota mode, optional `quota_category` remembers a single-category execution
+scope; absence means full traversal. Bare CLI resume preserves this scope,
+and explicit `--full` removes it. It does not change the fixed plan or immutable
+records, so existing schema-4 runs remain compatible. Single-category CLI/API
+results expose `requested_category` and `category_complete`; canonical reports
+still require the full 500-item target, independently of command exit success.
 These mutable checkpoints never rewrite immutable source/parsed records.
 
 ## Offline acquisition reports
