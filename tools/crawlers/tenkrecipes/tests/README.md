@@ -37,9 +37,9 @@ exist. Missing behavior is never hidden behind skipped or xfailed tests.
 
 The approved 2026-11-15 policy treats missing detail structure as a preserved
 candidate failure, while list structure and access barriers still stop the run.
-`test_detail_structure_failures.py` covers replacement, unchanged network-failure
+`test_detail_structure_failures.py` covers skipping/logging, unchanged network-failure
 streaks, raw preservation, and deferred conversion of older blocked snapshots
-without re-fetching or losing their failure/replacement relationship. The two
+without re-fetching or losing their error record. The two
 earlier direct-detail expectations and the global-stop list fixture were updated
 only for this explicitly approved policy change. No live collection is needed.
 
