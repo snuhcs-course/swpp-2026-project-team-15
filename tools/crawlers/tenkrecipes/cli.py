@@ -57,6 +57,32 @@ def parse(
     typer.echo(json.dumps(record, ensure_ascii=False, indent=2))
 
 
+def _report_run(output_dir, *, publish):
+    """Validate local artifacts without opening a live client or repairing files."""
+    from .reporting import validate_run, write_report
+
+    try:
+        result = (write_report if publish else validate_run)(output_dir)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        typer.echo(f"Report input error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    typer.echo(json.dumps(result, ensure_ascii=False, indent=2))
+    if not result["acquisition_complete"]:
+        raise typer.Exit(1)
+
+
+@app.command()
+def validate(output_dir: Path = typer.Option(..., help="Existing run to validate offline.")):
+    """Check quotas, originals and decoded thumbnails without changing the run."""
+    _report_run(output_dir, publish=False)
+
+
+@app.command()
+def report(output_dir: Path = typer.Option(..., help="Existing run for JSON/CSV review reports.")):
+    """Write report.json and review.csv without collecting or modifying originals."""
+    _report_run(output_dir, publish=True)
+
+
 def _source_run(
     output_dir,
     live,

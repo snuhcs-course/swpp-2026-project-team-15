@@ -92,3 +92,27 @@ Validated thumbnails and image metadata are separate collection artifacts, not
 changes to immutable detail parser records. See [RUNS.md](RUNS.md) for manifest
 `images`, candidate outcomes, network-failure streaks, operator stops, resource
 bounds, provenance, and resume behavior (run schema version 3).
+
+## Offline acquisition reports
+
+`reporting.validate_run(root)` checks the approved 500-ID plan, exact category
+quotas, unique allocations and category observations, source identity, raw/JSON
+hashes, essential content, and decoded original thumbnails. It performs no
+network calls or writes. `reporting.write_report(root)` uses the same checks and
+atomically publishes each of `report.json` and UTF-8-BOM `review.csv`.
+
+The JSON separates `acquisition_complete`, `unique_success_count` (source IDs),
+category targets/selected counts/deficits, `errors`, acquisition `failures`,
+`replacements`, and source `findings`. Operator stops and retry deadlines remain
+visible. Quality findings have `review_pending` status; unlisted tools are
+reported as `tools_not_listed`. Title mismatches retain both original
+observations and their URLs, including in the CSV's JSON `observations` cell.
+CSV rows link raw HTML, parsed JSON, and original thumbnail paths where present.
+
+`count_basis: source_id`, `semantic_uniqueness_guaranteed: false`, and
+`semantic_duplicate_review: {status: pending, required_before_production: true}`
+explicitly distinguish acquisition from mandatory later semantic review. No
+production-ready decision, quantity completion, or semantic merging is made.
+Repeated reports against unchanged inputs are deterministic. Each output is
+atomic independently; the pair is not a multi-file transaction, so regenerate
+both after an interrupted publication.
