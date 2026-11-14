@@ -5,6 +5,7 @@
 # Category-scoped quota execution assisted by Codex, 2026-11-14; human review pending.
 # Detail structure failure policy assisted by Codex, 2026-11-15; reviewed by Soohyun An.
 # Rate-limit resume fix assisted by Codex, 2026-11-15; human review pending.
+# Simple candidate errors assisted by Codex, 2026-11-15; human review pending.
 """Persist source snapshots, resume acquisitions, and allocate source-ID quotas."""
 
 import copy
@@ -553,6 +554,30 @@ class CollectionRun:
             if previous is None:
                 manifest["network_failure_streak"] = []
         else:
+            # Terminal errors are logged with their outcome, independently of
+            # quota allocation. Pauses/stops retain their request evidence only.
+            detail = manifest["details"].get(source_id, {})
+            image = manifest["images"].get(source_id, {})
+            manifest["failures"] = [
+                row
+                for row in manifest["failures"]
+                if (row["source_id"], row["category_code"])
+                != (source_id, candidate["category_code"])
+            ]
+            manifest["failures"].append(
+                dict(
+                    source_id=source_id,
+                    category_code=candidate["category_code"],
+                    status="failed",
+                    reason=result.get("reason"),
+                    source_url=candidate["source_url"],
+                    page=candidate["page"],
+                    position=candidate["position"],
+                    raw_path=(detail.get("raw") or {}).get("path"),
+                    record_path=detail.get("record", {}).get("path"),
+                    image_path=image.get("path"),
+                )
+            )
             for observation in manifest["candidates"]:
                 if observation["source_id"] == source_id:
                     observation["state"] = "failed"
@@ -642,16 +667,15 @@ class CollectionRun:
                 result = self._saved_failure(self._manifest["images"].get(source_id))
                 if result is None:
                     result = self.fetch_thumbnail(source_id)
-        replaceable = result.get("reason") in (
-            "missing_title",
-            "missing_ingredients",
-            "missing_steps",
-            "structure_mismatch",
-            "invalid_image",
-            "image_too_large",
-            "image_too_many_pixels",
-        ) or self._network_exhausted(result)
-        if result["status"] == "image_validated" or replaceable:
+        attempts = result.get("attempts", [])
+        rate_limited = (
+            result.get("reason") == "retry_exhausted"
+            and attempts
+            and attempts[-1].get("status_code") == 429
+        )
+        if result["status"] == "image_validated" or (
+            result["status"] == "failed" and not rate_limited
+        ):
             self._finish_candidate(candidate, result)
         return result
 
@@ -668,7 +692,7 @@ class CollectionRun:
     def _resume_candidates(self):
         """Apply collection failure policy to recorded candidates; never discover new pages."""
         results, seen = [], set()
-        # Category grouping keeps replacements within their original population.
+        # Keep candidate processing in the configured category order.
         observations = self.snapshot()["candidates"]
         ordered = [
             row
