@@ -1,4 +1,5 @@
-# AI-assisted with Codex, 2026-11-14; human review pending.
+# AI-assisted with Codex, 2026-11-14 to 2026-11-15; reviewed by Soohyun An.
+# CSV status preservation assisted by Codex, 2026-11-15; human review pending.
 """Validate saved acquisitions offline and expose originals for subsequent review."""
 
 import copy
@@ -246,7 +247,7 @@ def write_report(root):
         row["observations"] = json.dumps(row.get("observations", []), ensure_ascii=False)
         writer.writerow(row)
     for failure in report["failures"]:
-        writer.writerow(dict(failure, code="acquisition_failed", status="failed"))
+        writer.writerow(dict(failure, code="acquisition_failed"))
     storage.write("review.csv", stream.getvalue().encode("utf-8-sig"))
     storage.write_json("report.json", report)
     return report
