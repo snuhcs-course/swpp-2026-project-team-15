@@ -45,3 +45,25 @@ subprocesses have an audit guard, and Pixabay search tests inject fake sessions.
 The full suite must pass without live requests. Windows file tests may need a
 writable workspace `--basetemp` and normal file permissions. No live collection,
 database import, service-data update, or deployment is part of these checks.
+
+## Verification record: 2026-11-14
+
+- Locked offline sync: 25 packages resolved, 23 checked; no lockfile changes.
+- Integration cases above: **2 passed in 643.57s**.
+- Existing combined Pixabay/Stage 1–5 regression: **245 passed in 450.59s**.
+- Final discovery: **247 tests**; all were executed across these two groups,
+  with no skips or xfails. To avoid repeating the expensive integration cases,
+  the second invocation used the following explicit partition:
+
+```powershell
+uv run --locked --offline pytest -q --tb=short -p no:cacheprovider --ignore=crawlers/tenkrecipes/tests/test_stage6_pipeline.py --basetemp=../output/stage6-locked-regression
+```
+
+The integration invocation used the explicit test path above with
+`--tb=short -p no:cacheprovider --basetemp=../output/stage6-integration`.
+This is partitioned verification, not a claim that one pytest invocation ran
+all 247 cases. Ruff check and format check passed for all 49 crawler Python files.
+OpenSpec strict and Git whitespace/scope checks passed. Windows sandbox access
+to the uv cache lock and test temporary directories required normal permissions;
+all package operations remained offline. Source acquisition code, dependencies,
+DB schema, and production datasets were unchanged in Stage 6.
