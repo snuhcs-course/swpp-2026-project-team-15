@@ -156,3 +156,20 @@ def test_collect_category_mode_and_plain_resume_keep_scope(tmp_path, monkeypatch
     assert json.loads(result.stdout)["requested_category"] == "63"
     assert calls == calls_before
     assert run.snapshot()["allocations"] == []
+
+
+def test_rejected_category_does_not_publish_a_pending_failure_checkpoint(tmp_path, monkeypatch):
+    """An invalid scope must be rejected before resume performs recovery writes."""
+    run, options, calls = scripted_run(tmp_path, {})
+    before = run.storage.path("manifest.json").read_bytes()
+    pending = run.snapshot()
+    pending.update(state="failed", reason="synthetic interrupted checkpoint")
+    run.storage.write_json("failure.pending.json", pending)
+    monkeypatch.setattr(fetching, "HttpClient", lambda **kwargs: options["client"])
+    result = CliRunner().invoke(
+        app, ["resume", "--output-dir", str(run.storage.root), "--live", "--only-category", "56"]
+    )
+    assert result.exit_code == 1, result.output
+    assert calls == []
+    assert run.storage.path("manifest.json").read_bytes() == before
+    assert run.storage.path("failure.pending.json").exists()

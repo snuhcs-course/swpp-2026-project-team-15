@@ -111,6 +111,7 @@ class CollectionRun:
         schema_version,
         utcnow=lambda: datetime.now(UTC),
         image_downloader=None,
+        category_code=None,
     ):
         """Verify configuration and saved bytes before network calls or repair writes."""
         if not client.live:
@@ -140,6 +141,10 @@ class CollectionRun:
             manifest = storage.read_json("failure.pending.json")
         if manifest["run_id"] != metadata["run_id"]:
             raise IntegrityError("Manifest does not belong to this run")
+        if category_code is not None:
+            from .allocation import category_scope
+
+            category_scope(metadata["plan"]["categories"], manifest, category_code)
         for entry in manifest["responses"]:
             storage.verify(entry)
         for detail in manifest["details"].values():

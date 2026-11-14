@@ -105,16 +105,12 @@ def _finish(run, *, stopped=False):
     return result
 
 
-def collect_quotas(run, *, category_code=None):
-    """Fill categories in plan order, reusing saved pages before expanding each traversal.
+def category_scope(categories, manifest, category_code):
+    """Validate category priority without I/O, returning the requested traversal.
 
-    Repeated IDs within a category do not cause extra detail/image requests.
-    Different IDs remain distinct irrespective of content equality. Exhaustion
-    never lends quota to another category or broadens the source filters.
-    An optional category scope stops at that quota; predecessors must already
-    have reached quota or exhausted their candidates to preserve ID priority.
+    Resume also calls this before publishing recovered checkpoints, so an
+    invalid operator request cannot mutate an otherwise recoverable run.
     """
-    categories = run.metadata["plan"]["categories"]
     if category_code is not None:
         codes = [row["cat4"] for row in categories]
         if category_code not in codes:
@@ -122,11 +118,25 @@ def collect_quotas(run, *, category_code=None):
         for previous in categories[: codes.index(category_code)]:
             exhausted = any(
                 row["category_code"] == previous["cat4"] and row["reason"] == "exhausted"
-                for row in run._manifest["category_outcomes"]
+                for row in manifest["category_outcomes"]
             )
-            if _selected(run, previous["cat4"]) != previous["quota"] and not exhausted:
+            selected = sum(
+                row["category_code"] == previous["cat4"] for row in manifest["allocations"]
+            )
+            if selected != previous["quota"] and not exhausted:
                 raise ValueError(f"Finish earlier category {previous['cat4']} first")
-        categories = [categories[codes.index(category_code)]]
+        return [categories[codes.index(category_code)]]
+    return categories
+
+
+def collect_quotas(run, *, category_code=None):
+    """Fill all quotas or one category, preserving source order and saved work.
+
+    Repeated IDs never cause extra detail/image requests or quota inflation.
+    A scoped request stops at that category; predecessors must have reached
+    quota or exhausted their candidates. Exhaustion never broadens filters.
+    """
+    categories = category_scope(run.metadata["plan"]["categories"], run._manifest, category_code)
     manifest = run.snapshot()
     manifest["collection_mode"] = "quota"
     if category_code is None:

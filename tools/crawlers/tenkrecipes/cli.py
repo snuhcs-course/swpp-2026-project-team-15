@@ -121,7 +121,7 @@ def _source_run(
             plan=plan, client=client, parser_version=PARSER_VERSION, schema_version=SCHEMA_VERSION
         )
         if resume_run:
-            run = CollectionRun.resume(**options)
+            run = CollectionRun.resume(**options, category_code=only_category)
             if acknowledge_stop:
                 run.acknowledge_stop()
         else:
