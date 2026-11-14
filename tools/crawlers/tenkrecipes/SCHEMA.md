@@ -9,6 +9,11 @@ An existing but blank DOM title raises `MissingTitleError`, a `ParseError`
 subclass. Collection records it as `failed / missing_title` and preserves raw
 HTML. A missing title element or required container remains a structural error.
 JSON-LD does not replace an empty DOM title.
+Collection records a detail `ParseError`/decoding failure as a preserved
+`failed / structure_mismatch` candidate and proceeds to a same-category
+replacement. List structure loss and access challenges still stop collection.
+Earlier schema-4 blocked detail snapshots are reclassified only when a later
+collection processes them, preserving verified raw bytes without a re-fetch.
 
 ## List observations
 

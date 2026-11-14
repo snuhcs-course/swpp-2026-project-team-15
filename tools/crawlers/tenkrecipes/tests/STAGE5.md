@@ -13,7 +13,7 @@ The implementation follows these interfaces originally proposed by the tests.
 - `CollectionRun.collect_quotas()` traverses the saved plan in category order,
   using recorded work before unseen pages. It returns `status` and
   `acquisition_complete`. Incomplete collection returns `incomplete`; global
-  access/structure barriers return `blocked`, and retry-budget interruption
+  access/list-structure barriers return `blocked`, and retry-budget interruption
   returns `deferred`. It records `allocations`, `failures`, `replacements`, and
   `category_outcomes` in the manifest. Existing single-page methods remain usable.
 - Allocation rows expose `source_id` and `category_code`. Failure rows expose

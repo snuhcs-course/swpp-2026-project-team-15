@@ -86,7 +86,7 @@ before requesting anything or changing existing artifacts.
   network; saved-source hash mismatch raises `IntegrityError` without overwrite.
   A missing parsed JSON output is recovered from valid saved detail HTML without
   refetching that source; other pending details are fetched normally.
-- Denial/challenge yields blocked; filter/selector loss yields blocked with
+- Denial/challenge yields blocked; list filter/selector loss yields blocked with
   `structure_mismatch`; excessive wait yields deferred. Prior candidates/raw
   pages and attempt history remain. Failed response bodies are saved separately
   under `lists/` without being treated as successful parsed lists.

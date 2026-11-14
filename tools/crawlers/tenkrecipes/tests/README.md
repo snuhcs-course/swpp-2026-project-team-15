@@ -35,6 +35,14 @@ exist. Missing behavior is never hidden behind skipped or xfailed tests.
 
 ## Public test interface
 
+The approved 2026-11-15 policy treats missing detail structure as a preserved
+candidate failure, while list structure and access barriers still stop the run.
+`test_detail_structure_failures.py` covers replacement, unchanged network-failure
+streaks, raw preservation, and deferred conversion of older blocked snapshots
+without re-fetching or losing their failure/replacement relationship. The two
+earlier direct-detail expectations and the global-stop list fixture were updated
+only for this explicitly approved policy change. No live collection is needed.
+
 `test_category_quota.py` covers the subsequently approved `--only-category`
 extension: stop at 100 then 90 in one run, preserve global ID identity, remember
 the scope, reject conflicting/invalid scopes before I/O, retain ordered category
