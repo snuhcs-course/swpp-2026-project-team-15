@@ -3,6 +3,7 @@
 # Error-policy changes assisted by Codex, 2026-11-14; human review pending.
 # Stage 5 allocation integration assisted by Codex, 2026-11-14; human review pending.
 # Category-scoped quota execution assisted by Codex, 2026-11-14; human review pending.
+# Detail structure failure policy assisted by Codex, 2026-11-15; human review pending.
 """Persist source snapshots, resume acquisitions, and allocate source-ID quotas."""
 
 import copy
@@ -387,7 +388,7 @@ class CollectionRun:
             except MissingTitleError:
                 result = dict(result, status="failed", reason="missing_title")
             except (ParseError, UnicodeError):
-                result = dict(result, status="blocked", reason="structure_mismatch")
+                result = dict(result, status="failed", reason="structure_mismatch")
         manifest = self.snapshot()
         # A readable empty-title page is still a successful immutable HTTP snapshot.
         retained = dict(result, status="ok") if result.get("reason") == "missing_title" else result
@@ -599,7 +600,26 @@ class CollectionRun:
         outcome = self._manifest["candidate_outcomes"].get(source_id)
         if outcome and outcome["status"] == "failed":
             return dict(status="failed", reason=outcome["reason"])
-        result = self._saved_failure(self._manifest["details"].get(source_id))
+        detail = self._manifest["details"].get(source_id)
+        if detail and detail["state"] == "blocked" and detail.get("reason") == "structure_mismatch":
+            # Earlier schema-4 runs stopped on this content failure. Reclassify
+            # the verified snapshot only when processing it, without re-fetching.
+            self.storage.verify(detail["raw"])
+            manifest = self.snapshot()
+            manifest["details"][source_id]["state"] = "failed"
+            for observation in manifest["candidates"]:
+                if observation["source_id"] == source_id:
+                    observation["state"] = "failed"
+            result = self._failure(
+                manifest,
+                dict(
+                    status="failed",
+                    reason="structure_mismatch",
+                    attempts=detail.get("attempts", []),
+                ),
+            )
+        else:
+            result = self._saved_failure(detail)
         if result is None:
             result = self.fetch_detail(source_id)
         if result["status"] == "parsed":
@@ -614,6 +634,7 @@ class CollectionRun:
             "missing_title",
             "missing_ingredients",
             "missing_steps",
+            "structure_mismatch",
             "invalid_image",
             "image_too_large",
             "image_too_many_pixels",

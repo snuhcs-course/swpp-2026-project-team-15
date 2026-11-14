@@ -34,14 +34,14 @@ def test_blank_title_is_a_preserved_candidate_failure(tmp_path, title):
 
 
 @pytest.mark.parametrize("selector", [".view2_summary h3", "#divConfirmedMaterialArea"])
-def test_missing_structural_element_still_blocks_collection(tmp_path, selector):
+def test_missing_detail_structure_is_a_preserved_candidate_failure(tmp_path, selector):
     response = fixture_response("stage2_detail.html")
     soup = BeautifulSoup(response.content, "html.parser")
     soup.select_one(selector).decompose()
     response.content = str(soup).encode()
     _, run, _, _, _ = make_run(tmp_path, response)
     result = run.fetch_detail("900001")
-    assert (result["status"], result["reason"]) == ("blocked", "structure_mismatch")
+    assert (result["status"], result["reason"]) == ("failed", "structure_mismatch")
     assert run.storage.verify(run.snapshot()["details"]["900001"]["raw"]) == response.content
 
 

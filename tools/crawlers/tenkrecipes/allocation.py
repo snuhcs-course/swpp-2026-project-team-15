@@ -1,4 +1,5 @@
 # AI-assisted with Codex, 2026-11-14; human review pending.
+# Detail failure reclassification assisted by Codex, 2026-11-15; human review pending.
 """Deterministic source-ID allocation with recorded replacements and bounded traversal."""
 
 from .reporting import write_report
@@ -56,6 +57,16 @@ def _record_decision(run, candidate, result):
             if observation["source_id"] == source_id:
                 observation["state"] = "selected"
     else:
+        for failure in manifest["failures"]:
+            if (
+                failure["source_id"] == source_id
+                and failure["category_code"] == code
+                and failure["status"] == "blocked"
+                and failure["reason"] == result.get("reason") == "structure_mismatch"
+                and result["status"] == "failed"
+            ):
+                # Keep the original failure/provenance row, now eligible for a replacement.
+                failure["status"] = "failed"
         if not any(
             row["source_id"] == source_id and row["category_code"] == code
             for row in manifest["failures"]

@@ -93,14 +93,16 @@ def test_repeated_page_without_new_ids_stops_with_anomaly(tmp_path):
     assert not any("cat4=63" in url and "page=3" in url for url in calls)
 
 
-@pytest.mark.parametrize("failure", ["structure", "denial", "deferred"])
+@pytest.mark.parametrize("failure", ["list_structure", "denial", "deferred"])
 def test_global_stop_is_not_replaced_by_a_later_candidate(tmp_path, failure):
     pages = {("63", 1): ["900001", "900002"]}
-    if failure == "denial":
+    if failure == "list_structure":
+        pages[("63", 1)] = FakeResponse(body=b"<html>unrecognized list structure</html>")
+    elif failure == "denial":
         pages[("63", 1)] = FakeResponse(403)
     elif failure == "deferred":
         pages[("63", 1)] = FakeResponse(429, headers={"Retry-After": "999999"})
-    run, _, calls = scripted_run(tmp_path, pages, details={"900001": detail_html("structure")})
+    run, _, calls = scripted_run(tmp_path, pages)
     result = run.collect_quotas()
     assert result["status"] == ("deferred" if failure == "deferred" else "blocked")
     assert result["acquisition_complete"] is False
