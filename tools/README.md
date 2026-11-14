@@ -15,10 +15,10 @@ The Pixabay configuration reads paths from `.env` relative to `tools/`; process 
 
 ## 만개의레시피 quick-recipe plans
 
-The [tenkrecipes tool](crawlers/tenkrecipes/README.md) currently provides offline
-planning for 500 source recipes across nine approved quick-recipe categories,
-plus offline parsing of saved list/detail HTML.
-Offline plan/parse commands do not read `.env`, contact the site, or write collection files.
+The [tenkrecipes tool](crawlers/tenkrecipes/README.md) provides planning, collection,
+and offline validation/reporting for 500 source recipes across nine approved
+quick-recipe categories, plus offline parsing of saved list/detail HTML.
+Offline commands do not contact the site; plan/parse do not write collection files.
 Its explicit relative output paths use the caller's current working directory.
 
 ```powershell
@@ -27,9 +27,13 @@ uv run --locked python -m crawlers.tenkrecipes.cli plan
 
 The detail `parse --input source.html --source-url URL` command emits JSON without
 changing the input or fetching images. See the tool's schema documentation.
-The collector provides explicit `collect --live` (one source page, details, and validated thumbnails) and
-`resume --live` (recorded work). See the tool's run guide before operator execution.
-Automatic 500-recipe allocation and production integration are not implemented.
+The collector provides explicit `collect --live` (one-page pilot) and
+`collect --full --live` (the complete quota plan), including details and validated
+thumbnails. `resume --full --live` promotes a compatible pilot; subsequent
+`resume --live` remembers full mode. Offline `validate` and `report` check the
+saved artifacts and produce a review handoff. See the [run guide](crawlers/tenkrecipes/RUNS.md)
+before operator execution. Semantic duplicate review remains required before
+production adoption; service import and production integration are outside this tool.
 The default tools test command discovers both the Pixabay and tenkrecipes suites.
 
 ## Pixabay recipe images
