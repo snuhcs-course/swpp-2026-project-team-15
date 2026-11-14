@@ -11,7 +11,7 @@ and exhaustion of the last category (499 IDs, a deficit of one). Both cases:
 
 - traverse multiple pages, preserving duplicate observations without duplicate
   detail/image requests or cross-category quota inflation;
-- preserve an empty-title failure and its same-category replacement;
+- preserve an empty-title error and continue to a same-category candidate without new replacement links;
 - interrupt the 206th thumbnail with `KeyboardInterrupt`, reopen the saved run,
   and reuse earlier source responses, parsed records, images, and allocations;
 - check retained artifact hashes and independently generated JSON/CSV reports;
