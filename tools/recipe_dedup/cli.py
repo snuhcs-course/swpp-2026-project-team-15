@@ -53,12 +53,15 @@ def groups(
 def select_recipes(
     source_run: Path = typer.Option(..., help="Supplied collection run containing manifest.json."),
     titles: Path = typer.Option(..., help="Completed user-authored title mapping CSV."),
-    decisions: Path = typer.Option(..., help="Completed duplicate decision CSV; no pending rows."),
+    decisions: Path = typer.Option(
+        ..., help="Duplicate decisions; pending requires quality exclusion."
+    ),
     output: Path = typer.Option(..., help="New selection directory outside the source run."),
+    quality_exclusions: Path | None = typer.Option(None, help="Explicit quality exclusion CSV."),
 ) -> None:
     """Export kept recipe copies after validating all titles and duplicate decisions."""
     try:
-        report = export_selection(source_run, titles, decisions, output)
+        report = export_selection(source_run, titles, decisions, output, quality_exclusions)
     except (OSError, ValueError) as exc:
         typer.echo(f"Selection export error: {exc}", err=True)
         raise typer.Exit(1) from exc
