@@ -25,5 +25,5 @@ ignore = ["B008", "TRY004"]
 select = ["E", "F", "I", "B", "UP"]
 
 [tool.pytest.ini_options]
-testpaths = ["crawlers/pixabay/tests"]
-pythonpath = ["crawlers/pixabay/src"]
+testpaths = ["crawlers/pixabay/tests", "recipe_dedup/tests"]
+pythonpath = [".", "crawlers/pixabay/src"]
