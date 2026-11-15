@@ -1,3 +1,7 @@
+> Historical implementation-stage record. Counts, filenames and contract notes
+> below describe past executions. See [README.md](README.md) for current tests,
+> policy boundaries and the old-to-current filename map.
+
 # Stage 3 test-first contracts
 
 These tests cover implemented tasks 3.1–3.5: fetching, storage, resume, and live

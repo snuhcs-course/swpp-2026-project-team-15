@@ -1,3 +1,7 @@
+> Historical implementation-stage record. Counts, filenames and contract notes
+> below describe past executions. See [README.md](README.md) for current tests,
+> policy boundaries and the old-to-current filename map.
+
 # Stage 5 test-first contracts
 
 These offline acceptance tests verify implemented tasks 5.1–5.5. Allocation and

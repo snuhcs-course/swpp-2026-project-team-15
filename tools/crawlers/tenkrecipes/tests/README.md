@@ -1,109 +1,90 @@
-# Stage 1 acceptance tests
+# Recipe collection tests
 
-Stage 2 test-first contracts and synthetic fixture provenance are documented
-separately in [STAGE2.md](STAGE2.md). Stage 2 parsing is now implemented and those
-cases must pass; stage 1 remains independently testable.
+Tests are organized by current responsibility, not implementation stage. All
+ordinary tests use synthetic HTML, generated images and fake transports. Socket
+access is blocked by conftest.py. No live collection is needed.
 
-Stage 3 tests and their implemented interfaces are documented in [STAGE3.md](STAGE3.md).
-They were written test-first and now verify fetching/storage/resume with fake I/O.
+## Layout
 
-Stage 4 thumbnail acceptance cases are documented in [STAGE4.md](STAGE4.md).
-
-[test_error_policy.py](test_error_policy.py) covers the approved empty-title,
-operator-stop, three-recipe network-failure, reset, and resume policies. The
-pilot and full quota CLI apply these policies.
-
-Additional confirmed resume defects are covered by
-[test_resume_consistency.py](test_resume_consistency.py): interrupted failure
-checkpoints, retry deadlines during local recovery, retry-response references,
-and consistent states across repeated source observations. These ten cases were
-each observed failing before their respective fixes.
-
-Stage 5 allocation/report tests and implemented interfaces are documented in
-[STAGE5.md](STAGE5.md). The original 29 cases pass; implementation-time regression
-tests are limited to four reproduced resume/replacement defects.
-
-Stage 6 full synthetic pipeline checks and locked-environment commands are
-documented in [STAGE6.md](STAGE6.md). They collect 500/499 records through the real
-workflow, interrupt and resume an unfinished asset, and verify offline reports.
-
-These are acceptance contracts for tasks 1.1–1.4 of
-`collect-tenkrecipes-quick-recipes`. Stage 1 covers offline plan generation;
-later stages cover collection and reporting. The initial test-only run was RED because
-the CLI, configuration, dependency, discovery setup, and tool README did not yet
-exist. Missing behavior is never hidden behind skipped or xfailed tests.
-
-## Public test interface
-
-The approved 2026-11-15 policy treats missing detail structure as a preserved
-candidate failure, while list structure and access barriers still stop the run.
-`test_detail_structure_failures.py` covers skipping/logging, unchanged network-failure
-streaks, raw preservation, and deferred conversion of older blocked snapshots
-without re-fetching or losing their error record. The two
-earlier direct-detail expectations and the global-stop list fixture were updated
-only for this explicitly approved policy change. No live collection is needed.
-
-`test_category_quota.py` covers the subsequently approved `--only-category`
-extension: stop at 100 then 90 in one run, preserve global ID identity, remember
-the scope, reject conflicting/invalid scopes before I/O, retain ordered category
-priority, and distinguish category exit success from global incompleteness.
-The 16 acceptance cases were first run RED without changing earlier tests.
-One additional confirmed preflight regression checks that a rejected later
-category leaves a pending failure checkpoint and the published manifest intact;
-it failed before moving scope validation ahead of resume recovery writes.
-
-The planning documents specify behavior but do not fix Python symbol names or a
-plan serialization format. These tests establish the following small interface
-for the implementation; no internal classes or parser algorithms are prescribed:
-
-- From `tools/`, run `python -m crawlers.tenkrecipes.cli` and `--help` for help.
-- `python -m crawlers.tenkrecipes.cli plan --output-dir <path>` writes a JSON plan
-  to stdout. It does not need network access, credentials, or server imports.
-- The plan has `total: 500`, `output_dir`, and ordered `categories` records with
-  `name`, `cat4`, `quota`, and `list_url` (the first page with both filters and
-  recommendation order). `cat4` can be an integer or string.
-- `crawlers.tenkrecipes.config.build_plan(output_dir=Path(...))` exposes the same
-  plan fields through deeply read-only mappings/sequences. Updating a nested
-  quota or top-level total raises `TypeError`.
-- Plan independence and immutability are separate contracts. The independence
-  test builds plans with different output paths and verifies that creating or
-  rebuilding one does not change the other's output or category configuration.
-  It allows safe sharing of immutable category values. The immutability test
-  separately verifies rejection of top-level and nested mutations of one plan.
-  This keeps the current built-run-plan interface; no draft/finalize API is added.
-- Output directories cannot be existing files or production source/data paths.
-- The `tools/crawlers/tenkrecipes/README.md` includes a single-line fenced
-  example `python -m crawlers.tenkrecipes.cli plan --output-dir {output_dir}`.
-  The test substitutes a disposable path and executes it. Documentation of setup,
-  source-ID identity versus pending semantic review, and integration exclusions
-  still needs human review; executable examples cannot verify all prose.
-
-## Coverage
-
-| Task | Automated checks |
+| Area | Tests |
 |---|---|
-| 1.1 | Offline import/help/plan, tools-only parser dependency, protected output paths |
-| 1.2 | Agreed category order/quotas, total 500, request filters, plan independence, nested immutability, existing data preservation |
-| 1.3 | Real pytest discovery using copied configuration and two synthetic test trees; legacy bare-module coexistence |
-| 1.4 | Execution of the README plan example |
+| Plan, quotas, preview paths, environment isolation | test_plan_contract.py |
+| DOM/JSON-LD extraction and source preservation | test_list_parsing.py, test_detail_parsing.py |
+| CLI argument/output boundaries | test_parse_cli.py, test_live_cli.py, test_category_quota.py |
+| HTTP pacing, finite retries and response evidence | test_http_client.py |
+| Atomic source storage and interrupted recovery | test_source_storage_resume.py, test_resume_consistency.py |
+| Thumbnail bounds, bytes, provenance and recovery | test_images.py |
+| Content errors, network streaks and operator stops | test_error_policy.py, test_detail_structure_failures.py |
+| 429 deadlines across restart | test_rate_limit_resume.py |
+| Candidate errors through pilot and quota workflows | test_simple_candidate_errors.py |
+| Category allocation, exhaustion and historical selections | test_allocation.py, test_allocation_resume.py |
+| Completeness, review findings and legacy CSV statuses | test_reporting.py, test_review_csv_status.py |
+| Explicit low-level compatibility APIs | test_legacy_api.py |
+| Full 500-ID pipeline and small exhausted-category pipeline | test_pipeline.py |
 
-The discovery probe uses tiny synthetic test trees so it measures pytest's
-configuration without importing optional crawler dependencies. It does not claim
-that the complete existing Pixabay suite passes. The dependency check inspects
-declarations only; installing the lockfile is a separate integration check.
+support_http.py provides the fake clock, queued responses and requests.
+support_images.py provides generated image bytes, streams and downloader setup.
+support_runs.py provides source fixtures and run constructors. Test modules do
+not import other test modules for helpers. Fixtures list.html and detail.html are
+hand-authored synthetic source structures, not downloaded material.
 
-CLI tests run in disposable working directories. Audit hooks stop DNS/connect,
-child processes, and file access to production server/Android/recipe data, including
-attempts caught by the application. A guard self-test proves that caught attempts
-still fail. In-process config tests also block networking. No live site is queried.
+## Current policy boundaries
+
+The CLI and quota/pilot candidate workflows skip terminal candidate errors and
+log them once. 429 deadlines and run budgets pause collection. Denial/challenge,
+list errors, disallowed image hosts/redirect limits and three consecutive recipe
+network failures keep their stop behavior. Success resets the outage streak;
+content errors do not. New A-to-B replacement links are not generated. Compatible
+historical links and original evidence remain preserved.
+
+The legacy detail-only resume_pending() and direct fetch_thumbnail() APIs have
+different retry/stop boundaries. Their tests live in test_legacy_api.py and do not
+define the CLI's terminal-candidate policy. These APIs have not been removed.
+
+Parser tests preserve blank source rows and findings. Acquisition tests exclude
+recipes without essential content. These are different contracts. Likewise,
+plan independence and immutability, downloader validation and operator stops,
+and source-ID uniqueness and pending semantic review are separate checks.
+
+The complete pipeline collects 500 IDs through real parsing/storage/allocation,
+interrupts and resumes acquisition, and checks CLI reports and stable repeated
+resume. The former second 499-ID acquisition is replaced by a small real
+exhaustion/report/resume pipeline. Exactly 499 IDs and exit 1 remain covered in
+test_reporting.py. This preserves exhaustion coverage without collecting another
+499 near-identical synthetic recipes.
 
 ## Run
 
+From tools/:
+
 ```powershell
-cd tools
-uv run --locked pytest crawlers/tenkrecipes/tests -q
-uv run --locked pytest --collect-only -q
+uv run --locked --offline pytest -q -p no:cacheprovider
+uv run --locked --offline pytest crawlers/tenkrecipes/tests -q
+uv run --locked --offline pytest crawlers/tenkrecipes/tests/test_pipeline.py -q
+uv run --locked --offline ruff check crawlers
+uv run --locked --offline ruff format --check crawlers
 ```
 
-The default testpaths now includes both crawlers. The explicit path runs only
-the tenkrecipes contracts; the second command checks the combined discovery.
+Use a fresh workspace --basetemp when Windows temporary-directory access is
+restricted. Do not inspect working checkpoints while tests replace them. Report
+any PermissionError and its rerun separately; do not mask it with automatic test
+retries, skips or weakened assertions.
+
+## Historical stage records
+
+STAGE2.md through STAGE6.md retain dated test-first and verification history.
+Their counts, old filenames and interfaces describe those historical executions,
+not the current discovery count or authoritative current behavior. Use this
+README, the source tests and the approved specification for current contracts.
+
+| Earlier name | Current name |
+|---|---|
+| test_stage1_contract.py | test_plan_contract.py |
+| test_stage2_lists.py / test_stage2_details.py | test_list_parsing.py / test_detail_parsing.py |
+| test_stage2_parse_cli.py / test_stage3_cli.py | test_parse_cli.py / test_live_cli.py |
+| test_stage3_fetching.py | test_http_client.py |
+| test_stage3_storage_resume.py | test_source_storage_resume.py and test_legacy_api.py |
+| test_stage4_images.py | test_images.py, test_legacy_api.py and support_images.py |
+| test_stage5_allocation.py / test_stage5_regressions.py | test_allocation.py / test_allocation_resume.py |
+| test_stage5_reports.py / test_stage6_pipeline.py | test_reporting.py / test_pipeline.py |
+| stage3_support.py / stage5_support.py | support_http.py / support_runs.py |

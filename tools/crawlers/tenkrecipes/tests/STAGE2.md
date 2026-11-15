@@ -1,3 +1,7 @@
+> Historical implementation-stage record. Counts, filenames and contract notes
+> below describe past executions. See [README.md](README.md) for current tests,
+> policy boundaries and the old-to-current filename map.
+
 # Stage 2 test-first contracts
 
 These tests cover the implemented tasks 2.1–2.4 and the offline parse CLI.

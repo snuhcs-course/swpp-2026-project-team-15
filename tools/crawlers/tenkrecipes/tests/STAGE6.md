@@ -1,3 +1,7 @@
+> Historical implementation-stage record. Counts, filenames and contract notes
+> below describe past executions. See [README.md](README.md) for current tests,
+> policy boundaries and the old-to-current filename map.
+
 # Stage 6 integration and isolation
 
 `test_stage6_pipeline.py` exercises task 6.1 with synthetic HTML and locally

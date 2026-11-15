@@ -1,3 +1,7 @@
+> Historical implementation-stage record. Counts, filenames and contract notes
+> below describe past executions. See [README.md](README.md) for current tests,
+> policy boundaries and the old-to-current filename map.
+
 # Stage 4 thumbnail acceptance tests
 
 No stage 4 test file existed when implementation was requested. Fourteen cases
