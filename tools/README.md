@@ -19,8 +19,8 @@ Paths in `.env` can be absolute or relative to `tools/`. Process environment var
 reviewed ingredient decisions and `Ingredient.csv`, and returns an ID plan in
 memory. It does not write CSVs, create `_old` backups, normalize recipe copies or
 register ingredients in a database. The transformation API below builds separate
-documents; catalog publication and backups remain later tasks. No `.env`, network,
-collector, dedup tool or server setup is required.
+documents; the explicit publication command below handles backups and catalog
+replacement. No `.env`, network, collector, dedup tool or server setup is required.
 
 From `tools/`, after `uv sync --locked`, use the Python API:
 
@@ -130,10 +130,74 @@ ID/name exists in the planned catalog, and original rows and non-ingredient
 metadata are unchanged. Invalid inputs fail before any file is written.
 `validation_passed` describes these transformation checks; `catalog_published`
 and `service_suitability_assessed` remain false. Backup and publication hashes
-will be supplied by the later publication workflow, not invented by this builder.
+are supplied by the publication workflow, not invented by this builder.
 Ingredient classification, presentation/allergen metadata, recipe revision,
 entity conversion, database import and image deployment remain separate work.
 Synthetic tests serialize and reread all three documents to check JSON round trips.
+
+### Preserve CSVs and publish the catalog
+
+From `tools/`, explicitly select all inputs and a **new** output directory:
+
+```powershell
+uv run --locked --offline python -m recipe_ingredients.cli --selected ../data/tenkrecipes/preparation/selected-02/selected-recipes.json --decisions ../data/tenkrecipes/preparation/ingredient-normalization/manual-decisions.json --catalog-dir ../data/recipes --output ../data/tenkrecipes/preparation/ingredients-01
+```
+
+This command changes local files. Stop other writers to the inputs/catalog while
+it runs; input rechecks detect changes but do not lock out concurrent writers.
+No `.env` file, API key, server, collector or dedup installation is required.
+All four original CSVs must exist in `--catalog-dir`:
+
+| Original | Byte-exact backup | Original after success |
+| --- | --- | --- |
+| `Ingredient.csv` | `Ingredient_old.csv` | Existing rows plus approved new names |
+| `IngredientPresentation.csv` | `IngredientPresentation_old.csv` | Unchanged |
+| `IngredientAllergen.csv` | `IngredientAllergen_old.csv` | Unchanged |
+| `RecipeIngredient.csv` | `RecipeIngredient_old.csv` | Unchanged |
+
+The command validates inputs and generated references before creating anything.
+It refuses existing output paths or any required `_old` destination, including
+partial results from an earlier failure. It then writes the mapping/normalized
+JSON, rechecks input bytes, creates each backup exclusively, and replaces only
+`Ingredient.csv` using a temporary file on the same filesystem. The new catalog
+uses UTF-8 BOM, CRLF and the unchanged `ingredient_id,name` header. Existing row
+order, IDs and names are retained. Other catalog files are not regenerated.
+
+Only after checking the published catalog, all backups, other originals and JSON
+bytes does it finalize `validation-report.json`. A zero exit code and that final
+report indicate success. The report adds `catalog_published: true`,
+`published_catalog` path/header/SHA256, and `csv_snapshots` keyed by original
+filename with original/backup paths and before/backup/after SHA256 values.
+`output_hashes` covers the mapping and normalized JSON; the report does not hash
+itself. Service suitability remains unassessed. No entity CSV generation,
+presentation/allergen inference, Android changes, DB import or image upload runs.
+
+On failure the exit code is nonzero. The error identifies the phase, whether the
+catalog changed, and remaining backup/output/temporary paths. Partial outputs
+must not be used. A failure after replacement can leave the new catalog in place
+without a final report; inspect the stated status and backups before proceeding.
+Files already created are deliberately retained for recovery. This is a local
+multi-file operation, not a database transaction or resumable job.
+
+To restore the original catalog after inspecting the backups, from `tools/`:
+
+```powershell
+Copy-Item -LiteralPath ../data/recipes/Ingredient_old.csv -Destination ../data/recipes/Ingredient.csv
+(Get-FileHash -LiteralPath ../data/recipes/Ingredient_old.csv).Hash -eq (Get-FileHash -LiteralPath ../data/recipes/Ingredient.csv).Hash
+```
+
+Check the other three originals against their backups too. Preserve the failed
+output and backups separately before any retry; changing only `--output` does
+not bypass existing `_old` refusal. For a fresh retry, supply a separate catalog
+directory containing the four original snapshots under their original filenames,
+with no `_old` files, and choose another output directory. There is no force,
+automatic backup deletion, rollback or resume option.
+
+Pass the three successful JSON files, updated catalog, four backups, source run
+and its referenced images to the next preparation step. Absolute input paths in
+the report are audit information, not a substitute for supplying the source files.
+Actual data and generated files remain outside Git. Synthetic publication tests
+exercise this CLI with disposable catalog files and the same explicit options.
 
 ## Pixabay recipe images
 
