@@ -18,9 +18,9 @@ Paths in `.env` can be absolute or relative to `tools/`. Process environment var
 `recipe_ingredients.mapping.build_mapping` validates local selected recipes,
 reviewed ingredient decisions and `Ingredient.csv`, and returns an ID plan in
 memory. It does not write CSVs, create `_old` backups, normalize recipe copies or
-register ingredients in a database. These publication and transformation steps
-belong to later tasks. No `.env`, network, collector, dedup tool or server setup
-is required.
+register ingredients in a database. The transformation API below builds separate
+documents; catalog publication and backups remain later tasks. No `.env`, network,
+collector, dedup tool or server setup is required.
 
 From `tools/`, after `uv sync --locked`, use the Python API:
 
@@ -81,6 +81,59 @@ uv run --locked --offline ruff format --check recipe_ingredients
 ```
 
 The default pytest configuration includes these tests alongside Pixabay tests.
+
+### Normalized recipe documents
+
+Use the same three paths with
+`recipe_ingredients.normalization.build_documents(selected_path, decisions_path,
+catalog_path)`. It returns a dictionary keyed by three intended JSON filenames.
+The function validates and builds documents in memory; it creates no files,
+backups, catalog changes or database records. For example, after defining the
+`preparation` path above:
+
+```python
+from recipe_ingredients.normalization import build_documents
+
+documents = build_documents(
+    preparation / "selected-02/selected-recipes.json",
+    preparation / "ingredient-normalization/manual-decisions.json",
+    Path("../data/recipes/Ingredient.csv"),
+)
+print(documents["validation-report.json"]["output_rows"])
+```
+
+- `ingredient-mapping.json` contains the planned `catalog`, `input_hashes`, and
+  `mappings`. Each mapping includes the original reviewed decision as `review`,
+  preserving reasons, evidence and deferred revision notes without applying them.
+- `normalized-recipes.json` preserves selected metadata, recipe order and all
+  non-ingredient fields. It adds a `source_occurrences` registry containing each
+  source row exactly once as `original`, its `decision`, and its source identity.
+  Each retained ingredient keeps all original fields and adds `ingredient_id`,
+  `normalized_name`, a one-based `component_index`, and `source`. That reference
+  contains `source_id`, original `group`/`order`, and zero-based `occurrence_index`
+  into the registry. Repeated rows remain separate even when their IDs match.
+- For reviewed splits, each component keeps the original group/order and raw text,
+  but its `quantity_text` comes only from the corresponding reviewed target, or
+  is null. The combined amount is preserved in the registry's `original` row,
+  not assigned to each component. Ordinary missing quantity fields remain absent;
+  explicit nulls remain null. No units or amounts are converted or inferred.
+- `validation-report.json` records input paths/hashes, catalog counts, source and
+  output counts by decision, inactive raw names, split and excluded occurrences,
+  missing source quantities and the separate count of split components without
+  individual quantities. Missing means absent, null or empty-string source amount.
+  Exclusions include their full reviewed evidence. Tool candidates receive no
+  service tool ID and do not modify `listed_tools`; made-in-recipe intermediates
+  are excluded without modifying their components or steps.
+
+The builder checks that every source occurrence is accounted for, every output
+ID/name exists in the planned catalog, and original rows and non-ingredient
+metadata are unchanged. Invalid inputs fail before any file is written.
+`validation_passed` describes these transformation checks; `catalog_published`
+and `service_suitability_assessed` remain false. Backup and publication hashes
+will be supplied by the later publication workflow, not invented by this builder.
+Ingredient classification, presentation/allergen metadata, recipe revision,
+entity conversion, database import and image deployment remain separate work.
+Synthetic tests serialize and reread all three documents to check JSON round trips.
 
 ## Pixabay recipe images
 
