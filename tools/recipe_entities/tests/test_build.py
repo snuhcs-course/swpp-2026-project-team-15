@@ -51,7 +51,11 @@ def test_cli_creates_verified_db_offline_and_only_then_records_completion(append
         "   raise AssertionError('Forbidden import: '+fullname)\n"
         "sys.meta_path.insert(0,Guard())\n"
         "def blocked(*a,**kw): raise AssertionError('Network forbidden')\n"
-        "socket.socket=blocked\nsocket.create_connection=blocked\n",
+        # ssl subclasses socket.socket, so the network guard must remain a class.
+        "class BlockedSocket(socket.socket):\n"
+        " def __new__(cls,*a,**kw): return blocked(*a,**kw)\n"
+        "socket.socket=BlockedSocket\nsocket.create_connection=blocked\n"
+        "import ssl\n",
         encoding="utf-8",
     )
     env = dict(os.environ, PYTHONPATH=os.pathsep.join([str(tmp_path), str(ROOT / "tools")]))
@@ -63,6 +67,7 @@ def test_cli_creates_verified_db_offline_and_only_then_records_completion(append
         text=True,
     )
     assert result.returncode == 0, result.stderr
+    assert "Error in sitecustomize" not in result.stderr
     report = json.loads((output / "validation-report.json").read_bytes())
     assert report["status"] == "completed" and report["database_fields_match"] is True
     assert report["counts"]["Recipe.csv"] == {"existing": 1, "added": 2, "total": 3}
