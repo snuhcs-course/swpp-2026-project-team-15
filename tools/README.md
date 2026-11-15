@@ -13,6 +13,75 @@ uv run pytest
 
 Paths in `.env` can be absolute or relative to `tools/`. Process environment variables override `.env`. Keep API keys in `.env` or the process environment, never in recipe files or generated pages. The root `.gitignore` excludes `.env` and generated tool data.
 
+## Reviewed ingredient ID mapping
+
+`recipe_ingredients.mapping.build_mapping` validates local selected recipes,
+reviewed ingredient decisions and `Ingredient.csv`, and returns an ID plan in
+memory. It does not write CSVs, create `_old` backups, normalize recipe copies or
+register ingredients in a database. These publication and transformation steps
+belong to later tasks. No `.env`, network, collector, dedup tool or server setup
+is required.
+
+From `tools/`, after `uv sync --locked`, use the Python API:
+
+```python
+from pathlib import Path
+from recipe_ingredients.mapping import build_mapping
+
+preparation = Path("../data/tenkrecipes/preparation")
+plan = build_mapping(
+    preparation / "selected-02/selected-recipes.json",
+    preparation / "ingredient-normalization/manual-decisions.json",
+    Path("../data/recipes/Ingredient.csv"),
+)
+print(len(plan["catalog"]), len(plan["mappings"]))
+```
+
+The selected JSON contains `recipes`, with each item's string `source_id`
+matching `recipe.source.id`, and ordered `recipe.ingredients` rows containing
+`group`, positive integer `order`, and nonblank `name_raw`. Original quantities,
+notes, source material IDs and recipe data remain unchanged. Repeated ingredients
+may share a name; each original group/order identity must remain distinct.
+
+The reviewed JSON contains `decisions` with unique `name_raw` keys. Supported
+dispositions are `reuse_existing`, `new_requested`, `split_existing`,
+`exclude_non_ingredient`, `exclude_prepared_component`, `excluded_recipe_only`,
+`hold`, and `unresolved`. Active rows cannot use the last three dispositions.
+Reuse targets require the exact catalog ID and `normalized_name`; new names
+require an unassigned ID and a nonblank canonical name. Splits require at least
+two distinct valid existing targets. Only explicitly supplied decisions apply;
+source material IDs, prose notes and Markdown worksheets cannot supply new rules.
+Synchronize manual Markdown edits to reviewed JSON before running the planner.
+
+When present, `counts`, per-decision `active_occurrences`/`active_recipe_count`,
+and `active_selection` counts and byte `sha256` must match the selected input.
+Inactive historical decisions are kept in the plan without allocating unused
+new IDs. A planning error raises `ValueError` without changing any input file.
+
+The returned `catalog` keeps existing rows and appends active new names in Python
+string sort order above the maximum existing ID. For example, with existing IDs
+7/Salt and 2/Water, new canonical names Apple and Zebra receive 8 and 9, regardless
+of decision order; aliases approved as Apple share 8. `mappings` has raw name,
+disposition, active counts and zero/one/multiple integer ID/name `targets` in raw
+name sort order. An inactive new name or exclusion has no targets. The return
+also contains unchanged parsed `selected`/`reviewed` data and `input_hashes`.
+
+For the current supplied inputs, the read-only plan contains 669 catalog entries
+(560 existing and 109 new IDs, 561–669), 591 mappings and 589 active raw names.
+These are results for this snapshot, not fixed input limits or published IDs.
+Existing ingredient names, including 115/닭, are not renamed.
+
+Run the mapping tests from `tools/`:
+
+```powershell
+uv run --locked --offline pytest recipe_ingredients/tests -q
+uv run --locked --offline pytest -q
+uv run --locked --offline ruff check recipe_ingredients
+uv run --locked --offline ruff format --check recipe_ingredients
+```
+
+The default pytest configuration includes these tests alongside Pixabay tests.
+
 ## Pixabay recipe images
 
 The Pixabay workflow searches candidate images, builds a human review sheet, processes selected local images into WebP variants, and writes the mapping and DB-ready `Recipe.csv`.
