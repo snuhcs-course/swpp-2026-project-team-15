@@ -119,7 +119,8 @@ records are never copied or modified, so supply the source run alongside review 
 
 The sequence is `titles` → user writes normalized titles → `groups` → user writes
 duplicate decisions → `select`. Complete every normalized title and resolve every
-pending decision before final export, including titles on excluded rows. Do not
+pending decision before final export, except explicitly quality-excluded IDs as described below.
+Titles on excluded rows are still required. Do not
 mark pending rows keep merely to make export succeed. Use the retained
 `review-notes.md`, if supplied, when making decisions; the tool does not infer
 decisions from prose notes.
@@ -130,7 +131,7 @@ From `tools/`, export the completed worksheets to a **new directory**:
 uv run --locked python -m recipe_dedup.cli select --source-run ../data/tenkrecipes/runs/pilot-three-per-category-20261114-181617 --titles ../data/tenkrecipes/preparation/titles.csv --decisions ../data/tenkrecipes/preparation/review-01/decisions.csv --output ../data/tenkrecipes/preparation/selected-01
 ```
 
-If any title is blank, any decision is pending, or a mapping/decision is invalid,
+If any title is blank, any non-quality-excluded decision is pending, or a mapping/decision is invalid,
 the command exits nonzero before creating the output directory and reports the
 unresolved IDs. Existing outputs are refused. After changing titles or decisions,
 choose a new destination such as `selected-02`; previous results remain unchanged.
@@ -147,6 +148,21 @@ Successful output contains exactly two UTF-8 JSON files:
   every reviewed CSV row with its decision, representative and reason. Completion
   flags describe title and duplicate review only. `service_suitability_assessed`
   is false; quality concerns recorded on keep rows remain in the report.
+
+To apply a separately reviewed quality exclusion list, pass
+`--quality-exclusions ../data/tenkrecipes/preparation/quality-exclusions.csv` to
+the `select` command above. No file is implicitly discovered. The CSV must have
+exactly `source_id,normalized_title,reason`, with selected string IDs, no duplicates,
+exact normalized titles and nonblank reasons. These user decisions remove the
+listed IDs even if their duplicate decision is keep or pending; input worksheets
+are not changed. A duplicate pointing to a quality-excluded representative is an
+error requiring explicit reselection. Other pending decisions still block export.
+
+The report includes `quality_exclusions` with reasons, `duplicate_excluded_ids`,
+and unique total `excluded_ids`. `selection_complete` means export inputs were
+resolved for inclusion; `duplicate_review_complete` stays false if an original
+duplicate decision is still pending, even when quality exclusion permits export.
+Applying explicit quality exclusions does not establish overall service suitability.
 
 Pass both files, the source run (including its local images), and any separate
 quality-review notes to the next preparation step. The tool references images; it
