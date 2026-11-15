@@ -1,4 +1,4 @@
-# AI-assisted with Codex, 2026-11-15; human review pending.
+# AI-assisted with Codex, 2026-11-15; Soohyun An
 """Export selected source titles without modifying the collection or inferring names."""
 
 import csv

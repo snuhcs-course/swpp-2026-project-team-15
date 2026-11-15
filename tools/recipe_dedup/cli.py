@@ -1,4 +1,4 @@
-# AI-assisted with Codex, 2026-11-15; human review pending.
+# AI-assisted with Codex, 2026-11-15; Soohyun An
 """Local recipe preparation commands independent of the source collector."""
 
 from pathlib import Path

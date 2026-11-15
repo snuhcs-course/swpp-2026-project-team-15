@@ -1,4 +1,4 @@
-# AI-assisted with Codex, 2026-11-15; human review pending.
+# AI-assisted with Codex, 2026-11-15; Soohyun An
 """Stage-one CLI contracts for a user-authored title worksheet, using local fixtures."""
 
 import codecs
