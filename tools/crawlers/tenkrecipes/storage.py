@@ -1,4 +1,4 @@
-# AI-assisted with Codex, 2026-11-11; human review pending.
+# AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
 """Atomic run-local artifacts, immutable raw bytes, and explicit integrity failures."""
 
 import hashlib

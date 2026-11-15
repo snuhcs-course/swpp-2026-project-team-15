@@ -5,7 +5,7 @@
 # Category-scoped quota execution assisted by Codex, 2026-11-14; human review pending.
 # Detail structure failure policy assisted by Codex, 2026-11-15; reviewed by Soohyun An.
 # Rate-limit resume fix assisted by Codex, 2026-11-15; human review pending.
-# Simple candidate errors assisted by Codex, 2026-11-15; human review pending.
+# Simple candidate errors assisted by Codex, 2026-11-15; reviewed by Soohyun An
 """Persist source snapshots, resume acquisitions, and allocate source-ID quotas."""
 
 import copy

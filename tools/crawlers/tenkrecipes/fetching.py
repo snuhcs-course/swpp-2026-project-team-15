@@ -1,4 +1,4 @@
-# AI-assisted with Codex, 2026-11-11; human review pending.
+# AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
 """Serial, opt-in source GETs with bounded retries and injectable time/I/O."""
 
 import hashlib

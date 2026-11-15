@@ -1,5 +1,5 @@
 # AI-assisted with Codex, 2026-11-14 to 2026-11-15; reviewed by Soohyun An.
-# CSV status preservation assisted by Codex, 2026-11-15; human review pending.
+# CSV status preservation assisted by Codex, 2026-11-15; reviewed by Soohyun An
 """Validate saved acquisitions offline and expose originals for subsequent review."""
 
 import copy

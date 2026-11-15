@@ -1,7 +1,7 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
 # Error-policy integration assisted by Codex, 2026-11-14; human review pending.
 # Stage 5 commands assisted by Codex, 2026-11-14; human review pending.
-# Category-scoped quota commands assisted by Codex, 2026-11-14; human review pending.
+# Category-scoped quota commands assisted by Codex, 2026-11-14; reviewed by Soohyun An.
 """Offline plan/parse commands and explicit live source snapshot collection."""
 
 import json

@@ -1,6 +1,6 @@
 # AI-assisted with Codex, 2026-11-14; human review pending.
 # Detail failure reclassification assisted by Codex, 2026-11-15; reviewed by Soohyun An.
-# Simple candidate errors assisted by Codex, 2026-11-15; human review pending.
+# Simple candidate errors assisted by Codex, 2026-11-15; reviewed by Soohyun An .
 """Deterministic successful source-ID allocation and bounded traversal."""
 
 from .reporting import write_report

@@ -1,4 +1,4 @@
-# AI-assisted with Codex, 2026-11-12; human review pending.
+# AI-assisted with Codex, 2026-11-12; reviewed by Soohyun An
 """Bounded thumbnail streams with explicit redirects and original-byte validation."""
 
 import hashlib

@@ -1,5 +1,5 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
-# Error-policy changes assisted by Codex, 2026-11-14; human review pending.
+# Error-policy changes assisted by Codex, 2026-11-14; reviewed by Soohyun An
 """Offline extraction of source observations; no service normalization or fetching."""
 
 import copy
