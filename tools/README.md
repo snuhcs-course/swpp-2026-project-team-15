@@ -15,7 +15,7 @@ For Pixabay, paths in `.env` can be absolute or relative to `tools/`. Process en
 
 ## Recipe title worksheet
 
-The independent `recipe_dedup` tool currently exports a title worksheet only.
+The independent `recipe_dedup` tool exports a title worksheet and duplicate-review candidates.
 It reads a locally supplied collection's `manifest.json` and selected recipe JSON
 files, without importing the collector, reading `.env`, or making network calls.
 No collector installation or server configuration is required.
@@ -52,10 +52,73 @@ records, duplicate IDs, identity mismatches or escaping record paths fail before
 the output directory is created. Failures return a nonzero exit code and identify
 the affected source ID when available. The collection files remain unchanged.
 
-Duplicate grouping, decision worksheets and selected-data export are later
-stages and are not implemented yet. The tool and tests can be preserved on the
-data-preparation branch without merging to main. Actual data and worksheets are
-supplied separately and should remain outside Git.
+### Duplicate review
+
+After editing the titles, generate review files in a **new directory** outside the
+source run, from `tools/`:
+
+```powershell
+uv run --locked python -m recipe_dedup.cli groups --source-run ../data/tenkrecipes/runs/pilot-three-per-category-20261114-181617 --titles ../data/tenkrecipes/preparation/titles.csv --output ../data/tenkrecipes/preparation/review-01
+```
+
+The command validates selected IDs and original titles before creating output.
+Original-title comparison ignores all whitespace (spaces, tabs, and line breaks,
+including LF/CRLF); other character differences fail. This tolerance applies only
+to original-title validation. Stored values are not rewritten.
+
+- `groups.json`: groups of two or more recipes whose **normalized titles match
+  exactly**, across categories. Each recipe includes its source ID, unchanged
+  source original title, normalized title, source URL, ingredients and quantities,
+  ordered steps and tips, and a thumbnail path relative to the source run.
+- `unfinished_ids` and `title_normalization_complete` in that JSON describe title
+  completion only. Blank or whitespace-only titles are unfinished and are not
+  placed in groups. Spacing, punctuation and Unicode differences in completed
+  normalized titles remain distinct.
+- `decisions.csv`: one row per selected ID in source order, initially `pending`:
+
+```csv
+source_id,decision,duplicate_of,reason
+0001,keep,,Different preparation variant retained
+2002,keep,,Data quality still needs separate review
+3003,exclude,0001,Same dish under a different title
+4004,pending,,Ingredient identity needs manual review
+```
+
+These IDs are synthetic examples. Edit the generated rows, keeping every source
+ID. `keep` retains a recipe **for duplicate review**; it does not approve data
+quality or service suitability. Record quality concerns in the reason or a separate
+handoff note. `pending` is unresolved review, including recipes needing manual
+inspection. Names alone never imply exclusion: two variants with the same title
+may both be kept, and different titles may be explicitly marked duplicates.
+
+Each `exclude` needs a nonblank reason and another selected ID marked `keep` as
+its direct representative. Self-references, unknown IDs, chains, cycles, missing
+rows and references to pending recipes are errors. Keep and pending rows must
+leave `duplicate_of` empty. The stage-two Python validator accepts drafts containing
+pending decisions and returns validated rows in source order without changing files:
+
+```python
+from pathlib import Path
+from recipe_dedup.review import read_decisions
+from recipe_dedup.titles import read_title_rows
+
+source_run = Path("../data/tenkrecipes/runs/pilot-three-per-category-20261114-181617")
+source_ids = [row["source_id"] for row in read_title_rows(source_run)]
+decisions = read_decisions(Path("../data/tenkrecipes/preparation/review-01/decisions.csv"), source_ids)
+```
+
+The `groups` command always creates an all-pending template; it does not read or
+reset existing decisions. After title edits, choose another output directory and
+keep the prior decision worksheet separately. Existing output directories are
+refused, including partially written output from an I/O failure. A failed command
+returns nonzero; only use results from a successful invocation. Images and source
+records are never copied or modified, so supply the source run alongside review files.
+
+Final selected-data export is stage three and is not implemented yet. Pending
+decisions will block that final export. No automatic quality filter, service CSV
+generation, image upload or database import runs here. The tool and tests can be
+preserved on the data-preparation branch without merging to main. Actual data and
+worksheets are supplied separately and should remain outside Git.
 
 Run the tests from `tools/`:
 
@@ -66,8 +129,8 @@ uv run --locked --offline ruff check recipe_dedup
 uv run --locked --offline ruff format --check recipe_dedup
 ```
 
-The default test command includes both Pixabay and recipe title tests. Title
-tests use synthetic runs and block networking and collector/server imports.
+The default test command includes both Pixabay and recipe preparation tests.
+Preparation tests use synthetic runs; CLI checks block networking and collector/server imports.
 
 ## Pixabay recipe images
 
