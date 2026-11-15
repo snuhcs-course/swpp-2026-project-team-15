@@ -7,8 +7,45 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
+from crawlers.tenkrecipes.tests.support_http import FakeResponse
+from crawlers.tenkrecipes.tests.support_images import StreamResponse
 from crawlers.tenkrecipes.tests.support_runs import detail_html, scripted_run
 from crawlers.tenkrecipes.workflow import CollectionRun
+
+
+@pytest.mark.parametrize("barrier", ["detail_denial", "image_host", "image_redirect"])
+def test_candidate_barrier_stops_quota_before_next_candidate(tmp_path, barrier):
+    """A quota wrapper must retain detail/image stops from shared candidate policy."""
+    run, _, calls = scripted_run(tmp_path, {("63", 1): ["900001", "900002"]})
+    normal = run.client.transport
+
+    def html_transport(url, **kwargs):
+        if barrier == "detail_denial" and url.endswith("/900001"):
+            calls.append(url)
+            return FakeResponse(403, url=url)
+        return normal(url, **kwargs)
+
+    def image_transport(url, **kwargs):
+        calls.append(url)
+        target = "https://outside.invalid/image.png" if barrier == "image_host" else url
+        response = StreamResponse(status=302, headers={"Location": target})
+        response.url = url
+        return response
+
+    run.client.transport = html_transport
+    run.image_downloader.transport = image_transport
+    result = run.collect_quotas(category_code="63")
+    manifest = run.snapshot()
+    assert result["status"] == "blocked" and result["category_complete"] is False
+    assert manifest["allocations"] == [] and manifest["failures"] == []
+    assert not any("900002" in url or "cat4=56" in url for url in calls)
+    if barrier == "detail_denial":
+        assert manifest["reason"] == "access_denied"
+    else:
+        assert manifest["operator_review_required"] is True
+        assert manifest["reason"] == (
+            "image_host_not_allowed" if barrier == "image_host" else "image_redirect_limit"
+        )
 
 
 def test_ordered_first_success_allocation_keeps_variants_and_every_observation(tmp_path):

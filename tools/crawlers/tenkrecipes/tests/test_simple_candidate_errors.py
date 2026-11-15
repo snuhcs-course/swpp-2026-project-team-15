@@ -6,13 +6,15 @@ import requests
 
 from crawlers.tenkrecipes.tests.support_http import FakeResponse, fixture_response
 from crawlers.tenkrecipes.tests.support_images import StreamResponse, png_bytes
-from crawlers.tenkrecipes.tests.support_runs import policy_run, scripted_run
+from crawlers.tenkrecipes.tests.support_runs import list_html, policy_run, scripted_run
 from crawlers.tenkrecipes.workflow import CollectionRun
 
 
+@pytest.mark.parametrize("mode", ["pilot", "quota"])
 @pytest.mark.parametrize("asset", ["detail", "image"])
 @pytest.mark.parametrize("error", ["404", "transport"])
-def test_candidate_error_is_logged_and_next_candidate_is_used(tmp_path, asset, error):
+def test_candidate_error_is_logged_and_next_candidate_is_used(tmp_path, asset, error, mode):
+    category = "63" if mode == "quota" else "52"
     failure = (
         (FakeResponse(404) if asset == "detail" else StreamResponse(status=404))
         if error == "404"
@@ -26,8 +28,13 @@ def test_candidate_error_is_logged_and_next_candidate_is_used(tmp_path, asset, e
         *details,
         fixture_response("detail.html"),
         images=[*images, StreamResponse(png_bytes())],
+        category_code=category,
     )
-    run.resume_pending(include_images=True)
+    if mode == "quota":
+        html.outcomes.append(FakeResponse(body=list_html(category, [])))
+        run.collect_quotas(category_code=category)
+    else:
+        run.resume_pending(include_images=True)
     manifest = run.snapshot()
     assert manifest["candidate_outcomes"]["900001"]["status"] == "failed"
     assert manifest["candidate_outcomes"]["900002"]["status"] == "acquired"
@@ -35,12 +42,18 @@ def test_candidate_error_is_logged_and_next_candidate_is_used(tmp_path, asset, e
     log = manifest["failures"][0]
     assert log["source_url"].endswith("/900001")
     assert log["reason"] == ("http_error" if error == "404" else "transport_error")
-    assert log["status"] == "failed" and log["category_code"] == "52"
+    assert log["status"] == "failed" and log["category_code"] == category
     assert manifest["replacements"] == []
     if log["raw_path"]:
         assert run.storage.path(log["raw_path"]).is_file()
     counts = (len(html.calls), len(thumbnails.calls))
-    CollectionRun.resume(**options).resume_pending(include_images=True)
+    resumed = CollectionRun.resume(**options)
+    if mode == "quota":
+        assert manifest["allocations"] == [dict(source_id="900002", category_code=category)]
+        assert not any("cat4=56" in call["url"] for call in html.calls)
+        resumed.collect_quotas(category_code=category)
+    else:
+        resumed.resume_pending(include_images=True)
     assert run.storage.read_json("manifest.json")["failures"] == manifest["failures"]
     assert counts == (len(html.calls), len(thumbnails.calls))
 
