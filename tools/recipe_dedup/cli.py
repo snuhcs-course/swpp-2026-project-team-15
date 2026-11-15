@@ -1,4 +1,4 @@
-# AI-assisted with Codex, 2026-11-15; Soohyun An
+# AI-assisted with Codex, 2026-11-15; reviewed by Soohyun An
 """Local recipe preparation commands independent of the source collector."""
 
 from pathlib import Path
@@ -6,6 +6,7 @@ from pathlib import Path
 import typer
 
 from .review import export_groups
+from .selection import export_selection
 from .titles import export_titles
 
 app = typer.Typer(no_args_is_help=True, pretty_exceptions_enable=False)
@@ -45,6 +46,26 @@ def groups(
     typer.echo(
         f"Wrote {len(report['groups'])} candidate groups to {output}; "
         f"unfinished titles: {len(report['unfinished_ids'])}. Duplicate review is pending."
+    )
+
+
+@app.command(name="select")
+def select_recipes(
+    source_run: Path = typer.Option(..., help="Supplied collection run containing manifest.json."),
+    titles: Path = typer.Option(..., help="Completed user-authored title mapping CSV."),
+    decisions: Path = typer.Option(..., help="Completed duplicate decision CSV; no pending rows."),
+    output: Path = typer.Option(..., help="New selection directory outside the source run."),
+) -> None:
+    """Export kept recipe copies after validating all titles and duplicate decisions."""
+    try:
+        report = export_selection(source_run, titles, decisions, output)
+    except (OSError, ValueError) as exc:
+        typer.echo(f"Selection export error: {exc}", err=True)
+        raise typer.Exit(1) from exc
+    typer.echo(
+        f"Wrote {report['kept_count']} kept recipes; "
+        f"excluded {report['excluded_count']} to {output}. "
+        "Service suitability is not assessed."
     )
 
 
