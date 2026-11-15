@@ -1,4 +1,5 @@
-# AI-assisted with Codex, 2026-11-12; human review pending.
+# AI-assisted with Codex, 2026-11-12; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
 """Regressions for interrupted checkpoints and inconsistent resumed state."""
 
 import os
@@ -7,9 +8,9 @@ from pathlib import Path
 import pytest
 import requests
 
-from crawlers.tenkrecipes.tests.stage3_support import FakeResponse, fixture_response
-from crawlers.tenkrecipes.tests.test_stage3_storage_resume import make_run
-from crawlers.tenkrecipes.tests.test_stage4_images import StreamResponse, make_image_run, png_bytes
+from crawlers.tenkrecipes.tests.support_http import FakeResponse, fixture_response
+from crawlers.tenkrecipes.tests.support_images import StreamResponse, make_image_run, png_bytes
+from crawlers.tenkrecipes.tests.support_runs import make_run
 from crawlers.tenkrecipes.workflow import CollectionRun
 
 
@@ -42,7 +43,7 @@ def test_failure_checkpoint_interruption_preserves_outcome_and_pending_work(
     }[failure]
     module, run, options, transport, _ = make_run(
         tmp_path,
-        fixture_response("stage2_list.html"),
+        fixture_response("list.html"),
         response,
     )
     run.fetch_list("52", 1)
@@ -71,8 +72,8 @@ def test_cached_reparse_preserves_another_requests_retry_deadline(tmp_path, pend
     """Rebuilding derived JSON must not allow an unrelated request to run early."""
     module, run, options, transport, _ = make_run(
         tmp_path,
-        fixture_response("stage2_list.html"),
-        fixture_response("stage2_detail.html"),
+        fixture_response("list.html"),
+        fixture_response("detail.html"),
         FakeResponse(429, headers={"Retry-After": "999"}),
     )
     run.fetch_list("52", 1)
@@ -100,7 +101,7 @@ def test_new_observation_reuses_validated_source_state(tmp_path, category, page)
     """Repeated observations must agree with the already validated shared asset."""
     _, run, options, images, html = make_image_run(tmp_path, StreamResponse(png_bytes()))
     run.fetch_thumbnail("900001")
-    response = fixture_response("stage2_list.html")
+    response = fixture_response("list.html")
     response.content = response.content.replace(
         b'name="cat4" value="52"', f'name="cat4" value="{category}"'.encode()
     )
@@ -125,9 +126,9 @@ def test_orphan_detail_restores_and_verifies_every_retry_response(
     """Recover intermediate retry bodies as well as the final successful response."""
     module, run, options, transport, _ = make_run(
         tmp_path,
-        fixture_response("stage2_list.html"),
+        fixture_response("list.html"),
         FakeResponse(503, body=b"synthetic temporary failure"),
-        fixture_response("stage2_detail.html"),
+        fixture_response("detail.html"),
     )
     run.fetch_list("52", 1)
     interrupt_checkpoint(monkeypatch, run, lambda: run.fetch_detail("900001"))

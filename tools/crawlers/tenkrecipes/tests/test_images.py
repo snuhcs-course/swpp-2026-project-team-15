@@ -1,92 +1,22 @@
-# AI-assisted with Codex, 2026-11-12; human review pending.
-"""Stage 4 acceptance cases directly exercising the approved thumbnail contract."""
+# AI-assisted with Codex, 2026-11-12; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
+"""Thumbnail byte preservation, resource limits and image provenance."""
 
 import hashlib
 import importlib
-import io
 import os
 from pathlib import Path
 
 import pytest
-import requests
-from PIL import Image
 
-from crawlers.tenkrecipes.config import build_plan
-from crawlers.tenkrecipes.tests.stage3_support import (
-    FakeTransport,
-    client_for,
-    fixture_response,
+from crawlers.tenkrecipes.tests.support_images import (
+    StreamResponse,
+    downloader_for,
+    make_image_run,
+    png_bytes,
 )
 
 IMAGE_URL = "https://recipe1.ezmember.co.kr/cache/recipe/synthetic-first_m.jpg"
-
-
-def png_bytes(size=(300, 300)):
-    """Create a disposable local image, without using downloaded artwork."""
-    stream = io.BytesIO()
-    Image.new("RGB", size, "green").save(stream, format="PNG")
-    return stream.getvalue()
-
-
-class StreamResponse:
-    """Reject eager reads, exposing only a finite chunk stream and response metadata."""
-
-    def __init__(self, body=b"", *, status=200, headers=None, interrupted=False):
-        self.body = body
-        self.status_code = status
-        self.headers = headers or {"Content-Type": "image/png"}
-        self.url = None
-        self.interrupted = interrupted
-        self.closed = False
-        self.chunks_read = 0
-
-    @property
-    def content(self):
-        raise AssertionError("Image transport must read bounded chunks, not eager content")
-
-    def iter_content(self, chunk_size):
-        for start in range(0, len(self.body), min(chunk_size, 64)):
-            self.chunks_read += 1
-            yield self.body[start : start + min(chunk_size, 64)]
-            if self.interrupted:
-                raise requests.ConnectionError("synthetic stream interruption")
-
-    def close(self):
-        self.closed = True
-
-
-def downloader_for(*responses, **policy):
-    """Inject the existing pacing client and stream-only transport into image I/O."""
-    module = importlib.import_module("crawlers.tenkrecipes.images")
-    _, client, _, clock = client_for()
-    transport = FakeTransport(clock, *responses)
-    downloader = module.ImageDownloader(client, transport=transport, **policy)
-    return module, downloader, client, transport, clock
-
-
-def make_image_run(tmp_path, *responses):
-    """Use real workflow/storage with separate synthetic HTML and image transports."""
-    module, downloader, client, transport, clock = downloader_for(*responses)
-    workflow = importlib.import_module("crawlers.tenkrecipes.workflow")
-    html = FakeTransport(
-        clock,
-        fixture_response("stage2_list.html"),
-        fixture_response("stage2_detail.html"),
-        fixture_response("stage2_detail.html"),
-    )
-    client.transport = html
-    options = dict(
-        plan=build_plan(tmp_path / "run"),
-        client=client,
-        image_downloader=downloader,
-        parser_version="test-parser-v1",
-        schema_version="test-schema-v2",
-        utcnow=clock.utcnow,
-    )
-    run = workflow.CollectionRun.create(**options)
-    run.fetch_list("52", 1)
-    run.fetch_detail("900001")
-    return module, run, options, transport, html
 
 
 def test_image_decode_preserves_original_bytes_and_300_pixel_dimensions():
@@ -185,21 +115,6 @@ def test_selected_thumbnail_is_saved_once_and_identical_bytes_do_not_merge_ids(t
     assert all(
         "icon_vod" not in call["url"] and "step1" not in call["url"] for call in images.calls
     )
-
-
-def test_interrupted_image_is_not_finalized_and_resume_fetches_only_unfinished_image(tmp_path):
-    body = png_bytes()
-    _, run, options, images, html = make_image_run(
-        tmp_path, *(StreamResponse(body, interrupted=True) for _ in range(3))
-    )
-    assert run.fetch_thumbnail("900001")["status"] == "failed"
-    assert not any(Path(options["plan"]["output_dir"]).glob("images/*.*"))
-    images.outcomes.append(StreamResponse(body))
-    workflow = importlib.import_module("crawlers.tenkrecipes.workflow")
-    resumed = workflow.CollectionRun.resume(**options)
-    assert resumed.fetch_thumbnail("900001")["status"] == "image_validated"
-    assert len(images.calls) == 4
-    assert len(html.calls) == 2
 
 
 def test_image_published_before_checkpoint_is_reused_after_resume(tmp_path, monkeypatch):

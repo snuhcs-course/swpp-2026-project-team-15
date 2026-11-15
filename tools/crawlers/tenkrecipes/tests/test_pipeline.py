@@ -1,4 +1,5 @@
-# AI-assisted with Codex, 2026-11-14; human review pending.
+# AI-assisted with Codex, 2026-11-14; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
 """Exercise the approved full pipeline using only synthetic transport responses."""
 
 import csv
@@ -11,12 +12,11 @@ from typer.testing import CliRunner
 from crawlers.tenkrecipes.cli import app
 from crawlers.tenkrecipes.config import CATEGORIES
 from crawlers.tenkrecipes.storage import digest
-from crawlers.tenkrecipes.tests.stage5_support import detail_html, scripted_run
+from crawlers.tenkrecipes.tests.support_runs import detail_html, scripted_run
 from crawlers.tenkrecipes.workflow import CollectionRun
 
 
-@pytest.mark.parametrize("shortfall", [False, True], ids=["complete-500", "shortfall-499"])
-def test_full_pipeline_preserves_work_across_interruption_and_reports_quotas(tmp_path, shortfall):
+def test_full_pipeline_preserves_work_across_interruption_and_reports_quotas(tmp_path):
     """Collect real parser/storage outputs, resume an interrupted asset, then audit offline.
 
     Unlike the saved_collection report fixture, this input contains no prepared
@@ -28,8 +28,6 @@ def test_full_pipeline_preserves_work_across_interruption_and_reports_quotas(tmp
     for _, code, quota in CATEGORIES:
         ids = [str(940000 + i) for i in range(offset, offset + quota)]
         offset += quota
-        if shortfall and code == CATEGORIES[-1][1]:
-            ids.pop()
         expected[code] = ids
         candidates = ["939999", *ids] if code == "63" else ["940000", *ids]
         for start in range(0, len(candidates), 40):
@@ -78,9 +76,9 @@ def test_full_pipeline_preserves_work_across_interruption_and_reports_quotas(tmp
 
     resumed = CollectionRun.resume(**options)
     result = resumed.collect_quotas()
-    expected_total = 499 if shortfall else 500
-    assert result["acquisition_complete"] is (not shortfall)
-    assert result["status"] == ("incomplete" if shortfall else "complete")
+    expected_total = 500
+    assert result["acquisition_complete"] is True
+    assert result["status"] == "complete"
     assert result["unique_success_count"] == expected_total
     manifest = resumed.snapshot()
     assert len(manifest["allocations"]) == expected_total
@@ -103,15 +101,15 @@ def test_full_pipeline_preserves_work_across_interruption_and_reports_quotas(tmp
 
     for command in ("validate", "report"):
         invocation = runner.invoke(app, [command, "--output-dir", str(run.storage.root)])
-        assert invocation.exit_code == (1 if shortfall else 0), invocation.output
+        assert invocation.exit_code == 0, invocation.output
         report = json.loads(invocation.stdout)
         assert report["unique_success_count"] == expected_total
-        assert report["acquisition_complete"] is (not shortfall)
+        assert report["acquisition_complete"] is True
         assert report["semantic_duplicate_review"] == dict(
             status="pending", required_before_production=True
         )
         assert report["semantic_uniqueness_guaranteed"] is False
-        assert report["categories"][-1]["deficit"] == int(shortfall)
+        assert report["categories"][-1]["deficit"] == 0
         assert all(row["deficit"] == 0 for row in report["categories"][:-1])
     assert json.loads(run.storage.path("report.json").read_text(encoding="utf-8")) == report
     with run.storage.path("review.csv").open(encoding="utf-8-sig", newline="") as stream:
@@ -125,3 +123,30 @@ def test_full_pipeline_preserves_work_across_interruption_and_reports_quotas(tmp
     assert again.collect_quotas() == result
     assert calls == calls_before
     assert again.snapshot()["allocations"] == manifest["allocations"]
+
+
+def test_exhausted_category_reports_shortfall_and_resume_makes_no_requests(tmp_path):
+    """Exercise real source exhaustion cheaply; reporting tests cover exactly 499 IDs."""
+    run, options, calls = scripted_run(tmp_path, {("63", 1): ["950001", "950002", "950003"]})
+    result = run.collect_quotas(category_code="63")
+    assert result["acquisition_complete"] is False
+    assert result["unique_success_count"] == 3
+    assert result["categories"][0]["deficit"] == 97
+    assert run.snapshot()["category_outcomes"] == [
+        dict(category_code="63", reason="exhausted", page=2, selected=3, deficit=97)
+    ]
+    assert not any("cat4=56" in url or "page=3" in url for url in calls)
+    runner = CliRunner()
+    for command in ("validate", "report"):
+        invocation = runner.invoke(app, [command, "--output-dir", str(run.storage.root)])
+        assert invocation.exit_code == 1, invocation.output
+        report = json.loads(invocation.stdout)
+        assert report["unique_success_count"] == 3
+        assert report["categories"][0]["deficit"] == 97
+        assert report["category_outcomes"][0]["reason"] == "exhausted"
+    before_calls = list(calls)
+    before = {path: path.read_bytes() for path in run.storage.root.rglob("*") if path.is_file()}
+    again = CollectionRun.resume(**options)
+    assert again.collect_quotas(category_code="63") == result
+    assert calls == before_calls
+    assert all(path.read_bytes() == body for path, body in before.items())

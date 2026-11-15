@@ -1,5 +1,6 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
-"""Execute the future offline parse command against disposable raw source files."""
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
+"""Execute the offline parse command against disposable raw source files."""
 
 import hashlib
 import json
@@ -7,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-FIXTURE = Path(__file__).parent / "fixtures/stage2_detail.html"
+FIXTURE = Path(__file__).parent / "fixtures/detail.html"
 SOURCE_URL = "https://www.10000recipe.com/recipe/900001"
 
 

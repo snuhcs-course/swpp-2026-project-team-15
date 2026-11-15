@@ -1,13 +1,12 @@
-# AI-assisted with Codex, 2026-11-15; human review pending.
+# AI-assisted with Codex, 2026-11-15; reviewed by Soohyun An
 """Skip terminal candidate errors and keep one small log without replacement links."""
 
 import pytest
 import requests
 
-from crawlers.tenkrecipes.tests.stage3_support import FakeResponse, fixture_response
-from crawlers.tenkrecipes.tests.stage5_support import scripted_run
-from crawlers.tenkrecipes.tests.test_error_policy import policy_run
-from crawlers.tenkrecipes.tests.test_stage4_images import StreamResponse, png_bytes
+from crawlers.tenkrecipes.tests.support_http import FakeResponse, fixture_response
+from crawlers.tenkrecipes.tests.support_images import StreamResponse, png_bytes
+from crawlers.tenkrecipes.tests.support_runs import policy_run, scripted_run
 from crawlers.tenkrecipes.workflow import CollectionRun
 
 
@@ -19,13 +18,13 @@ def test_candidate_error_is_logged_and_next_candidate_is_used(tmp_path, asset, e
         if error == "404"
         else requests.RequestException("synthetic transport failure")
     )
-    details = [failure] if asset == "detail" else [fixture_response("stage2_detail.html")]
+    details = [failure] if asset == "detail" else [fixture_response("detail.html")]
     images = [] if asset == "detail" else [failure]
     run, options, html, thumbnails = policy_run(
         tmp_path,
         ["900001", "900002"],
         *details,
-        fixture_response("stage2_detail.html"),
+        fixture_response("detail.html"),
         images=[*images, StreamResponse(png_bytes())],
     )
     run.resume_pending(include_images=True)

@@ -1,4 +1,5 @@
-# AI-assisted with Codex, 2026-11-14; human review pending.
+# AI-assisted with Codex, 2026-11-14; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
 """Approved candidate-failure and operator-stop policies, exercised without live I/O."""
 
 import json
@@ -11,16 +12,15 @@ from bs4 import BeautifulSoup
 from typer.testing import CliRunner
 
 from crawlers.tenkrecipes.cli import app
-from crawlers.tenkrecipes.tests.stage3_support import FakeResponse, FakeTransport, fixture_response
-from crawlers.tenkrecipes.tests.stage5_support import detail_html, list_html
-from crawlers.tenkrecipes.tests.test_stage3_storage_resume import make_run
-from crawlers.tenkrecipes.tests.test_stage4_images import StreamResponse, png_bytes
+from crawlers.tenkrecipes.tests.support_http import FakeResponse, fixture_response
+from crawlers.tenkrecipes.tests.support_images import StreamResponse, png_bytes
+from crawlers.tenkrecipes.tests.support_runs import detail_html, list_html, make_run, policy_run
 from crawlers.tenkrecipes.workflow import CollectionRun
 
 
 @pytest.mark.parametrize("title", ["", "  \n\t "])
 def test_blank_title_is_a_preserved_candidate_failure(tmp_path, title):
-    response = fixture_response("stage2_detail.html")
+    response = fixture_response("detail.html")
     soup = BeautifulSoup(response.content, "html.parser")
     soup.select_one(".view2_summary h3").string = title
     response.content = str(soup).encode()
@@ -35,7 +35,7 @@ def test_blank_title_is_a_preserved_candidate_failure(tmp_path, title):
 
 @pytest.mark.parametrize("selector", [".view2_summary h3", "#divConfirmedMaterialArea"])
 def test_missing_detail_structure_is_a_preserved_candidate_failure(tmp_path, selector):
-    response = fixture_response("stage2_detail.html")
+    response = fixture_response("detail.html")
     soup = BeautifulSoup(response.content, "html.parser")
     soup.select_one(selector).decompose()
     response.content = str(soup).encode()
@@ -43,18 +43,6 @@ def test_missing_detail_structure_is_a_preserved_candidate_failure(tmp_path, sel
     result = run.fetch_detail("900001")
     assert (result["status"], result["reason"]) == ("failed", "structure_mismatch")
     assert run.storage.verify(run.snapshot()["details"]["900001"]["raw"]) == response.content
-
-
-def policy_run(tmp_path, ids, *details, images=()):
-    """Use the real workflow with scripted HTML and independently queued images."""
-    _, run, options, html, clock = make_run(
-        tmp_path, FakeResponse(body=list_html("52", ids)), *details
-    )
-    image_transport = FakeTransport(clock, *images)
-    run.image_downloader.transport = image_transport
-    options["image_downloader"] = run.image_downloader
-    run.fetch_list("52", 1)
-    return run, options, html, image_transport
 
 
 @pytest.mark.parametrize("violation", ["host", "redirect"])
@@ -69,7 +57,7 @@ def test_image_policy_violation_requires_operator_review_before_resume(tmp_path,
     run, options, html, images = policy_run(
         tmp_path,
         ["900001", "900002"],
-        fixture_response("stage2_detail.html"),
+        fixture_response("detail.html"),
         images=[response for _ in range(4)],
     )
     run.resume_pending(include_images=True)
@@ -93,7 +81,7 @@ def test_cli_reports_operator_required_stop_without_silent_resume(tmp_path, monk
     run, _, html, _ = policy_run(
         tmp_path,
         ["900001"],
-        fixture_response("stage2_detail.html"),
+        fixture_response("detail.html"),
         images=[
             StreamResponse(status=302, headers={"Location": "https://outside.invalid/image.png"})
         ],
@@ -121,7 +109,7 @@ def test_exhausted_recipe_moves_to_next_candidate_and_success_resets_streak(tmp_
         tmp_path,
         ["900001", "900002"],
         *exhausted(kind),
-        fixture_response("stage2_detail.html"),
+        fixture_response("detail.html"),
         images=[StreamResponse(png_bytes())],
     )
     run.resume_pending(include_images=True)
@@ -156,7 +144,7 @@ def test_three_distinct_exhausted_recipes_stop_before_the_fourth_and_notify(tmp_
     result = CliRunner().invoke(app, ["resume", "--output-dir", str(run.storage.root), "--live"])
     assert result.exit_code == 1
     assert json.loads(result.stdout)["network_failure_streak"] == snapshot["network_failure_streak"]
-    html.outcomes.append(fixture_response("stage2_detail.html"))
+    html.outcomes.append(fixture_response("detail.html"))
     resumed.image_downloader.transport.outcomes.append(StreamResponse(png_bytes()))
     result = CliRunner().invoke(
         app, ["resume", "--output-dir", str(run.storage.root), "--live", "--acknowledge-stop"]
@@ -173,10 +161,10 @@ def test_success_breaks_a_sequence_of_network_failures(tmp_path):
         [str(900001 + i) for i in range(6)],
         *exhausted(),
         *exhausted(),
-        fixture_response("stage2_detail.html"),
+        fixture_response("detail.html"),
         *exhausted(),
         *exhausted(),
-        fixture_response("stage2_detail.html"),
+        fixture_response("detail.html"),
         images=[StreamResponse(png_bytes()), StreamResponse(png_bytes())],
     )
     run.resume_pending(include_images=True)
@@ -203,15 +191,14 @@ def test_failure_streak_survives_restart_without_recounting_saved_failures(tmp_p
     assert len(html.calls) == 11
 
 
-@pytest.mark.parametrize(
-    "missing", ["title", "ingredients", "ingredient_names", "steps", "instructions"]
-)
-def test_content_failure_is_preserved_and_replaced_without_network_failure_count(tmp_path, missing):
+def test_content_error_is_skipped_without_counting_network_failure(tmp_path):
+    """The full content matrix belongs to allocation; this checks streak policy."""
+    missing = "title"
     run, _, _, images = policy_run(
         tmp_path,
         ["900001", "900002"],
         FakeResponse(body=detail_html(missing)),
-        fixture_response("stage2_detail.html"),
+        fixture_response("detail.html"),
         images=[StreamResponse(png_bytes())],
     )
     run.resume_pending(include_images=True)
@@ -254,8 +241,8 @@ def test_image_connection_retry_exhaustion_counts_one_recipe_and_continues(tmp_p
     run, _, _, images = policy_run(
         tmp_path,
         ["900001", "900002"],
-        fixture_response("stage2_detail.html"),
-        fixture_response("stage2_detail.html"),
+        fixture_response("detail.html"),
+        fixture_response("detail.html"),
         images=[
             *(StreamResponse(png_bytes(), interrupted=True) for _ in range(3)),
             StreamResponse(png_bytes()),
@@ -273,7 +260,7 @@ def test_network_failure_count_survives_interrupted_outcome_checkpoint(tmp_path,
         tmp_path,
         ["900001", "900002"],
         *exhausted(),
-        fixture_response("stage2_detail.html"),
+        fixture_response("detail.html"),
         images=[StreamResponse(png_bytes())],
     )
     replace = os.replace
@@ -301,7 +288,7 @@ def test_acquired_candidate_repairs_missing_files_without_replaying_old_success(
     run, options, _, images = policy_run(
         tmp_path,
         ["900001", "900002"],
-        fixture_response("stage2_detail.html"),
+        fixture_response("detail.html"),
         *exhausted(),
         images=[StreamResponse(png_bytes())],
     )

@@ -1,13 +1,13 @@
-# AI-assisted with Codex, 2026-11-12; human review pending.
-"""Stage 5 source-order allocation and explicit shortfall acceptance contracts."""
+# AI-assisted with Codex, 2026-11-12; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
+"""Source-order allocation, category quotas and candidate traversal."""
 
 import importlib
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
-from crawlers.tenkrecipes.tests.stage3_support import FakeResponse
-from crawlers.tenkrecipes.tests.stage5_support import detail_html, scripted_run
+from crawlers.tenkrecipes.tests.support_runs import detail_html, scripted_run
 from crawlers.tenkrecipes.workflow import CollectionRun
 
 

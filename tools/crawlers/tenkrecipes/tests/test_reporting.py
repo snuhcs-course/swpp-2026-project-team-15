@@ -1,5 +1,6 @@
-# AI-assisted with Codex, 2026-11-12; human review pending.
-"""Offline completion and review reports must verify artifacts, not trust counts."""
+# AI-assisted with Codex, 2026-11-12; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
+"""Offline completeness, immutable evidence and review exports."""
 
 import csv
 import importlib
@@ -8,17 +9,24 @@ import json
 import pytest
 
 from crawlers.tenkrecipes.storage import digest
-from crawlers.tenkrecipes.tests.stage5_support import saved_collection
+from crawlers.tenkrecipes.tests.support_runs import saved_collection
 
 
 def reporting():
-    """Import future production behavior at execution, keeping all cases discoverable."""
+    """Import report behavior at execution, keeping all cases discoverable."""
     return importlib.import_module("crawlers.tenkrecipes.reporting")
 
 
 def test_exact_500_and_nine_quotas_are_complete_but_review_is_pending(tmp_path):
-    storage, _ = saved_collection(tmp_path)
-    report = reporting().validate_run(storage.root)
+    storage, manifest = saved_collection(tmp_path)
+    ids = [row["source_id"] for row in manifest["allocations"][:2]]
+    paths = [manifest["details"][i]["raw"]["path"] for i in ids]
+    paths += [manifest["details"][i]["record"]["path"] for i in ids]
+    paths += [manifest["images"][i]["path"] for i in ids]
+    before = {path: storage.path(path).read_bytes() for path in paths}
+    assert before[paths[0]] == before[paths[1]]
+    assert before[paths[4]] == before[paths[5]]
+    report = reporting().write_report(storage.root)
     assert report["status"] == "complete" and report["acquisition_complete"] is True
     assert report["target"] == report["unique_success_count"] == 500
     assert [
@@ -40,6 +48,11 @@ def test_exact_500_and_nine_quotas_are_complete_but_review_is_pending(tmp_path):
     )
     assert report["count_basis"] == "source_id"
     assert report.get("production_ready") is not True
+    assert {path: storage.path(path).read_bytes() for path in paths} == before
+    for source_id in ids:
+        record = storage.read_json(manifest["details"][source_id]["record"]["path"])
+        assert record["source"]["id"] == source_id
+        assert record["source"]["url"].endswith("/" + source_id)
 
 
 @pytest.mark.parametrize(
@@ -140,28 +153,6 @@ def test_findings_remain_reviewable_without_rewriting_or_disqualifying_records(t
     assert mismatch["record_path"] == entry["path"]
     assert mismatch["image_path"] == manifest["images"][source_id]["path"]
     assert storage.read_json("report.json") == report
-
-
-def test_identical_content_different_ids_is_retained_for_mandatory_later_review(tmp_path):
-    storage, manifest = saved_collection(tmp_path)
-    ids = [row["source_id"] for row in manifest["allocations"][:2]]
-    paths = [manifest["details"][i]["raw"]["path"] for i in ids]
-    paths += [manifest["details"][i]["record"]["path"] for i in ids]
-    paths += [manifest["images"][i]["path"] for i in ids]
-    before = {path: storage.path(path).read_bytes() for path in paths}
-    assert before[paths[0]] == before[paths[1]]
-    assert before[paths[4]] == before[paths[5]]
-    report = reporting().write_report(storage.root)
-    assert report["unique_success_count"] == 500
-    assert report["semantic_duplicate_review"]["status"] == "pending"
-    assert report["semantic_duplicate_review"]["required_before_production"] is True
-    assert report["count_basis"] == "source_id"
-    assert report["semantic_uniqueness_guaranteed"] is False
-    assert {path: storage.path(path).read_bytes() for path in paths} == before
-    for source_id in ids:
-        record = storage.read_json(manifest["details"][source_id]["record"]["path"])
-        assert record["source"]["id"] == source_id
-        assert record["source"]["url"].endswith("/" + source_id)
 
 
 def test_validate_is_read_only_and_report_is_repeatable(tmp_path):

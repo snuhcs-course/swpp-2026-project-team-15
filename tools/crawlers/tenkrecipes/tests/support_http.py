@@ -1,4 +1,5 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
 """Deterministic transport/clock inputs, not replacement collection algorithms."""
 
 import importlib
@@ -70,7 +71,7 @@ def fixture_response(name, *, url=None):
 
 
 def client_for(*outcomes, **overrides):
-    """Construct the proposed client with fully injected I/O and time sources."""
+    """Construct the HTTP client with fully injected I/O and time sources."""
     module = importlib.import_module("crawlers.tenkrecipes.fetching")
     clock = FakeClock()
     transport = FakeTransport(clock, *outcomes)

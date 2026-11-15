@@ -1,11 +1,12 @@
-# AI-assisted with Codex, 2026-11-15; human review pending.
+# AI-assisted with Codex, 2026-11-15; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
 """Exhausted rate limits remain resumable after their server deadline."""
 
 import pytest
 
-from crawlers.tenkrecipes.tests.stage3_support import FakeResponse, fixture_response
-from crawlers.tenkrecipes.tests.test_error_policy import policy_run
-from crawlers.tenkrecipes.tests.test_stage4_images import StreamResponse, png_bytes
+from crawlers.tenkrecipes.tests.support_http import FakeResponse, fixture_response
+from crawlers.tenkrecipes.tests.support_images import StreamResponse, png_bytes
+from crawlers.tenkrecipes.tests.support_runs import policy_run
 from crawlers.tenkrecipes.workflow import CollectionRun
 
 
@@ -13,7 +14,7 @@ from crawlers.tenkrecipes.workflow import CollectionRun
 def test_exhausted_429_resumes_only_after_deadline(tmp_path, asset):
     limits = [FakeResponse(429, headers={"Retry-After": "2"}) for _ in range(3)]
     images = [StreamResponse(png_bytes())]
-    details = limits if asset == "detail" else [fixture_response("stage2_detail.html")]
+    details = limits if asset == "detail" else [fixture_response("detail.html")]
     if asset == "image":
         images = [StreamResponse(status=429, headers={"Retry-After": "2"}) for _ in range(3)]
     run, options, html, thumbnails = policy_run(tmp_path, ["900001"], *details, images=images)
@@ -26,7 +27,7 @@ def test_exhausted_429_resumes_only_after_deadline(tmp_path, asset):
     assert resumed.resume_pending(include_images=True)[0]["status"] == "deferred"
     assert counts == (len(html.calls), len(thumbnails.calls))
 
-    html.outcomes.append(fixture_response("stage2_detail.html"))
+    html.outcomes.append(fixture_response("detail.html"))
     if asset == "image":
         thumbnails.outcomes.append(StreamResponse(png_bytes()))
     options["client"].sleep(3)

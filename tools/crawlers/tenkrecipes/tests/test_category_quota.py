@@ -1,4 +1,5 @@
-# AI-assisted with Codex, 2026-11-14; human review pending.
+# AI-assisted with Codex, 2026-11-14; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
 """Approved category-at-a-time contracts, written before implementation."""
 
 import json
@@ -8,8 +9,8 @@ from typer.testing import CliRunner
 
 from crawlers.tenkrecipes import fetching, workflow
 from crawlers.tenkrecipes.cli import app
-from crawlers.tenkrecipes.tests.stage3_support import FakeResponse
-from crawlers.tenkrecipes.tests.stage5_support import scripted_run
+from crawlers.tenkrecipes.tests.support_http import FakeResponse
+from crawlers.tenkrecipes.tests.support_runs import scripted_run
 from crawlers.tenkrecipes.workflow import CollectionRun
 
 

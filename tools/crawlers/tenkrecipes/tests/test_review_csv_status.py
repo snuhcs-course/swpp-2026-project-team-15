@@ -1,4 +1,5 @@
-# AI-assisted with Codex, 2026-11-15; human review pending.
+# AI-assisted with Codex, 2026-11-15; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
 """Review exports retain the acquisition status recorded in JSON."""
 
 import csv
@@ -6,12 +7,12 @@ import csv
 import pytest
 
 from crawlers.tenkrecipes.reporting import write_report
-from crawlers.tenkrecipes.tests.stage3_support import FakeResponse
-from crawlers.tenkrecipes.tests.stage5_support import scripted_run
+from crawlers.tenkrecipes.tests.support_http import FakeResponse
+from crawlers.tenkrecipes.tests.support_runs import scripted_run
 
 
 @pytest.mark.parametrize("status", ["blocked", "deferred", "failed"])
-def test_review_csv_preserves_failure_status(tmp_path, status):
+def test_review_csv_preserves_legacy_failure_status(tmp_path, status):
     run, _, _ = scripted_run(tmp_path, {("63", 1): FakeResponse(403)})
     run.collect_quotas(category_code="63")
     manifest = run.snapshot()

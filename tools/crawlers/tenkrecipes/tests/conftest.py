@@ -1,5 +1,6 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
-"""Run the future public CLI in an isolated, offline subprocess."""
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
+"""Run the public CLI in an isolated, offline subprocess."""
 
 import json
 import os
@@ -64,7 +65,7 @@ def no_network(monkeypatch):
     """Block parent-process networking as well as the subprocess audit guard."""
 
     def reject(*args, **kwargs):
-        raise AssertionError("Stage 1 tests must not access the network")
+        raise AssertionError("Recipe collection tests must not access the network")
 
     monkeypatch.setattr(socket, "getaddrinfo", reject)
     monkeypatch.setattr(socket.socket, "connect", reject)

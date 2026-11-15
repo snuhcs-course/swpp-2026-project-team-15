@@ -1,5 +1,6 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
-"""Task 3.1/3.2: bounded GETs, live gates, pacing, and reviewable failures."""
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
+"""Bounded HTTP requests, pacing, opt-in and response diagnostics."""
 
 import hashlib
 import json
@@ -9,7 +10,7 @@ from email.utils import format_datetime
 import pytest
 import requests
 
-from crawlers.tenkrecipes.tests.stage3_support import (
+from crawlers.tenkrecipes.tests.support_http import (
     DETAIL_URL,
     FakeResponse,
     client_for,

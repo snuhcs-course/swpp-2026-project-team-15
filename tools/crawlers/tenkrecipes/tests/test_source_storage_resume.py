@@ -1,41 +1,24 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
-# Regression coverage assisted by Codex, 2026-11-12; human review pending.
-"""Tasks 3.2–3.4: durable source snapshots, recorded candidates, and safe resume."""
+# Regression coverage assisted by Codex, 2026-11-12; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
+"""Immutable source snapshots, publication failures and local recovery."""
 
 import copy
 import hashlib
-import importlib
 import json
 import os
 from pathlib import Path
 
 import pytest
 
-from crawlers.tenkrecipes.config import build_plan
-from crawlers.tenkrecipes.tests.stage3_support import (
+from crawlers.tenkrecipes.tests.support_http import (
     DETAIL_URL,
     FIXTURES,
     LIST_URL,
     FakeResponse,
-    client_for,
     fixture_response,
 )
-
-
-def make_run(tmp_path, *outcomes):
-    """Create a real proposed run backed only by fake network/time inputs."""
-    module = importlib.import_module("crawlers.tenkrecipes.workflow")
-    _, client, transport, clock = client_for(*outcomes)
-    plan = build_plan(tmp_path / "run")
-    options = dict(
-        plan=plan,
-        client=client,
-        parser_version="test-parser-v1",
-        schema_version="test-schema-v1",
-        utcnow=clock.utcnow,
-    )
-    run = module.CollectionRun.create(**options)
-    return module, run, options, transport, clock
+from crawlers.tenkrecipes.tests.support_runs import make_run
 
 
 def test_run_records_plan_versions_and_network_policy(tmp_path):
@@ -55,7 +38,7 @@ def test_run_records_plan_versions_and_network_policy(tmp_path):
 
 
 def test_saved_lists_keep_bytes_hash_urls_times_and_ordered_candidate_observations(tmp_path):
-    response = fixture_response("stage2_list.html", url=LIST_URL + "&observed=1")
+    response = fixture_response("list.html", url=LIST_URL + "&observed=1")
     _, run, options, _, clock = make_run(tmp_path, response)
     run.fetch_list("52", 1)
     snapshot = run.snapshot()
@@ -75,7 +58,7 @@ def test_saved_lists_keep_bytes_hash_urls_times_and_ordered_candidate_observatio
 
 
 def test_detail_bytes_and_parsed_record_are_saved_without_fetching_images(tmp_path):
-    response = fixture_response("stage2_detail.html")
+    response = fixture_response("detail.html")
     _, run, options, transport, _ = make_run(tmp_path, response)
     result = run.fetch_detail("900001")
     root = Path(options["plan"]["output_dir"])
@@ -89,7 +72,7 @@ def test_detail_bytes_and_parsed_record_are_saved_without_fetching_images(tmp_pa
 
 
 def test_repeated_list_access_reuses_original_snapshot_without_fetching(tmp_path):
-    _, run, options, transport, _ = make_run(tmp_path, fixture_response("stage2_list.html"))
+    _, run, options, transport, _ = make_run(tmp_path, fixture_response("list.html"))
     run.fetch_list("52", 1)
     root = Path(options["plan"]["output_dir"])
     before = {path: path.read_bytes() for path in root.rglob("*.html")}
@@ -102,7 +85,7 @@ def test_repeated_list_access_reuses_original_snapshot_without_fetching(tmp_path
 @pytest.mark.parametrize("target", ["manifest.json", "details/900001.html", "recipes/900001.json"])
 def test_failed_publication_retains_last_valid_checkpoint(tmp_path, monkeypatch, target):
     _, run, options, _, _ = make_run(
-        tmp_path, fixture_response("stage2_list.html"), fixture_response("stage2_detail.html")
+        tmp_path, fixture_response("list.html"), fixture_response("detail.html")
     )
     run.fetch_list("52", 1)
     manifest = Path(options["plan"]["output_dir"]) / "manifest.json"
@@ -126,15 +109,13 @@ def test_failed_publication_retains_last_valid_checkpoint(tmp_path, monkeypatch,
 
 def test_resume_uses_pending_candidates_and_complete_details_before_new_pages(tmp_path):
     module, run, options, transport, clock = make_run(
-        tmp_path, fixture_response("stage2_list.html"), fixture_response("stage2_detail.html")
+        tmp_path, fixture_response("list.html"), fixture_response("detail.html")
     )
     run.fetch_list("52", 1)
     run.fetch_detail("900001")
     first_page_time = run.snapshot()["lists"][0]["fetched_at"]
     clock.sleep(10)
-    transport.outcomes.extend(
-        [fixture_response("stage2_detail.html"), fixture_response("stage2_list.html")]
-    )
+    transport.outcomes.extend([fixture_response("detail.html"), fixture_response("list.html")])
     resumed = module.CollectionRun.resume(**options)
     assert len(transport.calls) == 2
     resumed.resume_pending()
@@ -153,14 +134,14 @@ def test_resume_uses_pending_candidates_and_complete_details_before_new_pages(tm
 
 def test_resume_recovers_missing_parsed_output_from_saved_raw_without_refetch(tmp_path):
     module, run, options, transport, _ = make_run(
-        tmp_path, fixture_response("stage2_list.html"), fixture_response("stage2_detail.html")
+        tmp_path, fixture_response("list.html"), fixture_response("detail.html")
     )
     run.fetch_list("52", 1)
     run.fetch_detail("900001")
     root = Path(options["plan"]["output_dir"])
     raw_before = (root / "details/900001.html").read_bytes()
     (root / "recipes/900001.json").unlink()
-    transport.outcomes.append(fixture_response("stage2_detail.html"))
+    transport.outcomes.append(fixture_response("detail.html"))
     resumed = module.CollectionRun.resume(**options)
     resumed.resume_pending()
     restored = json.loads((root / "recipes/900001.json").read_text("utf-8"))
@@ -192,7 +173,7 @@ def test_resume_refuses_configuration_or_version_drift_without_io(tmp_path, chan
 
 
 def test_resume_detects_corrupt_saved_source_without_silent_overwrite(tmp_path):
-    module, run, options, transport, _ = make_run(tmp_path, fixture_response("stage2_list.html"))
+    module, run, options, transport, _ = make_run(tmp_path, fixture_response("list.html"))
     run.fetch_list("52", 1)
     entry = run.snapshot()["lists"][0]
     path = Path(options["plan"]["output_dir"]) / entry["path"]
@@ -209,7 +190,7 @@ def test_source_failure_preserves_previous_work_and_distinguishes_causes(tmp_pat
         "denied": FakeResponse(403),
         "challenge": FakeResponse(body=b'<form id="challenge-form"></form>'),
         "filter": FakeResponse(
-            body=(FIXTURES / "stage2_list.html")
+            body=(FIXTURES / "list.html")
             .read_bytes()
             .replace(b'name="cat2" value="18"', b'name="cat2" value="19"')
         ),
@@ -217,7 +198,7 @@ def test_source_failure_preserves_previous_work_and_distinguishes_causes(tmp_pat
         "wait": FakeResponse(429, headers={"Retry-After": "999"}),
     }
     _, run, options, transport, _ = make_run(
-        tmp_path, fixture_response("stage2_list.html"), responses[failure]
+        tmp_path, fixture_response("list.html"), responses[failure]
     )
     run.fetch_list("52", 1)
     old = run.snapshot()["lists"][0]
@@ -243,7 +224,7 @@ def test_source_failure_preserves_previous_work_and_distinguishes_causes(tmp_pat
 
 def test_resume_recovers_list_published_before_interrupted_manifest(tmp_path, monkeypatch):
     """Regression: a published list must not disappear from pending work on resume."""
-    module, run, options, transport, _ = make_run(tmp_path, fixture_response("stage2_list.html"))
+    module, run, options, transport, _ = make_run(tmp_path, fixture_response("list.html"))
     manifest = Path(options["plan"]["output_dir"]) / "manifest.json"
     replace = os.replace
 
@@ -256,9 +237,7 @@ def test_resume_recovers_list_published_before_interrupted_manifest(tmp_path, mo
         patch.setattr(os, "replace", interrupt)
         with pytest.raises(OSError):
             run.fetch_list("52", 1)
-    transport.outcomes.extend(
-        [fixture_response("stage2_detail.html"), fixture_response("stage2_detail.html")]
-    )
+    transport.outcomes.extend([fixture_response("detail.html"), fixture_response("detail.html")])
     resumed = module.CollectionRun.resume(**options)
     resumed.resume_pending()
     assert [call["url"] for call in transport.calls] == [
@@ -275,25 +254,10 @@ def test_resume_retains_retry_after_deadline_without_early_transport_access(tmp_
         tmp_path, FakeResponse(429, headers={"Retry-After": "999"})
     )
     assert run.fetch_list("52", 1)["status"] == "deferred"
-    transport.outcomes.append(fixture_response("stage2_list.html"))
+    transport.outcomes.append(fixture_response("list.html"))
     resumed = module.CollectionRun.resume(**options)
     assert resumed.fetch_list("52", 1)["status"] == "deferred"
     assert len(transport.calls) == 1
-
-
-def test_pending_detail_failure_is_not_hidden_by_a_later_candidate_success(tmp_path):
-    """Regression: stage 3 must report failure instead of silently continuing to success."""
-    _, run, _, transport, _ = make_run(
-        tmp_path,
-        fixture_response("stage2_list.html"),
-        FakeResponse(404),
-        fixture_response("stage2_detail.html"),
-    )
-    run.fetch_list("52", 1)
-    run.resume_pending()
-    assert run.snapshot()["state"] == "failed"
-    assert run.snapshot()["reason"] == "http_error"
-    assert [call["url"] for call in transport.calls] == [LIST_URL, DETAIL_URL]
 
 
 def test_retry_after_on_last_attempt_is_retained_across_resume(tmp_path):
@@ -305,7 +269,7 @@ def test_retry_after_on_last_attempt_is_retained_across_resume(tmp_path):
         FakeResponse(429, headers={"Retry-After": "999"}),
     )
     assert run.fetch_list("52", 1)["status"] == "failed"
-    transport.outcomes.append(fixture_response("stage2_list.html"))
+    transport.outcomes.append(fixture_response("list.html"))
     resumed = module.CollectionRun.resume(**options)
     assert resumed.fetch_list("52", 1)["status"] == "deferred"
     assert len(transport.calls) == 3

@@ -1,4 +1,5 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
 """Offline list parsing contracts for task 2.1, using synthetic source structure."""
 
 import importlib
@@ -6,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-FIXTURE = Path(__file__).parent / "fixtures/stage2_list.html"
+FIXTURE = Path(__file__).parent / "fixtures/list.html"
 SOURCE_URL = "https://www.10000recipe.com/recipe/list.html?cat2=18&cat4=52&order=reco&page=1"
 
 
@@ -29,13 +30,7 @@ def test_list_preserves_filters_page_and_candidate_positions(list_html):
     assert page["category_code"] == "52"
     assert [item["source_id"] for item in page["items"]] == ["900001", "900002"]
     assert [item["position"] for item in page["items"]] == [1, 2]
-
-
-def test_list_keeps_same_dish_with_distinct_ids(list_html):
-    parser = load_parser()
-    items = parser.parse_list_page(list_html, source_url=SOURCE_URL)["items"]
-    assert [item["title"] for item in items] == ["감자 & 달걀밥", "감자 & 달걀밥"]
-    assert len({item["source_id"] for item in items}) == 2
+    assert [item["title"] for item in page["items"]] == ["감자 & 달걀밥", "감자 & 달걀밥"]
 
 
 def test_list_uses_recipe_thumbnails_instead_of_badges_or_avatars(list_html):

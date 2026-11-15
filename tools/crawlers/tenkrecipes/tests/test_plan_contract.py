@@ -1,10 +1,7 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
 # Additional output-preview tests assisted by Codex, 2026-11-11; reviewed by Soohyun An
-"""Stage 1 acceptance tests derived from the approved quotas and offline boundary.
-
-The CLI JSON interface is specified in the adjacent test README. Missing implementation
-must fail these tests rather than be hidden behind skip/xfail or replacement logic.
-"""
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
+"""Plan quotas, output boundaries, and offline CLI contracts."""
 
 import importlib
 import json

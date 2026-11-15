@@ -1,15 +1,16 @@
-# AI-assisted with Codex, 2026-11-15; human review pending.
-"""Approved detail-structure failure replacement and saved-run compatibility."""
+# AI-assisted with Codex, 2026-11-15; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
+"""Detail error logging and compatibility with earlier blocked snapshots."""
 
 import pytest
 from bs4 import BeautifulSoup
 
-from crawlers.tenkrecipes.tests.stage5_support import detail_html, scripted_run
+from crawlers.tenkrecipes.tests.support_runs import detail_html, scripted_run
 from crawlers.tenkrecipes.workflow import CollectionRun
 
 
 @pytest.mark.parametrize("selector", [".view2_summary", "#divConfirmedMaterialArea", ".view_step"])
-def test_unparseable_detail_is_preserved_and_replaced_in_same_category(tmp_path, selector):
+def test_unparseable_detail_is_logged_and_skipped_in_same_category(tmp_path, selector):
     soup = BeautifulSoup(detail_html(), "html.parser")
     soup.select_one(selector).decompose()
     body = str(soup).encode()
@@ -39,7 +40,7 @@ def test_unparseable_detail_is_preserved_and_replaced_in_same_category(tmp_path,
     assert not any("cat4=56" in url for url in calls)
 
 
-def test_old_blocked_detail_becomes_failed_without_refetch_or_losing_replacement(tmp_path):
+def test_legacy_blocked_detail_is_logged_once_without_refetch(tmp_path):
     """Model the schema-4 checkpoint saved by the earlier stop-on-detail policy."""
     run, options, calls = scripted_run(
         tmp_path,

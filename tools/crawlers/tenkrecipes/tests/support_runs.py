@@ -1,7 +1,9 @@
-# AI-assisted with Codex, 2026-11-12; human review pending.
+# AI-assisted with Codex, 2026-11-12; reviewed by Soohyun An
+# Helper reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
 """Synthetic source inputs and saved artifacts, without allocation/report logic."""
 
 import copy
+import importlib
 import json
 from urllib.parse import parse_qs, urlsplit
 
@@ -11,9 +13,42 @@ from crawlers.tenkrecipes.config import build_plan
 from crawlers.tenkrecipes.images import ImageDownloader
 from crawlers.tenkrecipes.parsing import parse_recipe
 from crawlers.tenkrecipes.storage import digest
-from crawlers.tenkrecipes.tests.stage3_support import FIXTURES, FakeResponse, client_for
-from crawlers.tenkrecipes.tests.test_stage4_images import StreamResponse, png_bytes
+from crawlers.tenkrecipes.tests.support_http import (
+    FIXTURES,
+    FakeResponse,
+    FakeTransport,
+    client_for,
+)
+from crawlers.tenkrecipes.tests.support_images import StreamResponse, png_bytes
 from crawlers.tenkrecipes.workflow import PARSER_VERSION, SCHEMA_VERSION, CollectionRun
+
+
+def make_run(tmp_path, *outcomes):
+    """Create a real run backed only by fake network/time inputs."""
+    module = importlib.import_module("crawlers.tenkrecipes.workflow")
+    _, client, transport, clock = client_for(*outcomes)
+    plan = build_plan(tmp_path / "run")
+    options = dict(
+        plan=plan,
+        client=client,
+        parser_version="test-parser-v1",
+        schema_version="test-schema-v1",
+        utcnow=clock.utcnow,
+    )
+    run = module.CollectionRun.create(**options)
+    return module, run, options, transport, clock
+
+
+def policy_run(tmp_path, ids, *details, images=(), category_code="52"):
+    """Use the real workflow with scripted HTML and independently queued images."""
+    _, run, options, html, clock = make_run(
+        tmp_path, FakeResponse(body=list_html(category_code, ids)), *details
+    )
+    image_transport = FakeTransport(clock, *images)
+    run.image_downloader.transport = image_transport
+    options["image_downloader"] = run.image_downloader
+    run.fetch_list(category_code, 1)
+    return run, options, html, image_transport
 
 
 def list_html(category, ids):
@@ -35,9 +70,7 @@ def list_html(category, ids):
 
 def detail_html(missing=None):
     """Remove content while retaining containers, or deliberately break structure."""
-    soup = BeautifulSoup(
-        (FIXTURES / "stage2_detail.html").read_text(encoding="utf-8"), "html.parser"
-    )
+    soup = BeautifulSoup((FIXTURES / "detail.html").read_text(encoding="utf-8"), "html.parser")
     if missing == "title":
         soup.select_one(".view2_summary h3").clear()
     elif missing in ("ingredients", "ingredient_names"):

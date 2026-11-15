@@ -1,11 +1,12 @@
-# AI-assisted with Codex, 2026-11-14; human review pending.
-"""Confirmed stage 5 resume defects: selected artifacts and blocked replacements."""
+# AI-assisted with Codex, 2026-11-14; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
+"""Allocation resume regressions and historical selected artifacts."""
 
 import pytest
 
 from crawlers.tenkrecipes.config import CATEGORIES, build_plan
-from crawlers.tenkrecipes.tests.stage3_support import FakeResponse, client_for
-from crawlers.tenkrecipes.tests.stage5_support import saved_collection, scripted_run
+from crawlers.tenkrecipes.tests.support_http import FakeResponse, client_for
+from crawlers.tenkrecipes.tests.support_runs import saved_collection, scripted_run
 from crawlers.tenkrecipes.workflow import CollectionRun
 
 
@@ -31,7 +32,7 @@ def test_quota_resume_repairs_selected_artifacts_before_skipping_finished_catego
     assert calls == ([] if missing == "record" else ["https://recipe1.ezmember.co.kr/900001.png"])
 
 
-def test_recovered_blocked_candidate_is_not_its_own_replacement(tmp_path):
+def test_denied_candidate_can_be_acquired_after_site_recovers(tmp_path):
     run, options, _ = scripted_run(tmp_path, {("63", 1): ["900001"]})
     normal_transport = run.client.transport
     denied = True

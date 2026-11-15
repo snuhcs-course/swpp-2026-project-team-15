@@ -1,4 +1,5 @@
 # AI-assisted with Codex, 2026-11-11; reviewed by Soohyun An
+# Test reorganization assisted by Codex, 2026-11-15; reviewed by Soohyun An
 """Task 3.2/3.5: live command gates and help must be testable without live I/O."""
 
 import pytest
