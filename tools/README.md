@@ -58,10 +58,9 @@ overwrite it or migrate its decisions. Existing human decisions must be explicit
 connected by occurrence identity before a later entity export; no repeat human
 review or inferred role is implied by a fresh blank worksheet.
 
-The CLI currently provides `review` and `check-review`. The Python append API
-below produces CSVs and provenance; the build CLI and final local DB validation
-remain subsequent implementation tasks. Previously generated local datasets are
-separate from this reusable tool.
+The CLI provides `review`, `check-review` and `build`. Use `build` for a complete
+locally verified bundle. The lower-level Python append API below writes CSVs and
+provenance only. Previously generated local datasets remain separate results.
 
 ```powershell
 uv run --locked --offline pytest recipe_entities/tests -q
@@ -119,8 +118,51 @@ ID links. Excluded tool/intermediate rows remain outside required ingredients.
 This API **does not create a DB or claim a completed, DB-validated bundle**. An
 existing output or output nested inside a CSV/review input is refused. An I/O
 failure may leave a partial new directory for inspection. Preserve it and use a
-new destination. Inputs and existing results stay unchanged. The subsequent build
-stage will run the existing importer and record successful final verification.
+new destination. Inputs and existing results stay unchanged. Use the build command
+below to run the existing importer and record successful final verification.
+
+### Build and verify a local database
+
+From `tools/`, with a completed worksheet in this tool's format:
+
+```powershell
+uv run --locked --offline python -m recipe_entities.cli build --normalized-recipes ../data/tenkrecipes/preparation/ingredients-02/normalized-recipes.json --ingredient-catalog ../data/recipes/Ingredient.csv --review-dir ../data/tenkrecipes/preparation/entity-role-review-completed --existing-csv ../data/tenkrecipes/preparation/entities-01/original-csv --output ../data/tenkrecipes/preparation/entities-verified-new
+```
+
+Substitute explicit supplied inputs and a **new output directory**. The completed
+review must match the input byte hashes. Keep prior human decisions and review
+context; the old HTML worksheet is not implicitly migrated. Do not feed the
+already-appended current CSVs as the baseline. Existing outputs or input/output
+overlaps are refused, including an output containing an existing DB.
+
+This command requires the checkout's unchanged `server/db/import_recipes.py` and
+adjacent `schema.sql`. It invokes that standard-library importer as a separate
+local process using the same Python interpreter. Server runtime dependencies,
+collector/normalization modules, `.env`, credentials and network are not needed.
+
+Successful output contains:
+
+- `csv/`: all eight entity CSVs, preserving existing values and copied files.
+- `entity-provenance.json`: source context and the added service-ID links.
+- `recipes.sqlite3`: a newly created local verification database.
+- `validation-report.json`: `status=completed` only after all checks pass.
+
+Verification compares every CSV and database field to the pre-write conversion
+plan, checks foreign keys and SQLite integrity, verifies copied bytes/provenance,
+and confirms input hashes remain unchanged. The report records old/added/total
+counts, recipe IDs, missing quantities/metadata and input/output/schema/importer
+hashes. Input data and existing databases are never replaced.
+
+On failure, the command exits nonzero and identifies `preflight`, `write`,
+`import`, `verify` or `report`, together with the output path. Invalid inputs fail
+before output creation. After creation, partial output is retained, with a
+`status=failed` report when the filesystem permits writing it. A failed report
+write does not turn the command into success. Preserve failed files for inspection
+and retry using a new destination; do not treat a DB file alone as completion.
+
+Local validation does not assess recipe suitability, recommendation quality,
+image deployment or app integration. New image URLs remain NULL; publishing the
+bundle to production remains a separate operation.
 
 ## Pixabay recipe images
 

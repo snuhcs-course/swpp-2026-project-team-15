@@ -299,22 +299,18 @@ def prepare_entities(normalized: Path, catalog: Path, review: Path, existing_csv
     )
 
 
-def write_entities(
-    normalized: Path, catalog: Path, review: Path, existing_csv: Path, output: Path
-) -> dict:
-    """Write CSV/provenance into a new directory; this alone is not DB-validated completion.
-
-    Validation failures leave no output. I/O failures may leave a partial new
-    directory for inspection; inputs and existing results are never overwritten.
-    """
+def validate_output(review: Path, existing_csv: Path, output: Path) -> None:
+    """Refuse existing results and directories nested inside mutable input folders."""
     if output.exists():
         raise ValueError(f"Entity output already exists: {output}")
     for directory in (existing_csv, review):
         if output.resolve().is_relative_to(directory.resolve()):
             raise ValueError(f"Unsafe input/output overlap: {output}")
-    plan = prepare_entities(normalized, catalog, review, existing_csv)
+
+
+def _write_files(plan: dict, output: Path) -> None:
+    """Write a validated plan into a directory reserved by the current operation."""
     folder = output / "csv"
-    output.mkdir(parents=True, exist_ok=False)
     folder.mkdir()
     for filename, columns in COLUMNS.items():
         path = folder / filename
@@ -329,4 +325,18 @@ def write_entities(
     with (output / "entity-provenance.json").open("x", encoding="utf-8") as handle:
         json.dump(plan["provenance"], handle, ensure_ascii=False, indent=2)
         handle.write("\n")
+
+
+def write_entities(
+    normalized: Path, catalog: Path, review: Path, existing_csv: Path, output: Path
+) -> dict:
+    """Write CSV/provenance into a new directory; this alone is not DB-validated completion.
+
+    Validation failures leave no output. I/O failures may leave a partial new
+    directory for inspection; inputs and existing results are never overwritten.
+    """
+    validate_output(review, existing_csv, output)
+    plan = prepare_entities(normalized, catalog, review, existing_csv)
+    output.mkdir(parents=True, exist_ok=False)
+    _write_files(plan, output)
     return {key: plan[key] for key in ("existing_counts", "total_counts", "input_hashes")}

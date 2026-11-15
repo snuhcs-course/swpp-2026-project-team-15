@@ -1,104 +1,13 @@
 # AI-generated with Codex, 2026-11-16; reviewed by Soohyun An
 """Append acceptance contracts, without duplicating importer CSV/FK tests."""
 
-import copy
-import csv
 import hashlib
 import importlib
 import json
 
 import pytest
 
-from recipe_entities.review import create_review
-
-
-def read(path):
-    with path.open(encoding="utf-8-sig", newline="") as handle:
-        return list(csv.DictReader(handle))
-
-
-def write(path, headers, rows):
-    with path.open("w", encoding="utf-8-sig", newline="") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(headers)
-        writer.writerows(rows)
-
-
-@pytest.fixture
-def append_case(entity_inputs, tmp_path):
-    """Two new recipes in reverse ID order and old IDs with gaps."""
-    normalized, catalog, document = entity_inputs
-    first = document["recipes"][0]
-    first["recipe"]["steps"] = [
-        dict(order=2, instruction="완성한다.", tips=[], image_urls=[]),
-        dict(
-            order=1,
-            instruction="섞는다.\n익힌다.",
-            tips=["약불", "천천히"],
-            image_urls=["local-step"],
-        ),
-    ]
-    other = copy.deepcopy(first)
-    other["source_id"] = other["recipe"]["source"]["id"] = "6001"
-    other["thumbnail_path"] = "images/6001.jpg"
-    for row in other["recipe"]["ingredients"]:
-        row["source"]["source_id"] = "6001"
-        row["source"]["occurrence_index"] += 4
-    extra_sources = copy.deepcopy(document["source_occurrences"])
-    for row in extra_sources:
-        row["source"]["source_id"] = "6001"
-        row["source"]["occurrence_index"] += 4
-    document["recipes"].append(other)
-    document["source_occurrences"].extend(extra_sources)
-    normalized.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
-    review = tmp_path / "approved"
-    create_review(normalized, catalog, review)
-    path = review / "ingredient-roles.csv"
-    approved = read(path)
-    for index, row in enumerate(approved):
-        row["ingredient_type_code"] = ["3060002", "3060003", "3060001", "3060002"][index % 4]
-        row["review_note"] = "확정"
-    write(path, list(approved[0]), [list(row.values()) for row in approved])
-    existing = tmp_path / "existing"
-    existing.mkdir()
-    tables = {
-        "Recipe.csv": (
-            "recipe_id,name,description,cuisine_type,category,cooking_time,calories,servings,difficulty,main_image_url",
-            [
-                [
-                    1,
-                    "기존 요리",
-                    "원문\n설명",
-                    "한식",
-                    "밥",
-                    "20분",
-                    "100",
-                    "1인분",
-                    "쉬움",
-                    "/old.jpg",
-                ]
-            ],
-        ),
-        "Ingredient.csv": ("ingredient_id,name", [[204, "물"], [425, "청고추"]]),
-        "CookingTool.csv": ("tool_id,name", [[3, "숟가락"]]),
-        "Allergen.csv": ("allergen_id,name", [[2, "기존 알레르기"]]),
-        "RecipeStep.csv": (
-            "step_id,recipe_id,step_number,instruction,tip",
-            [[2, 1, 1, "기존 단계", "팁"], [100, 1, 2, "마무리", ""]],
-        ),
-        "RecipeIngredient.csv": (
-            "recipe_ingredient_id,recipe_id,ingredient_id,quantity_text,ingredient_type_code,ingredient_type,original_name",
-            [
-                [1, 1, 204, "1컵", "3060002", "부재료", "물"],
-                [40, 1, 425, "1개", "3060001", "주재료", "고추"],
-            ],
-        ),
-        "RecipeCookingTool.csv": ("recipe_id,tool_id", [[1, 3]]),
-        "IngredientAllergen.csv": ("ingredient_id,allergen_id", [[425, 2]]),
-    }
-    for name, (header, values) in tables.items():
-        write(existing / name, header.split(","), values)
-    return normalized, catalog, review, existing, document
+from recipe_entities.tests.support import read, write
 
 
 def export(case, output):
