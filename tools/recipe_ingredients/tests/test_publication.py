@@ -1,10 +1,12 @@
 # AI-generated catalog publication tests with Codex, 2026-11-15; reviewed by Soohyun An
 """Exercise catalog preservation and bounded publication using disposable inputs."""
 
+import builtins
 import csv
 import hashlib
 import io
 import json
+import socket
 from pathlib import Path
 
 import pytest
@@ -160,9 +162,38 @@ def test_io_failure_reports_phase_and_preserves_recovery_files(tmp_path, monkeyp
     )
 
 
-def test_cli_uses_explicit_paths_and_refuses_rerun(tmp_path):
+def test_cli_uses_explicit_paths_and_refuses_rerun(tmp_path, monkeypatch):
+    """Exercise publication without optional runtimes, environment files or networking."""
     from typer.testing import CliRunner
 
+    real_import, real_open = builtins.__import__, io.open
+
+    def offline_import(name, *args, **kwargs):
+        if name.split(".")[0] in {
+            "server",
+            "app",
+            "recipe_dedup",
+            "crawlers",
+            "tenkrecipes",
+            "dotenv",
+            "requests",
+        }:
+            raise AssertionError(f"Forbidden runtime import: {name}")
+        return real_import(name, *args, **kwargs)
+
+    def without_env(file, *args, **kwargs):
+        if isinstance(file, (str, Path)) and Path(file).name.startswith(".env"):
+            raise AssertionError("Environment file access is forbidden")
+        return real_open(file, *args, **kwargs)
+
+    def offline_connect(*args, **kwargs):
+        raise AssertionError("Network access is forbidden")
+
+    monkeypatch.setattr(builtins, "__import__", offline_import)
+    monkeypatch.setattr(builtins, "open", without_env)
+    monkeypatch.setattr(io, "open", without_env)
+    monkeypatch.setattr(socket.socket, "connect", offline_connect)
+    monkeypatch.delenv("PIXABAY_KEY", raising=False)
     from recipe_ingredients.cli import app
 
     selected, decisions, directory, output, _ = workspace(tmp_path)

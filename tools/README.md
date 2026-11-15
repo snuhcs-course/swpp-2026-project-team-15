@@ -193,6 +193,11 @@ directory containing the four original snapshots under their original filenames,
 with no `_old` files, and choose another output directory. There is no force,
 automatic backup deletion, rollback or resume option.
 
+After publication, the unchanged reviewed JSON still describes its names as new.
+To reproduce the read-only mapping/document APIs, use `Ingredient_old.csv` as
+their catalog input. Passing the expanded `Ingredient.csv` correctly fails on
+the now-existing new names; do not rewrite the reviewed decisions to bypass this.
+
 Pass the three successful JSON files, updated catalog, four backups, source run
 and its referenced images to the next preparation step. Absolute input paths in
 the report are audit information, not a substitute for supplying the source files.
