@@ -1,4 +1,4 @@
-# AI-assisted with Codex, 2026-11-15; Soohyun An
+# AI-assisted with Codex, 2026-11-15; reviewed by Soohyun An
 """Build exact-title review candidates and validate human duplicate decisions."""
 
 import csv
