@@ -13,6 +13,64 @@ uv run pytest
 
 Paths in `.env` can be absolute or relative to `tools/`. Process environment variables override `.env`. Keep API keys in `.env` or the process environment, never in recipe files or generated pages. The root `.gitignore` excludes `.env` and generated tool data.
 
+## Recipe entity role review
+
+`recipe_entities` is a standalone offline tool for reviewing normalized ingredient
+occurrences before entity conversion. It uses the Python standard library without
+loading the collector, normalization tools, server runtime or `.env`.
+
+From `tools/`, after installing the shared dependencies:
+
+```powershell
+uv run --locked --offline python -m recipe_entities.cli review --normalized-recipes ../data/tenkrecipes/preparation/ingredients-02/normalized-recipes.json --ingredient-catalog ../data/recipes/Ingredient.csv --output ../data/tenkrecipes/preparation/entity-role-review-new
+```
+
+Choose a **new directory**. Existing directories are refused. The command validates
+recipe/source identities, catalog IDs and names, preserved source references, split
+components and excluded rows before creating output. It writes:
+
+- `ingredient-roles.csv`: UTF-8 BOM worksheet, with initially blank role codes.
+- `review-context.json`: input byte hashes, worksheet headers and occurrence keys.
+
+Each row is identified by `(recipe_id, source_occurrence_index, component_index)`.
+Repeated ingredient IDs and split ingredients stay separate. Edit only
+`ingredient_type_code` and `review_note`; preserve all other fields and context.
+The codes are `3060001` (주재료), `3060002` (부재료), and `3060003` (양념).
+Different occurrences of the same ingredient may receive different roles.
+Recipe group names and existing ingredient roles never approve a classification.
+
+Validate a completed worksheet with:
+
+```powershell
+uv run --locked --offline python -m recipe_entities.cli check-review --normalized-recipes ../data/tenkrecipes/preparation/ingredients-02/normalized-recipes.json --ingredient-catalog ../data/recipes/Ingredient.csv --review-dir ../data/tenkrecipes/preparation/entity-role-review-new
+```
+
+Every occurrence must have a valid role. Missing, duplicate, extra, edited-context,
+unclassified and unknown-code rows fail. A byte change to either input invalidates
+the review even if parsed values appear identical. Validation does not rewrite
+inputs or decisions. Row order may change; returned decisions follow source order.
+An I/O failure can leave partial output: use only a successful result, preserve the
+failed directory for inspection and choose a new directory when retrying.
+
+The earlier local HTML review includes additional suggestion columns and a
+different context format. Keep that completed worksheet: this command does not
+overwrite it or migrate its decisions. Existing human decisions must be explicitly
+connected by occurrence identity before a later entity export; no repeat human
+review or inferred role is implied by a fresh blank worksheet.
+
+This first stage provides `review` and `check-review` only. Entity CSV generation,
+provenance export and local DB validation remain subsequent implementation tasks.
+Previously generated local datasets are separate from this reusable tool.
+
+```powershell
+uv run --locked --offline pytest recipe_entities/tests -q
+uv run --locked --offline ruff check recipe_entities
+uv run --locked --offline ruff format --check recipe_entities
+```
+
+The default tools test command discovers both Pixabay and entity preparation tests.
+Tests use synthetic local inputs.
+
 ## Pixabay recipe images
 
 The Pixabay workflow searches candidate images, builds a human review sheet, processes selected local images into WebP variants, and writes the mapping and DB-ready `Recipe.csv`.
