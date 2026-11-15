@@ -228,9 +228,9 @@ def create_review(normalized_path: Path, catalog_path: Path, output: Path) -> No
     )
 
 
-def read_review(normalized_path: Path, catalog_path: Path, review_dir: Path) -> list[dict]:
-    """Return complete human decisions in source order; reject stale or edited context."""
-    _, expected, hashes = load_inputs(normalized_path, catalog_path)
+def load_review(normalized_path: Path, catalog_path: Path, review_dir: Path):
+    """Return source data, complete decisions and hashes from one validated snapshot."""
+    document, expected, hashes = load_inputs(normalized_path, catalog_path)
     context = json.loads((review_dir / "review-context.json").read_bytes())
     if context.get("input_hashes") != hashes:
         raise ValueError("Review input hash mismatch; use the reviewed input snapshot")
@@ -257,4 +257,9 @@ def read_review(normalized_path: Path, catalog_path: Path, review_dir: Path) -> 
     missing = expected_by_key.keys() - approved.keys()
     if missing:
         raise ValueError(f"Missing review occurrences: {sorted(missing)}")
-    return [approved[_key(row)] for row in expected]
+    return document, [approved[_key(row)] for row in expected], hashes
+
+
+def read_review(normalized_path: Path, catalog_path: Path, review_dir: Path) -> list[dict]:
+    """Return complete human decisions in source order; reject stale or edited context."""
+    return load_review(normalized_path, catalog_path, review_dir)[1]

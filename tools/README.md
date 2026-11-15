@@ -58,9 +58,10 @@ overwrite it or migrate its decisions. Existing human decisions must be explicit
 connected by occurrence identity before a later entity export; no repeat human
 review or inferred role is implied by a fresh blank worksheet.
 
-This first stage provides `review` and `check-review` only. Entity CSV generation,
-provenance export and local DB validation remain subsequent implementation tasks.
-Previously generated local datasets are separate from this reusable tool.
+The CLI currently provides `review` and `check-review`. The Python append API
+below produces CSVs and provenance; the build CLI and final local DB validation
+remain subsequent implementation tasks. Previously generated local datasets are
+separate from this reusable tool.
 
 ```powershell
 uv run --locked --offline pytest recipe_entities/tests -q
@@ -70,6 +71,56 @@ uv run --locked --offline ruff format --check recipe_entities
 
 The default tools test command discovers both Pixabay and entity preparation tests.
 Tests use synthetic local inputs.
+
+### Append reviewed entity CSVs (Python API)
+
+After completing a worksheet in the new review format, call from `tools/`:
+
+```python
+from pathlib import Path
+from recipe_entities.entities import write_entities
+
+summary = write_entities(
+    Path("../data/tenkrecipes/preparation/ingredients-02/normalized-recipes.json"),
+    Path("../data/recipes/Ingredient.csv"),
+    Path("../data/tenkrecipes/preparation/entity-role-review-completed"),
+    Path("../data/tenkrecipes/preparation/entities-01/original-csv"),
+    Path("../data/tenkrecipes/preparation/entities-new"),
+)
+```
+
+Replace the worksheet and destination with explicit completed inputs and a new
+output. The existing CSV input must be the **pre-append baseline**: the current
+`data/recipes` already includes these recipes and will fail with ID collisions.
+Do not regenerate or infer the user's prior decisions to bypass validation.
+
+The output has `csv/` with all eight importer inputs and `entity-provenance.json`.
+Existing recipe, ingredient relation and step values/IDs remain unchanged. New
+recipes keep their source IDs. New recipes are processed in numeric ID order;
+relation and step IDs start above the corresponding existing maxima without
+reusing gaps. Reordering worksheet rows does not affect output IDs.
+
+Recipe title, description, servings, cooking time and difficulty retain supplied
+text. Absent category, cuisine, calories and unpublished image URLs remain NULL.
+Legacy Recipe.csv without `main_image_url` receives the column with NULL for old
+rows. Relations retain repeated IDs, raw names, quantities and each reviewed role.
+Split component quantities remain NULL rather than duplicating the combined amount.
+Step order/instructions are preserved; ordered tips are joined with newlines.
+Invalid types, ID collisions, catalog identity changes, duplicate step orders and
+overlength values fail before creating the output directory; values are not truncated.
+
+The explicit current catalog is copied after checking old ID/name identities.
+CookingTool, Allergen, RecipeCookingTool and IngredientAllergen CSVs are copied
+byte-for-byte with no inferred rows. Provenance preserves source records, URLs,
+thumbnail paths, raw occurrence registry (including excluded rows and split totals),
+ingredient notes, step image references, original tips, human decisions and service
+ID links. Excluded tool/intermediate rows remain outside required ingredients.
+
+This API **does not create a DB or claim a completed, DB-validated bundle**. An
+existing output or output nested inside a CSV/review input is refused. An I/O
+failure may leave a partial new directory for inspection. Preserve it and use a
+new destination. Inputs and existing results stay unchanged. The subsequent build
+stage will run the existing importer and record successful final verification.
 
 ## Pixabay recipe images
 
@@ -97,20 +148,20 @@ Pixabay search results must be cached for 24 hours. The API's returned image URL
 
 All paths are set in `tools/.env`; defaults are relative to `tools/`.
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `PIXABAY_KEY` | empty | Pixabay API key |
-| `PIXABAY_RECIPES_FILE` | `crawlers/pixabay/recipes.json` | Recipe IDs, names, and search terms |
-| `PIXABAY_CACHE_DIR` | `crawlers/pixabay/cache` | Cached API results |
-| `PIXABAY_SHEETS_DIR` | `crawlers/pixabay/sheets` | Generated review sheets |
-| `PIXABAY_SELECTIONS_DIR` | `crawlers/pixabay/selections` | Human-exported selection CSVs |
-| `PIXABAY_DOWNLOADS_DIR` | `crawlers/pixabay/downloads` | Manually downloaded originals, named by recipe ID |
-| `PIXABAY_IMAGES_DIR` | `../server/static/images/recipes` | Processed WebP images served by the app |
-| `PIXABAY_OUTPUT_DIR` | `crawlers/pixabay/output` | Attribution and generated CSVs |
-| `PIXABAY_MAPPING_FILE` | `crawlers/pixabay/output/recipe_image_urls.csv` | Recipe ID to app URL mapping |
-| `PIXABAY_SOURCE_RECIPE_CSV` | `../data/recipes/Recipe.csv` | Existing recipe rows to preserve |
-| `PIXABAY_OUTPUT_RECIPE_CSV` | `crawlers/pixabay/output/Recipe.csv` | Schema-ready CSV for DB import |
-| `PIXABAY_IMAGE_URL_PREFIX` | `/recipe-images` | Public URL prefix for `main_image_url` |
-| `PIXABAY_IMAGE_VARIANT` | `list` | `thumb`, `list`, or `detail` mapping variant |
+| Variable                    | Default                                         | Purpose                                           |
+| --------------------------- | ----------------------------------------------- | ------------------------------------------------- |
+| `PIXABAY_KEY`               | empty                                           | Pixabay API key                                   |
+| `PIXABAY_RECIPES_FILE`      | `crawlers/pixabay/recipes.json`                 | Recipe IDs, names, and search terms               |
+| `PIXABAY_CACHE_DIR`         | `crawlers/pixabay/cache`                        | Cached API results                                |
+| `PIXABAY_SHEETS_DIR`        | `crawlers/pixabay/sheets`                       | Generated review sheets                           |
+| `PIXABAY_SELECTIONS_DIR`    | `crawlers/pixabay/selections`                   | Human-exported selection CSVs                     |
+| `PIXABAY_DOWNLOADS_DIR`     | `crawlers/pixabay/downloads`                    | Manually downloaded originals, named by recipe ID |
+| `PIXABAY_IMAGES_DIR`        | `../server/static/images/recipes`               | Processed WebP images served by the app           |
+| `PIXABAY_OUTPUT_DIR`        | `crawlers/pixabay/output`                       | Attribution and generated CSVs                    |
+| `PIXABAY_MAPPING_FILE`      | `crawlers/pixabay/output/recipe_image_urls.csv` | Recipe ID to app URL mapping                      |
+| `PIXABAY_SOURCE_RECIPE_CSV` | `../data/recipes/Recipe.csv`                    | Existing recipe rows to preserve                  |
+| `PIXABAY_OUTPUT_RECIPE_CSV` | `crawlers/pixabay/output/Recipe.csv`            | Schema-ready CSV for DB import                    |
+| `PIXABAY_IMAGE_URL_PREFIX`  | `/recipe-images`                                | Public URL prefix for `main_image_url`            |
+| `PIXABAY_IMAGE_VARIANT`     | `list`                                          | `thumb`, `list`, or `detail` mapping variant      |
 
 The repository CI runs tools lint, formatting, and tests only when `tools/**` or the CI workflow changes.
