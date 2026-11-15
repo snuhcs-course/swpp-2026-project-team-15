@@ -5,6 +5,7 @@ from pathlib import Path
 
 import typer
 
+from .review import export_groups
 from .titles import export_titles
 
 app = typer.Typer(no_args_is_help=True, pretty_exceptions_enable=False)
@@ -27,6 +28,24 @@ def titles(
         typer.echo(f"Title export error: {exc}", err=True)
         raise typer.Exit(1) from exc
     typer.echo(f"Wrote {count} title rows to {output}")
+
+
+@app.command()
+def groups(
+    source_run: Path = typer.Option(..., help="Supplied collection run containing manifest.json."),
+    titles: Path = typer.Option(..., help="User-authored title mapping CSV."),
+    output: Path = typer.Option(..., help="New review directory outside the source run."),
+) -> None:
+    """Group exact user titles and create an all-pending duplicate decision worksheet."""
+    try:
+        report = export_groups(source_run, titles, output)
+    except (OSError, ValueError) as exc:
+        typer.echo(f"Group export error: {exc}", err=True)
+        raise typer.Exit(1) from exc
+    typer.echo(
+        f"Wrote {len(report['groups'])} candidate groups to {output}; "
+        f"unfinished titles: {len(report['unfinished_ids'])}. Duplicate review is pending."
+    )
 
 
 if __name__ == "__main__":
