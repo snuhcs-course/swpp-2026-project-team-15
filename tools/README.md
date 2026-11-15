@@ -15,7 +15,8 @@ For Pixabay, paths in `.env` can be absolute or relative to `tools/`. Process en
 
 ## Recipe title worksheet
 
-The independent `recipe_dedup` tool exports a title worksheet and duplicate-review candidates.
+The independent `recipe_dedup` tool exports title worksheets, duplicate-review
+candidates, and separately selected recipe copies after human review.
 It reads a locally supplied collection's `manifest.json` and selected recipe JSON
 files, without importing the collector, reading `.env`, or making network calls.
 No collector installation or server configuration is required.
@@ -114,11 +115,51 @@ refused, including partially written output from an I/O failure. A failed comman
 returns nonzero; only use results from a successful invocation. Images and source
 records are never copied or modified, so supply the source run alongside review files.
 
-Final selected-data export is stage three and is not implemented yet. Pending
-decisions will block that final export. No automatic quality filter, service CSV
-generation, image upload or database import runs here. The tool and tests can be
-preserved on the data-preparation branch without merging to main. Actual data and
-worksheets are supplied separately and should remain outside Git.
+### Final selection and handoff
+
+The sequence is `titles` → user writes normalized titles → `groups` → user writes
+duplicate decisions → `select`. Complete every normalized title and resolve every
+pending decision before final export, including titles on excluded rows. Do not
+mark pending rows keep merely to make export succeed. Use the retained
+`review-notes.md`, if supplied, when making decisions; the tool does not infer
+decisions from prose notes.
+
+From `tools/`, export the completed worksheets to a **new directory**:
+
+```powershell
+uv run --locked python -m recipe_dedup.cli select --source-run ../data/tenkrecipes/runs/pilot-three-per-category-20261114-181617 --titles ../data/tenkrecipes/preparation/titles.csv --decisions ../data/tenkrecipes/preparation/review-01/decisions.csv --output ../data/tenkrecipes/preparation/selected-01
+```
+
+If any title is blank, any decision is pending, or a mapping/decision is invalid,
+the command exits nonzero before creating the output directory and reports the
+unresolved IDs. Existing outputs are refused. After changing titles or decisions,
+choose a new destination such as `selected-02`; previous results remain unchanged.
+The same validated inputs produce the same semantic result without recollection.
+
+Successful output contains exactly two UTF-8 JSON files:
+
+- `selected-recipes.json`: `source_run_id` and `recipes` containing only keep IDs
+  in original source order. Each item has `source_id`, the source `original_title`,
+  `thumbnail_path` relative to the source run, and a `recipe` copy. Only that copy's
+  `title` changes to the exact user-authored normalized title. Source identity/URL,
+  ingredient IDs, quantities, steps, tips and other recipe fields remain unchanged.
+- `selection-report.json`: source run ID, input/kept/excluded counts and IDs, and
+  every reviewed CSV row with its decision, representative and reason. Completion
+  flags describe title and duplicate review only. `service_suitability_assessed`
+  is false; quality concerns recorded on keep rows remain in the report.
+
+Pass both files, the source run (including its local images), and any separate
+quality-review notes to the next preparation step. The tool references images; it
+does not copy or deploy them. Raw records and excluded recipes remain in the
+source run. No automatic quality filter, ingredient normalization, entity/service
+CSV generation, image upload or database import runs here. These remain separate
+follow-up work even after duplicate review is complete.
+
+The implementation tests use synthetic decisions. Actual recipe selection must
+wait for the user's completed titles and decisions; code completion does not mean
+the 500 collected recipes have been reviewed. The tool and tests can be preserved
+on the data-preparation branch without merging to main. Actual data and worksheets
+are supplied separately and should remain outside Git.
 
 Run the tests from `tools/`:
 
