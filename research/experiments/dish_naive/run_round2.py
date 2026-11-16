@@ -201,7 +201,9 @@ def main(argv: list[str] | None = None) -> int:
     names = list(service._by_name)  # noqa: SLF001
     per_variant: dict[str, dict] = {}
     for variant in variants:
-        per_variant[variant] = run_variant(variant, cases, names, set(names), catalog, service, key)
+        per_variant[variant] = run_variant(
+            variant, cases, names, set(names), catalog, service, key, cap
+        )
         v = per_variant[variant]
         print(
             variant,
