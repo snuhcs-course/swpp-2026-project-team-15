@@ -41,3 +41,38 @@ P1 and P4 rows come from 12 per-dish unit calls (one seeded dish per input); the
 ## Round 2: relevance of model-provided links (criteria frozen 2026-11-16, before the analysis)
 
 No new call: the stored outputs of the second YouTube discovery study are analysed offline. What is counted, the judges used and the failure types are fixed in `criteria_round2.json`. Results are added below after the analysis.
+
+### Round 2 results (2026-11-16, offline, no call)
+
+Question: if the server only checks that a link exists and can be embedded, how many of the links a model with web search provides are recipe videos of the dish? Data: method B of the second YouTube discovery study (`../youtube_discovery_v2/` in the branch `yt-discovery`), 27 dishes with both judgements. Relevance is the gemini-2.5-pro judgement (E); claude-haiku-4.5 (J1) is shown for comparison. Run: `PYTHONPATH=.:../research uv run python -m experiments.dish_pipeline.analyze_links` (from `server/`, after copying `candidates.json` and `judgements.json` to `data/youtube-discovery-v2/`).
+
+| Per dish (mean over 27) / total | E | J1 |
+| --- | --- | --- |
+| Links the model provided | 4.5 / 122 | same |
+| Links that exist | 4.1 / 110 (90%) | same |
+| Links that exist and are public and embeddable | 3.9 / 104 (85% of provided) | same |
+| Relevant links among those | 2.9 / 79 | 3.0 / 81 |
+| **Share of embeddable links that are relevant** (pooled; mean over dishes) | **76% (73%)** | 78% (75%) |
+| Dishes with 0, 1, 2, 3 or more relevant links | 1, 4, 5, 17 | 1, 4, 2, 20 |
+| Dishes with at least one relevant link | 26 of 27 | 26 of 27 |
+| First embeddable link (the model's first choice) is relevant | 93% of dishes | 96% |
+
+- The two judges agree on 90% of the 104 links (kappa 0.73).
+- **Old title rule on the same links** (the normalised title contains the dish name): it accepts 51 of the 104 (49%) and gives a relevant link for 17 of 27 dishes. It accepts 5 links that E rejects and rejects 33 that E accepts.
+- Method B2 (the model asked for the most viewed videos): 109 links provided, 92 embeddable, 67 relevant (73%), 26 of 27 dishes with at least one.
+
+**Why the 25 embeddable links that E rejects were rejected** (the judges did not store reasons; one reading of title, channel, description and length by the assistant, `failure_types_round2.json`):
+
+| Type | Links | Example |
+| --- | --- | --- |
+| Neighbouring dish | 16 | kimchi fried rice for "kimchi tuna fried rice"; kimchi stew for "spam kimchi stew"; mushroom stir-fry for "mushroom fried rice" |
+| Other dish | 3 | a different dish altogether (a pork-chop recipe for "pork lettuce wraps") |
+| Short (60 s or less) | 3 | a 23-second microwave steamed-egg clip (also a correct dish) |
+| Vlog or eating show | 1 | an idol vlog that makes the dish |
+| Other | 2 | judged irrelevant although the title names the dish (shrimp fried rice from a recipe channel; a janchi noodle video): probably judge errors |
+
+**Reading.** Without any relevance check, about three of four embeddable links are real recipe videos of the dish and 26 of 27 dishes get at least one. The first link is relevant for 93–96% of dishes, so ordering by the model's own choice is already good at the top. Most errors are a close neighbour of the dish (kimchi fried rice for a variant): these may be acceptable for a student who wants a similar recipe, and the judges and the labeller differ on them. The old title rule is worse than no filter on this data: it keeps only 49% of the embeddable links and leaves 10 dishes without any link it accepts.
+
+### Limits
+
+Relevance comes from two language models that agreed with one labeller's 60 labels at kappa 0.61, barely above the pre-set 0.6, and judge metadata, not the video. 27 dishes, mostly fried-rice dishes (first in the list), one run of the model discovery. Failure types are one person's reading. The link numbers include 12 ids (10%) that do not exist and 6 existing videos that are not embeddable.

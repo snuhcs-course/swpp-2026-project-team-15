@@ -8,9 +8,9 @@ from experiments.dish_pipeline import discovery as d
 from experiments.dish_pipeline.run_pipeline import aggregate, choose, main, percentile
 
 CRITERIA = json.loads(
-    (Path(__file__).resolve().parents[4] / "research/experiments/dish_pipeline/criteria.json").read_text(
-        encoding="utf-8"
-    )
+    (
+        Path(__file__).resolve().parents[4] / "research/experiments/dish_pipeline/criteria.json"
+    ).read_text(encoding="utf-8")
 )
 A, B, C = "abcdefghijk", "ABCDEFGHIJK", "01234567890"
 
@@ -41,7 +41,11 @@ def test_extract_json_handles_fences():
 
 def test_rule_check_keeps_order_and_drops_unavailable_ids():
     items = {
-        A: {"id": A, "status": {"embeddable": True, "privacyStatus": "public"}, "snippet": {"title": "t1"}},
+        A: {
+            "id": A,
+            "status": {"embeddable": True, "privacyStatus": "public"},
+            "snippet": {"title": "t1"},
+        },
         B: {"id": B, "status": {"embeddable": False, "privacyStatus": "public"}, "snippet": {}},
         C: {"id": C, "status": {"embeddable": True, "privacyStatus": "private"}, "snippet": {}},
     }
@@ -66,9 +70,19 @@ def test_ids_are_batched_by_fifty():
 
 def _row(cost, latency, share):
     return {
-        "dishes": 10, "dishes_with_link": int(10 * share), "links_kept": 20, "returned_ids": 30,
-        "existing_ids": 30, "failed": False, "judged": 0, "judged_relevant": 0, "input_tokens": 1,
-        "output_tokens": 1, "reasoning_tokens": 0, "cost_usd": cost, "cards_latency_s": latency,
+        "dishes": 10,
+        "dishes_with_link": int(10 * share),
+        "links_kept": 20,
+        "returned_ids": 30,
+        "existing_ids": 30,
+        "failed": False,
+        "judged": 0,
+        "judged_relevant": 0,
+        "input_tokens": 1,
+        "output_tokens": 1,
+        "reasoning_tokens": 0,
+        "cost_usd": cost,
+        "cards_latency_s": latency,
         "videos_latency_s": latency,
     }
 
@@ -87,6 +101,8 @@ def test_choice_follows_the_preregistered_rule():
 
 
 def test_criteria_and_dry_run(capsys):
-    assert len(CRITERIA["inputs"]["input_ids"]) == 12 and CRITERIA["max_additional_model_calls"] == 200
+    assert (
+        len(CRITERIA["inputs"]["input_ids"]) == 12 and CRITERIA["max_additional_model_calls"] == 200
+    )
     assert main([]) == 0
     assert "dry run" in capsys.readouterr().out
