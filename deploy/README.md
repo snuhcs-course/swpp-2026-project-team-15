@@ -13,7 +13,7 @@ after configuring DNS and TLS. The VM IP is ephemeral; update the endpoint if it
 | --- | --- |
 | API | One Uvicorn worker by default; no reload; synchronous routes use the threadpool |
 | PostgreSQL | Persistent volume; read-only API transactions with REPEATABLE READ |
-| nginx | Port 80; AI routes 6 requests/minute/IP, burst 3; 4 active connections/IP |
+| nginx | Port 80; one proxy location, 210 s read timeout, 16 MiB upload limit; no rate limit |
 | Containers | API runs nonroot with a read-only root filesystem and temporary /tmp |
 
 ## Host configuration
@@ -65,14 +65,13 @@ To restore a backup, stop API, then feed the dump into
 and start API. Backups can contain project data; keep them private and prune manually.
 
 `/health` is liveness; `/ready` checks DB/catalog and complete recipe sources.
-Nginx limits AI requests per IP and upload bodies to 16 MiB. AI routes use a
-210-second upstream read timeout; this is an idle-read timeout, not an overall
-request deadline. The separate ID-based revision API defaults to three sequential attempts and
+Nginx limits upload bodies to 16 MiB and uses a 210-second upstream read timeout
+(an idle-read timeout, not an overall request deadline). The separate ID-based revision API defaults to three sequential attempts and
 permits five, which can exceed that wait when providers are slow. The app uses
 the name-based endpoint and does not request revisions.
 Recognition and revision errors stay visible to the client;
 there is no paid automatic retry or mock fallback. This small development service
-has no user authentication; monitor OpenRouter usage and stop the API when not in use.
+has no user authentication and no rate limit: every model call costs money, so monitor OpenRouter usage and stop the API when not in use. A global daily cap is a possible later step.
 
 ## Dish suggestions (YouTube videos, no recipe database)
 
@@ -87,8 +86,7 @@ cache file; without it the response carries only a YouTube search link.
 | Optional DB | `RECIPE_DB_OPTIONAL=1` | Starts without the DB only if opening it fails at start; a DB that opens but lacks a column still fails `/ready`, so prefer `DISH_ONLY=1` |
 
 `DISH_LLM_MODEL` (default `google/gemini-2.5-flash-lite`) uses `OPENROUTER_API_KEY`; without a key the
-rules-only ranking answers. nginx applies the AI rate limit (6 requests/minute/IP, burst 3) to
-`/dishes/suggest` and `/dishes/adapt`; users behind one shared address share that limit.
+rules-only ranking answers. There is no rate limit.
 
 The API reads the cache from `/data/dish-videos.json` (`DISH_DATA_DIR`, default
 `/opt/mylittlechef/data/dish-videos`, mounted read-only) and re-reads it when the file changes.

@@ -4,7 +4,6 @@
 import importlib.util
 import json
 import os
-import re
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -94,9 +93,8 @@ def test_runtime_archive_and_image_carry_the_dish_data():
     assert "COPY server/app ./app" in (ROOT / "Dockerfile").read_text().splitlines()
 
 
-def test_nginx_rate_limits_the_paid_dish_routes():
+def test_nginx_has_one_proxy_location_and_no_rate_limit():
     conf = (ROOT / "deploy/nginx.conf").read_text(encoding="utf-8")
-    block = re.search(r"location ~ \^/\(([^)]*)\)\$ \{([^}]*)\}", conf)
-    routes = block.group(1).split("|")
-    assert {"analyze", "recipes/recommendations", "dishes/suggest", "dishes/adapt"} <= set(routes)
-    assert "limit_req zone=ai" in block.group(2)
+    assert "limit_req" not in conf and "limit_conn" not in conf
+    assert conf.count("location ") == 1
+    assert "client_max_body_size 16m;" in conf and "proxy_read_timeout 210s;" in conf
