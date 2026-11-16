@@ -1,0 +1,392 @@
+{
+  "name": "dish_naive",
+  "version": 1,
+  "frozen": "2026-11-16, before any model call of this study",
+  "ground_truth": "Not human-labelled. The reference set is computed from the dish list by rule: dishes with at least one owned key ingredient and at most one missing key ingredient. It is conservative, so precision against it is a lower bound.",
+  "inputs_from": "research/experiments/dish_eval/cases.json (suggestion inputs only; S28 and S29 are dropped because the naive API has no limit)",
+  "cases": [
+    {
+      "id": "S01",
+      "ingredients": [
+        "김치",
+        "밥"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S02",
+      "ingredients": [
+        "계란",
+        "대파"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S03",
+      "ingredients": [
+        "계란",
+        "밥",
+        "대파",
+        "김치"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S04",
+      "ingredients": [
+        "달걀",
+        "쌀"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S05",
+      "ingredients": [
+        "두부"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S06",
+      "ingredients": [
+        "고구마"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S07",
+      "ingredients": [
+        "라면",
+        "계란",
+        "대파"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S08",
+      "ingredients": [
+        "참치캔",
+        "밥",
+        "김",
+        "마요네즈"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S09",
+      "ingredients": [
+        "소금",
+        "간장",
+        "설탕"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S10",
+      "ingredients": [
+        "양파",
+        "감자",
+        "당근",
+        "카레"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S11",
+      "ingredients": [
+        "돼지고기",
+        "김치",
+        "두부",
+        "대파"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S12",
+      "ingredients": [
+        "떡",
+        "어묵",
+        "고추장",
+        "대파"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S13",
+      "ingredients": [
+        "식빵",
+        "계란",
+        "우유",
+        "설탕"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S14",
+      "ingredients": [
+        "스파게티면",
+        "마늘",
+        "올리브유",
+        "고추"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S15",
+      "ingredients": [
+        "김치",
+        "김치",
+        "밥",
+        "밥"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S16",
+      "ingredients": [
+        "밥",
+        "계란",
+        "외계인고기"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S17",
+      "ingredients": [
+        "밥",
+        "햄",
+        "양파",
+        "당근",
+        "계란",
+        "대파",
+        "김치",
+        "두부"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S18",
+      "ingredients": [
+        "만두",
+        "계란",
+        "대파"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S19",
+      "ingredients": [
+        "콩나물",
+        "대파"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S20",
+      "ingredients": [
+        "애호박",
+        "양파",
+        "두부",
+        "된장"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S21",
+      "ingredients": [
+        "소고기",
+        "양파",
+        "당근",
+        "대파",
+        "밥"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S22",
+      "ingredients": [
+        "참치",
+        "김치",
+        "밥"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S23",
+      "ingredients": [
+        "달걀",
+        "달걀",
+        "우유",
+        "버터"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S24",
+      "ingredients": [
+        "오징어",
+        "대파",
+        "부침가루",
+        "계란"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S25",
+      "ingredients": [
+        "치즈",
+        "라면"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S26",
+      "ingredients": [
+        "오이",
+        "양파",
+        "마요네즈",
+        "계란"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S30",
+      "ingredients": [
+        "김치",
+        " ",
+        "밥"
+      ],
+      "expect_status": 200
+    },
+    {
+      "id": "S27",
+      "ingredients": [],
+      "expect_status": 422
+    },
+    {
+      "id": "S31",
+      "ingredients": [
+        "재료0",
+        "재료1",
+        "재료2",
+        "재료3",
+        "재료4",
+        "재료5",
+        "재료6",
+        "재료7",
+        "재료8",
+        "재료9",
+        "재료10",
+        "재료11",
+        "재료12",
+        "재료13",
+        "재료14",
+        "재료15",
+        "재료16",
+        "재료17",
+        "재료18",
+        "재료19",
+        "재료20",
+        "재료21",
+        "재료22",
+        "재료23",
+        "재료24",
+        "재료25",
+        "재료26",
+        "재료27",
+        "재료28",
+        "재료29",
+        "재료30",
+        "재료31",
+        "재료32",
+        "재료33",
+        "재료34",
+        "재료35",
+        "재료36",
+        "재료37",
+        "재료38",
+        "재료39",
+        "재료40",
+        "재료41",
+        "재료42",
+        "재료43",
+        "재료44",
+        "재료45",
+        "재료46",
+        "재료47",
+        "재료48",
+        "재료49",
+        "재료50",
+        "재료51",
+        "재료52",
+        "재료53",
+        "재료54",
+        "재료55",
+        "재료56",
+        "재료57",
+        "재료58",
+        "재료59",
+        "재료60"
+      ],
+      "expect_status": 422
+    }
+  ],
+  "thresholds": {
+    "valid_names_share": {
+      "min": 1.0,
+      "unit": "returned dish names that are in the dish-name list, over all model answers"
+    },
+    "have_subset_share": {
+      "min": 0.95,
+      "unit": "returned dishes whose every 'have' item is one of the user's ingredients (trim, spaces removed, exact or synonym)"
+    },
+    "missing_disjoint_share": {
+      "min": 0.95,
+      "unit": "returned dishes with no 'missing' item among the user's ingredients (same matching)"
+    },
+    "nonempty_when_possible": {
+      "min": 0.9,
+      "unit": "cases whose reference set is not empty and where at least one dish is returned"
+    },
+    "reference_recall": {
+      "min": 0.6,
+      "unit": "reference dishes returned, pooled over cases"
+    },
+    "reference_precision": {
+      "min": 0.6,
+      "unit": "returned dishes in the reference set, pooled over cases (lower bound)"
+    },
+    "reference_le2_missing_share": {
+      "min": 0.8,
+      "unit": "returned dishes with at most two missing key ingredients by the reference calculation"
+    },
+    "malformed_refused": {
+      "min": 1.0,
+      "unit": "cases S27 and S31 refused with 422"
+    },
+    "model_failure_is_502": {
+      "min": 1.0,
+      "unit": "checked offline with a failing transport (unit tests)"
+    },
+    "median_latency_s": {
+      "max": 5.0
+    }
+  },
+  "report_only": [
+    "have_subset_share_with_staples_allowed",
+    "empty_when_reference_empty",
+    "input_tokens",
+    "output_tokens",
+    "reasoning_tokens",
+    "cost_usd",
+    "hybrid_reference_recall_precision (stored hybrid answers, same inputs)",
+    "truncated_answers"
+  ],
+  "limits": [
+    "single run, temperature 0",
+    "31 inputs: one case moves a share by about 3 points",
+    "one model",
+    "reference is rule-made, not human-labelled, and shares the dish list with the system"
+  ],
+  "max_model_calls": 80
+}
