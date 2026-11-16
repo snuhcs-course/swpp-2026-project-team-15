@@ -9,6 +9,8 @@
 # Changes: Serve recipe images from server/static/images/recipes.
 # Modified with Codex (GPT-6), 2026-11-06; reviewed by Ahyoon Choi.
 # Changes: Name the recipe image directory for static-route coverage.
+# Modified with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
+# Changes: Mount the dish suggestion router; allow starting without the recipe database.
 
 """Application factory. Collaborators are injected so tests can replace them.
 
@@ -26,6 +28,11 @@ from google.genai import types
 
 from app.config import Settings
 from app.database import recipe_engine
+from app.dishes.catalog import Catalog
+from app.dishes.llm import DEFAULT_MODEL, DishLLM
+from app.dishes.router import router as dishes_router
+from app.dishes.service import DishService
+from app.dishes.youtube import VideoCache
 from app.recipes.policy import RecommendationPolicy
 from app.recipes.providers import revision_factory
 from app.recipes.recommendations import RecommendationService
@@ -47,9 +54,10 @@ RECIPE_IMAGE_DIR = Path(__file__).resolve().parents[1] / "static" / "images" / "
 
 def create_app(
     vision: VisionProvider,
-    recipes: RecipeRepository,
+    recipes: RecipeRepository | None,
     *,
     recommendations: RecommendationService | None = None,
+    dishes: DishService | None = None,
 ) -> FastAPI:
     app = FastAPI(
         title="My Little Chef API",
@@ -62,12 +70,15 @@ def create_app(
         name="recipe-images",
     )
     app.state.vision_provider = vision
-    app.state.recipe_repository = recipes
-    app.state.recommendation_service = (
-        recommendations if recommendations is not None else RecommendationService(recipes)
-    )
+    app.state.dish_service = dishes if dishes is not None else DishService(Catalog.load())
     app.include_router(vision_router)
-    app.include_router(recipes_router)
+    app.include_router(dishes_router)
+    if recipes is not None:  # the recipe routes need the database; dishes do not
+        app.state.recipe_repository = recipes
+        app.state.recommendation_service = (
+            recommendations if recommendations is not None else RecommendationService(recipes)
+        )
+        app.include_router(recipes_router)
 
     @app.get("/health", tags=["health"], summary="Liveness check")
     def health() -> dict[str, str]:
@@ -75,6 +86,10 @@ def create_app(
 
     @app.get("/ready", tags=["health"], summary="Database and recipe readiness")
     def ready() -> dict[str, str]:
+        if recipes is None:  # database-free mode: the dish list is the data this server needs
+            if not len(app.state.dish_service.catalog):
+                raise HTTPException(503, "Dish list is empty")
+            return {"status": "ready"}
         try:
             sources, _ = recipes.load_catalog([], 204)
             if not sources:
@@ -86,9 +101,14 @@ def create_app(
     return app
 
 
-def create_app_from_env() -> FastAPI:
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
-    settings = Settings.from_env()
+def _dish_service(settings: Settings) -> DishService:
+    key = os.environ.get("DISH_LLM_API_KEY") or settings.openrouter_api_key
+    model = os.environ.get("DISH_LLM_MODEL") or DEFAULT_MODEL
+    llm = DishLLM(key, model) if key.strip() else None
+    return DishService(Catalog.load(), llm, VideoCache())
+
+
+def _recipe_side(settings: Settings):
     engine = recipe_engine(settings.database_url, settings.recipe_db_path)
     recipes = RecipeRepository(engine)
     seasonings = load_seasoning_policy()
@@ -99,14 +119,26 @@ def create_app_from_env() -> FastAPI:
     labelled = seasoning_labelled_ids(recipes.ingredient_labels()) if all_mode else ()
     recipes = RecipeRepository(engine, staples=resolve_staple_names(seasonings, catalog, labelled))
     logging.getLogger(__name__).info("assumed seasonings: %s", seasonings.describe())
-    return create_app(
-        _build_vision(settings),
+    return recipes, RecommendationService(
         recipes,
-        recommendations=RecommendationService(
-            recipes,
-            policy=RecommendationPolicy.from_env(os.environ, seasonings=seasonings),
-            llm_factory=revision_factory(settings),
-        ),
+        policy=RecommendationPolicy.from_env(os.environ, seasonings=seasonings),
+        llm_factory=revision_factory(settings),
+    )
+
+
+def create_app_from_env() -> FastAPI:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
+    settings = Settings.from_env()
+    dishes = _dish_service(settings)
+    try:
+        recipes, recommendations = _recipe_side(settings)
+    except Exception:
+        if os.environ.get("RECIPE_DB_OPTIONAL") != "1":
+            raise
+        logging.getLogger(__name__).warning("recipe database unavailable; serving dishes only")
+        recipes, recommendations = None, None
+    return create_app(
+        _build_vision(settings), recipes, recommendations=recommendations, dishes=dishes
     )
 
 

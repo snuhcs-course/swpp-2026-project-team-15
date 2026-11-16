@@ -1,0 +1,14 @@
+{
+ "kimchi-fried-rice": {
+  "fetched_at": "2026-11-15T00:00:00+00:00",
+  "videos": [
+   {"video_id": "FAKE_TEST_ID_01", "title": "TEST FIXTURE video one", "channel": "Test channel",
+    "view_count": 1000, "thumbnail_url": "https://example.invalid/fake1.jpg", "embeddable": true},
+   {"video_id": "FAKE_TEST_ID_02", "title": "TEST FIXTURE video two", "channel": "Test channel",
+    "view_count": 500, "thumbnail_url": "https://example.invalid/fake2.jpg", "embeddable": true}
+  ]
+ },
+ "egg-roll": {"fetched_at": "2020-01-01T00:00:00+00:00", "videos": [
+   {"video_id": "FAKE_TEST_ID_03", "title": "TEST FIXTURE stale", "channel": "Test channel",
+    "view_count": 1, "thumbnail_url": "https://example.invalid/fake3.jpg", "embeddable": true}]}
+}

@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue // `by` 문법으로 상태 읽기
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color // 투명색 (선택 표시 배경 제거)
 import androidx.compose.ui.res.painterResource // drawable → 그릴 수 있는 형태
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination // 탭 전환 시 시작 지점 찾기
 import androidx.navigation.compose.NavHost // 화면 전환 컨테이너
 import androidx.navigation.compose.composable // 경로에 화면 등록
@@ -30,10 +31,12 @@ import com.example.mylittlechef.model.Recipe
 import com.example.mylittlechef.ui.components.NavTabText
 import com.example.mylittlechef.ui.fridge.FridgeScreen
 import com.example.mylittlechef.ui.profile.ProfileScreen
+import com.example.mylittlechef.ui.dish.DishScreen
 import com.example.mylittlechef.ui.recipe.RecipeScreen
 
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.ui.theme.DeepGreen
+import com.example.mylittlechef.viewmodel.DishViewModel
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
 import com.example.mylittlechef.viewmodel.RecipeViewModel
@@ -65,6 +68,8 @@ fun MainScreen(
     ingredientSuggestions: IngredientSuggestionViewModel? = null,
     onEditPantryClick: () -> Unit = {}
 ) {
+    // 요리 추천 탭의 상태. 탭을 오가거나 화면을 돌려도 유지되도록 이 화면 단위로 만든다
+    val dishes: DishViewModel = viewModel()
     // 탭 전환만 담당하는 NavController (최상위 NavController와 별개)
     val tabNavController = rememberNavController()
     // 현재 보고 있는 탭의 경로. 바뀔 때마다 탭 바가 다시 그려진다
@@ -127,13 +132,8 @@ fun MainScreen(
                 )
             }
             composable(Routes.RECIPE) {
-                RecipeScreen(
-                    user = user,
-                    fridge = fridge,
-                    recipes = recipes,
-                    onRecipeCardClick = onRecipeCardClick,
-                    onLikeClick = {}
-                )
+                // Dish suggestions (videos, substitutions) replace the recipe-database list on this branch.
+                DishScreen(user = user, fridge = fridge, dishes = dishes)
             }
             composable(Routes.PROFILE) {
                 ProfileScreen(
