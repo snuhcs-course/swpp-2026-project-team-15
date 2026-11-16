@@ -7,7 +7,7 @@ import httpx
 
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "google/gemini-2.5-flash-lite"
-MAX_TOKENS = 2048
+MAX_TOKENS = 4096
 
 
 class DishLLMError(Exception):
