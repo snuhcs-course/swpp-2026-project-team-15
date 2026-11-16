@@ -90,3 +90,40 @@ Question: how should the request to a web-search model be worded so that the lin
 | D3 | D2 + "exactly this dish, no neighbours or variants" + "exclude shorts, vlogs, mukbang, reviews, ads" |
 
 Same 27 dishes and the same two validated judges as the second YouTube discovery study (gemini-2.5-pro as primary, claude-haiku-4.5 as second; prompt and rubric unchanged). Rule: choose the highest relevant share among variants whose dishes-with-a-relevant-link and links per dish stay within 1 dish and 0.5 of D0; inconclusive (keep D0) when the paired 95% interval against D0 contains 0. Whether a video is "easy for a person living alone" is **not** measured by any judge; running time is only a weak proxy. Run: `PYTHONPATH=.:../research uv run python -m experiments.dish_pipeline.run_round3 plan|collect|judge|analyze` from `server/` (dry run unless `--allow-live-api`).
+
+### Round 3 results (2026-11-16)
+
+Setup as frozen in `criteria_round3.json` (commit `9c8e63e`; one amendment, below). 27 dishes x 4 variants, one run, temperature 0. The usable links of a variant are the model's links that exist, are public and embeddable, in the model's order; relevance is the judgement of gemini-2.5-pro (E, primary) and claude-haiku-4.5 (J1). Calls: 118 discovery calls plus 3 attempts of one failed call (121 of 140), 52 judge calls, 27 `videos.list` requests, $0.81 for discovery and $0.47 for judging ($1.28 of 1.80).
+
+| | OLD (stored) | D0 follow along | D1 + 자취생 | D2 + observable conditions | D3 + exact dish, excludes |
+| --- | --- | --- | --- | --- | --- |
+| Links provided / exist / usable | 122 / 110 / 104 | 118 / 111 / 102 | 114 / 111 / 103 | 114 / 110 / 103 | 112 / 89 / 83 |
+| Usable links per dish | 3.85 | 3.78 | 3.81 | 3.81 | **3.07** |
+| **Relevant share of usable links (E)** | 76.0% | **82.4%** | 75.7% | 77.7% | 75.9% |
+| Relevant share (J1) | 77.9% | 77.5% | 75.7% | 75.7% | 75.9% |
+| Dishes with at least one relevant link (E) | 26 | 26 | 26 | 26 | 25 |
+| First usable link relevant (E) | 93% | 96% | 93% | 96% | 92% |
+| Shorts (60 s or less) | 6.7% | 8.8% | 4.9% | 9.7% | 14.5% |
+| Running time of usable links, quartiles (s) | 248 / 398 / 567 | 215 / 354 / 565 | 248 / 368 / 564 | 222 / 345 / 563 | 178 / 298 / 541 |
+| Links with 자취 in title or tags | 11.5% | 9.8% | 7.8% | 6.8% | 14.5% |
+| Cost per request; median latency | $0.0075; 3.2 s | $0.0075; 3.4 s | $0.0075; 3.4 s | $0.0074; 3.3 s | $0.0075; 4.6 s |
+
+Paired difference to D0 in relevant share (E; pooled over dishes, 95% bootstrap over dishes): D1 -6.6 points (-15.8 to +2.1), D2 -4.7 (-14.0 to +4.4), D3 -6.4 (-17.0 to +4.7); with J1: -1.7, -1.7, -1.5 (all intervals contain 0). OLD minus D0: -6.4 (-12.7 to -0.2). E and J1 agree on 90.5% of the 495 usable links (kappa 0.73).
+
+**Decision by the frozen rule: keep D0.** Eligible were D0, D1 and D2 (D3 fails the links-per-dish condition: 3.07 against 3.78 - 0.5); D0 has the highest share and the others are not better, so no variant is adopted (the same under J1).
+
+What the numbers show:
+
+- **No extra wording beat the plain "follow along and cook it" request.** All four variants lie within about 7 points of each other and every interval against D0 contains 0, so the differences are not distinguishable from run-to-run variation of the search.
+- **The word 자취생 did not draw 자취 videos.** Links with 자취 in the title or tags fell from 9.8% (D0) to 7.8% (D1) and 6.8% (D2), so the audience word was not used as a search keyword here. It also did not improve relevance. This is one wording, not a general statement.
+- **The "exactly this dish, exclude ..." wording (D3) made the model return more ids that do not exist** (89 of 112 exist, against 94% to 97% for the others), leaving 3.07 usable links per dish, and more shorts (14.5%). It is the only variant that clearly lost something.
+- **D0 vs the earlier request (OLD):** D0 is 6.4 points higher (interval -12.7 to -0.2 for OLD minus D0, just excluding 0). They differ in two things at once (D0 no longer asks for "most popular, best-rated" and says "follow along"), so which change helped is unknown.
+- **Running time**: D2 and D3 ask for short videos; the median fell from 354 s (D0) to 345 s and 298 s. Running time is only a weak proxy of "simple"; the judges do not measure "easy for a person living alone". That has to be judged by people.
+
+Failure types of the usable links E calls irrelevant (pre-set rule on title, tags and length; the judges' reasons were not read one by one): D0 18 links (10 other, 4 other dish, 2 vlog or show, 2 short); D1 25 (13 other, 5 neighbouring dish, 4 vlog or show, 3 other dish); D2 23 (12 other, 6 neighbouring dish, 2 vlog or show, 2 short, 1 other dish); D3 20 (8 other, 5 neighbouring dish, 4 short, 2 vlog or show, 1 other dish); OLD 25 (16 other, 3 neighbouring dish, 3 short, 2 other dish, 1 vlog or show). "Other" is the largest class under this rule because a neighbouring dish is only detected when its catalog name appears in the title; the earlier manual reading of OLD found 16 neighbouring-dish links. Neighbour-dish errors are therefore under-counted here, and the types are a proxy.
+
+**Amendment** (written before the repeat): the call for egg-fried-rice with variant D1 failed after two retries (HTTP 429); it was repeated once (it succeeded: 5 links). The failed attempt is kept in the stored data.
+
+### Round 3 limits
+
+One run per variant; the web search of the model changes from day to day, so a repeat could rank the variants differently. 27 dishes, many of them fried-rice dishes. Relevance comes from two language models (kappa 0.61 against one labeller's 60 labels in their validation) that read title, channel, description and tags, not the video. The judgements of videos judged in the earlier study were reused, the others were judged in one batch per dish and judge with the order shuffled, so the judge saw batches of different composition. OLD and D0 differ in two ways. The wording of each variant is a single sentence; other sentences could behave differently. "Easy to follow for a person living alone" and the quality of the videos for that audience were not measured.
