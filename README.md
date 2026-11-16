@@ -21,6 +21,18 @@ SNU SWPP Fall 2026 · Team 15. The Android app recognises the ingredients in a f
 └── compose.yaml            # nginx and API (no database)
 ```
 
+## Quick start (app only)
+
+A demo server for this branch runs at `http://158.101.141.165:8080/` (no login, no rate limit; model calls cost money). With a phone attached by USB:
+
+```sh
+git clone -b feat/youtube-recipe-demo git@github.com:snuhcs-course/swpp-2026-project-team-15.git
+cd swpp-2026-project-team-15
+sh scripts/install-android.sh        # builds and installs the isolated .cloudtest app, talking to the demo server
+```
+
+The app needs nothing else. To use your own server, pass its URL (`sh scripts/install-android.sh http://host:port/`) and see "Run locally" below.
+
 ## Run locally
 
 ```sh

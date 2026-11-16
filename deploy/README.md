@@ -1,7 +1,7 @@
 # Oracle ARM development deployment
 
 Compose runs nginx → FastAPI/Uvicorn. Only port 80 is published. Docker uses the locked Python dependencies and copies only server runtime files. There is no database.
-The default Android debug endpoint is `http://158.101.141.165/`: HTTP is allowed only for this IP and localhost in debug/cloudTest. Release disables cleartext; supply `-PreleaseServerBaseUrl=https://YOUR-DOMAIN/` after configuring DNS and TLS. The VM IP is ephemeral; update the endpoint if it changes.
+The default Android debug endpoint is the demo server `http://158.101.141.165:8080/`: HTTP is allowed only for this IP and localhost in debug/cloudTest. Release disables cleartext; supply `-PreleaseServerBaseUrl=https://YOUR-DOMAIN/` after configuring DNS and TLS. The VM IP is ephemeral; update the endpoint if it changes.
 
 ## Runtime settings
 

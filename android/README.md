@@ -38,7 +38,7 @@ To run the server on this computer, see the [root instructions](../README.md#run
 | cloudTest | `com.example.mylittlechef.cloudtest` | `serverBaseUrl` | Isolated installation/device tests |
 | release | `com.example.mylittlechef` | `releaseServerBaseUrl` | HTTPS deployment; configure before distribution |
 
-Debug/cloudTest default to `http://158.101.141.165/`. HTTP is permitted only for
+Debug/cloudTest default to the demo server `http://158.101.141.165:8080/`. HTTP is permitted only for
 that IP, localhost and 127.0.0.1 by their network security configuration. An HTTP
 override to another host also requires updating that allowlist. Release disables
 cleartext and defaults to `https://localhost/`, a placeholder requiring an explicit
