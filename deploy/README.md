@@ -37,6 +37,27 @@ bash deploy/db.sh init entities.zip
 bash deploy/release.sh "$(git rev-parse HEAD)"
 ```
 
+## Recipe image directory
+
+`release.sh` and `db.sh` default `RECIPE_IMAGES_DIR` to
+`/opt/mylittlechef/assets/recipe-images`, outside release checkouts. An explicit
+environment value overrides it. Direct local Compose usage retains
+`./server/static/images/recipes`; use the same production value for direct host
+Compose commands. API recreation mounts that directory read-only.
+
+Store only one set of image files directly in this directory (no nested `images/`).
+Verify archive paths, file hashes and existing-file conflicts before extraction.
+The API user (UID 10001) needs directory traversal and file read permissions;
+use 0755 image directories and 0644 public image files. Do not widen permissions
+on credentials or backups.
+
+For the existing-catalog image rollout, commit and verify the nullable image-column
+migration and URL mapping **before deploying new code**, including a main push
+that triggers CI deployment. Do not use `db.sh reset` for this image-only change.
+Readiness rollback restores code/config only, not URL values or image files.
+Manual migration and URL recovery instructions are prepared separately; this
+directory configuration alone is not an approved deployment procedure.
+
 ## Developer operations over SSH
 
 ```bash

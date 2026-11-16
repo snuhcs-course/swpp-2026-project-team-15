@@ -2,6 +2,8 @@
 # Run on ARM host: bash /path/to/checkout/deploy/release.sh <40-char commit>
 # Source checkout must match the requested revision. Existing data is never reset.
 set -euo pipefail
+# Keep assets independent of release checkouts, including API recreation.
+export RECIPE_IMAGES_DIR=${RECIPE_IMAGES_DIR:-/opt/mylittlechef/assets/recipe-images}
 sha=${1:?40-character commit SHA required}
 [[ $sha =~ ^[a-f0-9]{40}$ ]] || exit 2
 cd -P "$(dirname "$0")/.."

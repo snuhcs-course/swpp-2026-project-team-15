@@ -36,7 +36,7 @@ services:
   api:
     <<: *api
     volumes:
-      - ./server/static/images/recipes:/app/static/images/recipes:ro
+      - ${RECIPE_IMAGES_DIR:-./server/static/images/recipes}:/app/static/images/recipes:ro
     restart: unless-stopped
     depends_on:
       postgres: {condition: service_healthy}

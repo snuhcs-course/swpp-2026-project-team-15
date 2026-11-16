@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Usage from checkout: bash deploy/db.sh init|reset dataset.zip
 set -euo pipefail
+export RECIPE_IMAGES_DIR=${RECIPE_IMAGES_DIR:-/opt/mylittlechef/assets/recipe-images}
 cd -P "$(dirname "$0")/.."
 export HOST_UID=${HOST_UID:-$(id -u)} HOST_GID=${HOST_GID:-$(id -g)}
 export APP_IMAGE=${APP_IMAGE:-mylittlechef:$(git rev-parse HEAD)}
