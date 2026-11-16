@@ -241,7 +241,7 @@ def _llm(handler) -> DishLLM:
 
 @pytest.fixture(autouse=True)
 def _no_retry_wait(monkeypatch):
-    monkeypatch.setattr("app.dishes.llm.RETRY_SECONDS", 0)
+    monkeypatch.setattr("app.dishes.llm.RETRY_WAITS", (0, 0))
 
 
 def test_llm_keeps_the_complete_items_of_an_answer_cut_at_the_token_limit(caplog):
@@ -258,8 +258,9 @@ def test_llm_keeps_the_complete_items_of_an_answer_cut_at_the_token_limit(caplog
     assert any("cut at the token limit" in r.getMessage() for r in caplog.records)
 
 
-def test_llm_retries_once_when_the_service_limits_the_rate():
+def test_llm_retries_twice_when_the_service_limits_the_rate():
     answers = [
+        httpx.Response(429),
         httpx.Response(429),
         httpx.Response(
             200,

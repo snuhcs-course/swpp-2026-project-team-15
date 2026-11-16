@@ -11,7 +11,7 @@ import httpx
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "google/gemini-2.5-flash-lite"
 MAX_TOKENS = 4096
-RETRY_SECONDS = 3
+RETRY_WAITS = (3, 8)  # seconds before the first and the second retry after a 429
 log = logging.getLogger(__name__)
 
 
@@ -71,8 +71,10 @@ class DishLLM:
             ) as client:
                 headers = {"Authorization": f"Bearer {self._api_key}"}
                 response = client.post(ENDPOINT, json=payload, headers=headers)
-                if response.status_code == 429:  # the provider limits bursts: one short retry
-                    time.sleep(RETRY_SECONDS)
+                for wait in RETRY_WAITS:  # the provider limits bursts: wait and try again
+                    if response.status_code != 429:
+                        break
+                    time.sleep(wait)
                     response = client.post(ENDPOINT, json=payload, headers=headers)
             if response.status_code == 429 or response.status_code >= 500:
                 raise DishLLMError("The model service is temporarily unavailable")
