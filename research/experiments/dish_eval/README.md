@@ -86,4 +86,31 @@ Settings recorded in every summary: date, provider, model, temperature, max toke
 
 ## Results
 
-Not run yet.
+Date 2026-11-16. Code, cases and thresholds as of commit `e5ddfab` (the frozen set; unchanged since). One run each, one model call at most per valid case, temperature 0, `google/gemini-2.5-flash-lite`. No repeats were made, so run-to-run variation is unknown.
+
+| Metric | Threshold | Rules only (no model) | Model |
+| --- | --- | --- | --- |
+| suggest: expected fields | 100% | 100% pass | 100% pass |
+| suggest: ids from the list | 100% | 100% pass | 100% pass |
+| suggest: `have`/`missing` consistent | 100% | 100% pass | 100% pass |
+| suggest: ≥1 acceptable dish in top 5 | ≥ 85% | 100% pass | 100% pass |
+| suggest: shown dishes with ≤ 2 missing | ≥ 80% | 100% pass | 99.2% pass |
+| suggest: forbidden dishes shown | 0 | 0 pass | **1 fail** |
+| suggest: invalid inputs refused | 100% | 100% pass | 100% pass |
+| suggest: valid answer with a failing model | 100% | 100% pass | 100% pass |
+| adapt: pairs inside the table | 100% | 100% pass | 100% pass |
+| adapt: no invented quantities or steps | 100% | 100% pass | **93.3% fail** (1 of 15) |
+| adapt: empty-with-note cases | 100% | 100% pass | 100% pass |
+| adapt: outcome matches label | ≥ 90% | 100% pass | 100% pass |
+| adapt: unknown dish / empty list refused | 100% | 100% pass | 100% pass |
+| median latency | ≤ 5 s | not measured | 1.3 s pass (max 3.1 s) |
+
+Model run: 35 model calls (26 suggest cases with candidates, 9 adapt cases that have a table option; the server answers the other cases without the model), 37,299 input and 9,038 output tokens, about $0.0074 in total (about $0.0002 per call). Suggest answers marked `llm`: 23, marked `rules`: 4 (S09 had no candidates; for S02, S18 and S30 the model's answer was not usable and the server fell back to its ranking; the reason was not inspected). The rules run made no call.
+
+Failure analysis:
+
+- **Forbidden dish (S05, input: 두부 only).** The model's five dishes were 두부조림 and 두부부침 (the two acceptable ones), 두부국, 두부덮밥 (missing 밥, 양파, 대파) and 김치국. Only two dishes need at most one more item for this input, so three slots go to dishes needing more; the model chose 두부덮밥, which is on the forbidden list. The service did not prevent it because the closed-list guard only checks that the id exists. This is a real, small ranking weakness for single-ingredient input; it was not fixed here.
+- **Step word (A08, 김치전 with flour and onion).** The suggestion text was "밀가루와 소금을 섞어 사용하세요." The scorer's step-word pattern matches "섞어". The text invents no quantity and no step order, so this is arguably a scorer that is stricter than intended; but the threshold was fixed before the run and the case counts as a failure. Neither the pattern nor the threshold was changed.
+- The rules-only baseline passes every threshold, which is expected: the labels were derived with the same matching rules the baseline ranks by. What the comparison shows is that the model adds wording and some reordering without breaking the guards (ids, have/missing, table pairs, empty-note cases), at the cost of the two issues above. It does not show that the model's order is better for users.
+
+Label notes (not corrected in place): none found so far. S09 (only seasonings) has an empty acceptable set by design.
