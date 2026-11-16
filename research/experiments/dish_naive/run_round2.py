@@ -55,7 +55,9 @@ def schema_for(variant: str, ingredients: list[str]) -> dict:
     return schema
 
 
-def payload_for(variant: str, ingredients: list[str], names: list[str]) -> dict:
+def payload_for(
+    variant: str, ingredients: list[str], names: list[str], max_tokens: int = MAX_TOKENS
+) -> dict:
     return {
         "model": MODEL,
         "messages": [
@@ -64,7 +66,7 @@ def payload_for(variant: str, ingredients: list[str], names: list[str]) -> dict:
         ],
         "response_format": json_schema_format("dish_choice", schema_for(variant, ingredients)),
         "provider": {"require_parameters": True},
-        "max_tokens": MAX_TOKENS,
+        "max_tokens": max_tokens,
         "temperature": 0,
     }
 
@@ -117,11 +119,15 @@ def decide(per_variant: dict[str, dict]) -> dict:
     return {"verdicts": verdicts, "adopted": passing[0] if passing else None}
 
 
-def run_variant(variant, cases, names, name_set, catalog, service, key, cap) -> dict:
+def run_variant(
+    variant, cases, names, name_set, catalog, service, key, cap, max_tokens=MAX_TOKENS
+) -> dict:
     rows, results = [], []
     for case in cases:
         ingredients = case["ingredients"]
-        call, attempts = chat_with_retry(payload_for(variant, ingredients, names), key, cap)
+        call, attempts = chat_with_retry(
+            payload_for(variant, ingredients, names, max_tokens), key, cap
+        )
         dishes, raw_names, returned = [], [], []
         if call.data is not None:
             items = call.data.get("dishes")
