@@ -243,11 +243,13 @@ def cmd_judge_validate(args, crit) -> None:
     orkey = key("openrouter.env", "OPENROUTER_API_KEY")
     entries = [(f"{r['dish']}:{r['video_id']}", table[r["dish"]], r) for r in sample]
     assert all(k in labels for k, _, _ in entries), "labels missing for some sample videos"
-    out = {}
-    for tag, model in (("J1", SELECTOR_MODEL), ("E", EVALUATOR_MODEL)):
-        out[tag] = judge_batch(orkey, model, entries)
-    save("validation_judgements.json", out)
-    print({t: (v["error"], v["calls"]) for t, v in out.items()})
+    out = load("validation_judgements.json", {})
+    models = [m for m in (args.models or "").split(",") if m] or [SELECTOR_MODEL, EVALUATOR_MODEL]
+    for model in models:
+        if model not in out or out[model]["error"]:
+            out[model] = judge_batch(orkey, model, entries)
+            save("validation_judgements.json", out)
+    print({m: (v["error"], v["calls"], round(v["cost"], 4)) for m, v in out.items()})
 
 
 def cmd_judge(args, crit) -> None:
@@ -260,7 +262,7 @@ def cmd_judge(args, crit) -> None:
         if not usable:
             continue
         entries = [(c["video_id"], table[did], c) for c in usable]
-        for tag, model in (("J1", SELECTOR_MODEL), ("E", EVALUATOR_MODEL)):
+        for tag, model in (("J1", args.selector), ("E", args.evaluator)):
             if tag in done.get(did, {}) and not done[did][tag]["error"]:
                 continue
             done.setdefault(did, {})[tag] = judge_batch(orkey, model, entries)
@@ -275,6 +277,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--allow-live-api", action="store_true")
     ap.add_argument("--max-search", type=int, default=0)
+    ap.add_argument("--models", default="")
+    ap.add_argument("--selector", default=SELECTOR_MODEL)
+    ap.add_argument("--evaluator", default=EVALUATOR_MODEL)
     args = ap.parse_args(argv)
     crit = criteria()
     s = v1_sample()
@@ -297,7 +302,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "analyze":
         from . import analyze
 
-        analyze.main(DATA, crit, HERE)
+        analyze.main(DATA, crit, HERE, args.selector, args.evaluator)
         return 0
     {
         "collect": cmd_collect,

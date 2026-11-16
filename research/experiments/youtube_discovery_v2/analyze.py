@@ -40,10 +40,10 @@ def validation(data: Path, labels: dict) -> dict:
     out = {}
     j0 = [scoring.title_names_dish(r["title"], table[r["dish"]]["name"]) for r in rows]
     out["J0"] = scoring.confusion(truth, j0)
-    for tag in ("J1", "E"):
-        got = (sample.get(tag) or {}).get("judgements")
+    for model, res in sample.items():
+        got = (res or {}).get("judgements")
         if got:
-            out[tag] = scoring.confusion(truth, [got[k] for k in keys])
+            out[model] = scoring.confusion(truth, [got[k] for k in keys])
     # the old rule on the subsets it is suspected to fail on
     for name, pick in (
         ("non_hangul", lambda r: not r["hangul_title"]),
@@ -130,7 +130,7 @@ def combos(data: Path, trusted: dict[str, bool]) -> tuple[dict, dict, dict, dict
     return rows, per_dish, all_rows, {"paired": len(paired), "dishes": len(store)}
 
 
-def main(data: Path, crit: dict, here: Path) -> None:
+def main(data: Path, crit: dict, here: Path, selector: str, evaluator: str) -> None:
     labels = json.loads((here / "labels.json").read_text("utf-8"))["labels"]
     val = validation(data, labels)
 
@@ -139,8 +139,8 @@ def main(data: Path, crit: dict, here: Path) -> None:
 
     trusted = {
         "J0": True,
-        "J1": (kappa("J1") or 0) >= 0.6,
-        "E": (kappa("E") or 0) >= 0.6,
+        "J1": (kappa(selector) or 0) >= 0.6,
+        "E": (kappa(evaluator) or 0) >= 0.6,
     }
     rows, per_dish, all_rows, meta = combos(data, trusted)
     out = {
