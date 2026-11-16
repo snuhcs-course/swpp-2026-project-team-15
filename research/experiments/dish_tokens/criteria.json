@@ -1,0 +1,62 @@
+{
+  "name": "dish_tokens",
+  "version": 1,
+  "frozen": "2026-11-16, before any model call of the token and pipeline studies",
+  "question": "What is the cheapest way to run the naive selection call without losing answer quality?",
+  "model": "google/gemini-2.5-flash-lite",
+  "temperature": 0,
+  "inputs": {
+    "seed": 20261116,
+    "inputs_from": "research/experiments/dish_naive/criteria.json",
+    "input_ids": [
+      "S01",
+      "S07",
+      "S11",
+      "S13",
+      "S17",
+      "S19",
+      "S21",
+      "S22",
+      "S23",
+      "S25",
+      "S26",
+      "S30"
+    ],
+    "selection": "12 of the 27 well-formed inputs, random.Random(seed).sample over the sorted ids, fixed before any run of this study"
+  },
+  "variants": {
+    "B": "production prompt and schema, JSON user message with owned first, max_tokens 8192 (a ceiling, not a target); quality baseline",
+    "V0": "production settings as shipped (max_tokens 2048); expected to truncate",
+    "V1a": "as B with max_tokens 1024",
+    "V1b": "as B with max_tokens 4096",
+    "V2": "as B with a compact plain-text user message (owned ingredients and dish names comma-separated)",
+    "V3": "as B with the reasoning parameter set to disabled (reasoning: {enabled: false}); if the request is rejected the variant is recorded as unsupported",
+    "V4": "as B with a minimal schema {name, missing} (no 'have'); have_subset is not computed for this variant",
+    "V5": "as B with the dish list first and the owned ingredients last (static prefix first); cached tokens are read from the usage field"
+  },
+  "recorded_per_call": [
+    "prompt_tokens",
+    "completion_tokens",
+    "reasoning_tokens",
+    "cached_tokens",
+    "finish_reason",
+    "cost_usd",
+    "latency_s"
+  ],
+  "quality_metrics": [
+    "have_subset_share",
+    "missing_disjoint_share",
+    "reference_recall",
+    "reference_precision",
+    "reference_le2_missing_share",
+    "valid_names_share"
+  ],
+  "decision_rule": "Take B's quality metrics as the baseline. A variant qualifies if it has zero truncated answers and every quality metric it has is within 2 percentage points below B's (higher is not penalised). Choose the qualifying variant with the lowest mean cost per call; ties go to the lower mean output tokens. The smallest max_tokens of V0/V1a/V1b/B with zero truncations on these inputs is recorded as the no-truncation setting.",
+  "max_model_calls": 150,
+  "max_cost_usd": 0.15,
+  "limits": [
+    "12 inputs, single run at temperature 0: run-to-run variation is not measured",
+    "quality is consistency with the rule-made reference, not human-labelled",
+    "cached tokens depend on the provider and on calls arriving within the cache lifetime"
+  ]
+}
