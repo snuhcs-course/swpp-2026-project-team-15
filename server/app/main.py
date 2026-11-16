@@ -133,13 +133,20 @@ def create_app_from_env() -> FastAPI:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
     settings = Settings.from_env()
     dishes = _dish_service(settings)
-    try:
-        recipes, recommendations = _recipe_side(settings)
-    except Exception:
-        if os.environ.get("RECIPE_DB_OPTIONAL") != "1":
-            raise
-        logging.getLogger(__name__).warning("recipe database unavailable; serving dishes only")
+    log = logging.getLogger(__name__)
+    if os.environ.get("DISH_ONLY") == "1":
+        # Never opens the recipe database, so a database that lacks a column the current code
+        # reads (or an unavailable one) cannot fail readiness. Recipe routes are not mounted.
+        log.info("DISH_ONLY=1: serving dishes only")
         recipes, recommendations = None, None
+    else:
+        try:
+            recipes, recommendations = _recipe_side(settings)
+        except Exception:
+            if os.environ.get("RECIPE_DB_OPTIONAL") != "1":
+                raise
+            log.warning("recipe database unavailable; serving dishes only")
+            recipes, recommendations = None, None
     return create_app(
         _build_vision(settings), recipes, recommendations=recommendations, dishes=dishes
     )

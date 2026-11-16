@@ -31,14 +31,34 @@ class VideoCache:
         self.max_age = timedelta(days=max_age_days)
         self._now = now or (lambda: datetime.now(UTC))
         self._data: dict = {}
-        if self.path and self.path.is_file():
-            try:
-                loaded = json.loads(self.path.read_text(encoding="utf-8"))
-                self._data = loaded if isinstance(loaded, dict) else {}
-            except (OSError, ValueError):
-                self._data = {}
+        self._mtime: float | None = None
+        self._load()
+
+    def _load(self) -> None:
+        """(Re)read the file; a missing or broken file means an empty cache."""
+        self._data, self._mtime = {}, None
+        if not (self.path and self.path.is_file()):
+            return
+        try:
+            self._mtime = self.path.stat().st_mtime
+            loaded = json.loads(self.path.read_text(encoding="utf-8"))
+            self._data = loaded if isinstance(loaded, dict) else {}
+        except (OSError, ValueError):
+            self._data = {}
+
+    def _refresh(self) -> None:
+        """Pick up a cache file that a refresh job replaced while the server keeps running."""
+        if not self.path:
+            return
+        try:
+            mtime = self.path.stat().st_mtime
+        except OSError:
+            mtime = None
+        if mtime != self._mtime:
+            self._load()
 
     def get(self, dish_id: str) -> list[dict]:
+        self._refresh()
         entry = self._data.get(dish_id)
         if not isinstance(entry, dict):
             return []

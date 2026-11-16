@@ -74,6 +74,42 @@ Recognition and revision errors stay visible to the client;
 there is no paid automatic retry or mock fallback. This small development service
 has no user authentication; monitor OpenRouter usage and stop the API when not in use.
 
+## Dish suggestions (YouTube videos, no recipe database)
+
+`POST /dishes/suggest`, `POST /dishes/adapt` and `GET /dishes` pick dishes from the closed list in
+`server/app/dishes/dishes.json` (shipped in the image and the runtime archive). Videos come from a
+cache file; without it the response carries only a YouTube search link.
+
+| Mode | Settings in `runtime.env` | Effect |
+| --- | --- | --- |
+| Default (unchanged) | none | Needs the recipe DB; `/ready` fails if it is unavailable or lacks a column the code reads (for example `recipe.main_image_url`) |
+| Dish only | `DISH_ONLY=1` | Never opens the recipe DB; only the dish, analyze and health routes exist; `/ready` checks the dish list |
+| Optional DB | `RECIPE_DB_OPTIONAL=1` | Starts without the DB only if opening it fails at start; a DB that opens but lacks a column still fails `/ready`, so prefer `DISH_ONLY=1` |
+
+`DISH_LLM_MODEL` (default `google/gemini-2.5-flash-lite`) uses `OPENROUTER_API_KEY`; without a key the
+rules-only ranking answers. nginx applies the AI rate limit (6 requests/minute/IP, burst 3) to
+`/dishes/suggest` and `/dishes/adapt`; users behind one shared address share that limit.
+
+The API reads the cache from `/data/dish-videos.json` (`DISH_DATA_DIR`, default
+`/opt/mylittlechef/data/dish-videos`, mounted read-only) and re-reads it when the file changes.
+Fill it on the host; the key stays outside `runtime.env`:
+
+```bash
+sudo install -d -m 755 -o "$USER" /opt/mylittlechef/data/dish-videos
+install -m 600 /dev/null /opt/mylittlechef/config/youtube.env   # then add: YOUTUBE_API_KEY=...
+cd /opt/mylittlechef/current
+bash deploy/dish-cache.sh --max-requests 120            # dry run: plan and quota estimate
+bash deploy/dish-cache.sh --max-requests 120 --live     # 60 dishes: 6,060 quota units
+```
+
+A search costs 100 quota units and a video lookup 1, against a default of 10,000 units a day
+(resets at midnight Pacific time), so 130 dishes take two days. YouTube API data may be cached for a
+limited time only (30 days as of the terms we read; check the current terms) and entries older than 30
+days are ignored by the API. Refresh example, not installed by any script (`~/.config/systemd/user` or
+a crontab): run `bash /opt/mylittlechef/current/deploy/dish-cache.sh --max-requests 120 --live
+--max-age-days 20` once a day after the quota reset (for example 10:00 UTC); only dishes older than 20
+days are fetched, so a full refresh spreads over a few days.
+
 ## CI/CD and Android
 
 CI checks preserved contributor tests, Python lint/tests with real PostgreSQL,

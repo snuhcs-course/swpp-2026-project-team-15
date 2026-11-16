@@ -65,7 +65,10 @@ fun FridgeScreen(
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
     if (showSuggestions && ingredientSuggestions != null) {
-        ModalBottomSheet(onDismissRequest = { showSuggestions = false }) {
+        ModalBottomSheet(
+            onDismissRequest = { showSuggestions = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
             IngredientSuggestionSheet(ingredientSuggestions, onRetry = { ingredientSuggestions.refresh(fridge.ingredients) })
         }
     }

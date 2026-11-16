@@ -35,8 +35,11 @@ services:
       options: {max-size: 10m, max-file: "3"}
   api:
     <<: *api
+    environment:
+      DISH_VIDEO_CACHE: /data/dish-videos.json
     volumes:
       - ./server/static/images/recipes:/app/static/images/recipes:ro
+      - ${DISH_DATA_DIR:-/opt/mylittlechef/data/dish-videos}:/data:ro
     restart: unless-stopped
     depends_on:
       postgres: {condition: service_healthy}
@@ -56,6 +59,25 @@ services:
     logging:
       driver: json-file
       options: {max-size: 10m, max-file: "3"}
+  dish-cache:
+    # Fills the dish video cache (deploy/dish-cache.sh). Not part of the running stack.
+    image: ${APP_IMAGE:-mylittlechef:local}
+    build: .
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    profiles: [tools]
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    environment:
+      DISH_VIDEO_CACHE: /data/dish-videos.json
+      YOUTUBE_API_KEY:
+    volumes:
+      - ${DISH_DATA_DIR:-/opt/mylittlechef/data/dish-videos}:/data
+    entrypoint: [python, -m, app.dishes.prefetch]
   importer:
     <<: *api
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
