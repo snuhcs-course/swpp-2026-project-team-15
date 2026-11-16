@@ -19,15 +19,6 @@ object DishLinks {
 
     fun embedUrl(videoId: String) = "https://www.youtube.com/embed/$videoId?playsinline=1&rel=0"
 
-    /** Page for loadDataWithBaseURL: only the player iframe, nothing drawn over it. */
-    fun embedHtml(videoId: String): String =
-        "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" +
-            "<style>html,body{margin:0;padding:0;background:#000;height:100%}" +
-            "iframe{border:0;width:100%;height:100%}</style></head><body>" +
-            "<iframe src=\"${embedUrl(videoId)}\" title=\"YouTube video player\" " +
-            "allow=\"accelerometer; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>" +
-            "</body></html>"
-
     fun searchUrl(query: String) =
         "https://www.youtube.com/results?search_query=" + URLEncoder.encode(query, "UTF-8")
 

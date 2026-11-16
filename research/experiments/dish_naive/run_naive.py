@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import platform
 import subprocess
 import sys
@@ -20,6 +19,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
+from experiments.dish_tokens.calls import read_key
 from pydantic import ValidationError
 
 from app.dishes.catalog import Catalog
@@ -31,7 +31,6 @@ from . import scoring
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[2]
-KEY_FILE = Path.home() / ".config" / "mylittlechef" / "openrouter.env"
 PRICE_PER_MTOK = (0.10, 0.40)  # google/gemini-2.5-flash-lite input/output, USD (OpenRouter listing)
 
 
@@ -99,15 +98,6 @@ def git(*args: str) -> str:
         return out.stdout.strip()
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
-
-
-def read_key() -> str:
-    key = os.environ.get("OPENROUTER_API_KEY", "").strip()
-    if not key and KEY_FILE.exists():
-        for line in KEY_FILE.read_text(encoding="utf-8").splitlines():
-            if line.startswith("OPENROUTER_API_KEY="):
-                key = line.split("=", 1)[1].strip().strip("\"'")
-    return key
 
 
 def reference(catalog: Catalog, ingredients: list[str]) -> set[str]:

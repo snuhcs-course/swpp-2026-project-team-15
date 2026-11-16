@@ -25,14 +25,6 @@ class DishLinksTest {
         )
     }
 
-    @Test fun embedHtmlHoldsOnlyThePlayerIframe() {
-        val html = DishLinks.embedHtml("dQw4w9WgXcQ")
-        assertTrue(html.contains("<iframe src=\"https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0\""))
-        assertTrue(html.contains("allowfullscreen"))
-        assertEquals(1, Regex("<iframe").findAll(html).count())
-        assertFalse(html.contains("<script"))
-    }
-
     @Test fun serverSearchLinkIsUsedOnlyForHttpsYouTube() {
         val ok = "https://www.youtube.com/results?search_query=%EA%B9%80%EC%B9%98"
         assertEquals(ok, DishLinks.safeSearchUrl(ok, "김치볶음밥"))

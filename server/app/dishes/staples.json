@@ -1,5 +1,5 @@
 {
-  "note": "Seasonings assumed to be at home when a dish is matched (self-authored; edit the list or point DISH_STAPLES_FILE at another file).",
+  "note": "Seasonings assumed to be at home when a dish is matched (self-authored; edit the list).",
   "staples": [
     "물",
     "소금",

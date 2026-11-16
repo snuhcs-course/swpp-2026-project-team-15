@@ -2,7 +2,6 @@
 """The baseline dish list and the deterministic matching on top of it."""
 
 import json
-import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -10,8 +9,6 @@ from app.dishes.synonyms import with_synonyms
 
 DEFAULT_DATA = Path(__file__).with_name("dishes.json")
 STAPLES_FILE = Path(__file__).with_name("staples.json")
-STAPLES_ENV = "DISH_STAPLES_FILE"
-DATA_ENV = "DISH_DATA_FILE"
 WATER = "물"
 
 
@@ -34,7 +31,7 @@ class Match:
 
 def load_staples(path: Path | str | None = None) -> frozenset[str]:
     """Names assumed at home: the staples list plus water."""
-    file = Path(path or os.environ.get(STAPLES_ENV) or STAPLES_FILE)
+    file = Path(path or STAPLES_FILE)
     try:
         names = {str(name) for name in json.loads(file.read_text(encoding="utf-8"))["staples"]}
     except (OSError, ValueError, KeyError, TypeError):
@@ -63,7 +60,7 @@ class Catalog:
 
     @classmethod
     def load(cls, path: Path | str | None = None, staples: frozenset[str] | None = None):
-        file = Path(path or os.environ.get(DATA_ENV) or DEFAULT_DATA)
+        file = Path(path or DEFAULT_DATA)
         data = json.loads(file.read_text(encoding="utf-8"))
         return cls(data, load_staples() if staples is None else staples)
 

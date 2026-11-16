@@ -263,6 +263,23 @@ def test_llm_parses_a_strict_json_answer_and_never_leaks_the_key():
     assert seen["body"]["response_format"]["json_schema"]["strict"] is True
 
 
+def test_llm_logs_one_line_per_call_without_content_or_key(caplog):
+    def handler(request):
+        message = {"content": json.dumps({"dishes": []})}
+        body = {
+            "choices": [{"finish_reason": "stop", "message": message}],
+            "usage": {"prompt_tokens": 11, "completion_tokens": 7},
+        }
+        return httpx.Response(200, json=body)
+
+    with caplog.at_level("INFO", logger="app.dishes.llm"):
+        _llm(handler).complete("system text", "user 김치볶음밥", "dish_choice", {"type": "object"})
+    lines = [r.getMessage() for r in caplog.records if r.name == "app.dishes.llm"]
+    assert len(lines) == 1
+    assert "finish=stop" in lines[0] and "in=11" in lines[0] and "out=7" in lines[0]
+    assert "김치" not in lines[0] and "test-key" not in lines[0] and "system text" not in lines[0]
+
+
 @pytest.mark.parametrize("status", [429, 500, 400])
 def test_llm_errors_are_safe(status):
     def handler(request):

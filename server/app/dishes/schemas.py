@@ -26,9 +26,6 @@ class Video(BaseModel):
 
 class SuggestRequest(BaseModel):
     ingredients: list[str] = Field(min_length=1, max_length=60)
-    limit: int | None = Field(
-        default=None, deprecated=True, description="Ignored; every fitting dish is returned."
-    )
 
 
 class SuggestedDish(BaseModel):
