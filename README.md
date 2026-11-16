@@ -113,6 +113,6 @@ Run on a phone against the demo server, from fresh clones of this branch (server
 | 10 | Given the server cannot be reached, when I open a dish's videos, then an error with "retry" and a YouTube search button appears, and retry works after the server is back | Pass |
 | 11 | Given I changed the screen mode, when I reset the data, then the app returns to the first screen and the screen mode follows the system again | Pass |
 | 12 | Given a photo of the fridge, when I add it, then ingredients are recognised | Not run (needs a private photo and the camera permission) |
-| 13 | Given typed Korean text, when I type a name, then completions appear | Not run on the phone (adb cannot type Korean); covered by unit tests |
+| 13 | Given typed Korean text, when I type a name, then completions appear | Not run on the phone (adb cannot type Korean); the name list endpoint and the app's name matching have unit tests |
 
 Observed limits: a common input of four ingredients made the model list so many dishes that the answer was cut at the 4,096-token limit in 3 of 4 calls; the server now keeps the complete dishes before the cut (about 30 cards, 10 s). The model service answered with rate-limit errors several times; calls are retried twice.
