@@ -1,0 +1,84 @@
+{
+ "about": "Pass thresholds for the dish suggestion and substitution evaluation. Declared before any run; the evaluation set is cases.json. A threshold is met when the measured value satisfies the comparison.",
+ "frozen": "2026-11-16, in the same commit as cases.json and before the rules baseline or any model run",
+ "suggest": {
+  "schema_valid": {
+   "op": ">=",
+   "value": 1.0,
+   "rationale": "Every answer must have the fields the app reads (source, dishes with id, name, category, have, missing, reason, keywords, videos, search_url); a malformed answer breaks the screen."
+  },
+  "ids_in_catalog": {
+   "op": ">=",
+   "value": 1.0,
+   "rationale": "The model may only choose dishes from the closed list; an unknown dish id means the list guard failed."
+  },
+  "have_missing_consistent": {
+   "op": ">=",
+   "value": 1.0,
+   "rationale": "have and missing come from the dish's key ingredients and the user's items; they must never overlap or name ingredients the dish does not need, because the app shows them as facts."
+  },
+  "acceptable_in_top5": {
+   "op": ">=",
+   "value": 0.85,
+   "rationale": "For most inputs at least one of the five shown dishes should be one a home cook could make with at most one missing key ingredient (inputs with nothing to cook must give an empty list)."
+  },
+  "share_le2_missing": {
+   "op": ">=",
+   "value": 0.8,
+   "rationale": "Most shown dishes should be near-complete (at most two missing key ingredients), otherwise the list is not useful for someone who cooks with what they have."
+  },
+  "must_not_include_hits": {
+   "op": "<=",
+   "value": 0,
+   "rationale": "Dishes that need three or more missing key ingredients and share items with the input (listed per case) must not appear when many better dishes exist."
+  },
+  "invalid_inputs_rejected": {
+   "op": ">=",
+   "value": 1.0,
+   "rationale": "Empty lists, out-of-range limits and oversized lists must be refused (HTTP 422) before any model call."
+  },
+  "fallback_valid": {
+   "op": ">=",
+   "value": 1.0,
+   "rationale": "When the model is unavailable the answer must still be valid and marked 'rules' (checked on a fake failing model for every valid case)."
+  }
+ },
+ "adapt": {
+  "pairs_in_table": {
+   "op": ">=",
+   "value": 1.0,
+   "rationale": "Every substitution shown must be a pair the server's substitution table allows with what the user owns; the model only words it."
+  },
+  "no_quantities_or_steps": {
+   "op": ">=",
+   "value": 1.0,
+   "rationale": "Suggestions and notes must not invent amounts or cooking steps (digits, units, step words; see README)."
+  },
+  "empty_with_note_ok": {
+   "op": ">=",
+   "value": 1.0,
+   "rationale": "When no table option exists the answer must be an empty list with the honest note, not an invented substitute."
+  },
+  "outcome_match": {
+   "op": ">=",
+   "value": 0.9,
+   "rationale": "The overall outcome (substitutions, optional skips or empty) must match the labelled class for at least 90% of the valid adapt cases."
+  },
+  "unknown_rejected": {
+   "op": ">=",
+   "value": 1.0,
+   "rationale": "An unknown dish or an empty ingredient list must be refused (HTTP 422)."
+  },
+  "latency_median_s": {
+   "op": "<=",
+   "value": 5.0,
+   "rationale": "A model-backed answer should arrive within 5 seconds at the median; checked only in live runs."
+  }
+ },
+ "reported_not_thresholds": [
+  "cost per request (USD at 0.10 / 0.40 per million input / output tokens)",
+  "model calls per run",
+  "rules-only baseline next to the model result",
+  "source share (llm vs rules) in suggest answers"
+ ]
+}
