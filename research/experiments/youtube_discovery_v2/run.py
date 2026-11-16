@@ -21,7 +21,7 @@ from pathlib import Path
 
 import httpx
 
-from app.dishes.youtube import YouTubeClient
+from app.dishes.youtube import YouTubeClient, YouTubeError
 
 from . import scoring
 
