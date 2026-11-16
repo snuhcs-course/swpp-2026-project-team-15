@@ -239,6 +239,36 @@ def _llm(handler) -> DishLLM:
     return DishLLM("test-key", transport=httpx.MockTransport(handler))
 
 
+@pytest.fixture(autouse=True)
+def _no_retry_wait(monkeypatch):
+    monkeypatch.setattr("app.dishes.llm.RETRY_SECONDS", 0)
+
+
+def test_llm_keeps_the_complete_items_of_an_answer_cut_at_the_token_limit(caplog):
+    cut = '{"dishes":[{"name":"김치볶음밥","have":["김치"],"missing":[]},{"name":"계란볶'
+
+    def handler(request):
+        return httpx.Response(
+            200, json={"choices": [{"finish_reason": "length", "message": {"content": cut}}]}
+        )
+
+    with caplog.at_level("WARNING", logger="app.dishes.llm"):
+        data = _llm(handler).complete("s", "u", "n", {"type": "object"})
+    assert [d["name"] for d in data["dishes"]] == ["김치볶음밥"]
+    assert any("cut at the token limit" in r.getMessage() for r in caplog.records)
+
+
+def test_llm_retries_once_when_the_service_limits_the_rate():
+    answers = [
+        httpx.Response(429),
+        httpx.Response(
+            200,
+            json={"choices": [{"finish_reason": "stop", "message": {"content": '{"dishes":[]}'}}]},
+        ),
+    ]
+    assert _llm(lambda request: answers.pop(0)).complete("s", "u", "n", {}) == {"dishes": []}
+
+
 def test_llm_parses_a_strict_json_answer_and_never_leaks_the_key():
     seen = {}
 
