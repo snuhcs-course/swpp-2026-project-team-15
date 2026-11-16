@@ -35,7 +35,6 @@ data class DishDto(
     val missing: List<String>?,
     val reason: String?,
     val keywords: List<String>?,
-    val videos: List<DishVideoDto>?,
     @SerializedName("search_url") val searchUrl: String?
 )
 
@@ -43,10 +42,12 @@ data class DishVideoDto(
     @SerializedName("video_id") val videoId: String?,
     val title: String?,
     val channel: String?,
-    @SerializedName("view_count") val viewCount: Long?,
-    @SerializedName("thumbnail_url") val thumbnailUrl: String?,
-    val embeddable: Boolean?
+    @SerializedName("thumbnail_url") val thumbnailUrl: String?
 )
+
+data class DishVideosRequest(@SerializedName("dish_id") val dishId: String)
+
+data class DishVideosResponse(val videos: List<DishVideoDto>?)
 
 data class DishAdaptRequest(
     @SerializedName("dish_id") val dishId: String,
@@ -71,6 +72,9 @@ interface DishApi {
     @POST("dishes/suggest")
     suspend fun suggest(@Body request: DishSuggestRequest): DishSuggestResponse
 
+    @POST("dishes/videos")
+    suspend fun videos(@Body request: DishVideosRequest): DishVideosResponse
+
     @POST("dishes/adapt")
     suspend fun adapt(@Body request: DishAdaptRequest): DishAdaptResponse
 }
@@ -79,7 +83,7 @@ interface DishApi {
 object DishApiClient {
     val api: DishApi by lazy {
         val http = OkHttpClient.Builder()
-            .readTimeout(90, TimeUnit.SECONDS)
+            .readTimeout(90, TimeUnit.SECONDS) // a suggestion or a video search can take a while
             .retryOnConnectionFailure(false)
             .build()
         Retrofit.Builder()

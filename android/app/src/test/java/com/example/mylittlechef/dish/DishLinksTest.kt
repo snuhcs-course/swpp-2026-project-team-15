@@ -4,7 +4,6 @@ package com.example.mylittlechef.dish
 import com.example.mylittlechef.domain.DishLinks
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -34,12 +33,5 @@ class DishLinksTest {
         assertTrue(DishLinks.safeSearchUrl("https://evil.example/results", "김치").startsWith("https://www.youtube.com/"))
         assertTrue(DishLinks.safeSearchUrl(null, "김치").contains("%EA%B9%80%EC%B9%98"))
         assertTrue(DishLinks.safeSearchUrl("https://notyoutube.com/x", "김치").startsWith("https://www.youtube.com/"))
-    }
-
-    @Test fun viewCountsReadInKorean() {
-        assertNull(DishLinks.viewsLabel(null))
-        assertEquals("조회수 999회", DishLinks.viewsLabel(999))
-        assertEquals("조회수 1.2만회", DishLinks.viewsLabel(12_345))
-        assertEquals("조회수 3.0억회", DishLinks.viewsLabel(300_000_000))
     }
 }

@@ -3,13 +3,14 @@ package com.example.mylittlechef.dish
 
 import com.example.mylittlechef.data.remote.DishAdaptResponse
 import com.example.mylittlechef.data.remote.DishSuggestResponse
+import com.example.mylittlechef.data.remote.DishVideosResponse
 import com.example.mylittlechef.domain.DishSort
 import com.example.mylittlechef.domain.sortDishes
 import com.example.mylittlechef.domain.toAdaptation
 import com.example.mylittlechef.domain.toDish
+import com.example.mylittlechef.domain.toVideo
 import com.google.gson.Gson
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -21,10 +22,6 @@ class DishDtoTest {
         {"source":"llm","dishes":[
           {"id":"kimchi-fried-rice","name":"김치볶음밥","category":"볶음밥","have":["김치","쌀"],"missing":["대파"],
            "reason":"김치와 밥이 있어요","keywords":["돼지고기김치볶음밥"],
-           "videos":[{"video_id":"dQw4w9WgXcQ","title":"김치볶음밥","channel":"채널","view_count":123456,
-                      "thumbnail_url":"https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg","embeddable":true},
-                     {"video_id":"bad id","title":"깨진","channel":"x","view_count":null,"thumbnail_url":"http://x","embeddable":true},
-                     {"video_id":"a_b-c1234AB","title":"막힌 영상","channel":"y","view_count":null,"thumbnail_url":"http://insecure","embeddable":false}],
            "search_url":"https://www.youtube.com/results?search_query=x"},
           {"id":null,"name":"이름만 없음"},
           {"id":"plain","name":"계란말이"}
@@ -39,24 +36,22 @@ class DishDtoTest {
         val first = dishes[0]
         assertEquals(listOf("김치", "쌀"), first.have)
         assertEquals(listOf("대파"), first.missing)
-        // the id with a space is dropped; the blocked video keeps no insecure thumbnail and is not embeddable
-        assertEquals(listOf("dQw4w9WgXcQ", "a_b-c1234AB"), first.videos.map { it.videoId })
-        assertTrue(first.videos[0].embeddable)
-        assertEquals(123456L, first.videos[0].viewCount)
-        assertFalse(first.videos[1].embeddable)
-        assertNull(first.videos[1].thumbnailUrl)
+    }
+
+    @Test fun videoEntriesNeedAValidIdAndKeepOnlyHttpsThumbnails() {
+        val json = """{"videos":[{"video_id":"dQw4w9WgXcQ","title":"제목","channel":"채널","thumbnail_url":"https://i.ytimg.com/x.jpg"},
+            {"video_id":"bad id","title":"깨진","channel":"x","thumbnail_url":"https://x"},
+            {"video_id":"a_b-c1234AB","title":"막힌","channel":"y","thumbnail_url":"http://insecure"}]}"""
+        val videos = gson.fromJson(json, DishVideosResponse::class.java).videos!!.mapNotNull { it.toVideo() }
+        assertEquals(listOf("dQw4w9WgXcQ", "a_b-c1234AB"), videos.map { it.videoId })
+        assertEquals("https://i.ytimg.com/x.jpg", videos[0].thumbnailUrl)
+        assertNull(videos[1].thumbnailUrl)
     }
 
     @Test fun missingFieldsBecomeEmptyListsAndASafeSearchLink() {
         val plain = gson.fromJson(suggestJson, DishSuggestResponse::class.java).dishes!!.mapNotNull { it.toDish() }[1]
-        assertTrue(plain.have.isEmpty() && plain.missing.isEmpty() && plain.videos.isEmpty())
+        assertTrue(plain.have.isEmpty() && plain.missing.isEmpty())
         assertTrue(plain.searchUrl.startsWith("https://www.youtube.com/results?search_query="))
-    }
-
-    @Test fun missingEmbeddableCountsAsNotEmbeddable() {
-        val json = """{"dishes":[{"id":"d","name":"n","videos":[{"video_id":"dQw4w9WgXcQ","title":"t"}]}]}"""
-        val dish = gson.fromJson(json, DishSuggestResponse::class.java).dishes!!.mapNotNull { it.toDish() }.single()
-        assertFalse(dish.videos.single().embeddable)
     }
 
     @Test fun adaptResponseKeepsOnlyCompleteSubstitutions() {

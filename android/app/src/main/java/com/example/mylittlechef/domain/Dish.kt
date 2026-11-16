@@ -9,9 +9,7 @@ data class DishVideo(
     val videoId: String,
     val title: String,
     val channel: String,
-    val viewCount: Long?,
-    val thumbnailUrl: String?,
-    val embeddable: Boolean
+    val thumbnailUrl: String?
 )
 
 data class Dish(
@@ -21,7 +19,6 @@ data class Dish(
     val have: List<String>,
     val missing: List<String>,
     val reason: String,
-    val videos: List<DishVideo>,
     val searchUrl: String
 )
 
@@ -57,20 +54,17 @@ fun DishDto.toDish(): Dish? {
         have = have.orEmpty(),
         missing = missing.orEmpty(),
         reason = reason.orEmpty(),
-        videos = videos.orEmpty().mapNotNull { it.toVideo() },
         searchUrl = DishLinks.safeSearchUrl(searchUrl, name)
     )
 }
 
-private fun DishVideoDto.toVideo(): DishVideo? {
+fun DishVideoDto.toVideo(): DishVideo? {
     val id = videoId?.takeIf { DishLinks.isValidVideoId(it) } ?: return null
     return DishVideo(
         videoId = id,
         title = title.orEmpty(),
         channel = channel.orEmpty(),
-        viewCount = viewCount,
-        thumbnailUrl = thumbnailUrl?.takeIf { it.startsWith("https://") },
-        embeddable = embeddable == true
+        thumbnailUrl = thumbnailUrl?.takeIf { it.startsWith("https://") }
     )
 }
 

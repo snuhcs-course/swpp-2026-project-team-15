@@ -9,10 +9,14 @@ import com.example.mylittlechef.data.remote.DishDto
 import com.example.mylittlechef.data.remote.DishSubstitutionDto
 import com.example.mylittlechef.data.remote.DishSuggestRequest
 import com.example.mylittlechef.data.remote.DishSuggestResponse
+import com.example.mylittlechef.data.remote.DishVideoDto
+import com.example.mylittlechef.data.remote.DishVideosRequest
+import com.example.mylittlechef.data.remote.DishVideosResponse
 import com.example.mylittlechef.domain.DishSort
 import com.example.mylittlechef.viewmodel.AdaptUiState
 import com.example.mylittlechef.viewmodel.DishUiState
 import com.example.mylittlechef.viewmodel.DishViewModel
+import com.example.mylittlechef.viewmodel.VideoUiState
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -41,7 +45,7 @@ class DishViewModelTest {
     @After fun tearDown() { Dispatchers.resetMain() }
 
     private fun dish(id: String, name: String, have: List<String> = listOf("김치"), missing: List<String> = emptyList()) =
-        DishDto(id, name, "볶음밥", have, missing, "이유", emptyList(), emptyList(), null)
+        DishDto(id, name, "볶음밥", have, missing, "이유", emptyList(), null)
 
     private open class FakeApi : DishApi {
         val suggestRequests = mutableListOf<List<String>>()
@@ -56,6 +60,12 @@ class DishViewModelTest {
         override suspend fun adapt(request: DishAdaptRequest): DishAdaptResponse {
             adaptRequests += request
             return onAdapt(request)
+        }
+        val videoRequests = mutableListOf<String>()
+        var onVideos: suspend (DishVideosRequest) -> DishVideosResponse = { DishVideosResponse(emptyList()) }
+        override suspend fun videos(request: DishVideosRequest): DishVideosResponse {
+            videoRequests += request.dishId
+            return onVideos(request)
         }
     }
 
@@ -219,5 +229,33 @@ class DishViewModelTest {
         assertEquals("a", vm.selectedDishId)
         vm.selectDish(null)
         assertEquals(null, vm.selectedDishId)
+    }
+
+    @Test fun videosAreRequestedOncePerDishAndAFailureCanBeRetried() = runTest(dispatcher) {
+        val api = FakeApi()
+        api.onSuggest = { DishSuggestResponse("llm", listOf(dish("a", "김치볶음밥"))) }
+        val vm = DishViewModel(api, debounceMillis = 0)
+        vm.onFridgeChanged(listOf("김치"))
+        advanceUntilIdle()
+        val dish = (vm.state as DishUiState.Success).dishes.single()
+
+        var fail = true
+        api.onVideos = {
+            if (fail) throw IOException("offline")
+            DishVideosResponse(listOf(DishVideoDto("dQw4w9WgXcQ", "제목", "채널", "https://i.ytimg.com/x.jpg"), DishVideoDto("bad id", "x", "y", null)))
+        }
+        vm.requestVideos(dish)
+        assertEquals(VideoUiState.Loading, vm.videoState("a"))
+        advanceUntilIdle()
+        assertTrue(vm.videoState("a") is VideoUiState.Error)
+
+        fail = false
+        vm.requestVideos(dish)
+        advanceUntilIdle()
+        val ok = vm.videoState("a") as VideoUiState.Success
+        assertEquals(listOf("dQw4w9WgXcQ"), ok.videos.map { it.videoId }) // the id with a space is dropped
+        vm.requestVideos(dish) // already loaded: no new request
+        advanceUntilIdle()
+        assertEquals(2, api.videoRequests.size)
     }
 }

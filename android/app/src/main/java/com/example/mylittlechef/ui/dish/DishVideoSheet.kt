@@ -54,21 +54,24 @@ import com.example.mylittlechef.domain.DishVideo
 import com.example.mylittlechef.ui.components.IngredientBadge
 import com.example.mylittlechef.viewmodel.AdaptUiState
 import com.example.mylittlechef.viewmodel.DishSheetMode
+import com.example.mylittlechef.viewmodel.VideoUiState
 
-/** One dish in detail: the one-line reason, then videos and the AI substitution answer (the tapped one first). */
+/** One dish in detail: the one-line reason, then the videos (searched when the sheet opens) and the AI substitution answer (the tapped one first). */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DishDetailSheet(
     dish: Dish,
     mode: DishSheetMode,
     fridgeNames: List<String>,
+    videos: VideoUiState?,
+    onLoadVideos: () -> Unit,
     adapt: AdaptUiState?,
     onAdapt: () -> Unit,
     onDismissAdapt: () -> Unit,
     onDismiss: () -> Unit
 ) {
     var playingId by rememberSaveable(dish.id) { mutableStateOf<String?>(null) }
-    val playing = dish.videos.firstOrNull { it.videoId == playingId }
+    val playing = (videos as? VideoUiState.Success)?.videos?.firstOrNull { it.videoId == playingId }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -84,9 +87,9 @@ fun DishDetailSheet(
             if (mode == DishSheetMode.ADAPT && showAdapt) {
                 AdaptSection(dish, fridgeNames, adapt, onAdapt, onDismissAdapt)
                 Spacer(Modifier.height(16.dp))
-                VideoSection(dish, playing, playingId, onPlay = { playingId = it }, onClose = { playingId = null })
+                VideoSection(dish, videos, onLoadVideos, playing, playingId, onPlay = { playingId = it }, onClose = { playingId = null })
             } else {
-                VideoSection(dish, playing, playingId, onPlay = { playingId = it }, onClose = { playingId = null })
+                VideoSection(dish, videos, onLoadVideos, playing, playingId, onPlay = { playingId = it }, onClose = { playingId = null })
                 if (showAdapt) {
                     Spacer(Modifier.height(16.dp))
                     AdaptSection(dish, fridgeNames, adapt, onAdapt, onDismissAdapt)
@@ -102,6 +105,8 @@ fun DishDetailSheet(
 @Composable
 private fun VideoSection(
     dish: Dish,
+    videos: VideoUiState?,
+    onRetry: () -> Unit,
     playing: DishVideo?,
     playingId: String?,
     onPlay: (String) -> Unit,
@@ -122,21 +127,37 @@ private fun VideoSection(
         }
         Spacer(Modifier.height(8.dp))
     }
-    if (dish.videos.isEmpty()) {
-        Text("미리 찾아 둔 영상이 아직 없어요.", style = MaterialTheme.typography.bodyMedium)
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 검색") }
-    } else {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            dish.videos.forEach { video ->
-                VideoRow(
-                    video = video,
-                    selected = video.videoId == playingId,
-                    onPlay = { onPlay(video.videoId) },
-                    onOpen = { openLink(context, DishLinks.watchUrl(video.videoId)) }
-                )
+    when (videos) {
+        null, VideoUiState.Loading -> Row(
+            Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(8.dp))
+            Text("따라 하기 좋은 영상을 찾고 있어요...", style = MaterialTheme.typography.bodyMedium)
+        }
+        is VideoUiState.Error -> Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
+            Text(videos.message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onRetry) { Text("다시 시도") }
+                OutlinedButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 검색") }
             }
-            OutlinedButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 더 검색") }
+        }
+        is VideoUiState.Success -> if (videos.videos.isEmpty()) {
+            Text("이 요리의 영상을 찾지 못했어요.", style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 검색") }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                videos.videos.forEach { video ->
+                    VideoRow(
+                        video = video,
+                        selected = video.videoId == playingId,
+                        onPlay = { onPlay(video.videoId) }
+                    )
+                }
+                OutlinedButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 더 검색") }
+            }
         }
     }
 }
@@ -218,9 +239,9 @@ private fun AdaptAnswer(adaptation: DishAdaptation, onDismiss: () -> Unit) {
     }
 }
 
-/** Fixed-size row: 16:9 thumbnail, two-line title, one line for channel and views. */
+/** Fixed-size row: 16:9 thumbnail, two-line title, one line for the channel. */
 @Composable
-private fun VideoRow(video: DishVideo, selected: Boolean, onPlay: () -> Unit, onOpen: () -> Unit) {
+private fun VideoRow(video: DishVideo, selected: Boolean, onPlay: () -> Unit) {
     val shape = RoundedCornerShape(24.dp)
     Row(
         Modifier
@@ -233,16 +254,10 @@ private fun VideoRow(video: DishVideo, selected: Boolean, onPlay: () -> Unit, on
             .semantics(mergeDescendants = true) {
                 contentDescription = listOfNotNull(
                     video.title.ifBlank { "제목 없는 영상" },
-                    video.channel.takeIf { it.isNotBlank() },
-                    DishLinks.viewsLabel(video.viewCount)
+                    video.channel.takeIf { it.isNotBlank() }
                 ).joinToString(", ")
             }
-            .clickable(
-                onClickLabel = if (video.embeddable) "영상 재생" else "YouTube에서 열기",
-                role = Role.Button
-            ) {
-                if (video.embeddable) onPlay() else onOpen()
-            }
+            .clickable(onClickLabel = "영상 재생", role = Role.Button, onClick = onPlay)
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -268,10 +283,7 @@ private fun VideoRow(video: DishVideo, selected: Boolean, onPlay: () -> Unit, on
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                (listOfNotNull(
-                    DishLinks.viewsLabel(video.viewCount),
-                    video.channel.takeIf { it.isNotBlank() }
-                ) + listOfNotNull("YouTube에서 열기".takeIf { !video.embeddable })).joinToString(" · "),
+                video.channel,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

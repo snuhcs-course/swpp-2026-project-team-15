@@ -23,8 +23,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -77,6 +75,7 @@ import com.example.mylittlechef.viewmodel.AdaptUiState
 import com.example.mylittlechef.viewmodel.DishSheetMode
 import com.example.mylittlechef.viewmodel.DishUiState
 import com.example.mylittlechef.viewmodel.DishViewModel
+import com.example.mylittlechef.viewmodel.VideoUiState
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
@@ -148,10 +147,13 @@ fun DishScreen(
 
     val selected = (dishes.state as? DishUiState.Success)?.dishes?.firstOrNull { it.id == dishes.selectedDishId }
     if (selected != null) {
+        LaunchedEffect(selected.id) { dishes.requestVideos(selected) }
         DishDetailSheet(
             dish = selected,
             mode = dishes.selectedMode,
             fridgeNames = names,
+            videos = dishes.videoState(selected.id),
+            onLoadVideos = { dishes.requestVideos(selected) },
             adapt = dishes.adaptState(selected.id),
             onAdapt = { dishes.requestAdapt(selected) },
             onDismissAdapt = { dishes.dismissAdapt(selected.id) },
@@ -181,18 +183,11 @@ private fun DishList(state: DishUiState.Success, dishes: DishViewModel) {
         modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp).testTag("dish-list")
     ) {
         item { Spacer(Modifier.height(8.dp)) }
-        if (state.source == "rules") {
-            item {
-                Text(
-                    "AI 연결이 어려워 재료가 겹치는 순서로 보여 드려요.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
         items(state.dishes, key = { it.id }) { dish ->
             DishCard(
                 dish,
+                thumbnail = (dishes.videoState(dish.id) as? VideoUiState.Success)
+                    ?.videos?.firstNotNullOfOrNull { it.thumbnailUrl },
                 onOpen = { dishes.selectDish(dish.id, DishSheetMode.VIDEOS) },
                 onAdapt = {
                     dishes.selectDish(dish.id, DishSheetMode.ADAPT)
@@ -205,7 +200,7 @@ private fun DishList(state: DishUiState.Success, dishes: DishViewModel) {
 }
 
 @Composable
-private fun DishCard(dish: Dish, onOpen: () -> Unit, onAdapt: () -> Unit) {
+private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onAdapt: () -> Unit) {
     // With very large text the card keeps its shape: the category and the action labels give way, long lines wrap.
     val large = LocalDensity.current.fontScale >= 1.3f
     val ingredients = remember(dish) { dish.have.map { it to true } + dish.missing.map { it to false } }
@@ -218,7 +213,7 @@ private fun DishCard(dish: Dish, onOpen: () -> Unit, onAdapt: () -> Unit) {
             .clickable(role = Role.Button, onClickLabel = "요리 상세 보기", onClick = onOpen)
     ) {
         Row(Modifier.fillMaxWidth().heightIn(min = CardImageSize), verticalAlignment = Alignment.CenterVertically) {
-            DishThumbnail(dish, Modifier.size(CardImageSize).clip(RoundedCornerShape(24.dp)))
+            DishThumbnail(dish, thumbnail, Modifier.size(CardImageSize).clip(RoundedCornerShape(24.dp)))
             Spacer(Modifier.weight(0.1f))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -272,10 +267,9 @@ private fun DishCard(dish: Dish, onOpen: () -> Unit, onAdapt: () -> Unit) {
                     R.drawable.ic_play,
                     "영상",
                     large,
-                    if (dish.videos.isEmpty()) "영상 보기" else "영상 ${dish.videos.size}개 보기",
+                    "영상 보기",
                     Modifier.testTag("dish-videos-${dish.id}"),
-                    onOpen,
-                    count = dish.videos.size
+                    onOpen
                 )
                 if (dish.missing.isNotEmpty()) {
                     CardAction(
@@ -328,8 +322,7 @@ private fun CardAction(
     hideLabel: Boolean,
     description: String,
     modifier: Modifier,
-    onClick: () -> Unit,
-    count: Int = 0
+    onClick: () -> Unit
 ) {
     Column(
         modifier
@@ -340,27 +333,19 @@ private fun CardAction(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        if (count > 0) {
-            // The number sits on the icon so the label line and the card height stay the same as without videos.
-            BadgedBox(badge = { Badge { Text("$count") } }) {
-                Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
-            }
-        } else {
-            Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
-        }
+        Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
         if (!hideLabel) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
         }
     }
 }
 
-/** The first video's thumbnail; without one, the ingredient icon tile every other screen already uses. */
+/** The first video's thumbnail once the videos were loaded; until then the ingredient icon tile every other screen uses. */
 @Composable
-private fun DishThumbnail(dish: Dish, modifier: Modifier) {
+private fun DishThumbnail(dish: Dish, thumbnail: String?, modifier: Modifier) {
     val context = LocalContext.current
     val first = (dish.have + dish.missing).firstOrNull()
     val appearance = remember(first) { first?.let { IngredientPresentationProvider.get(context).appearanceFor(it) } }
-    val thumbnail = dish.videos.firstNotNullOfOrNull { it.thumbnailUrl }
     Box(
         modifier.background(appearance?.let { Color(it.backgroundArgb) } ?: MaterialTheme.colorScheme.outlineVariant),
         contentAlignment = Alignment.Center

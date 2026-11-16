@@ -28,12 +28,4 @@ object DishLinks {
         val ok = host != null && (host == "youtube.com" || host.endsWith(".youtube.com"))
         return if (ok) candidate!! else searchUrl("$fallbackQuery 레시피")
     }
-
-    /** 12345 -> "1.2만회", 999 -> "999회"; unknown counts are hidden. */
-    fun viewsLabel(count: Long?): String? = when {
-        count == null || count < 0 -> null
-        count >= 100_000_000 -> "조회수 %.1f억회".format(count / 100_000_000.0)
-        count >= 10_000 -> "조회수 %.1f만회".format(count / 10_000.0)
-        else -> "조회수 ${count}회"
-    }
 }

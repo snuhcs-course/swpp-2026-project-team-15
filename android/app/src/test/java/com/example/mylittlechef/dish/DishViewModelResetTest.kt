@@ -8,6 +8,8 @@ import com.example.mylittlechef.data.remote.DishCatalogResponse
 import com.example.mylittlechef.data.remote.DishDto
 import com.example.mylittlechef.data.remote.DishSuggestRequest
 import com.example.mylittlechef.data.remote.DishSuggestResponse
+import com.example.mylittlechef.data.remote.DishVideosRequest
+import com.example.mylittlechef.data.remote.DishVideosResponse
 import com.example.mylittlechef.viewmodel.DishUiState
 import com.example.mylittlechef.viewmodel.DishViewModel
 import kotlinx.coroutines.Dispatchers
@@ -36,9 +38,10 @@ class DishViewModelResetTest {
         override suspend fun dishes() = DishCatalogResponse(emptyList(), 0)
         override suspend fun suggest(request: DishSuggestRequest): DishSuggestResponse {
             suggestCalls++
-            return DishSuggestResponse("llm", listOf(DishDto("a", "김치볶음밥", "볶음밥", listOf("김치"), listOf("대파"), "이유", emptyList(), emptyList(), null)))
+            return DishSuggestResponse("llm", listOf(DishDto("a", "김치볶음밥", "볶음밥", listOf("김치"), listOf("대파"), "이유", emptyList(), null)))
         }
         override suspend fun adapt(request: DishAdaptRequest) = DishAdaptResponse(request.dishId, emptyList(), emptyList(), "", "llm")
+        override suspend fun videos(request: DishVideosRequest) = DishVideosResponse(emptyList())
     }
 
     @Test fun resetForgetsDishesSelectionAndTheLastFridge() = runTest(dispatcher) {

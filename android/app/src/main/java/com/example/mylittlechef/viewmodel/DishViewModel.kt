@@ -11,12 +11,15 @@ import com.example.mylittlechef.data.remote.DishAdaptRequest
 import com.example.mylittlechef.data.remote.DishApi
 import com.example.mylittlechef.data.remote.DishApiClient
 import com.example.mylittlechef.data.remote.DishSuggestRequest
+import com.example.mylittlechef.data.remote.DishVideosRequest
 import com.example.mylittlechef.domain.Dish
 import com.example.mylittlechef.domain.DishAdaptation
 import com.example.mylittlechef.domain.DishSort
+import com.example.mylittlechef.domain.DishVideo
 import com.example.mylittlechef.domain.sortDishes
 import com.example.mylittlechef.domain.toAdaptation
 import com.example.mylittlechef.domain.toDish
+import com.example.mylittlechef.domain.toVideo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -43,6 +46,13 @@ sealed interface AdaptUiState {
     data class Error(val message: String) : AdaptUiState
 }
 
+/** The videos of one dish, found when its sheet opens. */
+sealed interface VideoUiState {
+    data object Loading : VideoUiState
+    data class Success(val videos: List<DishVideo>) : VideoUiState
+    data class Error(val message: String) : VideoUiState
+}
+
 class DishViewModel(
     private val api: DishApi = DishApiClient.api,
     private val debounceMillis: Long = 400L
@@ -56,6 +66,7 @@ class DishViewModel(
         private set
 
     private val adaptations = mutableStateMapOf<String, AdaptUiState>()
+    private val videoStates = mutableStateMapOf<String, VideoUiState>()
     private var lastNames: List<String>? = null
     private var generation = 0L
     private var job: Job? = null
@@ -63,6 +74,8 @@ class DishViewModel(
     private var rawSource = ""
 
     fun adaptState(dishId: String): AdaptUiState? = adaptations[dishId]
+
+    fun videoState(dishId: String): VideoUiState? = videoStates[dishId]
 
     var selectedMode by mutableStateOf(DishSheetMode.VIDEOS)
         private set
@@ -94,6 +107,7 @@ class DishViewModel(
         generation++
         job?.cancel()
         adaptations.clear()
+        videoStates.clear()
         lastNames = null
         rawDishes = emptyList()
         rawSource = ""
@@ -134,6 +148,26 @@ class DishViewModel(
         }
     }
 
+    /** Fetches the dish's videos once; an error is retried by calling this again. */
+    fun requestVideos(dish: Dish) {
+        val current = videoStates[dish.id]
+        if (current is VideoUiState.Loading || current is VideoUiState.Success) return
+        val mine = generation
+        videoStates[dish.id] = VideoUiState.Loading
+        viewModelScope.launch {
+            try {
+                val response = api.videos(DishVideosRequest(dish.id))
+                if (mine == generation) {
+                    videoStates[dish.id] = VideoUiState.Success(response.videos.orEmpty().mapNotNull { it.toVideo() })
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                if (mine == generation) videoStates[dish.id] = VideoUiState.Error(videoFailureMessage(failure))
+            }
+        }
+    }
+
     fun requestAdapt(dish: Dish) {
         val names = lastNames ?: return
         if (adaptations[dish.id] is AdaptUiState.Loading) return
@@ -152,6 +186,11 @@ class DishViewModel(
     }
 
     companion object {
+        fun videoFailureMessage(failure: Exception): String = when {
+            failure is IOException -> "서버에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요."
+            else -> "영상을 찾지 못했어요. 잠시 후 다시 시도해 주세요."
+        }
+
         fun failureMessage(failure: Exception): String = when {
             failure is HttpException && failure.code() in listOf(404, 405) ->
                 "서버가 아직 요리 추천을 지원하지 않아요. 서버 버전을 확인해 주세요."
