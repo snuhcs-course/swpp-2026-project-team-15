@@ -111,7 +111,9 @@ def combos(data: Path, trusted: dict[str, bool]) -> tuple[dict, dict, dict, dict
     store = load(data, "candidates.json", {})
     judged = load(data, "judgements.json", {})
     table = dish_names()
-    paired = [d for d, r in store.items() if r["methods"].get("A1") is not None]
+    judged_both = [d for d in store if {"J1", "E"} <= set(judged.get(d, {}))]
+    judged_both = [d for d in judged_both if all(judged[d][t]["judgements"] for t in ("J1", "E"))]
+    paired = [d for d in judged_both if store[d]["methods"].get("A1") is not None]
     rows: dict[str, dict] = {}
     per_dish: dict[str, list[float]] = {}
     all_rows: dict[str, dict] = {}
@@ -119,15 +121,21 @@ def combos(data: Path, trusted: dict[str, bool]) -> tuple[dict, dict, dict, dict
         for judge in JUDGES:
             for how in scoring.RANKINGS:
                 name = f"{method}|{judge}|{how}"
-                p3s, stats = one_combo(store, judged, table, paired, (method, judge, how))
-                rows[name] = {**stats, "trusted": trusted.get(judge, False)}
-                per_dish[name] = p3s
-                if method in ("B", "B2"):
+                if paired:
+                    p3s, stats = one_combo(store, judged, table, paired, (method, judge, how))
+                    rows[name] = {**stats, "trusted": trusted.get(judge, False)}
+                    per_dish[name] = p3s
+                if method in ("B", "B2") and judged_both:
                     _, all_stats = one_combo(
-                        store, judged, table, list(store), (method, judge, how)
+                        store, judged, table, judged_both, (method, judge, how)
                     )
-                    all_rows[name] = all_stats
-    return rows, per_dish, all_rows, {"paired": len(paired), "dishes": len(store)}
+                    all_rows[name] = {**all_stats, "trusted": trusted.get(judge, False)}
+    return (
+        rows,
+        per_dish,
+        all_rows,
+        {"paired": len(paired), "dishes": len(store), "judged_dishes": len(judged_both)},
+    )
 
 
 def main(data: Path, crit: dict, here: Path, selector: str, evaluator: str) -> None:
@@ -150,7 +158,9 @@ def main(data: Path, crit: dict, here: Path, selector: str, evaluator: str) -> N
         "model_methods_all_dishes": all_rows,
         **meta,
     }
-    if trusted["E"]:
+    if not rows:
+        out["decision"] = "deferred: no A1 candidates (the YouTube search quota was exhausted)"
+    elif trusted["E"]:
         cand = {c: r for c, r in rows.items() if r["trusted"] and r["p3"] is not None}
         out["decision"] = scoring.decide(cand, crit["baseline"], crit["seed"], per_dish)
     else:

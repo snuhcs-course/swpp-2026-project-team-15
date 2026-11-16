@@ -41,6 +41,75 @@ PYTHONPATH=.:../research uv run python -m experiments.youtube_discovery_v2.run p
 PYTHONPATH=.:../research uv run python -m experiments.youtube_discovery_v2.run collect --allow-live-api --max-search 20
 ```
 
-## Results
+## What changed during the run (all recorded in `criteria.json` under `amendments`, committed before the step they affect)
 
-Added after the run (see the commit history: criteria, then labels, then results).
+1. The YouTube search quota for the day was already used up when the study started, so **A1 (YouTube search) has no candidates yet**. The paired comparison, the combinations that include A1 and U, and the decision rule are **deferred**. Today's results cover the model-discovery sources B and B2.
+2. The first judge models failed validation (below). As the criteria allowed, stronger models were tried in a fixed order with the unchanged prompt; two reached the threshold.
+3. The first collection did not request video duration; the runner was fixed and the candidates re-fetched before the sample was drawn and labelled.
+4. Spending reached the guard (1.45 of 1.50 USD) after 27 of 40 dishes had both judgements; the analysis covers those 27.
+
+## Results (2026-11-16)
+
+Commits in order: criteria, quota amendment, labels (before any judge ran), judge amendments, results. Model calls 141 of 200, 1.46 USD of 1.50, `search.list` 0 of 20, `videos.list` 80 requests.
+
+### Judge validation (60 labelled videos, one labeler)
+
+Agreement with the labels. Labels: 44 relevant, 16 not. Kappa corrects for agreement by chance; 0.6 is the pre-set threshold.
+
+| Judge | Agreement | Precision | Recall | Kappa | Trusted |
+| --- | --- | --- | --- | --- | --- |
+| J0 title rule (old) | 0.67 | 0.96 | **0.57** | 0.37 | rule, not a model |
+| gemini-2.5-flash-lite | 0.73 | 0.73 | 1.00 | 0.00 (calls every video relevant) | no |
+| gemini-2.5-flash | 0.77 | 0.78 | 0.95 | 0.26 | no |
+| gemini-2.5-pro (evaluator E) | 0.87 | 0.86 | 0.98 | 0.61 | yes, barely |
+| claude-haiku-4.5 (selector J1) | 0.85 | 0.89 | 0.91 | 0.61 | yes, barely |
+
+The old title rule rarely accepts a wrong video (precision 0.96) but misses 43% of the relevant ones: on the 16 videos without Hangul in the title it found 0 of 12 relevant ones, and on the 18 Korean titles that do not name the dish it found 0 of 7. The three judge models that are not trusted accept almost everything; the trusted ones still accept some neighbours of the dish (for example a different stew with the same main ingredient). Kappa 0.61 is at the threshold on 60 videos from one labeler, so it carries wide uncertainty, and choosing the models on the same labels makes the figures optimistic.
+
+### Source comparison on the 27 dishes judged (B against B2; A1 is pending)
+
+Chosen videos are the top 3 of the candidates the selector accepts, ranked as shown; `p3` is scored by the evaluator (a different model from the selector J1); coverage is the share of dishes with 3 chosen videos.
+
+| Source | Selector | Ranking | p3 | Precision of chosen | Coverage | Dishes with 0 relevant | Median views |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| B | J0 title rule | views | 0.48 | 0.91 | 0.44 | 11 | 0.64 M |
+| B | J1 | views | **0.78** | 0.93 | **0.74** | **1** | 1.37 M |
+| B | J1 | like ratio | 0.78 | 0.93 | 0.74 | 1 | 0.77 M |
+| B | J1 | newest | 0.78 | 0.93 | 0.74 | 1 | 0.63 M |
+| B | J1 | views, one per channel | 0.77 | 0.91 | 0.74 | 1 | 1.37 M |
+| B2 (asked for most viewed) | J0 | views | 0.42 | 0.90 | 0.26 | 10 | 0.35 M |
+| B2 | J1 | views | 0.67 | 0.90 | 0.48 | 1 | 1.30 M |
+| B2 | J1 | newest | 0.69 | 0.93 | 0.48 | 1 | 0.77 M |
+
+- Replacing the title rule with a trusted judge raises coverage from 0.44 to 0.74 and p3 from 0.48 to 0.78 for B, with the same precision of what is chosen. English-titled relevant videos chosen: 0 under J0, 6 under J1.
+- Asking the model to prefer the most viewed videos (B2) did **not** help: it returned fewer candidates (3.95 against 4.6 ids per dish) and the coverage fell to 0.48. Its median views of chosen videos are about the same as B's.
+- Rankings differ little because each dish has only about 4 candidates; they mostly matter once A1 supplies 25.
+- Among the 91 candidates the evaluator calls relevant, the old rule accepts 55: it accepts 55 of 81 Korean-titled and 0 of 10 non-Hangul-titled ones. Examples it dropped: a ham-and-cheese sandwich video with 114 M views, a French-toast video with 46 M views, and a 12 M-view video titled "달걀볶음밥" (an alias of the dish "계란볶음밥" that the old rule does not know).
+- Ninety-two percent of verified candidates were public and embeddable (127 of 138).
+
+### Decision
+
+**None yet.** The rule needs A1, which does not exist until the next day with search quota. What the data already say: (1) the title filter was hiding relevant videos, so v1's conclusion is withdrawn; (2) among model-discovery sources B is better than B2; (3) a language-model selector is usable only with a validated model, and two of four candidates failed.
+
+### Failure analysis
+
+- Candidate count is the limit for B: 4.6 ids per dish means coverage cannot exceed what the model finds (0.74 at best here). A1 gives 25 candidates, so the pooled source U is the likely winner; this is untested.
+- Selector and evaluator disagree on neighbouring dishes (for example sundubu stew for "tofu soup"; scallion pork stir-fry for "pork lettuce wraps"). The labels treat them as other dishes; the trusted models accept some of them, so precision is probably overstated.
+- One selector call (`bacon-fried-rice`) returned an unusable answer after a retry; that dish is excluded.
+- Shorts: 7 of the 91 relevant candidates are 60 s or shorter; the rule treats them like any other video.
+
+### Limits
+
+Single run; one labeler (the assistant) with 60 videos and a kappa at the threshold; the selector and the evaluator are language models, partly of one vendor family; relevance is judged from metadata, not from the video; 27 dishes with both judgements; the 16 planned combinations that use A1 or U have no data, and the 16 shown for B and B2 are computed on the 27 judged dishes, not on the planned paired set of 20; no confidence intervals could be computed without the paired set.
+
+### To finish (next day with search quota)
+
+```sh
+cd server
+PYTHONPATH=.:../research uv run python -m experiments.youtube_discovery_v2.run collect --allow-live-api --max-search 20
+# label 30 videos drawn from A1 candidates (amendment 1), then judge the rest:
+PYTHONPATH=.:../research uv run python -m experiments.youtube_discovery_v2.run judge --allow-live-api --selector anthropic/claude-haiku-4.5 --evaluator google/gemini-2.5-pro
+PYTHONPATH=.:../research uv run python -m experiments.youtube_discovery_v2.run analyze --selector anthropic/claude-haiku-4.5 --evaluator google/gemini-2.5-pro
+```
+
+The judging step needs a new budget (about 0.6 USD for the evaluator on the 13 dishes still unjudged plus the A1 candidates). The raw data stay in the ignored `data/youtube-discovery-v2/` of this clone.

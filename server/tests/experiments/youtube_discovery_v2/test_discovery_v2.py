@@ -157,3 +157,34 @@ def test_dry_run_makes_no_call(capsys, monkeypatch):
     for cmd in ("plan", "collect", "judge", "judge-validate"):
         assert run.main([cmd]) == 0
     assert "dry run" in capsys.readouterr().out
+
+
+def test_one_combo_scores_choice_by_the_selector_and_precision_by_the_evaluator():
+    from experiments.youtube_discovery_v2 import analyze
+
+    def vid(i, views, title):
+        return {**cand(i, views=views, title=title), "channel_id": i}
+
+    store = {
+        "d1": {
+            "methods": {"B": ["a", "b", "c"]},
+            "cost": {"B": {"cost": 0.01}},
+            "videos": {
+                "a": vid("a", 30, "김치볶음밥 레시피"),
+                "b": {**vid("b", 20, "Kimchi fried rice"), "hangul_title": False},
+                "c": vid("c", 10, "다른 요리"),
+            },
+        }
+    }
+    judged = {
+        "d1": {
+            "J1": {"judgements": {"a": True, "b": True, "c": False}, "cost": 0.002},
+            "E": {"judgements": {"a": True, "b": True, "c": False}},
+        }
+    }
+    table = {"d1": {"name": "김치볶음밥"}}
+    p3j0, stats0 = analyze.one_combo(store, judged, table, ["d1"], ("B", "J0", "views"))
+    p3j1, stats1 = analyze.one_combo(store, judged, table, ["d1"], ("B", "J1", "views"))
+    assert p3j0 == [pytest.approx(1 / 3)] and stats0["english_relevant_chosen"] == 0
+    assert p3j1 == [pytest.approx(2 / 3)] and stats1["english_relevant_chosen"] == 1
+    assert stats1["cost"] == pytest.approx(0.012) and stats1["coverage"] == 0.0
