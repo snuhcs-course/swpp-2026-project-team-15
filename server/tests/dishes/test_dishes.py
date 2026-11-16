@@ -232,9 +232,118 @@ def test_adapt_errors(catalog):
     )
     assert client.post("/dishes/adapt", json={"ingredients": ["a"]}).status_code == 422
     res = client.post(
-        "/dishes/adapt", json={"dish_id": "kimchi-fried-rice", "ingredients": ["김치"]}
+        "/dishes/adapt", json={"dish_id": "kimchi-fried-rice", "ingredients": ["김치", "양파"]}
     )
     assert res.status_code == 502 and res.json()["detail"] == "The model service is down"
+
+
+# --- substitutions only from the table -------------------------------------------------------
+
+
+def _adapt(catalog, llm, dish_id, owned):
+    client = client_for(DishService(catalog, llm))
+    return client.post("/dishes/adapt", json={"dish_id": dish_id, "ingredients": owned}).json()
+
+
+def test_adapt_rejects_a_substitution_the_table_does_not_allow(catalog):
+    # 김 -> 김치 passed the old checks (owned, no quantity) but is not a table substitution.
+    llm = FakeLLM(
+        {
+            "substitutions": [{"missing": "김", "suggestion": "김치로 대신해요", "uses": ["김치"]}],
+            "skip_ok": ["김"],
+            "note": "김치로 충분해요",
+        }
+    )
+    body = _adapt(catalog, llm, "kimchi-rolled", ["김치", "밥", "간장", "소금"])
+    assert body["substitutions"] == [] and body["skip_ok"] == []  # 김 is not optional here
+    assert body["note"] == "냉장고 재료로는 마땅한 대체를 찾지 못했어요."
+    assert llm.calls == []  # nothing the table allows, so the model is not even asked
+
+
+def test_adapt_accepts_table_pairs_and_ignores_model_skip_claims(catalog):
+    llm = FakeLLM(
+        {
+            "substitutions": [
+                {"missing": "대파", "suggestion": "쪽파로 대신해요", "uses": ["양파"]},
+                {"missing": "대파", "suggestion": "양파를 넣어요", "uses": ["양파", "소금"]},
+            ],
+            "skip_ok": ["계란", "김치"],  # the model cannot declare skips; only the table can
+            "note": "양파가 있어요",
+        }
+    )
+    body = _adapt(catalog, llm, "kimchi-fried-rice", ["밥", "김치", "양파"])
+    assert body["substitutions"] == [
+        {"missing": "대파", "suggestion": "쪽파로 대신해요", "uses": ["양파"]}
+    ]
+    assert body["skip_ok"] == ["계란"] and body["note"] == "양파가 있어요"
+    assert llm.calls[0][1]["missing"] == [{"name": "대파", "allowed_uses": [["양파"]]}]
+
+
+def test_adapt_replaces_a_model_pair_outside_the_table_with_the_table_option(catalog):
+    llm = FakeLLM(
+        {
+            "substitutions": [{"missing": "대파", "suggestion": "김치로", "uses": ["김치"]}],
+            "skip_ok": [],
+            "note": "",
+        }
+    )
+    body = _adapt(catalog, llm, "kimchi-fried-rice", ["밥", "김치", "양파"])
+    assert body["substitutions"] == [
+        {"missing": "대파", "suggestion": "양파(으)로 대신해요", "uses": ["양파"]}
+    ]
+
+
+def test_adapt_combo_and_optional_skip_without_any_model(catalog):
+    body = _adapt(catalog, None, "tteokbokki", ["떡", "어묵", "고춧가루"])
+    assert body["source"] == "rules"
+    assert body["substitutions"] == [
+        {
+            "missing": "고추장",
+            "suggestion": "고춧가루+간장+설탕(으)로 대신해요",
+            "uses": ["고춧가루", "간장", "설탕"],
+        }
+    ]
+    assert body["skip_ok"] == ["대파"]  # optional, and no table option with what is owned
+    assert not catalog.accepts("고추장", ["양파"], catalog.owned(["양파"]))
+    assert catalog.accepts("고추장", ["설탕", "고춧가루", "간장"], catalog.owned(["고춧가루"]))
+
+
+def test_adapt_honest_empty_answer_without_a_model(catalog):
+    body = _adapt(catalog, None, "kimchi-rolled", ["김치", "밥"])
+    assert body["substitutions"] == [] and body["skip_ok"] == []
+    assert body["note"] == "냉장고 재료로는 마땅한 대체를 찾지 못했어요."
+
+
+def test_table_does_not_allow_tofu_egg_swaps(catalog):
+    assert catalog.options("두부", catalog.owned(["계란"])) == []
+    assert catalog.options("계란", catalog.owned(["두부"])) == []
+
+
+# --- names and additions without the recipe database -----------------------------------------
+
+
+def test_ingredient_names_come_from_the_dish_data(catalog):
+    client = client_for(DishService(catalog))
+    names = client.get("/recipes/ingredients").json()["names"]
+    assert names == sorted(set(names))
+    for expected in ("김치", "쌀", "달걀", "대파", "소금", "양파", "참치캔"):
+        assert expected in names
+    assert all(0 < len(n) <= 12 and " " not in n and not any(c.isdigit() for c in n) for n in names)
+    assert "물" not in names
+
+
+def test_ingredient_suggestions_complete_the_most_dishes(catalog):
+    client = client_for(DishService(catalog))
+    body = client.post("/recipes/ingredient-suggestions", json={"ingredients": ["밥", "김치"]})
+    suggestions = body.json()["suggestions"]
+    assert suggestions and len(suggestions) <= 5
+    assert all(s["ready_recipe_count"] >= 1 and s["ready_recipe_names"] for s in suggestions)
+    assert [s["ready_recipe_count"] for s in suggestions] == sorted(
+        (s["ready_recipe_count"] for s in suggestions), reverse=True
+    )
+    assert not {"밥", "김치"} & {s["name"] for s in suggestions}  # only things not yet owned
+    empty = client.post("/recipes/ingredient-suggestions", json={"ingredients": []})
+    assert empty.status_code == 200 and empty.json() == {"suggestions": []}
 
 
 # --- model transport -------------------------------------------------------------------------

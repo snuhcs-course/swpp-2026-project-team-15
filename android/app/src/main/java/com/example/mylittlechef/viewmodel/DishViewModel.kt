@@ -34,6 +34,9 @@ sealed interface DishUiState {
     data class Error(val message: String) : DishUiState
 }
 
+/** What the dish sheet shows first: the videos or the substitution answer. */
+enum class DishSheetMode { VIDEOS, ADAPT }
+
 sealed interface AdaptUiState {
     data object Loading : AdaptUiState
     data class Success(val adaptation: DishAdaptation) : AdaptUiState
@@ -61,7 +64,16 @@ class DishViewModel(
 
     fun adaptState(dishId: String): AdaptUiState? = adaptations[dishId]
 
-    fun selectDish(id: String?) { selectedDishId = id }
+    var selectedMode by mutableStateOf(DishSheetMode.VIDEOS)
+        private set
+
+    fun selectDish(id: String?, mode: DishSheetMode = DishSheetMode.VIDEOS) {
+        selectedDishId = id
+        selectedMode = mode
+    }
+
+    /** Hides a substitution answer (the user closes the AI box). */
+    fun dismissAdapt(dishId: String) { adaptations.remove(dishId) }
 
     fun selectSort(value: DishSort) {
         sort = value

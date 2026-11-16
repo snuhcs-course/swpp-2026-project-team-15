@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,9 +15,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -30,70 +34,62 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.mylittlechef.domain.Dish
+import com.example.mylittlechef.domain.DishAdaptation
 import com.example.mylittlechef.domain.DishLinks
 import com.example.mylittlechef.domain.DishVideo
+import com.example.mylittlechef.ui.components.IngredientBadge
+import com.example.mylittlechef.viewmodel.AdaptUiState
+import com.example.mylittlechef.viewmodel.DishSheetMode
 
-/** Videos for one dish: a vertical list; tapping an embeddable one plays it above the list. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** One dish in detail: the one-line reason, then videos and the AI substitution answer (the tapped one first). */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun DishVideoSheet(dish: Dish, onDismiss: () -> Unit) {
-    val context = LocalContext.current
+fun DishDetailSheet(
+    dish: Dish,
+    mode: DishSheetMode,
+    fridgeNames: List<String>,
+    adapt: AdaptUiState?,
+    onAdapt: () -> Unit,
+    onDismissAdapt: () -> Unit,
+    onDismiss: () -> Unit
+) {
     var playingId by rememberSaveable(dish.id) { mutableStateOf<String?>(null) }
     val playing = dish.videos.firstOrNull { it.videoId == playingId }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ) {
-        Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 16.dp)) {
-            Text(dish.name, style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "이 요리를 만드는 YouTube 영상이에요. 영상은 올린 사람의 것이며 앱은 링크와 재생만 제공해요.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(12.dp))
-            if (playing != null) {
-                YouTubePlayer(playing.videoId)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    TextButton(onClick = { playingId = null }) { Text("재생 닫기") }
-                    OutlinedButton(onClick = { openLink(context, DishLinks.watchUrl(playing.videoId)) }) {
-                        Text("YouTube에서 열기")
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 16.dp)) {
+            Text(dish.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+            if (dish.reason.isNotBlank()) {
+                Spacer(Modifier.height(4.dp))
+                Text(dish.reason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            if (dish.videos.isEmpty()) {
-                Text("미리 찾아 둔 영상이 아직 없어요.", style = MaterialTheme.typography.bodyMedium)
-                Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 검색") }
+            Spacer(Modifier.height(12.dp))
+            val showAdapt = dish.missing.isNotEmpty()
+            if (mode == DishSheetMode.ADAPT && showAdapt) {
+                AdaptSection(dish, fridgeNames, adapt, onAdapt, onDismissAdapt)
+                Spacer(Modifier.height(16.dp))
+                VideoSection(dish, playing, playingId, onPlay = { playingId = it }, onClose = { playingId = null })
             } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.weight(1f, fill = false)
-                ) {
-                    items(dish.videos, key = { it.videoId }) { video ->
-                        VideoRow(
-                            video = video,
-                            selected = video.videoId == playingId,
-                            onPlay = { playingId = video.videoId },
-                            onOpen = { openLink(context, DishLinks.watchUrl(video.videoId)) }
-                        )
-                    }
-                    item {
-                        OutlinedButton(onClick = { openLink(context, dish.searchUrl) }) {
-                            Text("YouTube에서 더 검색")
-                        }
-                    }
+                VideoSection(dish, playing, playingId, onPlay = { playingId = it }, onClose = { playingId = null })
+                if (showAdapt) {
+                    Spacer(Modifier.height(16.dp))
+                    AdaptSection(dish, fridgeNames, adapt, onAdapt, onDismissAdapt)
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -102,9 +98,130 @@ fun DishVideoSheet(dish: Dish, onDismiss: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun VideoSection(
+    dish: Dish,
+    playing: DishVideo?,
+    playingId: String?,
+    onPlay: (String) -> Unit,
+    onClose: () -> Unit
+) {
+    val context = LocalContext.current
+    Text("영상", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+    Spacer(Modifier.height(8.dp))
+    if (playing != null) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            YouTubePlayer(playing.videoId, Modifier.widthIn(max = 480.dp))
+        }
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            TextButton(onClick = onClose) { Text("재생 닫기") }
+            OutlinedButton(onClick = { openLink(context, DishLinks.watchUrl(playing.videoId)) }) {
+                Text("YouTube에서 열기")
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+    }
+    if (dish.videos.isEmpty()) {
+        Text("미리 찾아 둔 영상이 아직 없어요.", style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 검색") }
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            dish.videos.forEach { video ->
+                VideoRow(
+                    video = video,
+                    selected = video.videoId == playingId,
+                    onPlay = { onPlay(video.videoId) },
+                    onOpen = { openLink(context, DishLinks.watchUrl(video.videoId)) }
+                )
+            }
+            OutlinedButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 더 검색") }
+        }
+    }
+}
+
+/** Substitution answer: the missing ingredient's icon, an arrow, then the icon of what the fridge offers. */
+@Composable
+private fun AdaptSection(
+    dish: Dish,
+    fridgeNames: List<String>,
+    adapt: AdaptUiState?,
+    onAdapt: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Text("AI 대체 재료", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+    Spacer(Modifier.height(8.dp))
+    when (adapt) {
+        null -> OutlinedButton(onClick = onAdapt) { Text("대체할 재료 찾기") }
+        AdaptUiState.Loading -> Row(
+            Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(8.dp))
+            Text("AI가 대체할 방법을 찾고 있어요...", style = MaterialTheme.typography.bodyMedium)
+        }
+        is AdaptUiState.Error -> Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
+            Text(adapt.message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+            OutlinedButton(onClick = onAdapt) { Text("다시 시도") }
+        }
+        is AdaptUiState.Success -> AdaptAnswer(adapt.adaptation, onDismiss)
+    }
+}
+
+@Composable
+private fun AdaptAnswer(adaptation: DishAdaptation, onDismiss: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        if (adaptation.substitutions.isEmpty() && adaptation.skipOk.isEmpty()) {
+            Text("대체할 방법을 찾지 못했어요.", style = MaterialTheme.typography.bodyMedium)
+        }
+        adaptation.substitutions.forEach { s ->
+            val uses = s.uses.ifEmpty { listOf(s.suggestion) }.take(2)
+            Row(
+                Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
+                    contentDescription = "${s.missing} 대신 ${s.suggestion}"
+                },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IngredientBadge(s.missing, Modifier.alpha(0.4f), size = 32.dp)
+                Text("  →  ", style = MaterialTheme.typography.titleMedium)
+                uses.forEach { IngredientBadge(it, size = 32.dp); Spacer(Modifier.width(4.dp)) }
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    s.suggestion,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+        if (adaptation.skipOk.isNotEmpty()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                adaptation.skipOk.take(3).forEach { IngredientBadge(it, Modifier.alpha(0.4f), size = 24.dp); Spacer(Modifier.width(4.dp)) }
+                Text("없어도 돼요: ${adaptation.skipOk.joinToString(", ")}", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        if (adaptation.note.isNotBlank()) {
+            Text(adaptation.note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Text(
+            "AI가 만든 제안이에요. 맛과 알레르기는 직접 확인해 주세요.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        TextButton(onClick = onDismiss) { Text("제안 닫기") }
+    }
+}
+
+/** Fixed-size row: 16:9 thumbnail, two-line title, one line for channel and views. */
 @Composable
 private fun VideoRow(video: DishVideo, selected: Boolean, onPlay: () -> Unit, onOpen: () -> Unit) {
-    val shape = RoundedCornerShape(12.dp)
+    val shape = RoundedCornerShape(24.dp)
     Row(
         Modifier
             .fillMaxWidth()
@@ -113,14 +230,24 @@ private fun VideoRow(video: DishVideo, selected: Boolean, onPlay: () -> Unit, on
                 if (selected) MaterialTheme.colorScheme.secondaryContainer
                 else MaterialTheme.colorScheme.surfaceVariant
             )
-            .clickable(onClickLabel = if (video.embeddable) "영상 재생" else "YouTube에서 열기") {
+            .semantics(mergeDescendants = true) {
+                contentDescription = listOfNotNull(
+                    video.title.ifBlank { "제목 없는 영상" },
+                    video.channel.takeIf { it.isNotBlank() },
+                    DishLinks.viewsLabel(video.viewCount)
+                ).joinToString(", ")
+            }
+            .clickable(
+                onClickLabel = if (video.embeddable) "영상 재생" else "YouTube에서 열기",
+                role = Role.Button
+            ) {
                 if (video.embeddable) onPlay() else onOpen()
             }
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            Modifier.width(120.dp).height(68.dp).clip(RoundedCornerShape(8.dp))
+            Modifier.width(120.dp).height(68.dp).clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.outline)
         ) {
             if (video.thumbnailUrl != null) {
@@ -133,7 +260,7 @@ private fun VideoRow(video: DishVideo, selected: Boolean, onPlay: () -> Unit, on
             }
         }
         Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f).semantics { contentDescription = "${video.title}, ${video.channel}" }) {
+        Column(Modifier.weight(1f).height(68.dp), verticalArrangement = Arrangement.Center) {
             Text(
                 video.title.ifBlank { "제목 없는 영상" },
                 style = MaterialTheme.typography.bodyMedium,
@@ -141,32 +268,26 @@ private fun VideoRow(video: DishVideo, selected: Boolean, onPlay: () -> Unit, on
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                listOfNotNull(
-                    video.channel.takeIf { it.isNotBlank() },
-                    DishLinks.viewsLabel(video.viewCount)
-                ).joinToString(" · "),
+                (listOfNotNull(
+                    DishLinks.viewsLabel(video.viewCount),
+                    video.channel.takeIf { it.isNotBlank() }
+                ) + listOfNotNull("YouTube에서 열기".takeIf { !video.embeddable })).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            if (!video.embeddable) {
-                Text(
-                    "앱 안에서 재생할 수 없는 영상이에요",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Attribution() {
     val context = LocalContext.current
     Column {
         Text("Videos provided by YouTube", style = MaterialTheme.typography.labelMedium)
-        Row {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             TextButton(onClick = { openLink(context, DishLinks.TERMS_URL) }) { Text("YouTube 서비스 약관") }
             TextButton(onClick = { openLink(context, DishLinks.PRIVACY_URL) }) { Text("Google 개인정보처리방침") }
         }

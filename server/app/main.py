@@ -30,6 +30,7 @@ from app.config import Settings
 from app.database import recipe_engine
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DEFAULT_MODEL, DishLLM
+from app.dishes.router import compat_router as dish_recipe_routes
 from app.dishes.router import router as dishes_router
 from app.dishes.service import DishService
 from app.dishes.youtube import VideoCache
@@ -79,6 +80,8 @@ def create_app(
             recommendations if recommendations is not None else RecommendationService(recipes)
         )
         app.include_router(recipes_router)
+    else:
+        app.include_router(dish_recipe_routes)
 
     @app.get("/health", tags=["health"], summary="Liveness check")
     def health() -> dict[str, str]:

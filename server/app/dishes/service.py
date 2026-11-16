@@ -27,11 +27,12 @@ SUGGEST_SYSTEM = (
     "(under 40 characters) and up to 3 YouTube search keyword variants that each contain the "
     "dish name. Never invent dishes, ingredients or quantities."
 )
+NO_SUBSTITUTE = "냉장고 재료로는 마땅한 대체를 찾지 못했어요."
 ADAPT_SYSTEM = (
     "A student wants to cook a dish but lacks some ingredients. For each missing ingredient, "
-    "propose a short Korean substitute using ONLY ingredients from the owned list or the listed "
-    "basic seasonings, or say it can be skipped. No quantities, no cooking steps. "
-    "Keep each suggestion under 40 characters."
+    "choose ONE of its allowed_uses (copy the ingredient names exactly into 'uses') and write a "
+    "short Korean suggestion for it (under 40 characters). Never use anything that is not in "
+    "allowed_uses. No quantities, no cooking steps. Leave skip_ok empty."
 )
 
 SUGGEST_SCHEMA = {
@@ -172,7 +173,10 @@ class DishService:
 
     # -- adapt -------------------------------------------------------------------------------
     def adapt(self, dish_id: str, ingredients: list[str]) -> AdaptResponse | None:
-        """None when the dish is unknown. Raises DishLLMError when the model call fails."""
+        """None when the dish is unknown. Raises DishLLMError when the model call fails.
+
+        Only substitutions the server's table allows (and the user can make with what they own)
+        are ever returned; the model only chooses among them and words the suggestion."""
         dish = self.catalog.get(dish_id)
         if dish is None:
             return None
@@ -186,21 +190,23 @@ class DishService:
                 source="rules",
                 note="부족한 재료가 없어요.",
             )
-        if self.llm is None:
-            return self._adapt_rules(dish_id, match, owned)
+        options = {m: o for m in match.missing if (o := self.catalog.options(m, owned))}
+        if self.llm is None or not options:
+            return self._adapt_rules(dish_id, match, options)
         user = json.dumps(
             {
                 "dish": dish.name,
-                "missing": list(match.missing),
-                "owned": sorted({n.strip() for n in ingredients if n.strip()}),
-                "basic_seasonings": sorted(self.catalog.staples),
+                "missing": [
+                    {"name": m, "allowed_uses": [list(o) for o in opts]}
+                    for m, opts in options.items()
+                ],
             },
             ensure_ascii=False,
         )
         data = self.llm.complete(ADAPT_SYSTEM, user, "dish_adapt", ADAPT_SCHEMA)
-        return self._check_adapt(dish_id, match, owned, data)
+        return self._check_adapt(dish_id, match, owned, options, data)
 
-    def _check_adapt(self, dish_id: str, match: Match, owned: set[str], data: dict):
+    def _check_adapt(self, dish_id, match: Match, owned, options, data: dict) -> AdaptResponse:
         subs: list[Substitution] = []
         used: set[str] = set()
         for item in (
@@ -209,50 +215,41 @@ class DishService:
             if not isinstance(item, dict):
                 continue
             missing, text, uses = item.get("missing"), item.get("suggestion"), item.get("uses")
-            if missing not in match.missing or missing in used:
+            if missing not in options or missing in used:
                 continue
             if not isinstance(text, str) or not text.strip() or _DIGITS.search(text):
                 continue
             if not isinstance(uses, list) or not uses or not all(isinstance(u, str) for u in uses):
                 continue
-            if not all(self.catalog.usable(u, owned) for u in uses):
+            if not self.catalog.accepts(missing, uses, owned):
                 continue
             used.add(missing)
             subs.append(Substitution(missing=missing, suggestion=text.strip()[:60], uses=uses))
-        raw_skip = data.get("skip_ok", [])
-        skip = [
-            m
-            for m in match.missing
-            if isinstance(raw_skip, list) and m in raw_skip and m not in used
-        ]
+        for missing, opts in options.items():  # an approved option the model skipped is still true
+            if missing not in used:
+                subs.append(self._rule_substitution(missing, opts[0]))
+        skip = [m for m in match.missing if m in match.dish.optional and m not in options]
         note = data.get("note", "")
         note = note.strip()[:80] if isinstance(note, str) and not _DIGITS.search(note) else ""
+        if not subs and not skip:
+            note = NO_SUBSTITUTE
         return AdaptResponse(
             dish_id=dish_id, substitutions=subs, skip_ok=skip, note=note, source="llm"
         )
 
-    def _adapt_rules(self, dish_id: str, match: Match, owned: set[str]) -> AdaptResponse:
-        subs, skip = [], []
-        for missing in match.missing:
-            options = [
-                s
-                for s in self.catalog.substitutes.get(missing, ())
-                if self.catalog.usable(s, owned)
-            ]
-            if options:
-                subs.append(
-                    Substitution(
-                        missing=missing,
-                        suggestion=f"{options[0]}(으)로 대신해요",
-                        uses=[options[0]],
-                    )
-                )
-            elif missing in match.dish.optional:
-                skip.append(missing)
+    @staticmethod
+    def _rule_substitution(missing: str, option: tuple[str, ...]) -> Substitution:
+        return Substitution(
+            missing=missing, suggestion=f"{'+'.join(option)}(으)로 대신해요", uses=list(option)
+        )
+
+    def _adapt_rules(self, dish_id: str, match: Match, options) -> AdaptResponse:
+        subs = [self._rule_substitution(m, opts[0]) for m, opts in options.items()]
+        skip = [m for m in match.missing if m in match.dish.optional and m not in options]
         return AdaptResponse(
             dish_id=dish_id,
             substitutions=subs,
             skip_ok=skip,
-            note="" if subs or skip else "대신할 수 있는 재료를 찾지 못했어요.",
+            note="" if subs or skip else NO_SUBSTITUTE,
             source="rules",
         )

@@ -20,6 +20,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.mylittlechef.domain.DishLinks
 
@@ -41,7 +43,7 @@ fun YouTubePlayer(videoId: String, modifier: Modifier = Modifier) {
     }
     AndroidView(
         factory = { webView },
-        modifier = modifier.fillMaxWidth().aspectRatio(16f / 9f)
+        modifier = modifier.fillMaxWidth().aspectRatio(16f / 9f).semantics { contentDescription = "YouTube 영상 플레이어" }
     )
 }
 

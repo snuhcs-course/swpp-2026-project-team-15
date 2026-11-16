@@ -11,9 +11,18 @@ from app.dishes.schemas import (
     SuggestRequest,
     SuggestResponse,
 )
+from app.recipes.schemas import (
+    IngredientCatalogResponse,
+    IngredientSuggestion,
+    IngredientSuggestionRequest,
+    IngredientSuggestionResponse,
+)
 from app.schemas import ErrorResponse
 
 router = APIRouter(prefix="/dishes", tags=["dishes"])
+# The app's fridge screens call these two recipe routes; without the recipe database they are
+# answered from the dish list with the same response shapes (mounted only in that mode).
+compat_router = APIRouter(prefix="/recipes", tags=["recipes"])
 
 
 @router.get("", summary="Baseline dish list", operation_id="list_dishes")
@@ -55,3 +64,23 @@ def adapt(body: AdaptRequest, service: DishServiceDep) -> AdaptResponse:
     if result is None:
         raise HTTPException(422, "Unknown dish id")
     return result
+
+
+@compat_router.get(
+    "/ingredients", summary="Ingredient names for entry completion", operation_id="dish_ingredients"
+)
+def ingredient_names(service: DishServiceDep) -> IngredientCatalogResponse:
+    return IngredientCatalogResponse(names=service.catalog.ingredient_names())
+
+
+@compat_router.post(
+    "/ingredient-suggestions",
+    summary="Ingredients that would complete the most dishes",
+    operation_id="dish_ingredient_suggestions",
+)
+def ingredient_suggestions(
+    body: IngredientSuggestionRequest, service: DishServiceDep
+) -> IngredientSuggestionResponse:
+    return IngredientSuggestionResponse(
+        suggestions=[IngredientSuggestion(**s) for s in service.catalog.additions(body.ingredients)]
+    )

@@ -48,6 +48,8 @@ class Catalog:
         self.staples = staples
         self.equivalents = {k: tuple(v) for k, v in data.get("equivalents", {}).items()}
         self.substitutes = {k: tuple(v) for k, v in data.get("substitutes", {}).items()}
+        self.combos = {k: tuple(tuple(c) for c in v) for k, v in data.get("combos", {}).items()}
+        self._canon = {alt: key for key, alts in self.equivalents.items() for alt in alts}
         self.dishes: dict[str, Dish] = {}
         for raw in data["dishes"]:
             dish = Dish(
@@ -104,3 +106,85 @@ class Catalog:
 
     def usable(self, name: str, owned: set[str]) -> bool:
         return name in self.staples or self._covered(name, owned)
+
+    # -- substitutions: only what the table approves -------------------------------------------
+    def _core(self, names) -> frozenset[str]:
+        """Names compared as sets: aliases map to their main name, basic seasonings are dropped
+        unless they are all there is (so 버터 -> 식용유 still compares)."""
+        canon = {self._canon.get(n, n) for n in names}
+        core = {n for n in canon if n not in self.staples}
+        return frozenset(core or canon)
+
+    def options(self, missing: str, owned: set[str]) -> list[tuple[str, ...]]:
+        """Ways the table allows to cover ``missing`` with what the user has, best first."""
+        out: list[tuple[str, ...]] = []
+        for sub in self.substitutes.get(missing, ()):
+            if self.usable(sub, owned):
+                out.append((sub,))
+        for combo in self.combos.get(missing, ()):
+            if all(self.usable(c, owned) for c in combo):
+                out.append(tuple(combo))
+        return out
+
+    def accepts(self, missing: str, uses: list[str], owned: set[str]) -> bool:
+        wanted = self._core(uses)
+        return any(wanted == self._core(opt) for opt in self.options(missing, owned))
+
+    # -- names for autocomplete and addition suggestions without the recipe database -------------
+    def ingredient_names(self) -> list[str]:
+        names: set[str] = set(self.staples) - {WATER} | set(PANTRY_NAMES)
+        for dish in self.dishes.values():
+            names.update(dish.key_ingredients)
+            names.update(dish.optional)
+        for key, alts in self.equivalents.items():
+            names.add(key)
+            names.update(alts)
+        for key, alts in self.substitutes.items():
+            names.add(key)
+            names.update(alts)
+        return sorted(n for n in names if _plain(n))
+
+    def additions(self, ingredients: list[str], limit: int = 5) -> list[dict]:
+        """One-ingredient additions ranked by how many dishes they would complete."""
+        owned = self.owned(ingredients)
+        if not owned:
+            return []
+        ready: dict[str, list[str]] = {}
+        for dish in self.dishes.values():
+            match = self.match(dish, owned)
+            if match.have and len(match.missing) == 1:
+                ready.setdefault(match.missing[0], []).append(dish.name)
+        used: dict[str, int] = {}
+        for dish in self.dishes.values():
+            for key in dish.key_ingredients:
+                used[key] = used.get(key, 0) + 1
+        ranked = sorted(ready, key=lambda n: (-len(ready[n]), -used.get(n, 0), n))
+        return [
+            {
+                "name": n,
+                "ready_recipe_count": len(ready[n]),
+                "recipe_count": used.get(n, len(ready[n])),
+                "ready_recipe_names": sorted(ready[n])[:5],
+            }
+            for n in ranked[:limit]
+        ]
+
+
+PANTRY_NAMES = (
+    "양파",
+    "대파",
+    "당근",
+    "계란",
+    "밥",
+    "두부",
+    "감자",
+    "김치",
+    "우유",
+    "식빵",
+    "라면",
+)
+
+
+def _plain(name: str) -> bool:
+    """Autocomplete names are short plain words: no digits, symbols or spaces."""
+    return 0 < len(name) <= 12 and name.isalnum() and not any(c.isdigit() for c in name)
