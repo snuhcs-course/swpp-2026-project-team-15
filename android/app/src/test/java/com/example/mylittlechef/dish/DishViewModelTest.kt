@@ -188,6 +188,7 @@ class DishViewModelTest {
         assertEquals("양파로 대체", result.substitutions.single().suggestion)
         assertEquals(1, api.adaptRequests.size)
         assertEquals(listOf("김치", "양파"), api.adaptRequests.single().ingredients)
+        assertEquals(listOf("대파"), api.adaptRequests.single().missing)
         vm.onFridgeChanged(listOf("김치"))
         advanceUntilIdle()
         assertEquals(null, vm.adaptState("a"))

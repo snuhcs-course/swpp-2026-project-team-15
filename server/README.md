@@ -1,6 +1,6 @@
 # Server
 
-FastAPI serves ingredient recognition and dish suggestions. There is no recipe database: dishes come from one self-authored file, `app/dishes/dishes.json` (dish names, categories, key ingredients, equivalent and substitute names; no recipe text). Other versions of the app live on other branches/commits (for example the recipe-database version on `main`).
+FastAPI serves ingredient recognition and dish suggestions. There is no recipe database: dishes come from one self-authored file, `app/dishes/dishes.json` (dish names and categories; no recipe text). The suggestion path uses only the names; the other fields are listed below. Other versions of the app live on other branches/commits (for example the recipe-database version on `main`).
 
 ## Run locally
 
@@ -19,13 +19,14 @@ Interactive OpenAPI documentation is at `/docs`. `GET /health` is liveness; `GET
 | --- | --- |
 | `POST /analyze` | One photo (`image`) or 2–15 views of one fridge (`images`) → ingredient candidates (OpenRouter, Gemini or recorded fixtures) |
 | `GET /dishes` | The baseline dish list |
-| `POST /dishes/suggest` | `{ "ingredients": ["김치", "쌀"] }` → every fitting dish (best first, no fixed count; `limit` is deprecated and ignored), each with `have`, `missing`, a short `reason`, cached `videos` and a YouTube `search_url` |
-| `POST /dishes/adapt` | `{ "dish_id": "...", "ingredients": [...] }` → substitutes or skips for the missing ingredients |
+| `POST /dishes/suggest` | `{ "ingredients": ["김치", "쌀"] }` → every dish the model finds cookable (best first, no fixed count, possibly none; `limit` is deprecated and ignored), each with `have`, `missing`, cached `videos` and a YouTube `search_url` |
+| `POST /dishes/adapt` | `{ "dish_id": "...", "ingredients": [...], "missing": [...] }` → for each missing ingredient a substitute from the user's own ingredients, when the model finds one |
 | `GET /recipes/ingredients` | `{ "names": [...] }` for entry completion (names from the dish data; the path is kept for the app) |
 | `POST /recipes/ingredient-suggestions` | `{ "ingredients": [...] }` → ingredients that would complete the most dishes |
 
-- **suggest**: an LLM chooses dishes from the closed list (ids only from the list); `have` and `missing` are recomputed from the key ingredients, never taken from the model. `source` is `llm`, or `rules` when no model key is set or the call fails (overlap ranking). Equivalent names (계란/달걀, 쌀/밥, …) and the assumed seasonings in `app/dishes/staples.json` do not count as missing.
-- **adapt**: a substitution is accepted only if the pair (missing → ingredients used) is in the table of `dishes.json` and the user owns what it uses; optional ingredients may be skipped; anything else is dropped, and an empty answer says so (`냉장고 재료로는 마땅한 대체를 찾지 못했어요.`). 422 for an unknown dish, 502 when the model call fails; without a model key a rules table answers. No quantities or cooking steps are ever produced.
+- **suggest**: the naive design. The model gets the dish names and the user's ingredients and answers `{dishes:[{name, have, missing}]}`. The server only drops names that are not in the list and repeated names, keeps the order and returns `have`/`missing` as written (trimmed). `source` is always `llm`. 502 when the model call fails or no key is set: there is no rules fallback. Its quality is measured in `research/experiments/dish_naive/`.
+- **adapt**: the model names, for each missing ingredient, a substitute taken from the user's ingredients or none; the server checks only the JSON shape and that the substitute is one of them. 422 for an unknown dish, 502 when the model call fails. An empty answer says so (`냉장고 재료로는 마땅한 대체를 찾지 못했어요.`).
+- **Fields of `dishes.json`**: `name` and `category` feed the model and `GET /dishes`. `key_ingredients`, `optional`, `aliases`, `equivalents` and `substitutes` (and `staples.json`) are no longer used by suggest/adapt; they remain only for the ingredient endpoints below (`/recipes/ingredients`, `/recipes/ingredient-suggestions`) and for the reference set of the naive study.
 - **Videos**: `videos` come from a cache file (up to three per dish, embeddable, relevant titles first, then views). Without a cache the server returns the search link only.
 
 ## Settings
@@ -33,7 +34,7 @@ Interactive OpenAPI documentation is at `/docs`. `GET /health` is liveness; `GET
 | Variable | Effect |
 | --- | --- |
 | `VISION_PROVIDER` | `mock` (default), `gemini` (`GEMINI_API_KEY`, `GEMINI_MODEL`) or `openrouter` (`OPENROUTER_API_KEY`, `OPENROUTER_VISION_MODEL`) |
-| `OPENROUTER_API_KEY` / `DISH_LLM_API_KEY` | Key of the dish model; without any key the rules-only ranking answers |
+| `OPENROUTER_API_KEY` / `DISH_LLM_API_KEY` | Key of the dish model; without a key suggest/adapt answer 502 |
 | `DISH_LLM_MODEL` | Default `google/gemini-2.5-flash-lite` |
 | `DISH_VIDEO_CACHE` | Path of the video cache file; re-read when it changes |
 | `DISH_DATA_FILE`, `DISH_STAPLES_FILE` | Another dish list / staples list |

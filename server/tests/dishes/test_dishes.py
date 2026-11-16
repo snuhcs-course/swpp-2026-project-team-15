@@ -1,5 +1,5 @@
 # AI-generated with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
-"""Dish suggestions: closed list, deterministic have/missing, checked model answers (no network)."""
+"""Dish suggestions: the model answers from names and owned ingredients; the server checks names."""
 
 import json
 from pathlib import Path
@@ -83,42 +83,21 @@ def test_rules_rank_fewest_missing_first_and_need_one_owned_item(catalog):
     assert catalog.rank(["우주식량"]) == []
 
 
-# --- suggest ---------------------------------------------------------------------------------
+# --- suggest (naive: the model answers, the server checks the names) -------------------------
 
 
-def test_rules_only_without_a_model(catalog):
-    body = (
-        client_for(DishService(catalog))
-        .post("/dishes/suggest", json={"ingredients": ["김치", "밥"]})
-        .json()
-    )
-    ranked = catalog.rank(["김치", "밥"])
-    assert body["source"] == "rules" and len(body["dishes"]) == len(ranked) > 5
-    assert [d["id"] for d in body["dishes"]] == [m.dish.id for m in ranked]  # no cap
-    first = body["dishes"][0]
-    assert first["reason"].startswith("필요한 재료") and first["videos"] == []
-    assert first["search_url"].startswith("https://www.youtube.com/results?search_query=")
+def _answer(*dishes):
+    return {"dishes": [{"name": n, "have": h, "missing": m} for n, h, m in dishes]}
 
 
-def test_model_choice_is_validated_and_have_missing_recomputed(catalog):
+def test_model_answer_is_returned_as_written_after_the_name_check(catalog):
     llm = FakeLLM(
-        {
-            "dishes": [
-                {"id": "does-not-exist", "reason": "x", "keywords": []},
-                {
-                    "id": "kimchi-fried-rice",
-                    "reason": "김치와 밥이 있어요",
-                    "keywords": [
-                        "김치볶음밥 쉬운 레시피",
-                        "아무 상관 없는 영상",
-                        "김치볶음밥 레시피",
-                    ],
-                    "have": ["가짜"],  # ignored: the server recomputes have/missing
-                    "missing": [],
-                },
-                {"id": "kimchi-fried-rice", "reason": "dup", "keywords": []},
-            ]
-        }
+        _answer(
+            ("존재하지 않는 요리", ["김치"], []),
+            ("김치볶음밥", [" 밥 ", "김치", "김치"], ["대파", "계란"]),
+            ("김치볶음밥", ["밥"], []),  # repeated name: dropped
+            ("김치죽", ["김치", "밥"], []),
+        )
     )
     body = (
         client_for(DishService(catalog, llm))
@@ -126,61 +105,53 @@ def test_model_choice_is_validated_and_have_missing_recomputed(catalog):
         .json()
     )
     assert body["source"] == "llm"
-    dish = body["dishes"][0]
-    assert dish["id"] == "kimchi-fried-rice"
-    assert dish["have"] == ["밥", "김치"] and dish["missing"] == ["대파", "계란"]
-    assert dish["keywords"] == ["김치볶음밥 쉬운 레시피", "김치볶음밥 레시피"]
+    assert [d["name"] for d in body["dishes"]] == ["김치볶음밥", "김치죽"]  # order kept, no cap
+    first = body["dishes"][0]
+    assert first["id"] == "kimchi-fried-rice"
+    assert first["have"] == ["밥", "김치"] and first["missing"] == ["대파", "계란"]
+    assert first["search_url"].startswith("https://www.youtube.com/results?search_query=")
+    assert "reason" not in first and "keywords" not in first
+
+
+def test_model_sees_only_names_and_owned_ingredients(catalog):
+    llm = FakeLLM({"dishes": []})
+    client_for(DishService(catalog, llm)).post(
+        "/dishes/suggest", json={"ingredients": ["김치", "밥"]}
+    )
     sent = llm.calls[0][1]
-    assert all(c["id"] in catalog.dishes for c in sent["candidates"])
+    assert set(sent) == {"owned", "dishes"} and sent["owned"] == ["김치", "밥"]
+    assert sent["dishes"] == [d.name for d in catalog.dishes.values()]
 
 
-def test_limit_is_ignored_and_empty_model_answer_is_not_an_error(catalog):
-    service = DishService(catalog, FakeLLM({"dishes": []}))
+def test_empty_model_answer_is_an_answer_not_an_error(catalog):
     body = (
-        client_for(service)
-        .post("/dishes/suggest", json={"ingredients": ["김치", "밥"], "limit": 1})
-        .json()
-    )
-    assert body == {"source": "llm", "dishes": []}
-    assert "limit" not in json.dumps(service.llm.calls[0][1])
-
-
-def test_unknown_ingredient_gives_empty_rules_list(catalog):
-    body = (
-        client_for(DishService(catalog))
-        .post("/dishes/suggest", json={"ingredients": ["우주식량"]})
-        .json()
-    )
-    assert body == {"source": "rules", "dishes": []}
-
-
-def test_model_failure_falls_back_to_rules(catalog):
-    llm = FakeLLM(DishLLMError("down"))
-    body = (
-        client_for(DishService(catalog, llm))
-        .post("/dishes/suggest", json={"ingredients": ["계란"]})
-        .json()
-    )
-    assert body["source"] == "rules" and body["dishes"]
-
-
-def test_all_unknown_model_ids_are_dropped(catalog):
-    llm = FakeLLM({"dishes": [{"id": "x", "reason": "", "keywords": []}]})
-    body = (
-        client_for(DishService(catalog, llm))
-        .post("/dishes/suggest", json={"ingredients": ["계란"]})
+        client_for(DishService(catalog, FakeLLM({"dishes": []})))
+        .post("/dishes/suggest", json={"ingredients": ["소금"]})
         .json()
     )
     assert body == {"source": "llm", "dishes": []}
 
 
-@pytest.mark.parametrize(
-    "payload",
-    [
-        {},
-        {"ingredients": []},
-    ],
-)
+def test_malformed_model_items_are_skipped(catalog):
+    llm = FakeLLM({"dishes": ["x", {"name": 3}, {"name": "김치죽", "have": "밥", "missing": None}]})
+    body = (
+        client_for(DishService(catalog, llm))
+        .post("/dishes/suggest", json={"ingredients": ["김치"]})
+        .json()
+    )
+    assert [d["name"] for d in body["dishes"]] == ["김치죽"]
+    assert body["dishes"][0]["have"] == [] and body["dishes"][0]["missing"] == []
+
+
+def test_model_failure_and_missing_model_are_502_without_fallback(catalog):
+    failing = client_for(DishService(catalog, FakeLLM(DishLLMError("The model service is down"))))
+    response = failing.post("/dishes/suggest", json={"ingredients": ["계란"]})
+    assert response.status_code == 502 and "down" in response.json()["detail"]
+    none = client_for(DishService(catalog)).post("/dishes/suggest", json={"ingredients": ["계란"]})
+    assert none.status_code == 502
+
+
+@pytest.mark.parametrize("payload", [{}, {"ingredients": []}, {"ingredients": ["a"] * 61}])
 def test_bad_suggest_input_is_422(catalog, payload):
     assert client_for(DishService(catalog)).post("/dishes/suggest", json=payload).status_code == 422
 
@@ -190,153 +161,56 @@ def test_list_endpoint(catalog):
     assert body["count"] == len(catalog) and body["dishes"][0].keys() >= {"id", "name", "category"}
 
 
-# --- adapt -----------------------------------------------------------------------------------
+# --- adapt (naive: the model names a substitute from the user's own ingredients) --------------
 
 
-def test_adapt_keeps_only_checked_items(catalog):
-    llm = FakeLLM(
-        {
-            "substitutions": [
-                {"missing": "대파", "suggestion": "양파로 대신해요", "uses": ["양파"]},
-                {
-                    "missing": "계란",
-                    "suggestion": "두부를 으깨서 넣어요",
-                    "uses": ["두부"],
-                },  # not owned
-                {"missing": "계란", "suggestion": "계란 2개 사용", "uses": ["양파"]},  # quantity
-                {"missing": "김", "suggestion": "김 대신", "uses": ["양파"]},  # not missing
-                {"missing": "대파", "suggestion": "중복", "uses": ["양파"]},
-            ],
-            "skip_ok": ["계란", "김"],
-            "note": "양파가 있으면 충분해요",
-        }
-    )
-    body = (
-        client_for(DishService(catalog, llm))
-        .post(
-            "/dishes/adapt",
-            json={"dish_id": "kimchi-fried-rice", "ingredients": ["밥", "김치", "양파"]},
-        )
-        .json()
-    )
-    assert body["source"] == "llm"
-    assert body["substitutions"] == [
-        {"missing": "대파", "suggestion": "양파로 대신해요", "uses": ["양파"]}
-    ]
-    assert body["skip_ok"] == ["계란"]
-    assert body["note"] == "양파가 있으면 충분해요"
-
-
-def test_adapt_rules_when_no_model_and_when_nothing_is_missing(catalog):
-    client = client_for(DishService(catalog))
-    body = client.post(
-        "/dishes/adapt",
-        json={"dish_id": "kimchi-fried-rice", "ingredients": ["밥", "김치", "양파"]},
-    ).json()
-    assert body["source"] == "rules"
-    assert body["substitutions"][0] == {
-        "missing": "대파",
-        "suggestion": "양파(으)로 대신해요",
-        "uses": ["양파"],
-    }
-    assert body["skip_ok"] == ["계란"]
-    full = client.post("/dishes/adapt", json={"dish_id": "egg-fry", "ingredients": ["계란"]}).json()
-    assert full["substitutions"] == [] and full["note"]
-
-
-def test_adapt_errors(catalog):
-    client = client_for(DishService(catalog, FakeLLM(DishLLMError("The model service is down"))))
-    assert (
-        client.post("/dishes/adapt", json={"dish_id": "nope", "ingredients": ["a"]}).status_code
-        == 422
-    )
-    assert client.post("/dishes/adapt", json={"ingredients": ["a"]}).status_code == 422
-    res = client.post(
-        "/dishes/adapt", json={"dish_id": "kimchi-fried-rice", "ingredients": ["김치", "양파"]}
-    )
-    assert res.status_code == 502 and res.json()["detail"] == "The model service is down"
-
-
-# --- substitutions only from the table -------------------------------------------------------
-
-
-def _adapt(catalog, llm, dish_id, owned):
+def _adapt(catalog, llm, owned, missing, dish_id="egg-roll"):
     client = client_for(DishService(catalog, llm))
-    return client.post("/dishes/adapt", json={"dish_id": dish_id, "ingredients": owned}).json()
-
-
-def test_adapt_rejects_a_substitution_the_table_does_not_allow(catalog):
-    # 김 -> 김치 passed the old checks (owned, no quantity) but is not a table substitution.
-    llm = FakeLLM(
-        {
-            "substitutions": [{"missing": "김", "suggestion": "김치로 대신해요", "uses": ["김치"]}],
-            "skip_ok": ["김"],
-            "note": "김치로 충분해요",
-        }
+    return client.post(
+        "/dishes/adapt", json={"dish_id": dish_id, "ingredients": owned, "missing": missing}
     )
-    body = _adapt(catalog, llm, "kimchi-rolled", ["김치", "밥", "간장", "소금"])
-    assert body["substitutions"] == [] and body["skip_ok"] == []  # 김 is not optional here
-    assert body["note"] == "냉장고 재료로는 마땅한 대체를 찾지 못했어요."
-    assert llm.calls == []  # nothing the table allows, so the model is not even asked
 
 
-def test_adapt_accepts_table_pairs_and_ignores_model_skip_claims(catalog):
+def test_adapt_keeps_substitutes_that_come_from_the_owned_list(catalog):
     llm = FakeLLM(
         {
             "substitutions": [
-                {"missing": "대파", "suggestion": "쪽파로 대신해요", "uses": ["양파"]},
-                {"missing": "대파", "suggestion": "양파를 넣어요", "uses": ["양파", "소금"]},
-            ],
-            "skip_ok": ["계란", "김치"],  # the model cannot declare skips; only the table can
-            "note": "양파가 있어요",
+                {"missing": "대파", "substitute": "양파"},
+                {"missing": "계란", "substitute": "두부"},  # not owned: dropped
+                {"missing": "당근", "substitute": "양파"},  # not asked: dropped
+                {"missing": "대파", "substitute": "양파"},  # repeated: dropped
+            ]
         }
     )
-    body = _adapt(catalog, llm, "kimchi-fried-rice", ["밥", "김치", "양파"])
-    assert body["substitutions"] == [
-        {"missing": "대파", "suggestion": "쪽파로 대신해요", "uses": ["양파"]}
-    ]
-    assert body["skip_ok"] == ["계란"] and body["note"] == "양파가 있어요"
-    assert llm.calls[0][1]["missing"] == [{"name": "대파", "allowed_uses": [["양파"]]}]
-
-
-def test_adapt_replaces_a_model_pair_outside_the_table_with_the_table_option(catalog):
-    llm = FakeLLM(
-        {
-            "substitutions": [{"missing": "대파", "suggestion": "김치로", "uses": ["김치"]}],
-            "skip_ok": [],
-            "note": "",
-        }
-    )
-    body = _adapt(catalog, llm, "kimchi-fried-rice", ["밥", "김치", "양파"])
+    body = _adapt(catalog, llm, ["양파", "밥"], ["대파", "계란"]).json()
+    assert body["source"] == "llm" and body["note"] == "" and body["skip_ok"] == []
     assert body["substitutions"] == [
         {"missing": "대파", "suggestion": "양파(으)로 대신해요", "uses": ["양파"]}
     ]
+    assert llm.calls[0][1] == {
+        "dish": "계란말이",
+        "missing": ["대파", "계란"],
+        "owned": ["양파", "밥"],
+    }
 
 
-def test_adapt_combo_and_optional_skip_without_any_model(catalog):
-    body = _adapt(catalog, None, "tteokbokki", ["떡", "어묵", "고춧가루"])
-    assert body["source"] == "rules"
-    assert body["substitutions"] == [
-        {
-            "missing": "고추장",
-            "suggestion": "고춧가루+간장+설탕(으)로 대신해요",
-            "uses": ["고춧가루", "간장", "설탕"],
-        }
-    ]
-    assert body["skip_ok"] == ["대파"]  # optional, and no table option with what is owned
-    assert not catalog.accepts("고추장", ["양파"], catalog.owned(["양파"]))
-    assert catalog.accepts("고추장", ["설탕", "고춧가루", "간장"], catalog.owned(["고춧가루"]))
+def test_adapt_empty_answer_gives_the_honest_note(catalog):
+    llm = FakeLLM({"substitutions": [{"missing": "대파", "substitute": ""}]})
+    body = _adapt(catalog, llm, ["양파"], ["대파"]).json()
+    assert body["substitutions"] == [] and body["note"].startswith("냉장고 재료로는")
 
 
-def test_adapt_honest_empty_answer_without_a_model(catalog):
-    body = _adapt(catalog, None, "kimchi-rolled", ["김치", "밥"])
-    assert body["substitutions"] == [] and body["skip_ok"] == []
-    assert body["note"] == "냉장고 재료로는 마땅한 대체를 찾지 못했어요."
-
-
-def test_table_does_not_allow_tofu_egg_swaps(catalog):
-    assert catalog.options("두부", catalog.owned(["계란"])) == []
-    assert catalog.options("계란", catalog.owned(["두부"])) == []
+def test_adapt_nothing_missing_needs_no_model_and_errors_are_clear(catalog):
+    llm = FakeLLM()
+    body = _adapt(catalog, llm, ["양파"], []).json()
+    assert body["note"] == "부족한 재료가 없어요." and llm.calls == []
+    assert _adapt(catalog, FakeLLM(), ["양파"], ["대파"], "nope").status_code == 422
+    assert _adapt(catalog, None, ["양파"], ["대파"]).status_code == 502
+    assert _adapt(catalog, FakeLLM(DishLLMError("down")), ["양파"], ["대파"]).status_code == 502
+    bad = client_for(DishService(catalog)).post(
+        "/dishes/adapt", json={"dish_id": "egg-roll", "ingredients": []}
+    )
+    assert bad.status_code == 422
 
 
 # --- names and additions without the recipe database -----------------------------------------
@@ -428,7 +302,8 @@ def test_cache_is_optional_and_expires():
 
 
 def test_videos_and_search_link_in_suggestions(catalog):
-    service = DishService(catalog, None, VideoCache(FIXTURE))
+    llm = FakeLLM(_answer(("김치볶음밥", ["밥", "김치"], ["대파"])))
+    service = DishService(catalog, llm, VideoCache(FIXTURE))
     body = client_for(service).post("/dishes/suggest", json={"ingredients": ["김치", "밥"]}).json()
     dish = next(d for d in body["dishes"] if d["id"] == "kimchi-fried-rice")
     assert [v["video_id"] for v in dish["videos"]] == ["FAKE_TEST_ID_01", "FAKE_TEST_ID_02"]
@@ -541,5 +416,5 @@ def test_app_starts_from_the_environment_without_any_database(monkeypatch):
     assert client.get("/ready").json() == {"status": "ready"}
     assert client.get("/dishes").json()["count"] >= 100
     assert client.post("/recipes/recommend", json={"ingredients": ["계란"]}).status_code == 404
-    body = client.post("/dishes/suggest", json={"ingredients": ["계란", "대파"]}).json()
-    assert body["source"] == "rules" and body["dishes"]
+    response = client.post("/dishes/suggest", json={"ingredients": ["계란", "대파"]})
+    assert response.status_code == 502  # no key, no model, no fallback

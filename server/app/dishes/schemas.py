@@ -37,8 +37,6 @@ class SuggestedDish(BaseModel):
     category: str
     have: list[str]
     missing: list[str]
-    reason: str
-    keywords: list[str]
     videos: list[Video]
     search_url: str
 
@@ -51,6 +49,7 @@ class SuggestResponse(BaseModel):
 class AdaptRequest(BaseModel):
     dish_id: str = Field(min_length=1, max_length=80)
     ingredients: list[str] = Field(min_length=1, max_length=60)
+    missing: list[str] = Field(default_factory=list, max_length=20)
 
 
 class Substitution(BaseModel):

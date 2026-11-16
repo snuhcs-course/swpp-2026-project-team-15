@@ -39,10 +39,16 @@ def list_dishes(service: DishServiceDep) -> DishList:
 
 
 @router.post(
-    "/suggest", summary="Dishes to cook from the ingredients at hand", operation_id="suggest_dishes"
+    "/suggest",
+    summary="Dishes to cook from the ingredients at hand",
+    operation_id="suggest_dishes",
+    responses={502: {"model": ErrorResponse, "description": "The model call failed"}},
 )
 def suggest(body: SuggestRequest, service: DishServiceDep) -> SuggestResponse:
-    return service.suggest(body.ingredients)
+    try:
+        return service.suggest(body.ingredients)
+    except DishLLMError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
 
 
 @router.post(
@@ -56,7 +62,7 @@ def suggest(body: SuggestRequest, service: DishServiceDep) -> SuggestResponse:
 )
 def adapt(body: AdaptRequest, service: DishServiceDep) -> AdaptResponse:
     try:
-        result = service.adapt(body.dish_id, body.ingredients)
+        result = service.adapt(body.dish_id, body.ingredients, body.missing)
     except DishLLMError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
     if result is None:

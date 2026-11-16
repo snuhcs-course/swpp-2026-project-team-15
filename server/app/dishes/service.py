@@ -1,11 +1,11 @@
 # AI-generated with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
-"""Suggest and adapt dishes. The model only chooses from the closed list; have/missing are
-recomputed here, and every model answer is checked before it is returned."""
+"""Suggest and adapt dishes the naive way: the model sees only the dish names and the user's
+ingredients and answers with dishes plus what the user has and lacks. The server checks that the
+names belong to the list and nothing else; there is no rules fallback."""
 
 import json
-import re
 
-from app.dishes.catalog import Catalog, Match
+from app.dishes.catalog import Catalog
 from app.dishes.llm import DishLLM, DishLLMError
 from app.dishes.schemas import (
     AdaptResponse,
@@ -16,25 +16,23 @@ from app.dishes.schemas import (
 )
 from app.dishes.youtube import VideoCache, search_url
 
-MAX_REASON = 60
-_DIGITS = re.compile(r"\d")
+NO_SUBSTITUTE = "냉장고 재료로는 마땅한 대체를 찾지 못했어요."
+NOT_CONFIGURED = "The model service is not configured"
 
 SUGGEST_SYSTEM = (
     "You help a Korean student living alone decide what to cook from the ingredients they have. "
-    "Choose ONLY from the candidate dishes (use their ids exactly). Choose every dish that can "
-    "reasonably be made from the owned ingredients, best first. If only a few fit, return only "
-    "those; if none fit, return an empty list. Never add dishes just to fill the list. Prefer "
-    "dishes that use most of the owned ingredients and are realistic for one person. Give a "
-    "short Korean reason "
-    "(under 40 characters) and up to 3 YouTube search keyword variants that each contain the "
-    "dish name. Never invent dishes, ingredients or quantities."
+    "Return every dish from the given dish list that can reasonably be cooked with the owned "
+    "ingredients, best first. Use the dish names exactly as written in the list. For each dish, "
+    "'have' lists the main ingredients of the dish that the user owns (copy the user's wording) "
+    "and 'missing' lists the main ingredients the user lacks. Basic seasonings and oil at home "
+    "(salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish "
+    "fits, return an empty list. Never add dishes just to fill the list."
 )
-NO_SUBSTITUTE = "냉장고 재료로는 마땅한 대체를 찾지 못했어요."
 ADAPT_SYSTEM = (
     "A student wants to cook a dish but lacks some ingredients. For each missing ingredient, "
-    "choose ONE of its allowed_uses (copy the ingredient names exactly into 'uses') and write a "
-    "short Korean suggestion for it (under 40 characters). Never use anything that is not in "
-    "allowed_uses. No quantities, no cooking steps. Leave skip_ok empty."
+    "name ONE substitute that is in the owned ingredients list (copy it exactly), or an empty "
+    "string if nothing owned can reasonably replace it. Never name anything that is not in the "
+    "owned list."
 )
 
 SUGGEST_SCHEMA = {
@@ -45,11 +43,11 @@ SUGGEST_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "id": {"type": "string"},
-                    "reason": {"type": "string"},
-                    "keywords": {"type": "array", "items": {"type": "string"}},
+                    "name": {"type": "string"},
+                    "have": {"type": "array", "items": {"type": "string"}},
+                    "missing": {"type": "array", "items": {"type": "string"}},
                 },
-                "required": ["id", "reason", "keywords"],
+                "required": ["name", "have", "missing"],
                 "additionalProperties": False,
             },
         }
@@ -66,19 +64,31 @@ ADAPT_SCHEMA = {
                 "type": "object",
                 "properties": {
                     "missing": {"type": "string"},
-                    "suggestion": {"type": "string"},
-                    "uses": {"type": "array", "items": {"type": "string"}},
+                    "substitute": {"type": "string"},
                 },
-                "required": ["missing", "suggestion", "uses"],
+                "required": ["missing", "substitute"],
                 "additionalProperties": False,
             },
-        },
-        "skip_ok": {"type": "array", "items": {"type": "string"}},
-        "note": {"type": "string"},
+        }
     },
-    "required": ["substitutions", "skip_ok", "note"],
+    "required": ["substitutions"],
     "additionalProperties": False,
 }
+
+
+def suggest_user_message(ingredients: list[str], names: list[str]) -> str:
+    return json.dumps({"owned": ingredients, "dishes": names}, ensure_ascii=False)
+
+
+def _strings(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    out: list[str] = []
+    for item in value:
+        text = item.strip() if isinstance(item, str) else ""
+        if text and text not in out:
+            out.append(text)
+    return out
 
 
 class DishService:
@@ -88,163 +98,100 @@ class DishService:
         self.catalog = catalog
         self.llm = llm
         self.cache = cache or VideoCache(None)
+        self._by_name = {d.name: d for d in catalog.dishes.values()}
 
-    # -- suggest -----------------------------------------------------------------------------
     def suggest(self, ingredients: list[str]) -> SuggestResponse:
-        ranked = self.catalog.rank(ingredients)
-        if self.llm is not None and ranked:
-            try:
-                picked = self._ask_suggest(ingredients, ranked)
-            except DishLLMError:
-                picked = None
-            if picked is not None:  # an empty answer is an answer: nothing fits
-                return SuggestResponse(
-                    source="llm", dishes=[self._dish(m, r, k) for m, r, k in picked]
-                )
-        return SuggestResponse(
-            source="rules",
-            dishes=[self._dish(m, self._rules_reason(m), []) for m in ranked],
-        )
-
-    def _ask_suggest(self, ingredients, candidates: list[Match]):
-        by_id = {m.dish.id: m for m in candidates}
-        listing = [
-            {"id": m.dish.id, "name": m.dish.name, "ingredients": list(m.dish.key_ingredients)}
-            for m in candidates
-        ]
-        user = json.dumps({"owned": ingredients, "candidates": listing}, ensure_ascii=False)
+        """Raises DishLLMError when the model is missing or fails."""
+        if self.llm is None:
+            raise DishLLMError(NOT_CONFIGURED)
+        user = suggest_user_message(ingredients, list(self._by_name))
         data = self.llm.complete(SUGGEST_SYSTEM, user, "dish_choice", SUGGEST_SCHEMA)
-        out, seen = [], set()
-        for item in data.get("dishes", []) if isinstance(data.get("dishes"), list) else []:
+        return SuggestResponse(source="llm", dishes=self.check_suggest(data))
+
+    def check_suggest(self, data: dict) -> list[SuggestedDish]:
+        """Keep the model's order; drop names outside the list and repeated names."""
+        out: list[SuggestedDish] = []
+        seen: set[str] = set()
+        items = data.get("dishes")
+        for item in items if isinstance(items, list) else []:
             if not isinstance(item, dict):
                 continue
-            match = by_id.get(item.get("id"))
-            if match is None or match.dish.id in seen:
+            name = item.get("name")
+            dish = self._by_name.get(name.strip()) if isinstance(name, str) else None
+            if dish is None or dish.id in seen:
                 continue
-            seen.add(match.dish.id)
-            reason = str(item.get("reason", "")).strip()[:MAX_REASON]
-            out.append((match, reason or self._rules_reason(match), self._keywords(match, item)))
+            seen.add(dish.id)
+            out.append(
+                SuggestedDish(
+                    id=dish.id,
+                    name=dish.name,
+                    category=dish.category,
+                    have=_strings(item.get("have")),
+                    missing=_strings(item.get("missing")),
+                    videos=[Video(**v) for v in self.cache.get(dish.id) if _valid_video(v)],
+                    search_url=search_url(dish.name),
+                )
+            )
         return out
 
-    @staticmethod
-    def _keywords(match: Match, item: dict) -> list[str]:
-        names = (match.dish.name, *match.dish.aliases)
-        raw = item.get("keywords", [])
-        words = [w.strip() for w in raw if isinstance(w, str)] if isinstance(raw, list) else []
-        good = []
-        for word in words:
-            if word and len(word) <= 40 and any(n in word for n in names) and word not in good:
-                good.append(word)
-        return good[:3]
-
-    @staticmethod
-    def _rules_reason(match: Match) -> str:
-        total = len(match.have) + len(match.missing)
-        return f"필요한 재료 {total}개 중 {len(match.have)}개 보유"
-
-    def _dish(self, match: Match, reason: str, keywords: list[str]) -> SuggestedDish:
-        dish = match.dish
-        videos = [Video(**v) for v in self.cache.get(dish.id) if self._valid_video(v)]
-        return SuggestedDish(
-            id=dish.id,
-            name=dish.name,
-            category=dish.category,
-            have=list(match.have),
-            missing=list(match.missing),
-            reason=reason,
-            keywords=keywords or [f"{dish.name} 레시피"],
-            videos=videos,
-            search_url=search_url(dish.name),
-        )
-
-    @staticmethod
-    def _valid_video(video: object) -> bool:
-        return (
-            isinstance(video, dict)
-            and isinstance(video.get("video_id"), str)
-            and isinstance(video.get("title"), str)
-            and isinstance(video.get("thumbnail_url"), str)
-        )
-
-    # -- adapt -------------------------------------------------------------------------------
-    def adapt(self, dish_id: str, ingredients: list[str]) -> AdaptResponse | None:
+    def adapt(
+        self, dish_id: str, ingredients: list[str], missing: list[str]
+    ) -> AdaptResponse | None:
         """None when the dish is unknown. Raises DishLLMError when the model call fails.
 
-        Only substitutions the server's table allows (and the user can make with what they own)
-        are ever returned; the model only chooses among them and words the suggestion."""
+        The model names a substitute from the user's own ingredients (or null); the server only
+        checks the JSON shape and that the substitute is one of those ingredients."""
         dish = self.catalog.get(dish_id)
         if dish is None:
             return None
-        owned = self.catalog.owned(ingredients)
-        match = self.catalog.match(dish, owned)
-        if not match.missing:
+        wanted = _strings(missing)
+        if not wanted:
             return AdaptResponse(
                 dish_id=dish_id,
                 substitutions=[],
                 skip_ok=[],
-                source="rules",
+                source="llm",
                 note="부족한 재료가 없어요.",
             )
-        options = {m: o for m in match.missing if (o := self.catalog.options(m, owned))}
-        if self.llm is None or not options:
-            return self._adapt_rules(dish_id, match, options)
+        if self.llm is None:
+            raise DishLLMError(NOT_CONFIGURED)
+        owned = _strings(ingredients)
         user = json.dumps(
-            {
-                "dish": dish.name,
-                "missing": [
-                    {"name": m, "allowed_uses": [list(o) for o in opts]}
-                    for m, opts in options.items()
-                ],
-            },
-            ensure_ascii=False,
+            {"dish": dish.name, "missing": wanted, "owned": owned}, ensure_ascii=False
         )
         data = self.llm.complete(ADAPT_SYSTEM, user, "dish_adapt", ADAPT_SCHEMA)
-        return self._check_adapt(dish_id, match, owned, options, data)
-
-    def _check_adapt(self, dish_id, match: Match, owned, options, data: dict) -> AdaptResponse:
-        subs: list[Substitution] = []
-        used: set[str] = set()
-        for item in (
-            data.get("substitutions", []) if isinstance(data.get("substitutions"), list) else []
-        ):
-            if not isinstance(item, dict):
-                continue
-            missing, text, uses = item.get("missing"), item.get("suggestion"), item.get("uses")
-            if missing not in options or missing in used:
-                continue
-            if not isinstance(text, str) or not text.strip() or _DIGITS.search(text):
-                continue
-            if not isinstance(uses, list) or not uses or not all(isinstance(u, str) for u in uses):
-                continue
-            if not self.catalog.accepts(missing, uses, owned):
-                continue
-            used.add(missing)
-            subs.append(Substitution(missing=missing, suggestion=text.strip()[:60], uses=uses))
-        for missing, opts in options.items():  # an approved option the model skipped is still true
-            if missing not in used:
-                subs.append(self._rule_substitution(missing, opts[0]))
-        skip = [m for m in match.missing if m in match.dish.optional and m not in options]
-        note = data.get("note", "")
-        note = note.strip()[:80] if isinstance(note, str) and not _DIGITS.search(note) else ""
-        if not subs and not skip:
-            note = NO_SUBSTITUTE
-        return AdaptResponse(
-            dish_id=dish_id, substitutions=subs, skip_ok=skip, note=note, source="llm"
-        )
-
-    @staticmethod
-    def _rule_substitution(missing: str, option: tuple[str, ...]) -> Substitution:
-        return Substitution(
-            missing=missing, suggestion=f"{'+'.join(option)}(으)로 대신해요", uses=list(option)
-        )
-
-    def _adapt_rules(self, dish_id: str, match: Match, options) -> AdaptResponse:
-        subs = [self._rule_substitution(m, opts[0]) for m, opts in options.items()]
-        skip = [m for m in match.missing if m in match.dish.optional and m not in options]
+        subs = self.check_adapt(data, wanted, owned)
         return AdaptResponse(
             dish_id=dish_id,
             substitutions=subs,
-            skip_ok=skip,
-            note="" if subs or skip else NO_SUBSTITUTE,
-            source="rules",
+            skip_ok=[],
+            note="" if subs else NO_SUBSTITUTE,
+            source="llm",
         )
+
+    @staticmethod
+    def check_adapt(data: dict, missing: list[str], owned: list[str]) -> list[Substitution]:
+        subs: list[Substitution] = []
+        used: set[str] = set()
+        items = data.get("substitutions")
+        for item in items if isinstance(items, list) else []:
+            if not isinstance(item, dict):
+                continue
+            gap, sub = item.get("missing"), item.get("substitute")
+            if gap not in missing or gap in used or not isinstance(sub, str):
+                continue
+            sub = sub.strip()
+            if sub not in owned:
+                continue
+            used.add(gap)
+            subs.append(Substitution(missing=gap, suggestion=f"{sub}(으)로 대신해요", uses=[sub]))
+        return subs
+
+
+def _valid_video(video: object) -> bool:
+    return (
+        isinstance(video, dict)
+        and isinstance(video.get("video_id"), str)
+        and isinstance(video.get("title"), str)
+        and isinstance(video.get("thumbnail_url"), str)
+    )

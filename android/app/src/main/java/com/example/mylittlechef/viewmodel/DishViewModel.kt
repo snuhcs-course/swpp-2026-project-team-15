@@ -141,7 +141,7 @@ class DishViewModel(
         adaptations[dish.id] = AdaptUiState.Loading
         viewModelScope.launch {
             try {
-                val result = api.adapt(DishAdaptRequest(dish.id, names)).toAdaptation()
+                val result = api.adapt(DishAdaptRequest(dish.id, names, dish.missing)).toAdaptation()
                 if (mine == generation) adaptations[dish.id] = AdaptUiState.Success(result)
             } catch (cancelled: CancellationException) {
                 throw cancelled

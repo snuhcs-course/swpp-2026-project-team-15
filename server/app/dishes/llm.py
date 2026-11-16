@@ -7,6 +7,7 @@ import httpx
 
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "google/gemini-2.5-flash-lite"
+MAX_TOKENS = 2048
 
 
 class DishLLMError(Exception):
@@ -33,7 +34,7 @@ class DishLLM:
                 "json_schema": {"name": name, "strict": True, "schema": schema},
             },
             "provider": {"require_parameters": True},
-            "max_tokens": 1024,
+            "max_tokens": MAX_TOKENS,
             "temperature": 0,
         }
         try:

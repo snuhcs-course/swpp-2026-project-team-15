@@ -50,7 +50,8 @@ data class DishVideoDto(
 
 data class DishAdaptRequest(
     @SerializedName("dish_id") val dishId: String,
-    val ingredients: List<String>
+    val ingredients: List<String>,
+    val missing: List<String> = emptyList()
 )
 
 data class DishAdaptResponse(

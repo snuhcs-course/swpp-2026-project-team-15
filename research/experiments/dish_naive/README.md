@@ -29,5 +29,6 @@ One run at temperature 0, one model, 31 inputs (one case moves a share by about 
 ## Reproduce
 
 ```sh
-cd server && uv run --locked python -m experiments.dish_naive.run            # dry run, no call
+PYTHONPATH=server:research uv run --project server --locked python -m experiments.dish_naive.run_naive                      # dry run, no call
+PYTHONPATH=server:research uv run --project server --locked python -m experiments.dish_naive.run_naive --allow-live-api   # real model calls (key in ~/.config/mylittlechef/openrouter.env)
 ```

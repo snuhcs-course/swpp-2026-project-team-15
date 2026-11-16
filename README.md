@@ -9,7 +9,7 @@ SNU SWPP Fall 2026 · Team 15. The Android app recognises the ingredients in a f
 ├── .github/workflows/      # Server, Android and ARM checks
 ├── android/                # Compose app, DataStore, JVM/device tests
 ├── server/
-│   ├── app/dishes/         # Dish list, suggestion, substitutes, video cache
+│   ├── app/dishes/         # Dish list, model-based suggestion and substitutes, video cache
 │   ├── app/vision/         # Ingredient recognition providers
 │   ├── fixtures/           # Recorded recognition responses, synthetic demo image
 │   └── tests/              # Automated checks and protected references
@@ -42,7 +42,7 @@ cp .env.example .env          # VISION_PROVIDER=mock: no key, no network
 uv run --env-file .env uvicorn app.main:create_app_from_env --factory --port 8000
 ```
 
-Without a model key the dish ranking uses the rules fallback; add `OPENROUTER_API_KEY` for the model. Without a video cache the app shows a YouTube search link only. See [server README](server/README.md).
+Dish suggestions need `OPENROUTER_API_KEY` (without it `/dishes/suggest` answers 502; there is no rules fallback). Without a video cache the app shows a YouTube search link only. See [server README](server/README.md).
 
 ## Install the app
 

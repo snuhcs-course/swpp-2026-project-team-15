@@ -47,8 +47,6 @@ class Catalog:
         self.staples = staples
         self.equivalents = {k: tuple(v) for k, v in data.get("equivalents", {}).items()}
         self.substitutes = {k: tuple(v) for k, v in data.get("substitutes", {}).items()}
-        self.combos = {k: tuple(tuple(c) for c in v) for k, v in data.get("combos", {}).items()}
-        self._canon = {alt: key for key, alts in self.equivalents.items() for alt in alts}
         self.dishes: dict[str, Dish] = {}
         for raw in data["dishes"]:
             dish = Dish(
@@ -102,32 +100,6 @@ class Catalog:
         matches = [m for d in self.dishes.values() if (m := self.match(d, owned)).have]
         matches.sort(key=lambda m: (len(m.missing), m.dish.name))
         return matches
-
-    def usable(self, name: str, owned: set[str]) -> bool:
-        return name in self.staples or self._covered(name, owned)
-
-    # -- substitutions: only what the table approves -------------------------------------------
-    def _core(self, names) -> frozenset[str]:
-        """Names compared as sets: aliases map to their main name, basic seasonings are dropped
-        unless they are all there is (so 버터 -> 식용유 still compares)."""
-        canon = {self._canon.get(n, n) for n in names}
-        core = {n for n in canon if n not in self.staples}
-        return frozenset(core or canon)
-
-    def options(self, missing: str, owned: set[str]) -> list[tuple[str, ...]]:
-        """Ways the table allows to cover ``missing`` with what the user has, best first."""
-        out: list[tuple[str, ...]] = []
-        for sub in self.substitutes.get(missing, ()):
-            if self.usable(sub, owned):
-                out.append((sub,))
-        for combo in self.combos.get(missing, ()):
-            if all(self.usable(c, owned) for c in combo):
-                out.append(tuple(combo))
-        return out
-
-    def accepts(self, missing: str, uses: list[str], owned: set[str]) -> bool:
-        wanted = self._core(uses)
-        return any(wanted == self._core(opt) for opt in self.options(missing, owned))
 
     # -- names for autocomplete and addition suggestions without the recipe database -------------
     def ingredient_names(self) -> list[str]:

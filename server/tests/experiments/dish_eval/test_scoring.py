@@ -293,10 +293,9 @@ def test_aggregate_and_verdict_pass_and_fail():
 # ---- the fallback path and the baseline use real code, with no model ---------------------
 
 
-def test_failing_model_gives_valid_rules_answer(catalog, view):
+def test_failing_model_has_no_rules_fallback_in_the_naive_service(catalog):
+    from app.dishes.llm import DishLLMError
     from app.dishes.service import DishService
 
-    svc = DishService(catalog, FailingLLM())
-    r = svc.suggest(["김치", "밥"]).model_dump()
-    assert r["source"] == "rules" and scoring.suggest_schema_ok(r)
-    assert all(d["id"] in view.dish_keys for d in r["dishes"])
+    with pytest.raises(DishLLMError):
+        DishService(catalog, FailingLLM()).suggest(["김치", "밥"])
