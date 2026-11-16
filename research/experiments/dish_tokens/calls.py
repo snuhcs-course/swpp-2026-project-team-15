@@ -90,11 +90,18 @@ def chat(payload: dict, key: str, timeout: float = 90.0) -> Call:
     if call.finish_reason == "length":
         call.ok, call.error = False, "truncated"
         return call
+    content = message.get("content") or ""
     try:
-        data = json.loads(message.get("content") or "")
-    except ValueError:
-        call.ok, call.error = False, "answer is not JSON"
-        return call
+        data = json.loads(content)
+    except ValueError:  # web-search answers may wrap the JSON in a code fence or prose
+        start, end = content.find("{"), content.rfind("}")
+        try:
+            data = json.loads(content[start : end + 1]) if 0 <= start < end else None
+        except ValueError:
+            data = None
+        if data is None:
+            call.ok, call.error = False, "answer is not JSON"
+            return call
     if isinstance(data, dict):
         call.data = data
     else:
