@@ -76,3 +76,17 @@ Question: if the server only checks that a link exists and can be embedded, how 
 ### Limits
 
 Relevance comes from two language models that agreed with one labeller's 60 labels at kappa 0.61, barely above the pre-set 0.6, and judge metadata, not the video. 27 dishes, mostly fried-rice dishes (first in the list), one run of the model discovery. Failure types are one person's reading. The link numbers include 12 ids (10%) that do not exist and 6 existing videos that are not embeddable.
+
+## Round 3: wording of the discovery request (criteria frozen 2026-11-16, before any call)
+
+Question: how should the request to a web-search model be worded so that the links that survive the embeddable/public check are cooking videos of exactly the requested dish? The structure is fixed: the server asks the model for links at request time and only checks that a video exists, is public and can be embedded, keeping the model's order (no title filter, no view sorting, no count cutoff).
+
+| Variant | Request (the full texts are in `criteria_round3.json`) |
+| --- | --- |
+| OLD | the earlier request (popular, well-rated recipe videos); stored outputs, reference only |
+| D0 | videos to follow along and cook the dish (how-to recipe videos), nothing else |
+| D1 | D0 + "a young adult cooking alone for the first time, i.e. a 자취생" |
+| D2 | D0 + observable conditions only: few ingredients, simple tools, easy-to-follow steps, short running time |
+| D3 | D2 + "exactly this dish, no neighbours or variants" + "exclude shorts, vlogs, mukbang, reviews, ads" |
+
+Same 27 dishes and the same two validated judges as the second YouTube discovery study (gemini-2.5-pro as primary, claude-haiku-4.5 as second; prompt and rubric unchanged). Rule: choose the highest relevant share among variants whose dishes-with-a-relevant-link and links per dish stay within 1 dish and 0.5 of D0; inconclusive (keep D0) when the paired 95% interval against D0 contains 0. Whether a video is "easy for a person living alone" is **not** measured by any judge; running time is only a weak proxy. Run: `PYTHONPATH=.:../research uv run python -m experiments.dish_pipeline.run_round3 plan|collect|judge|analyze` from `server/` (dry run unless `--allow-live-api`).
