@@ -92,3 +92,7 @@ This is run B. Run A (the same plan, 108 calls, commit `208f963`) lost 15 calls 
 ### Limits (round 2)
 
 One run per variant (two for the plan above), 27 inputs, one model. The reference set is made by rule from the same dish list, not by people. A rate-limit failure is not a result of the variant, but the cut-off answers are. The enum schema depends on the provider enforcing it; it accepted every request.
+
+## Round 2b: output cap 8192 (criteria frozen 2026-11-16, before any call)
+
+Round 2 compared the production prompt (P0) with the prompt that defines `have` as the user's own items (P1) at an output cap of 4,096 tokens. 2 to 5 of the 27 inputs were cut off and counted as empty, so the comparison measured truncations more than prompts. Round 2b repeats P0 and P1 on the same 27 inputs with the cap raised to 8,192 for both. The adoption rule, the numbers recorded without thresholds (how many dishes the model returns, cost, latency) and the call cap are in `criteria_round2b.json`. Results are added below after the runs.
