@@ -1,107 +1,51 @@
-# Recipe Server
+# Server
 
-FastAPI serves recipe recommendations and ingredient recognition. Local operation reads the existing SQLite database; the Compose deployment uses PostgreSQL via `DATABASE_URL`. For SQLite, the source checkout contains the [DB preparation tool](https://github.com/snuhcs-course/swpp-2026-project-team-15/blob/cc5e739/server/db/README.md); a runtime archive uses a separately imported DB. The legacy `POST /recipes/recommend` name-based API remains available for compatibility; the Android app uses this name-based API. The contributor ID-based filtering/revision API below remains separately available.
+FastAPI serves ingredient recognition and dish suggestions. There is no recipe database: dishes come from one self-authored file, `app/dishes/dishes.json` (dish names, categories, key ingredients, equivalent and substitute names; no recipe text). Other versions of the app live on other branches/commits (for example the recipe-database version on `main`).
 
 ## Run locally
 
-From the repository root (Bash), install the declared server dependencies and use Mock Revision:
-
 ```bash
 cd server
-uv sync
-cp .env.example .env
-uv run --env-file .env uvicorn app.main:create_app_from_env --factory
+uv sync --locked
+cp .env.example .env            # VISION_PROVIDER=mock needs no key and makes no network call
+uv run --env-file .env uvicorn app.main:create_app_from_env --factory --port 8000
 ```
 
-`REVISION_PROVIDER=mock` is the default and needs no API key. It returns labeled canned refusals to exercise the integration; these are not AI feasibility judgments. Vision has its own `VISION_PROVIDER` configuration. Keep `mock` for both when running offline. Existing shell environment variables and the launcher's environment-file loading configure the server.
+Interactive OpenAPI documentation is at `/docs`. `GET /health` is liveness; `GET /ready` checks that the dish list is loaded.
 
-Live Revision requires explicit `REVISION_PROVIDER=live` plus `REVISION_LLM_ENDPOINT`, `REVISION_LLM_MODEL` and `REVISION_LLM_API_KEY` in the server environment. The endpoint must support HTTPS Chat Completions with Structured Outputs. Each selected recipe has one attempt with a 60-second transport timeout and no retry unless `RECIPE_REVISION_RETRY` is set (see Revision settings). Keep credentials out of Git and client requests.
+## Endpoints
 
-## Recipe images
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /analyze` | One photo (`image`) or 2–15 views of one fridge (`images`) → ingredient candidates (OpenRouter, Gemini or recorded fixtures) |
+| `GET /dishes` | The baseline dish list |
+| `POST /dishes/suggest` | `{ "ingredients": ["김치", "쌀"], "limit": 5 }` → dishes with `have`, `missing`, a short `reason`, cached `videos` and a YouTube `search_url` |
+| `POST /dishes/adapt` | `{ "dish_id": "...", "ingredients": [...] }` → substitutes or skips for the missing ingredients |
+| `GET /recipes/ingredients` | `{ "names": [...] }` for entry completion (names from the dish data; the path is kept for the app) |
+| `POST /recipes/ingredient-suggestions` | `{ "ingredients": [...] }` → ingredients that would complete the most dishes |
 
-Recipe records may include nullable `main_image_url`. The server exposes local files from `server/static/images/recipes/` at `GET /recipe-images/{filename}`. The Android client combines this path with `SERVER_BASE_URL` and loads it with Coil. Image assets are local and ignored by Git, so provide the files on each runtime host that should display them. The Pixabay preparation CLI lives in `tools/crawlers/pixabay`; its processed images must be provisioned into `server/static/images/recipes/`.
+- **suggest**: an LLM chooses dishes from the closed list (ids only from the list); `have` and `missing` are recomputed from the key ingredients, never taken from the model. `source` is `llm`, or `rules` when no model key is set or the call fails (overlap ranking). Equivalent names (계란/달걀, 쌀/밥, …) and the assumed seasonings in `app/dishes/staples.json` do not count as missing.
+- **adapt**: a substitution is accepted only if the pair (missing → ingredients used) is in the table of `dishes.json` and the user owns what it uses; optional ingredients may be skipped; anything else is dropped, and an empty answer says so (`냉장고 재료로는 마땅한 대체를 찾지 못했어요.`). 422 for an unknown dish, 502 when the model call fails; without a model key a rules table answers. No quantities or cooking steps are ever produced.
+- **Videos**: `videos` come from a cache file (up to three per dish, embeddable, relevant titles first, then views). Without a cache the server returns the search link only.
 
-## ID-based recommendations
+## Settings
 
-`POST /recipes/recommendations` uses registered normalized ingredient IDs:
+| Variable | Effect |
+| --- | --- |
+| `VISION_PROVIDER` | `mock` (default), `gemini` (`GEMINI_API_KEY`, `GEMINI_MODEL`) or `openrouter` (`OPENROUTER_API_KEY`, `OPENROUTER_VISION_MODEL`) |
+| `OPENROUTER_API_KEY` / `DISH_LLM_API_KEY` | Key of the dish model; without any key the rules-only ranking answers |
+| `DISH_LLM_MODEL` | Default `google/gemini-2.5-flash-lite` |
+| `DISH_VIDEO_CACHE` | Path of the video cache file; re-read when it changes |
+| `DISH_DATA_FILE`, `DISH_STAPLES_FILE` | Another dish list / staples list |
 
-```bash
-curl -X POST http://127.0.0.1:8000/recipes/recommendations \
-  -H 'Content-Type: application/json' \
-  -d '{"ingredient_ids":[70,223,32,284,282,313,554,345,9,147],"revision_limit":3}'
-```
+## Videos from YouTube
 
-- `ingredient_ids` is required; duplicates count once, an empty list is valid, and unknown IDs are rejected. IDs must be positive integers. Names and preparation forms are not automatically equated.
-- `revision_limit` defaults to 3 and accepts integers 1–5. It limits selected AI attempts, not the returned recipe count. Refusals/failures do not add replacement candidates beyond that selection.
-- The response includes **every filtered recipe**, with `recipe_id`, full `original`, `filtering` counts, and `revision`. `assumed_ingredient_ids` lists the ingredients the server assumes at home: water (204) and the configured seasonings. All other ingredients must be submitted.
-- `revision.status` is `revised`, `refused`, `failed` or `not_attempted`. Revised/refused preserve the parsed `result` (decision, reason, changes and revised recipe). Failed entries have `error`. Unattempted entries have `not_attempted_reason`: `outside_revision_limit` or `shared_failure`.
-- `revision_summary` reports `limit`, `selected_count`, `attempted_count` and nullable `stopped_error`. Configuration failures before provider construction produce zero attempts and a shared stopped error.
-- Invalid requests return 422; unavailable/incomplete source data returns sanitized 503 before AI calls. Once filtering succeeds, partial or entirely failed AI results still return 200 with the complete list.
+`python -m app.dishes.prefetch --cache data/dish-videos.json --max-requests 120` prints the plan (a dry run); `--live` calls the YouTube Data API with `YOUTUBE_API_KEY` (or `~/.config/mylittlechef/youtube.env`). A search costs 100 quota units and a video lookup 1, against a default of 10,000 units a day, so 130 dishes take two days. On the Compose host use `deploy/dish-cache.sh` ([deploy README](../deploy/README.md)). The cache holds YouTube API data: check the YouTube API terms (storage time, attribution, player rules) before deploying it; entries older than 30 days are ignored.
 
-The server chooses revision priority by missing count ascending, matched count descending, then recipe ID ascending. The response array has no display-order guarantee; sorting is the client's responsibility. Original quantities/servings and source row IDs are preserved. Generated content is not safety-verified; allergy checks are not included.
+## Tests
 
-## Revision settings
+From `server/`: `uv run pytest` (offline: fake model and YouTube transports, no network). `tests/experiments` holds the tests of the research tools; those that target the recipe-database version skip here.
 
-Each candidate gets a compact request: only the fields the model needs, and a status per ingredient row (`owned`, `assumed` seasoning, `unavailable`). A revised recipe that uses an unavailable ingredient, in its ingredient list or still named in a step or tip, is rejected with the existing `response_format` error at stage `revision`. A candidate whose dish name contains an unavailable ingredient is refused without a model call. A revised recipe's change list gets an `omission` entry for every removed ingredient it does not mention.
+## Runtime archive
 
-| Setting | Values | Effect |
-| --- | --- | --- |
-| `server/app/recipes/assumed_seasonings.json` | ingredient ids and names | Seasonings assumed at home for filtering, the request and the check. Edit the file, or point `RECIPE_ASSUMED_SEASONINGS_FILE` at another one. The ids and names are checked against the ingredient table at startup. |
-| `RECIPE_SEASONING_MODE` | `list` (default), `all`, `none` | `all` assumes every seasoning-labelled ingredient; `none` assumes only water. |
-| `RECIPE_REVISION_PRESCREEN` | `refuse` (default), `fill`, `off` | `refuse` keeps the candidate's slot; `fill` lets the next candidates take over so the model is called for `revision_limit` candidates (`selected_count` can then exceed the limit). |
-| `RECIPE_REVISION_WORKERS` | `1` (default) to `5` | Concurrent model calls per request. More than 1 also calls the remaining candidates after a shared failure. |
-| `RECIPE_REVISION_RETRY` | `false` (default), `true` | One extra model call, with feedback, after a rejected answer. |
-
-## Policy and failures
-
-[`app/recipes/policy.py`](app/recipes/policy.py) holds the injectable initial policy: rule C (`general matches >= 2 OR main matches >= 1`), configurable C thresholds, count exclusions, water ID and revision limits. Other supported experimental rules can be selected through policy injection. This is an initial service policy, not a finalized semantic classification.
-
-Matching uses distinct ingredient IDs per recipe. Source type codes map to main/secondary/seasoning; conflicting rows use main > secondary > seasoning. Resolved seasonings and water are excluded from both matched and missing priority counts. Unknown types remain in total counts but do not satisfy general/main conditions. No global seasoning category is inferred from another recipe. Counting exclusions do not remove original rows or user-owned seasonings from AI inputs.
-
-Errors expose only `code`, `stage`, sanitized `message`, nullable `http_status` and `scope`:
-
-| Scope | Codes | Effect |
-| --- | --- | --- |
-| Shared | `authentication`, `permission`, `configuration`, `rate_limit`, `quota_exceeded`, `provider_unavailable` | Preserve previous outcomes and stop remaining selected calls in this request |
-| Individual | `timeout`, `connection`, `response_format`, `api_error`, `internal` | Mark this recipe failed and continue within the selection |
-
-Stages distinguish `configuration`, `api_request`, `provider_response`, `response_parsing` and `revision`. HTTP 401/403/429/5xx identify shared failures; quota/configuration subtypes use recognized provider codes. An ambiguous 429 is `rate_limit`. Raw provider errors, raw model text, prompts and secrets are not returned in error diagnostics. The independent experiment CLI retains its existing stop-on-first-error policy.
-
-## Dependency source
-
-Use pyproject.toml and uv.lock through `uv sync --locked` for the complete server/development environment. The optional experiment environment uses the same locked dev group; no separate requirements file is maintained.
-
-## Offline tests
-
-From `server/`, run `uv run pytest`. Tests inject temporary DBs, Mock LLMs and fake HTTP transports. Interactive OpenAPI documentation is available at `/docs`; The Android app uses `POST /recipes/recommend`; it does not invoke the ID-based revision endpoint.
-
-## Runtime deployment
-
-The runtime artifact is built from committed source with `python3 scripts/package_server.py` at repository root. Extract it, enter server/, run `uv sync --locked --no-dev`, provide RECIPE_DB_PATH as an absolute path to the matching imported560-item DB, and start `uv run --locked --no-dev uvicorn app.main:create_app_from_env --factory --host 0.0.0.0 --port 8000`. Provider variables are supplied by the target environment; .env.example documents them. No development/evaluation code, credentials or recipe dataset is bundled.
-
-## OpenRouter and PostgreSQL deployment
-
-`VISION_PROVIDER=openrouter` requires `OPENROUTER_API_KEY` and `OPENROUTER_VISION_MODEL`. Live Revision keeps its existing endpoint/model settings and accepts `OPENROUTER_API_KEY` when `REVISION_LLM_API_KEY` is empty. A nonempty `DATABASE_URL` selects PostgreSQL; an empty value keeps the local SQLite path.
-
-In a full source checkout, `deploy/README.md` describes Compose deployment and `deploy/runtime.env.example` supplies its variables. The runtime archive omits deploy/. Private settings and ZIPs stay outside the checkout/image/APK. This does not change the preserved filtering/revision API contract above.
-
-
-## Client pantry entry and ingredient-addition suggestions
-
-The restored client uses two additional read-only endpoints:
-
-- `GET /recipes/ingredients`: returns `{ "names": [...] }`, sorted unique source ingredient names for manual entry and recognition-result correction.
-- `POST /recipes/ingredient-suggestions`, body `{ "ingredients": ["두부", "김치"] }`: returns up to five `suggestions`. Candidates must appear in at least five source recipes. Sort by `ready_recipe_count` descending, then `recipe_count` descending, then name. The first count means newly complete recipes after this single addition; the second means all source recipes containing the ingredient (including supported equivalent/prepared forms). `ready_recipe_names` contains up to three examples.
-
-Both counts use the existing name-based endpoint's `STAPLE_SEASONINGS` assumption. They do not apply allergy/utensil filtering or AI revision, and do not change `/recipes/recommendations`. Owning 대파 can cover 다진파; owning 다진파 does not imply owning 대파. Suggested purchase names must cover the capabilities used in their counts. Duplicate source rows count once per recipe.
-
-These endpoints require the updated server code; the existing cloud deployment is not automatically updated by local Android work. Use the local mock server and loopback APK instructions in [the restoration review guide](../docs/iterations/iteration-3-restoration-review.ko.md) before deploying changes.
-
-## Dish suggestions without the recipe database
-
-`GET /dishes`, `POST /dishes/suggest` and `POST /dishes/adapt` work from one self-authored file, `app/dishes/dishes.json` (dish names, categories, key ingredients, equivalent and substitute names; no recipe text). They need no recipe database; start without it with `DISH_ONLY=1` (never opens the database) or `RECIPE_DB_OPTIONAL=1` (only when opening it fails); the recipe routes are then not mounted and `/ready` checks the dish list.
-
-- `POST /dishes/suggest`, body `{ "ingredients": ["김치", "쌀"], "limit": 5 }`: an LLM chooses dishes from the closed list (ids only from the list); `have` and `missing` are recomputed from the key ingredients, never taken from the model. `source` is `llm`, or `rules` when no model key is set or the call fails (overlap ranking). Each dish carries up to three cached `videos` and a YouTube `search_url`.
-- `POST /dishes/adapt`, body `{ "dish_id": "...", "ingredients": [...] }`: substitutes or skips for the missing ingredients. Suggestions may only use ingredients the user owns plus the assumed seasonings; items that break this, mention quantities or name unknown ingredients are dropped. 422 for an unknown dish, 502 when the model call fails; without a model key a rules table answers.
-- Settings: `OPENROUTER_API_KEY` (or `DISH_LLM_API_KEY`), `DISH_LLM_MODEL` (default `google/gemini-2.5-flash-lite`), `DISH_VIDEO_CACHE` (cache file path), `DISH_DATA_FILE` (another dish list), `DISH_ONLY=1`, `RECIPE_DB_OPTIONAL=1`.
-- Videos: `python -m app.dishes.prefetch --cache data/dish-videos.json` (also `python scripts/youtube_prefetch.py`) prints the plan (a dry run); `--live` calls the YouTube Data API with `YOUTUBE_API_KEY` (or `~/.config/mylittlechef/youtube.env`), 100 quota units per search plus 1 per video lookup, capped by `--max-requests`. The server re-reads the cache file when it changes. On the Compose host use `deploy/dish-cache.sh` ([deploy README](../deploy/README.md)). Without a cache the server returns the search link only. The cache holds YouTube API data: check the YouTube API terms (storage time, attribution, player rules) before deploying it; entries older than 30 days are ignored.
+`python3 scripts/package_server.py` at the repository root builds a runtime-only archive from committed source (no tests, credentials or evaluation tools). Extract it, run `uv sync --locked --no-dev` in `server/`, set the variables above and start `uv run --locked --no-dev uvicorn app.main:create_app_from_env --factory --host 0.0.0.0 --port 8000`.

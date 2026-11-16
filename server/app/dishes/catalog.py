@@ -6,11 +6,11 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.recipes.constants import with_synonyms
-from app.recipes.seasonings import DEFAULT_FILE as SEASONING_FILE
-from app.recipes.seasonings import FILE_ENV as SEASONING_FILE_ENV
+from app.dishes.synonyms import with_synonyms
 
 DEFAULT_DATA = Path(__file__).with_name("dishes.json")
+STAPLES_FILE = Path(__file__).with_name("staples.json")
+STAPLES_ENV = "DISH_STAPLES_FILE"
 DATA_ENV = "DISH_DATA_FILE"
 WATER = "물"
 
@@ -33,11 +33,10 @@ class Match:
 
 
 def load_staples(path: Path | str | None = None) -> frozenset[str]:
-    """Names assumed at home: the same list the recipe policy uses, plus water."""
-    file = Path(path or os.environ.get(SEASONING_FILE_ENV) or SEASONING_FILE)
+    """Names assumed at home: the staples list plus water."""
+    file = Path(path or os.environ.get(STAPLES_ENV) or STAPLES_FILE)
     try:
-        assumed = json.loads(file.read_text(encoding="utf-8")).get("assumed", [])
-        names = {str(item["name"]) for item in assumed}
+        names = {str(name) for name in json.loads(file.read_text(encoding="utf-8"))["staples"]}
     except (OSError, ValueError, KeyError, TypeError):
         names = set()
     return frozenset(names | {WATER})

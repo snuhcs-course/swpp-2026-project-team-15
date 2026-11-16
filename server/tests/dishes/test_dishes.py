@@ -47,7 +47,7 @@ def catalog() -> Catalog:
 
 
 def client_for(service: DishService) -> TestClient:
-    return TestClient(create_app(StubVision(), None, dishes=service))
+    return TestClient(create_app(StubVision(), dishes=service))
 
 
 # --- data and matching -----------------------------------------------------------------------
@@ -512,32 +512,18 @@ def test_prefetch_stops_on_quota_error(tmp_path):
     assert "k" not in "".join(log).replace("HTTP", "")
 
 
-# --- database-free start ---------------------------------------------------------------------
+# --- start from the environment -------------------------------------------------------------
 
 
-def test_app_starts_without_the_recipe_database(tmp_path, monkeypatch):
+def test_app_starts_from_the_environment_without_any_database(monkeypatch):
     from app.main import create_app_from_env
 
-    monkeypatch.setenv("RECIPE_DB_PATH", str(tmp_path / "missing.sqlite3"))
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-    monkeypatch.delenv("DISH_LLM_API_KEY", raising=False)
+    for name in ("OPENROUTER_API_KEY", "DISH_LLM_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("VISION_PROVIDER", "mock")
-    monkeypatch.setenv("RECIPE_DB_OPTIONAL", "1")
     client = TestClient(create_app_from_env())
     assert client.get("/ready").json() == {"status": "ready"}
     assert client.get("/dishes").json()["count"] >= 100
     assert client.post("/recipes/recommend", json={"ingredients": ["계란"]}).status_code == 404
     body = client.post("/dishes/suggest", json={"ingredients": ["계란", "대파"]}).json()
     assert body["source"] == "rules" and body["dishes"]
-
-
-def test_missing_database_still_fails_by_default(tmp_path, monkeypatch):
-    from app.main import create_app_from_env
-
-    monkeypatch.setenv("RECIPE_DB_PATH", str(tmp_path / "missing.sqlite3"))
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("RECIPE_DB_OPTIONAL", raising=False)
-    monkeypatch.setenv("VISION_PROVIDER", "mock")
-    with pytest.raises(FileNotFoundError):
-        create_app_from_env()

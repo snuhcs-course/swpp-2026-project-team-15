@@ -1,0 +1,15 @@
+{
+  "note": "Seasonings assumed to be at home when a dish is matched (self-authored; edit the list or point DISH_STAPLES_FILE at another file).",
+  "staples": [
+    "물",
+    "소금",
+    "설탕",
+    "간장",
+    "후추",
+    "식용유",
+    "참기름",
+    "깨소금",
+    "다진마늘",
+    "고춧가루"
+  ]
+}

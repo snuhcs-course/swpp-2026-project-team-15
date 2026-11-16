@@ -1,16 +1,7 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-10-11 to 2026-10-14; reviewed by Jaehyuk Choi.
 
-# Modified with Codex (GPT-6.1 Sol), 2026-10-17; reviewed by Soohyun An.
-# Changes: Wire the recommendation service and provider while preserving existing app creation.
-
-# Modified with Codex (GPT-6 Luna), 2026-11-03; reviewed by Ahyoon Choi.
-# Changes: Mount local recipe images at /recipe-images.
-# Modified with Codex (GPT-6), 2026-11-06; reviewed by Ahyoon Choi.
-# Changes: Serve recipe images from server/static/images/recipes.
-# Modified with Codex (GPT-6), 2026-11-06; reviewed by Ahyoon Choi.
-# Changes: Name the recipe image directory for static-route coverage.
 # Modified with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
-# Changes: Mount the dish suggestion router; allow starting without the recipe database.
+# Changes: Serve dishes and recognition only; the recipe database and its routes are gone.
 
 """Application factory. Collaborators are injected so tests can replace them.
 
@@ -19,86 +10,44 @@ Run: uv run --env-file .env uvicorn app.main:create_app_from_env --factory
 
 import logging
 import os
-from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.staticfiles import StaticFiles
 from google import genai
 from google.genai import types
 
 from app.config import Settings
-from app.database import recipe_engine
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DEFAULT_MODEL, DishLLM
-from app.dishes.router import compat_router as dish_recipe_routes
+from app.dishes.router import ingredients_router
 from app.dishes.router import router as dishes_router
 from app.dishes.service import DishService
 from app.dishes.youtube import VideoCache
-from app.recipes.policy import RecommendationPolicy
-from app.recipes.providers import revision_factory
-from app.recipes.recommendations import RecommendationService
-from app.recipes.router import router as recipes_router
-from app.recipes.seasonings import (
-    load_seasoning_policy,
-    resolve_staple_names,
-    seasoning_labelled_ids,
-    validate_against_catalog,
-)
-from app.recipes.service import RecipeRepository, SourceUnavailable
 from app.vision.gemini import REQUEST_TIMEOUT_MS, GeminiVisionProvider
 from app.vision.openrouter import OpenRouterVisionProvider
 from app.vision.providers import FixtureVisionProvider, VisionProvider
 from app.vision.router import router as vision_router
 
-RECIPE_IMAGE_DIR = Path(__file__).resolve().parents[1] / "static" / "images" / "recipes"
 
-
-def create_app(
-    vision: VisionProvider,
-    recipes: RecipeRepository | None,
-    *,
-    recommendations: RecommendationService | None = None,
-    dishes: DishService | None = None,
-) -> FastAPI:
+def create_app(vision: VisionProvider, dishes: DishService | None = None) -> FastAPI:
     app = FastAPI(
         title="My Little Chef API",
-        version="0.1.0",
-        description="Ingredient recognition and recipe recommendation for one-person households.",
-    )
-    app.mount(
-        "/recipe-images",
-        StaticFiles(directory=RECIPE_IMAGE_DIR, check_dir=False),
-        name="recipe-images",
+        version="0.2.0",
+        description="Ingredient recognition and dish suggestions for one-person households.",
     )
     app.state.vision_provider = vision
     app.state.dish_service = dishes if dishes is not None else DishService(Catalog.load())
     app.include_router(vision_router)
     app.include_router(dishes_router)
-    if recipes is not None:  # the recipe routes need the database; dishes do not
-        app.state.recipe_repository = recipes
-        app.state.recommendation_service = (
-            recommendations if recommendations is not None else RecommendationService(recipes)
-        )
-        app.include_router(recipes_router)
-    else:
-        app.include_router(dish_recipe_routes)
+    app.include_router(ingredients_router)
 
     @app.get("/health", tags=["health"], summary="Liveness check")
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    @app.get("/ready", tags=["health"], summary="Database and recipe readiness")
+    @app.get("/ready", tags=["health"], summary="Dish list readiness")
     def ready() -> dict[str, str]:
-        if recipes is None:  # database-free mode: the dish list is the data this server needs
-            if not len(app.state.dish_service.catalog):
-                raise HTTPException(503, "Dish list is empty")
-            return {"status": "ready"}
-        try:
-            sources, _ = recipes.load_catalog([], 204)
-            if not sources:
-                raise SourceUnavailable("Empty recipe source")
-        except SourceUnavailable:
-            raise HTTPException(503, "Recipe database is not ready") from None
+        if not len(app.state.dish_service.catalog):
+            raise HTTPException(503, "Dish list is empty")
         return {"status": "ready"}
 
     return app
@@ -111,45 +60,10 @@ def _dish_service(settings: Settings) -> DishService:
     return DishService(Catalog.load(), llm, VideoCache())
 
 
-def _recipe_side(settings: Settings):
-    engine = recipe_engine(settings.database_url, settings.recipe_db_path)
-    recipes = RecipeRepository(engine)
-    seasonings = load_seasoning_policy()
-    catalog = recipes.ingredient_catalog()
-    validate_against_catalog(seasonings, catalog)
-    # The name-based endpoints read the same policy, so one edit changes every path.
-    all_mode = seasonings.mode == "all"
-    labelled = seasoning_labelled_ids(recipes.ingredient_labels()) if all_mode else ()
-    recipes = RecipeRepository(engine, staples=resolve_staple_names(seasonings, catalog, labelled))
-    logging.getLogger(__name__).info("assumed seasonings: %s", seasonings.describe())
-    return recipes, RecommendationService(
-        recipes,
-        policy=RecommendationPolicy.from_env(os.environ, seasonings=seasonings),
-        llm_factory=revision_factory(settings),
-    )
-
-
 def create_app_from_env() -> FastAPI:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
     settings = Settings.from_env()
-    dishes = _dish_service(settings)
-    log = logging.getLogger(__name__)
-    if os.environ.get("DISH_ONLY") == "1":
-        # Never opens the recipe database, so a database that lacks a column the current code
-        # reads (or an unavailable one) cannot fail readiness. Recipe routes are not mounted.
-        log.info("DISH_ONLY=1: serving dishes only")
-        recipes, recommendations = None, None
-    else:
-        try:
-            recipes, recommendations = _recipe_side(settings)
-        except Exception:
-            if os.environ.get("RECIPE_DB_OPTIONAL") != "1":
-                raise
-            log.warning("recipe database unavailable; serving dishes only")
-            recipes, recommendations = None, None
-    return create_app(
-        _build_vision(settings), recipes, recommendations=recommendations, dishes=dishes
-    )
+    return create_app(_build_vision(settings), _dish_service(settings))
 
 
 def _build_vision(settings: Settings) -> VisionProvider:

@@ -1,13 +1,12 @@
 [project]
 name = "my-little-chef-server"
 version = "0.1.0"
-description = "Local FastAPI backend for My Little Chef: ingredient recognition and recipe recommendation"
+description = "FastAPI backend for My Little Chef: ingredient recognition and dish suggestions"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.143.0",
     "google-genai>=2.29.0",
     "httpx>=0.28.1",
-    "psycopg[binary]>=3.2,<4",
     "python-multipart>=0.0.32",
     "sqlmodel>=0.0.48",
     "uvicorn>=0.54.0",
@@ -30,14 +29,14 @@ testpaths = ["tests"]
 pythonpath = [".", "..", "../research"]
 
 [tool.coverage.run]
-source = ["app", "recipe_filtering", "recipe_revision"]
+source = ["app"]
 branch = true
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-# Preserve contributor importer/experiment formatting; their original tests run in pytest.
-extend-exclude = ["db", "tests/experiments"]
+# Preserve contributor experiment formatting; their original tests run in pytest.
+extend-exclude = ["tests/experiments"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]

@@ -6,11 +6,7 @@ ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy PATH="/app/.venv/bin:$PATH" PYTHONUN
 COPY server/pyproject.toml server/uv.lock ./
 RUN uv sync --locked --no-dev --no-install-project
 COPY server/app ./app
-COPY server/recipe_filtering ./recipe_filtering
-COPY server/recipe_revision ./recipe_revision
 COPY server/fixtures/vision ./fixtures/vision
-COPY server/db ./db
-RUN mkdir -p /app/static/images/recipes
 RUN useradd --uid 10001 --create-home chef
 USER chef
 EXPOSE 8000

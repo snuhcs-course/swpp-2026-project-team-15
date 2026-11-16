@@ -3,4 +3,13 @@
 
 import importlib.util
 
-collect_ignore_glob = [] if importlib.util.find_spec("recipe_revision.pipeline") else ["test_*.py"]
+
+
+def _present(module: str) -> bool:
+    try:
+        return importlib.util.find_spec(module) is not None
+    except ModuleNotFoundError:
+        return False
+
+
+collect_ignore_glob = [] if _present("recipe_revision.pipeline") else ["test_*.py"]

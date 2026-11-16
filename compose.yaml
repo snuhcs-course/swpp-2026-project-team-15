@@ -15,34 +15,13 @@ x-api: &api
     driver: json-file
     options: {max-size: 10m, max-file: "3"}
 services:
-  postgres:
-    image: postgres:17-bookworm
-    environment:
-      POSTGRES_DB: chef
-      POSTGRES_USER: chef
-      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
-    secrets: [db_password]
-    volumes: [postgres:/var/lib/postgresql/data]
-    restart: unless-stopped
-    networks: [backend]
-    healthcheck:
-      test: [CMD-SHELL, "pg_isready -U chef -d chef"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-    logging:
-      driver: json-file
-      options: {max-size: 10m, max-file: "3"}
   api:
     <<: *api
     environment:
       DISH_VIDEO_CACHE: /data/dish-videos.json
     volumes:
-      - ./server/static/images/recipes:/app/static/images/recipes:ro
       - ${DISH_DATA_DIR:-/opt/mylittlechef/data/dish-videos}:/data:ro
     restart: unless-stopped
-    depends_on:
-      postgres: {condition: service_healthy}
     healthcheck:
       test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=10)"]
       interval: 30s
@@ -78,18 +57,5 @@ services:
     volumes:
       - ${DISH_DATA_DIR:-/opt/mylittlechef/data/dish-videos}:/data
     entrypoint: [python, -m, app.dishes.prefetch]
-  importer:
-    <<: *api
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
-    profiles: [tools]
-    volumes: ["${DATASET_DIR:-/opt/mylittlechef/datasets}:/datasets:ro"]
-    entrypoint: [python, -m, db.postgres]
-    depends_on:
-      postgres: {condition: service_healthy}
 networks:
   backend:
-volumes:
-  postgres:
-secrets:
-  db_password:
-    file: ${DB_PASSWORD_FILE:-/opt/mylittlechef/config/db_password}

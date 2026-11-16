@@ -63,3 +63,22 @@ class AdaptResponse(BaseModel):
     skip_ok: list[str]
     note: str
     source: str
+
+
+class IngredientCatalogResponse(BaseModel):
+    names: list[str]
+
+
+class IngredientSuggestionRequest(BaseModel):
+    ingredients: list[str] = Field(description="Confirmed names in the user's fridge")
+
+
+class IngredientSuggestion(BaseModel):
+    name: str
+    ready_recipe_count: int
+    recipe_count: int
+    ready_recipe_names: list[str]
+
+
+class IngredientSuggestionResponse(BaseModel):
+    suggestions: list[IngredientSuggestion]
