@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -44,6 +46,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -95,7 +98,7 @@ fun DishDetailSheet(
                     AdaptSection(dish, fridgeNames, adapt, onAdapt, onDismissAdapt)
                 }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(4.dp))
             Attribution()
         }
     }
@@ -140,13 +143,13 @@ private fun VideoSection(
             Text(videos.message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = onRetry) { Text("다시 시도") }
-                OutlinedButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 검색") }
+                TextButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 검색", style = MaterialTheme.typography.labelMedium) }
             }
         }
         is VideoUiState.Success -> if (videos.videos.isEmpty()) {
             Text("이 요리의 영상을 찾지 못했어요.", style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 검색") }
+            TextButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 검색", style = MaterialTheme.typography.labelMedium) }
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 videos.videos.forEach { video ->
@@ -156,7 +159,7 @@ private fun VideoSection(
                         onPlay = { onPlay(video.videoId) }
                     )
                 }
-                OutlinedButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 더 검색") }
+                TextButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 더 검색", style = MaterialTheme.typography.labelMedium) }
             }
         }
     }
@@ -293,15 +296,40 @@ private fun VideoRow(video: DishVideo, selected: Boolean, onPlay: () -> Unit) {
     }
 }
 
+/** One muted caption row: the required YouTube credit and its two links; each link keeps a 48dp touch target. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Attribution() {
     val context = LocalContext.current
-    Column {
-        Text("Videos provided by YouTube", style = MaterialTheme.typography.labelMedium)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            TextButton(onClick = { openLink(context, DishLinks.TERMS_URL) }) { Text("YouTube 서비스 약관") }
-            TextButton(onClick = { openLink(context, DishLinks.PRIVACY_URL) }) { Text("Google 개인정보처리방침") }
-        }
+    val caption = MaterialTheme.typography.labelSmall
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    FlowRow(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            "Videos provided by YouTube ·",
+            style = caption,
+            color = muted,
+            modifier = Modifier.heightIn(min = 48.dp).wrapContentHeight(Alignment.CenterVertically)
+        )
+        CaptionLink("서비스 약관", "YouTube 서비스 약관") { openLink(context, DishLinks.TERMS_URL) }
+        Text("·", style = caption, color = muted, modifier = Modifier.heightIn(min = 48.dp).wrapContentHeight(Alignment.CenterVertically))
+        CaptionLink("개인정보처리방침", "Google 개인정보처리방침") { openLink(context, DishLinks.PRIVACY_URL) }
     }
+}
+
+@Composable
+private fun CaptionLink(label: String, description: String, onClick: () -> Unit) {
+    Text(
+        label,
+        style = MaterialTheme.typography.labelSmall.copy(textDecoration = TextDecoration.Underline),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .wrapContentHeight(Alignment.CenterVertically)
+            .semantics { contentDescription = description }
+            .clickable(role = Role.Button, onClick = onClick)
+    )
 }
