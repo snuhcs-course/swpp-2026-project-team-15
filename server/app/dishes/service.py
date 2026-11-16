@@ -4,6 +4,7 @@ ingredients and answers with dishes plus what the user has and lacks. The server
 names belong to the list and nothing else; there is no rules fallback."""
 
 import json
+from urllib.parse import quote_plus
 
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DishLLM, DishLLMError
@@ -12,9 +13,14 @@ from app.dishes.schemas import (
     Substitution,
     SuggestedDish,
     SuggestResponse,
-    Video,
+    VideosResponse,
 )
-from app.dishes.youtube import VideoCache, search_url
+from app.dishes.videos import VideoError, VideoFinder
+
+
+def search_url(dish_name: str) -> str:
+    return f"https://www.youtube.com/results?search_query={quote_plus(dish_name + ' 레시피')}"
+
 
 NO_SUBSTITUTE = "냉장고 재료로는 마땅한 대체를 찾지 못했어요."
 NOT_CONFIGURED = "The model service is not configured"
@@ -93,11 +99,11 @@ def _strings(value: object) -> list[str]:
 
 class DishService:
     def __init__(
-        self, catalog: Catalog, llm: DishLLM | None = None, cache: VideoCache | None = None
+        self, catalog: Catalog, llm: DishLLM | None = None, finder: VideoFinder | None = None
     ):
         self.catalog = catalog
         self.llm = llm
-        self.cache = cache or VideoCache(None)
+        self.finder = finder
         self._by_name = {d.name: d for d in catalog.dishes.values()}
 
     def suggest(self, ingredients: list[str]) -> SuggestResponse:
@@ -128,11 +134,23 @@ class DishService:
                     category=dish.category,
                     have=_strings(item.get("have")),
                     missing=_strings(item.get("missing")),
-                    videos=[Video(**v) for v in self.cache.get(dish.id) if _valid_video(v)],
                     search_url=search_url(dish.name),
                 )
             )
         return out
+
+    def videos(self, dish_id: str) -> VideosResponse | None:
+        """None when the dish is unknown. Raises VideoError when the lookup fails or is off."""
+        dish = self.catalog.get(dish_id)
+        if dish is None:
+            return None
+        if self.finder is None:
+            raise VideoError(NOT_CONFIGURED)
+        return VideosResponse(
+            dish_id=dish_id,
+            videos=self.finder.find(dish_id, dish.name),
+            search_url=search_url(dish.name),
+        )
 
     def adapt(
         self, dish_id: str, ingredients: list[str], missing: list[str]
@@ -186,12 +204,3 @@ class DishService:
             used.add(gap)
             subs.append(Substitution(missing=gap, suggestion=f"{sub}(으)로 대신해요", uses=[sub]))
         return subs
-
-
-def _valid_video(video: object) -> bool:
-    return (
-        isinstance(video, dict)
-        and isinstance(video.get("video_id"), str)
-        and isinstance(video.get("title"), str)
-        and isinstance(video.get("thumbnail_url"), str)
-    )

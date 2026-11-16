@@ -21,7 +21,7 @@ from app.dishes.llm import DEFAULT_MODEL, DishLLM
 from app.dishes.router import ingredients_router
 from app.dishes.router import router as dishes_router
 from app.dishes.service import DishService
-from app.dishes.youtube import VideoCache
+from app.dishes.videos import VideoFinder
 from app.vision.gemini import REQUEST_TIMEOUT_MS, GeminiVisionProvider
 from app.vision.openrouter import OpenRouterVisionProvider
 from app.vision.providers import FixtureVisionProvider, VisionProvider
@@ -57,7 +57,9 @@ def _dish_service(settings: Settings) -> DishService:
     key = os.environ.get("DISH_LLM_API_KEY") or settings.openrouter_api_key
     model = os.environ.get("DISH_LLM_MODEL") or DEFAULT_MODEL
     llm = DishLLM(key, model) if key.strip() else None
-    return DishService(Catalog.load(), llm, VideoCache())
+    youtube_key = os.environ.get("YOUTUBE_API_KEY", "")
+    finder = VideoFinder(key, youtube_key) if key.strip() and youtube_key.strip() else None
+    return DishService(Catalog.load(), llm, finder)
 
 
 def create_app_from_env() -> FastAPI:

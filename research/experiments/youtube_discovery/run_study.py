@@ -18,9 +18,8 @@ from pathlib import Path
 
 import httpx
 
-from app.dishes.youtube import YouTubeClient, to_video
-
 from . import scoring
+from .youtube_client import YouTubeClient, to_video
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]

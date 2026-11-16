@@ -14,7 +14,10 @@ from app.dishes.schemas import (
     IngredientSuggestionResponse,
     SuggestRequest,
     SuggestResponse,
+    VideosRequest,
+    VideosResponse,
 )
+from app.dishes.videos import VideoError
 from app.schemas import ErrorResponse
 
 router = APIRouter(prefix="/dishes", tags=["dishes"])
@@ -64,6 +67,25 @@ def adapt(body: AdaptRequest, service: DishServiceDep) -> AdaptResponse:
     try:
         result = service.adapt(body.dish_id, body.ingredients, body.missing)
     except DishLLMError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+    if result is None:
+        raise HTTPException(422, "Unknown dish id")
+    return result
+
+
+@router.post(
+    "/videos",
+    summary="Videos to follow along for one dish, found on request",
+    operation_id="dish_videos",
+    responses={
+        422: {"model": ErrorResponse, "description": "Unknown dish id"},
+        502: {"model": ErrorResponse, "description": "The model or YouTube call failed"},
+    },
+)
+def videos(body: VideosRequest, service: DishServiceDep) -> VideosResponse:
+    try:
+        result = service.videos(body.dish_id)
+    except VideoError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
     if result is None:
         raise HTTPException(422, "Unknown dish id")

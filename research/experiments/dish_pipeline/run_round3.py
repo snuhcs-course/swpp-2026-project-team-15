@@ -19,8 +19,7 @@ import time
 from pathlib import Path
 
 import httpx
-
-from app.dishes.youtube import YouTubeClient
+from experiments.youtube_discovery.youtube_client import YouTubeClient
 
 from . import round3 as r3
 

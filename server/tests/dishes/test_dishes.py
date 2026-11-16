@@ -10,19 +10,11 @@ from fastapi.testclient import TestClient
 
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DishLLM, DishLLMError
-from app.dishes.service import DishService
-from app.dishes.youtube import (
-    VideoCache,
-    YouTubeClient,
-    prefetch,
-    search_url,
-    to_video,
-    top_videos,
-)
+from app.dishes.service import DishService, search_url
+from app.dishes.videos import REQUEST, VideoError, VideoFinder, extract_ids, to_video
 from app.main import create_app
 from tests.conftest import StubVision
 
-FIXTURE = Path(__file__).parent / "fixtures" / "sample_video_cache.json"
 STAPLES = frozenset({"물", "소금", "간장", "설탕", "후추", "식용유", "참기름", "다진마늘"})
 
 
@@ -304,120 +296,135 @@ def test_llm_bad_payloads():
             _llm(lambda request, r=response: r).complete("s", "u", "n", {})
 
 
-# --- YouTube cache and prefetch --------------------------------------------------------------
+# --- videos on request -----------------------------------------------------------------------
+
+IDS = ["a" * 11, "b" * 11, "c" * 11, "d" * 11]
 
 
-def test_cache_is_optional_and_expires():
-    assert VideoCache(None).get("kimchi-fried-rice") == []
-    assert VideoCache("/nonexistent/path.json").get("kimchi-fried-rice") == []
-    cache = VideoCache(FIXTURE)
-    assert [v["video_id"] for v in cache.get("kimchi-fried-rice")] == [
-        "FAKE_TEST_ID_01",
-        "FAKE_TEST_ID_02",
-    ]
-    assert cache.get("egg-roll") == []  # older than 30 days
+def _item(vid, *, embeddable=True, privacy="public", thumb=True):
+    snippet = {"title": f"title {vid[0]}", "channelTitle": "C"}
+    if thumb:
+        snippet["thumbnails"] = {"medium": {"url": f"https://i.ytimg.com/vi/{vid}/mq.jpg"}}
+    return {
+        "id": vid,
+        "snippet": snippet,
+        "status": {"embeddable": embeddable, "privacyStatus": privacy},
+    }
 
 
-def test_videos_and_search_link_in_suggestions(catalog):
-    llm = FakeLLM(_answer(("김치볶음밥", ["밥", "김치"], ["대파"])))
-    service = DishService(catalog, llm, VideoCache(FIXTURE))
-    body = client_for(service).post("/dishes/suggest", json={"ingredients": ["김치", "밥"]}).json()
-    dish = next(d for d in body["dishes"] if d["id"] == "kimchi-fried-rice")
-    assert [v["video_id"] for v in dish["videos"]] == ["FAKE_TEST_ID_01", "FAKE_TEST_ID_02"]
-    assert dish["videos"][0]["embeddable"] is True
-    assert "%EA%B9%80%EC%B9%98%EB%B3%B6%EC%9D%8C%EB%B0%A5" in dish["search_url"]
-    assert search_url("김치볶음밥").endswith("+%EB%A0%88%EC%8B%9C%ED%94%BC")
+def _finder(calls, *, answer=None, items=None, openrouter_status=200, youtube_status=200):
+    """A VideoFinder whose two services are faked; ``calls`` records (host, payload/params)."""
+    text = answer or " ".join(f"https://www.youtube.com/watch?v={v}" for v in IDS)
+    listing = items if items is not None else [_item(v) for v in IDS]
 
-
-def _youtube_handler(calls):
     def handler(request):
-        calls.append(request.url.path)
-        assert "key=" in str(request.url)
-        if request.url.path.endswith("/search"):
-            return httpx.Response(200, json={"items": [{"id": {"videoId": v}} for v in "abcd"]})
-        items = [
-            {
-                "id": "a",
-                "snippet": {
-                    "title": "초간단 김치 볶음밥",
-                    "channelTitle": "C",
-                    "thumbnails": {"medium": {"url": "u"}},
-                },
-                "statistics": {"viewCount": "10"},
-                "status": {"embeddable": True, "privacyStatus": "public"},
-            },
-            {
-                "id": "b",
-                "snippet": {"title": "B 김치볶음밥 레시피", "channelTitle": "C"},
-                "statistics": {"viewCount": "500"},
-                "status": {"embeddable": True, "privacyStatus": "public"},
-            },
-            {
-                "id": "c",
-                "snippet": {"title": "C"},
-                "statistics": {"viewCount": "900"},
-                "status": {"embeddable": False, "privacyStatus": "public"},
-            },
-            {
-                "id": "d",
-                "snippet": {"title": "D"},
-                "statistics": {},
-                "status": {"embeddable": True},
-            },
-        ]
-        return httpx.Response(200, json={"items": items})
+        if request.url.host == "openrouter.ai":
+            calls.append(("model", json.loads(request.content)))
+            if openrouter_status != 200:
+                return httpx.Response(openrouter_status)
+            body = {"choices": [{"message": {"content": text, "annotations": []}}]}
+            return httpx.Response(200, json=body)
+        calls.append(("youtube", dict(request.url.params)))
+        if youtube_status != 200:
+            return httpx.Response(youtube_status)
+        return httpx.Response(200, json={"items": listing})
 
-    return handler
+    return VideoFinder("or-key", "yt-key", transport=httpx.MockTransport(handler))
 
 
-def test_top_videos_prefers_titles_that_name_the_dish_then_views():
-    calls = []
-    client = YouTubeClient("k", transport=httpx.MockTransport(_youtube_handler(calls)))
-    videos = top_videos(client, "김치볶음밥")
-    # c is not embeddable; b and a name the dish (more views first), d only fills up
-    assert [v["video_id"] for v in videos] == ["b", "a", "d"]
-    assert videos[1]["thumbnail_url"] == "u" and videos[0]["thumbnail_url"].startswith(
-        "https://i.ytimg.com/"
+def test_request_text_is_the_wording_chosen_in_round_3():
+    criteria = json.loads(
+        (
+            Path(__file__).parents[3] / "research/experiments/dish_pipeline/criteria_round3.json"
+        ).read_text(encoding="utf-8")
     )
+    assert REQUEST.format(dish="X") == criteria["exact_request_texts"]["D0"].replace("<dish>", "X")
+
+
+def test_extract_ids_reads_text_then_citations_without_repeats():
+    url = "https://www.youtube.com/watch?v="
+    ids = extract_ids(
+        f"{url}{'a' * 11} and https://youtu.be/{'b' * 11}", [f"{url}{'a' * 11}", f"{url}{'c' * 11}"]
+    )
+    assert ids == ["a" * 11, "b" * 11, "c" * 11]
+    assert extract_ids("no links", []) == []
+
+
+def test_finder_keeps_embeddable_public_videos_in_the_models_order():
+    calls = []
+    items = [
+        _item(IDS[3]),  # the API returns another order than the model's
+        _item(IDS[0]),
+        _item(IDS[1], embeddable=False),
+        _item(IDS[2], privacy="private"),
+    ]
+    finder = _finder(calls, items=items)
+    videos = finder.find("kimchi-fried-rice", "김치볶음밥")
+    assert [v.video_id for v in videos] == [IDS[0], IDS[3]]
+    assert videos[0].thumbnail_url.startswith("https://i.ytimg.com/")
+    model_call = next(p for k, p in calls if k == "model")
+    assert model_call["model"] == "google/gemini-2.5-flash-lite:online"
+    assert "김치볶음밥" in model_call["messages"][0]["content"]
+    youtube_calls = [p for k, p in calls if k == "youtube"]
+    assert len(youtube_calls) == 1 and youtube_calls[0]["id"] == ",".join(IDS)  # one batch
+
+
+def test_finder_caches_a_dish_for_a_day():
+    calls = []
+    now = [1000.0]
+    finder = _finder(calls)
+    finder._clock = lambda: now[0]
+    finder.find("egg-roll", "계란말이")
+    finder.find("egg-roll", "계란말이")
+    assert len(calls) == 2  # one model call and one YouTube call
+    now[0] += 24 * 3600 + 1
+    finder.find("egg-roll", "계란말이")
+    assert len(calls) == 4
+
+
+def test_finder_empty_answer_is_an_answer_and_a_thumbnail_is_built_when_missing():
+    calls = []
+    assert _finder(calls, answer="I found nothing").find("a", "A") == []
+    assert [k for k, _ in calls] == ["model"]  # nothing to look up
+    video = to_video(_item("z" * 11, thumb=False))
+    assert video.thumbnail_url == f"https://i.ytimg.com/vi/{'z' * 11}/mqdefault.jpg"
     assert to_video({"id": "z", "status": {"embeddable": False}}) is None
-    assert client.requests == 2
 
 
-def test_prefetch_dry_run_then_fake_live(tmp_path):
-    cache = VideoCache(tmp_path / "videos.json")
-    dishes = [
-        ("kimchi-fried-rice", "김치볶음밥"),
-        ("egg-roll", "계란말이"),
-        ("egg-fry", "계란후라이"),
-    ]
-    plan = prefetch(dishes, cache, None, max_requests=4)
-    assert plan["will_fetch"] == 2 and plan["quota_units"] == 202 and plan["fetched"] == 0
-    assert not (tmp_path / "videos.json").exists()  # a dry run writes nothing
-    calls = []
-    client = YouTubeClient("k", transport=httpx.MockTransport(_youtube_handler(calls)))
-    done = prefetch(dishes, cache, client, max_requests=4, sleep=lambda s: None)
-    assert done["fetched"] == 2 and len(calls) == 4
-    assert VideoCache(tmp_path / "videos.json").get("kimchi-fried-rice")
-    again = prefetch(dishes, VideoCache(tmp_path / "videos.json"), None, max_requests=40)
-    assert again["to_fetch"] == 1  # the two fetched dishes are fresh
+@pytest.mark.parametrize(
+    "kwargs", [{"openrouter_status": 500}, {"youtube_status": 403}], ids=["model", "youtube"]
+)
+def test_finder_failures_are_errors_without_keys(kwargs):
+    with pytest.raises(VideoError) as raised:
+        _finder([], **kwargs).find("a", "A")
+    assert "key" not in str(raised.value).lower()
 
 
-def test_prefetch_stops_on_quota_error(tmp_path):
-    def handler(request):
-        return httpx.Response(403, json={"error": "quota"})
+def test_videos_endpoint(catalog):
+    finder = _finder([])
+    service = DishService(catalog, FakeLLM(), finder)
+    client = client_for(service)
+    body = client.post("/dishes/videos", json={"dish_id": "kimchi-fried-rice"}).json()
+    assert [v["video_id"] for v in body["videos"]] == IDS
+    assert "%EA%B9%80%EC%B9%98%EB%B3%B6%EC%9D%8C%EB%B0%A5" in body["search_url"]
+    assert search_url("김치볶음밥").endswith("+%EB%A0%88%EC%8B%9C%ED%94%BC")
+    assert client.post("/dishes/videos", json={"dish_id": "nope"}).status_code == 422
+    assert client.post("/dishes/videos", json={}).status_code == 422
+    no_finder = client_for(DishService(catalog, FakeLLM()))
+    assert no_finder.post("/dishes/videos", json={"dish_id": "egg-roll"}).status_code == 502
+    broken = client_for(DishService(catalog, FakeLLM(), _finder([], openrouter_status=500)))
+    assert broken.post("/dishes/videos", json={"dish_id": "egg-roll"}).status_code == 502
 
-    client = YouTubeClient("k", transport=httpx.MockTransport(handler))
-    log = []
-    summary = prefetch(
-        [("a", "A"), ("b", "B")],
-        VideoCache(tmp_path / "v.json"),
-        client,
-        max_requests=10,
-        sleep=lambda s: None,
-        log=log.append,
+
+def test_suggestions_carry_a_search_link_but_no_videos(catalog):
+    llm = FakeLLM(_answer(("김치볶음밥", ["밥", "김치"], ["대파"])))
+    body = (
+        client_for(DishService(catalog, llm))
+        .post("/dishes/suggest", json={"ingredients": ["김치", "밥"]})
+        .json()
     )
-    assert summary["failed"] == 1 and len(log) == 1  # stopped after the first 403
-    assert "k" not in "".join(log).replace("HTTP", "")
+    dish = body["dishes"][0]
+    assert "videos" not in dish and dish["search_url"].startswith("https://www.youtube.com/")
 
 
 # --- start from the environment -------------------------------------------------------------

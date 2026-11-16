@@ -20,8 +20,7 @@ import time
 from pathlib import Path
 
 import httpx
-
-from app.dishes.youtube import YouTubeClient, YouTubeError
+from experiments.youtube_discovery.youtube_client import YouTubeClient, YouTubeError
 
 from . import scoring
 

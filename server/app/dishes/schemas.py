@@ -19,9 +19,7 @@ class Video(BaseModel):
     video_id: str
     title: str
     channel: str
-    view_count: int | None = None
     thumbnail_url: str
-    embeddable: bool = True
 
 
 class SuggestRequest(BaseModel):
@@ -34,13 +32,22 @@ class SuggestedDish(BaseModel):
     category: str
     have: list[str]
     missing: list[str]
-    videos: list[Video]
     search_url: str
 
 
 class SuggestResponse(BaseModel):
     source: str
     dishes: list[SuggestedDish]
+
+
+class VideosRequest(BaseModel):
+    dish_id: str = Field(min_length=1, max_length=80)
+
+
+class VideosResponse(BaseModel):
+    dish_id: str
+    videos: list[Video]
+    search_url: str
 
 
 class AdaptRequest(BaseModel):
