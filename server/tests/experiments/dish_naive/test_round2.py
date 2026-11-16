@@ -55,3 +55,18 @@ def test_adoption_rule_picks_cheapest_variant_that_holds_everything():
     assert decide({"P0": base, "P1": _variant(names=0.99)})["adopted"] is None
     assert decide({"P0": base, "P1": _variant(bad=1)})["adopted"] is None
     assert ADOPTABLE == ("P1", "P2")
+
+
+def test_retry_repeats_only_rate_limited_calls(monkeypatch):
+    from experiments.dish_naive import run_round2 as r
+    from experiments.dish_tokens.calls import Call
+
+    monkeypatch.setattr(r.time, "sleep", lambda s: None)
+    answers = iter([Call(False, 429), Call(False, 429), Call(True, 200)])
+    monkeypatch.setattr(r, "chat", lambda payload, key: next(answers))
+    r.CALLS_MADE["n"] = 0
+    call, attempts = r.chat_with_retry({}, "k", cap=10)
+    assert call.ok and attempts == 3 and r.CALLS_MADE["n"] == 3
+    monkeypatch.setattr(r, "chat", lambda payload, key: Call(False, 500))
+    call, attempts = r.chat_with_retry({}, "k", cap=10)
+    assert not call.ok and attempts == 1

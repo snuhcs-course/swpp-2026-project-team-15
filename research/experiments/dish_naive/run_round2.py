@@ -13,10 +13,11 @@ import json
 import statistics
 import subprocess
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from experiments.dish_tokens.calls import chat, json_schema_format, read_key
+from experiments.dish_tokens.calls import Call, chat, json_schema_format, read_key
 
 from app.dishes.catalog import Catalog
 from app.dishes.service import SUGGEST_SCHEMA, SUGGEST_SYSTEM, DishService, suggest_user_message
@@ -68,6 +69,24 @@ def payload_for(variant: str, ingredients: list[str], names: list[str]) -> dict:
     }
 
 
+RETRY_WAITS = (5, 15)  # seconds before the second and third attempt after an HTTP 429
+CALLS_MADE = {"n": 0}
+
+
+def chat_with_retry(payload: dict, key: str, cap: int) -> tuple[Call, int]:
+    """One logical call; repeated after HTTP 429 (provider rate limit). Returns (call, attempts)."""
+    attempts = 0
+    while True:
+        if CALLS_MADE["n"] >= cap:
+            raise RuntimeError("call cap reached")
+        CALLS_MADE["n"] += 1
+        attempts += 1
+        call = chat(payload, key)
+        if call.status != 429 or attempts > len(RETRY_WAITS):
+            return call, attempts
+        time.sleep(RETRY_WAITS[attempts - 1])
+
+
 def decide(per_variant: dict[str, dict]) -> dict:
     """Apply the frozen adoption rule to the aggregated variants (P0 is the baseline)."""
     base = per_variant["P0"]["metrics"]
@@ -98,11 +117,11 @@ def decide(per_variant: dict[str, dict]) -> dict:
     return {"verdicts": verdicts, "adopted": passing[0] if passing else None}
 
 
-def run_variant(variant, cases, names, name_set, catalog, service, key) -> dict:
+def run_variant(variant, cases, names, name_set, catalog, service, key, cap) -> dict:
     rows, results = [], []
     for case in cases:
         ingredients = case["ingredients"]
-        call = chat(payload_for(variant, ingredients, names), key)
+        call, attempts = chat_with_retry(payload_for(variant, ingredients, names), key, cap)
         dishes, raw_names, returned = [], [], []
         if call.data is not None:
             items = call.data.get("dishes")
@@ -132,8 +151,9 @@ def run_variant(variant, cases, names, name_set, catalog, service, key) -> dict:
                 "id": case["id"],
                 "ok": call.ok,
                 "error": call.error,
+                "attempts": attempts,
                 "returned": returned,
-                "call": call.__dict__ | {"data": None},
+                "call": call.__dict__,
             }
         )
     calls = [r["call"] for r in rows]
@@ -164,8 +184,8 @@ def main(argv: list[str] | None = None) -> int:
     cases = [c for c in naive["cases"] if c["expect_status"] == 200]
     variants = args.variants.split(",")
     total = len(cases) * len(variants)
-    cap = criteria["call_cap"]
-    print(f"{len(cases)} inputs x {len(variants)} variants = {total} calls (cap {cap})")
+    cap = criteria["call_cap"] - criteria.get("calls_already_made", 0)
+    print(f"{len(cases)} inputs x {len(variants)} variants = {total} calls (cap {cap} left)")
     if total > cap:
         print("over the call cap", file=sys.stderr)
         return 2
@@ -195,6 +215,7 @@ def main(argv: list[str] | None = None) -> int:
         "decision": decide(per_variant) if "P0" in per_variant else None,
         "variants": per_variant,
         "total_calls": sum(v["calls"] for v in per_variant.values()),
+        "attempts": CALLS_MADE["n"],
         "total_cost_usd": sum(v["mean_cost_usd"] * v["calls"] for v in per_variant.values()),
     }
     args.out.mkdir(parents=True, exist_ok=True)

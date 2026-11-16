@@ -45,13 +45,25 @@
     "mean cost per call (usage.cost) and median latency"
   ],
   "decision_rule": "Eligible variants are P1 and P2. A variant is adopted only if ALL hold: have_subset_share >= 0.99; valid_names_share == 1.0 (raw names); nonempty_when_possible >= P0 - 0.02; reference_recall >= P0 - 0.02; reference_precision >= P0 - 0.02; zero truncated or failed calls at max_tokens 4096. Among the variants that hold, adopt the one with the lowest mean cost per call (ties: P1). If none holds, nothing is adopted and the production prompt stays. Differences below about 2 points are within what one run at temperature 0 can vary; this is reported, not used to relax the rule.",
-  "call_cap": 120,
+  "call_cap": 250,
   "planned_calls": 108,
-  "cost_cap_usd": 0.1,
+  "cost_cap_usd": 0.2,
   "limits": [
     "one run per variant at temperature 0",
     "27 inputs: one case moves a share by about 3 points",
     "reference set is rule-made from the dish list, not human-labelled",
     "P2 depends on the provider honouring enum constraints in strict schemas; a rejection is recorded as unsupported"
-  ]
+  ],
+  "amendments": [
+    {
+      "date": "2026-11-16",
+      "before_rerun": true,
+      "reason": "The first run (108 calls) was contaminated by provider rate limits: 15 of the 108 calls returned HTTP 429 (P0 8, P1 4, P2 3, P3 0) and produced no answer, and 1 to 4 answers per variant were cut off at 4096 output tokens. The adoption rule requires zero failed calls, so the 429s decide the outcome without saying anything about the variants. The first run is kept and reported as run A.",
+      "changes": [
+        "Run B repeats all four variants on the same 27 inputs with the same prompts, schemas and settings. Only the runner changes: a call that gets HTTP 429 is repeated up to two more times after a 5 s and a 15 s wait; every attempt counts toward the call cap. Raw answers are stored this time so that metrics can be recomputed.",
+        "The call cap is raised from 120 to 250 (first run 108, repeat 108 plus up to 34 retries) and the cost cap to $0.20; no other number of the frozen rule changes. The decision uses run B; run A is reported next to it, including the differences between the two runs on inputs that succeeded in both (a measure of run-to-run variation)."
+      ]
+    }
+  ],
+  "calls_already_made": 108
 }
