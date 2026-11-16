@@ -130,12 +130,22 @@ def cmd_collect(args, crit) -> None:
     orkey = key("openrouter.env", "OPENROUTER_API_KEY")
     store = load("candidates.json", {})
     searches = 0
+    search_blocked = False
     for did in dishes:
         name = table[did]["name"]
         row = store.get(did, {"methods": {}, "cost": {}, "videos": {}})
-        if "A1" not in row["methods"] and did in paired and searches < args.max_search:
-            row["methods"]["A1"] = yt.search(f"{name} 레시피")
-            searches += 1
+        if (
+            "A1" not in row["methods"]
+            and did in paired
+            and searches < args.max_search
+            and not search_blocked
+        ):
+            try:
+                row["methods"]["A1"] = yt.search(f"{name} 레시피")
+                searches += 1
+            except YouTubeError as err:  # the daily search quota is a separate, small bucket
+                search_blocked = True
+                print(f"A1 search stopped: {err}")
         for method, hint in (("B", ""), ("B2", VIEWS_HINT)):
             if method in row["methods"]:
                 continue
@@ -147,8 +157,8 @@ def cmd_collect(args, crit) -> None:
                 else None
             )
         union = list(dict.fromkeys(i for ids in row["methods"].values() for i in (ids or [])))
-        if union and not row["videos"]:
-            row["videos"] = enrich(yt, union)
+        if union and set(union) - set(row["videos"]):
+            row["videos"] = {**row["videos"], **enrich(yt, union)}
         store[did] = row
         save("candidates.json", store)
     print(f"search.list calls: {searches}; videos.list requests: {yt.requests - searches}")

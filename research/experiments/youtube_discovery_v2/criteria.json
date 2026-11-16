@@ -46,5 +46,17 @@
  "baseline": "A1|J0|views",
  "seed": 20261116,
  "budget": {"model_calls": 200, "usd": 1.5, "search_list_calls": 20, "videos_list_units": 800, "planned_model_calls": "B 40 + B2 40 + J1 selector 40 + E 40 + validation 2 (J1, E) = 162"},
- "limits_declared": "single run; one labeler; judges are LLMs of one vendor family; 40 dishes (20 paired); 32 combinations are compared, so the best one is optimistic; relevance is judged from metadata, not from the video content"
+ "limits_declared": "single run; one labeler; judges are LLMs of one vendor family; 40 dishes (20 paired); 32 combinations are compared, so the best one is optimistic; relevance is judged from metadata, not from the video content",
+ "amendments": [
+  {
+   "date": "2026-11-16",
+   "before_any_judge_call": true,
+   "reason": "The first collect run reached the YouTube search daily quota (HTTP 429 on search.list; the quota bucket had been spent by earlier work the same day) before any A1 search succeeded. No A1 candidate exists today.",
+   "changes": [
+    "Stage 1 collects B and B2 on the 40 dishes today. A1 (and so U, the paired set and the decision rule) are deferred to the first day with search quota: run collect --allow-live-api --max-search 20 again; finished entries are skipped.",
+    "Validation sample: 60 videos drawn today from the B and B2 candidates only (strata as above, short and non-Hangul strata may be small). Before the judges are applied to A1 candidates, 30 more videos drawn the same way from A1 candidates are labelled and committed (labels_a1.json), and the judge agreement is reported on all 90.",
+    "Today's report covers: judge validation on the 60 labelled videos, J0 against the labels, and B against B2 under J0, J1 and each ranking, on the 40 dishes, scored by E. No decision is made until A1 exists."
+   ]
+  }
+ ]
 }
