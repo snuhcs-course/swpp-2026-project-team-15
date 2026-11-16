@@ -424,6 +424,24 @@ def test_finder_empty_answer_is_an_answer_and_a_thumbnail_is_built_when_missing(
     assert to_video({"id": "z", "status": {"embeddable": False}}) is None
 
 
+def test_finder_retries_a_rate_limited_model_call(monkeypatch):
+    monkeypatch.setattr("app.dishes.videos.RETRY_WAITS", (0, 0))
+    calls = []
+    finder = _finder(calls)
+    original = finder._transport.handler
+    state = {"n": 0}
+
+    def handler(request):
+        if request.url.host == "openrouter.ai":
+            state["n"] += 1
+            if state["n"] < 3:
+                return httpx.Response(429)
+        return original(request)
+
+    finder._transport = httpx.MockTransport(handler)
+    assert len(finder.find("a", "A")) == 4 and state["n"] == 3
+
+
 @pytest.mark.parametrize(
     "kwargs", [{"openrouter_status": 500}, {"youtube_status": 403}], ids=["model", "youtube"]
 )

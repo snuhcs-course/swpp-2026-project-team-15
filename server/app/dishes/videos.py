@@ -14,6 +14,7 @@ import time
 
 import httpx
 
+from app.dishes.llm import RETRY_WAITS
 from app.dishes.schemas import Video
 
 OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
@@ -110,8 +111,10 @@ class VideoFinder:
         try:
             with httpx.Client(timeout=60, transport=self._transport) as client:
                 response = client.post(OPENROUTER, json=payload, headers=headers)
-                if response.status_code == 429:  # the provider limits bursts: one short retry
-                    time.sleep(3)
+                for wait in RETRY_WAITS:  # the provider limits bursts: wait and try again
+                    if response.status_code != 429:
+                        break
+                    time.sleep(wait)
                     response = client.post(OPENROUTER, json=payload, headers=headers)
             if response.status_code != 200:
                 raise VideoError("The model service is temporarily unavailable")
