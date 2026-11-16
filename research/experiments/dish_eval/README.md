@@ -114,3 +114,42 @@ Failure analysis:
 - The rules-only baseline passes every threshold, which is expected: the labels were derived with the same matching rules the baseline ranks by. What the comparison shows is that the model adds wording and some reordering without breaking the guards (ids, have/missing, table pairs, empty-note cases), at the cost of the two issues above. It does not show that the model's order is better for users.
 
 Label notes (not corrected in place): none found so far. S09 (only seasonings) has an empty acceptable set by design.
+
+## Run 2: no fixed card count (settings changed)
+
+Date 2026-11-16. This run is **not comparable one to one with Run 1**: the system under test changed (commit `618ea63`, evaluated at `696657c`, clean tree; `cases.json` and `thresholds.json` byte-identical to the frozen commit; scorer patterns untouched).
+
+What changed in the system: `/dishes/suggest` no longer takes a count. The model is told to choose every dish that can reasonably be made, best first, and to return fewer or none instead of filling up; it now sees every dish sharing a key ingredient with the input (no 40-candidate cut). The server still drops unknown or duplicate ids and recomputes `have`/`missing`, but truncates nothing and applies no missing-count cutoff. The rules fallback returns every dish sharing a key ingredient (fewest missing, then name). An empty model answer is an empty list marked `llm`.
+
+What changed in the harness (not in cases, thresholds or scoring patterns): the response-length check against `limit` was removed, and "acceptable dish in top 5" is computed over the **first five of the returned list**; an empty list counts as a miss when acceptable dishes exist. The `limit` field in the frozen cases is still sent but ignored by the server.
+
+Same model and decoding as Run 1 (`google/gemini-2.5-flash-lite`, temperature 0, max tokens 1024). One run each. 37 model calls ($0.0122, 64,708 input and 14,246 output tokens); the rules run made none. About two more calls were spent on a diagnosis afterwards (below), so about 39 in total.
+
+| Metric | Threshold | Run 1 model | Run 2 rules only | Run 2 model |
+| --- | --- | --- | --- | --- |
+| suggest: expected fields | 100% | 100% pass | 100% pass | 100% pass |
+| suggest: ids from the list | 100% | 100% pass | 100% pass | 100% pass |
+| suggest: `have`/`missing` consistent | 100% | 100% pass | 100% pass | 100% pass |
+| suggest: ≥1 acceptable dish in first 5 | ≥ 85% | 100% pass | 100% pass | 100% pass |
+| suggest: shown dishes with ≤ 2 missing (first 5) | ≥ 80% | 99.2% pass | 100% pass | 97.9% pass |
+| suggest: forbidden dishes shown (first 5) | 0 | 1 fail | 0 pass | **1 fail** |
+| suggest: invalid inputs refused | 100% | 100% pass | **50% fail** | **50% fail** |
+| suggest: valid answer with a failing model | 100% | 100% pass | 100% pass | 100% pass |
+| adapt: pairs inside the table | 100% | 100% pass | 100% pass | 100% pass |
+| adapt: no invented quantities or steps | 100% | 93.3% fail | 100% pass | 93.3% fail |
+| adapt: empty-with-note cases | 100% | 100% pass | 100% pass | 100% pass |
+| adapt: outcome matches label | ≥ 90% | 100% pass | 100% pass | 100% pass |
+| adapt: unknown dish / empty list refused | 100% | 100% pass | 100% pass | 100% pass |
+| median latency | ≤ 5 s | 1.3 s pass | n/a | 1.5 s pass (max 3.6 s) |
+
+Suggest answers marked `llm`: 19, marked `rules`: 8 (S09 has no candidates, as before). The returned lists had 1 to 10 dishes when the model answered (S05, 두부 only: 3), and 67 to 114 dishes when the rules fallback answered.
+
+Failure analysis:
+
+- **Invalid inputs refused (new failure, both runs).** Cases S28 (`limit` 0) and S29 (`limit` 9) expect HTTP 422 because Run 1 had a 1..8 range. With no count, `limit` is ignored and the requests succeed. The two cases are frozen and now describe a rule that was removed on purpose; they are kept and the failure is reported, not hidden. Empty list and 61 entries are still refused.
+- **Forbidden dish (S05, 두부 only), unchanged.** The model returned 두부부침, 두부국, 두부덮밥. Without padding it returned three dishes instead of five, but still chose 두부덮밥 (forbidden: needs 밥, 양파, 대파). 두부조림, an acceptable dish, was left out. Not fixed.
+- **Step word (A08), unchanged.** Same "섞어" pattern case as Run 1; the scorer was not changed.
+- **Fallback on large candidate lists (found by inspection, not scored).** In 7 of the 26 model-backed suggest cases (S02, S07, S11, S17, S18, S24, S26; inputs with 67 to 114 matching dishes) the model call ended as "incomplete answer" and the server fell back to the unranked-by-model list. Re-running S02 and S07 once each gave the same error. The likely cause is the 1,024-token output ceiling, which is too small for a long answer when the model may return many dishes (not confirmed: the finish reason was not logged). These cases still pass the metrics because the fallback is a valid answer, so the table hides the loss. This run does not measure the model's behaviour on those inputs.
+- The rules baseline passes everything except the removed-range cases, again because the labels follow the same matching rules.
+
+Limits: one run, one model; the first-five metrics say nothing about the quality of the dishes beyond the fifth; 7 of 26 model-backed cases did not reach the model's choice (above).
