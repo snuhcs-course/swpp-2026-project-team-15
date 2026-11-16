@@ -94,3 +94,25 @@ python3 scripts/package_server.py --output dist/server.tar.gz
 - [Deployment](deploy/README.md)
 - [Research](research/README.md)
 - [Project Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki)
+
+## Demo UAT (2026-11-17)
+
+Run on a phone against the demo server, from fresh clones of this branch (server: `docker compose up`; app: `scripts/install-android.sh`). Evidence is the app's accessibility tree and the server logs; no photos of private scenes were used.
+
+| # | Story | Result |
+| --- | --- | --- |
+| 1 | Given a fresh install, when I enter a nickname and skip tools and allergies, then I choose pantry items and reach the fridge with them listed | Pass |
+| 2 | Given the camera permission is denied, when I open the add button, then I can still choose "type it in" | Pass |
+| 3 | Given the fridge, when I open the ingredient suggestion, then it lists ingredients with example dishes and one back press closes it | Pass |
+| 4 | Given ingredients, when I open the recipe tab, then dish cards show what I have and what is missing | Pass |
+| 5 | Given a dish card, when I open its videos, then a loading text appears and 3–4 videos with channel names are listed within about 4 s | Pass |
+| 6 | Given the video list, when I tap one, then the embedded player opens and audio playback starts | Pass |
+| 7 | Given a dish with a missing ingredient, when I ask for a substitute, then I get one from my fridge or the message that none fits | Pass (the "none fits" answer; a substitute was returned in the server check) |
+| 8 | Given the video sheet, when I look at its bottom, then one caption row "Videos provided by YouTube · 서비스 약관 · 개인정보처리방침" is shown and each link opens its page | Pass |
+| 9 | Given a fridge item, when I long-press it and confirm, then it is removed and the recipes update | Pass |
+| 10 | Given the server cannot be reached, when I open a dish's videos, then an error with "retry" and a YouTube search button appears, and retry works after the server is back | Pass |
+| 11 | Given I changed the screen mode, when I reset the data, then the app returns to the first screen and the screen mode follows the system again | Pass |
+| 12 | Given a photo of the fridge, when I add it, then ingredients are recognised | Not run (needs a private photo and the camera permission) |
+| 13 | Given typed Korean text, when I type a name, then completions appear | Not run on the phone (adb cannot type Korean); covered by unit tests |
+
+Observed limits: a common input of four ingredients made the model list so many dishes that the answer was cut at the 4,096-token limit in 3 of 4 calls; the server now keeps the complete dishes before the cut (about 30 cards, 10 s). The model service answered with rate-limit errors several times; calls are retried twice.
