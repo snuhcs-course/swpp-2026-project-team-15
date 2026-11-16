@@ -11,6 +11,15 @@ Current tools retain their original Python package names to preserve contributor
 - `experiments/name_mapping/`: resolving free-text ingredient names to recipe-table ingredients (exact, synonym, embedding), with the scorer and the typed-input rules. Embedding is optional.
 - `experiments/revision_input/`: id-only revision cases, frozen criteria and a mock-by-default harness for the revision request's size and reliability. Needs the revision pipeline from the server.
 
+## Dish-suggestion version
+
+The decision record [decisions/dish-list-and-video-discovery.md](decisions/dish-list-and-video-discovery.md) links the studies behind this version in order:
+
+- `experiments/dish_eval/`: frozen cases and thresholds for suggestions and substitutes (first, rules-based design).
+- `experiments/dish_naive/`: the naive design (model sees dish names and the user's ingredients) against that reference, plus prompt and output-cap rounds.
+- `experiments/dish_tokens/` and `experiments/dish_pipeline/`: token cost of the selection call, the arrangement of the model calls for videos, and the wording of the video request (round 3).
+- `experiments/youtube_discovery/` (superseded) and `experiments/youtube_discovery_v2/`: how to find videos; v2 validates a relevance judge against 60 hand-labelled videos first.
+
 New topics can use their own descriptive directory; the existing package layout is not a template requirement. Historical P0–P5 simulations remain in Git history. This directory is an active development workspace, not an archive of generated results.
 
 ## Run from repository root
