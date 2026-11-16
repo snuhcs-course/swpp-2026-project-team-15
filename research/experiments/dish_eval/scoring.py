@@ -57,22 +57,20 @@ def dish_schema_ok(dish: Any) -> bool:
     return _is_list_of_str(dish["have"]) and _is_list_of_str(dish["missing"])
 
 
-def suggest_schema_ok(response: Any, limit: int) -> bool:
+def suggest_schema_ok(response: Any) -> bool:
     return (
         isinstance(response, dict)
         and response.get("source") in SOURCES
         and isinstance(response.get("dishes"), list)
-        and len(response["dishes"]) <= limit
         and all(dish_schema_ok(d) for d in response["dishes"])
     )
 
 
 def check_suggest(case: dict, response: dict, view: CatalogView) -> dict:
     """Judge one valid (status 200) suggest case."""
-    limit = case["input"].get("limit", 5)
-    schema = suggest_schema_ok(response, limit)
+    schema = suggest_schema_ok(response)
     dishes = response.get("dishes", []) if schema else []
-    top = dishes[:5]
+    top = dishes[:5]  # the metrics look at the first five of the returned list
     ids_ok = schema and all(d["id"] in view.dish_keys for d in dishes)
     owned = view.owned(case["input"]["ingredients"])
     consistent = schema and ids_ok

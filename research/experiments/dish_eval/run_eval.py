@@ -153,16 +153,16 @@ def run(
                 suggest_invalid.append(False)
                 row["rejected"] = False
             start = time.perf_counter()
-            response = service.suggest(request.ingredients, request.limit).model_dump()
+            response = service.suggest(request.ingredients).model_dump()
             elapsed = time.perf_counter() - start
             if transport and transport.requests > before:
                 latencies.append(elapsed)
             if case["expect_status"] == 200:
                 judged = scoring.check_suggest(case, response, view)
                 suggest_rows.append(judged)
-                fb = failing.suggest(request.ingredients, request.limit).model_dump()
+                fb = failing.suggest(request.ingredients).model_dump()
                 fb_ok = (
-                    scoring.suggest_schema_ok(fb, request.limit)
+                    scoring.suggest_schema_ok(fb)
                     and fb["source"] == "rules"
                     and all(d["id"] in view.dish_keys for d in fb["dishes"])
                 )

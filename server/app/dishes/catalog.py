@@ -97,10 +97,10 @@ class Catalog:
         return key in owned or bool(with_synonyms([key]) & owned)
 
     def rank(self, ingredients: list[str]) -> list[Match]:
-        """Dishes with at least one owned main ingredient, fewest missing first."""
+        """Every dish sharing a main ingredient with the owned ones: fewest missing, then name."""
         owned = self.owned(ingredients)
         matches = [m for d in self.dishes.values() if (m := self.match(d, owned)).have]
-        matches.sort(key=lambda m: (len(m.missing), -len(m.have), m.dish.id))
+        matches.sort(key=lambda m: (len(m.missing), m.dish.name))
         return matches
 
     def usable(self, name: str, owned: set[str]) -> bool:

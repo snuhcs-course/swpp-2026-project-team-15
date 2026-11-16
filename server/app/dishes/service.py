@@ -16,14 +16,16 @@ from app.dishes.schemas import (
 )
 from app.dishes.youtube import VideoCache, search_url
 
-MAX_CANDIDATES = 40
 MAX_REASON = 60
 _DIGITS = re.compile(r"\d")
 
 SUGGEST_SYSTEM = (
     "You help a Korean student living alone decide what to cook from the ingredients they have. "
-    "Choose ONLY from the candidate dishes (use their ids exactly). Prefer dishes that use most "
-    "of the owned ingredients and are realistic for one person. Give a short Korean reason "
+    "Choose ONLY from the candidate dishes (use their ids exactly). Choose every dish that can "
+    "reasonably be made from the owned ingredients, best first. If only a few fit, return only "
+    "those; if none fit, return an empty list. Never add dishes just to fill the list. Prefer "
+    "dishes that use most of the owned ingredients and are realistic for one person. Give a "
+    "short Korean reason "
     "(under 40 characters) and up to 3 YouTube search keyword variants that each contain the "
     "dish name. Never invent dishes, ingredients or quantities."
 )
@@ -88,36 +90,29 @@ class DishService:
         self.cache = cache or VideoCache(None)
 
     # -- suggest -----------------------------------------------------------------------------
-    def suggest(self, ingredients: list[str], limit: int) -> SuggestResponse:
+    def suggest(self, ingredients: list[str]) -> SuggestResponse:
         ranked = self.catalog.rank(ingredients)
-        picked: list[tuple[Match, str, list[str]]] = []
-        source = "rules"
         if self.llm is not None and ranked:
             try:
-                picked = self._ask_suggest(ingredients, ranked[:MAX_CANDIDATES], limit)
+                picked = self._ask_suggest(ingredients, ranked)
             except DishLLMError:
-                picked = []
-            if picked:
-                source = "llm"
-        seen = {m.dish.id for m, _, _ in picked}
-        for match in ranked:  # top up (or fully replace) with the deterministic ranking
-            if len(picked) >= limit:
-                break
-            if match.dish.id not in seen:
-                picked.append((match, self._rules_reason(match), []))
+                picked = None
+            if picked is not None:  # an empty answer is an answer: nothing fits
+                return SuggestResponse(
+                    source="llm", dishes=[self._dish(m, r, k) for m, r, k in picked]
+                )
         return SuggestResponse(
-            source=source, dishes=[self._dish(m, r, k) for m, r, k in picked[:limit]]
+            source="rules",
+            dishes=[self._dish(m, self._rules_reason(m), []) for m in ranked],
         )
 
-    def _ask_suggest(self, ingredients, candidates: list[Match], limit: int):
+    def _ask_suggest(self, ingredients, candidates: list[Match]):
         by_id = {m.dish.id: m for m in candidates}
         listing = [
             {"id": m.dish.id, "name": m.dish.name, "ingredients": list(m.dish.key_ingredients)}
             for m in candidates
         ]
-        user = json.dumps(
-            {"owned": ingredients, "limit": limit, "candidates": listing}, ensure_ascii=False
-        )
+        user = json.dumps({"owned": ingredients, "candidates": listing}, ensure_ascii=False)
         data = self.llm.complete(SUGGEST_SYSTEM, user, "dish_choice", SUGGEST_SCHEMA)
         out, seen = [], set()
         for item in data.get("dishes", []) if isinstance(data.get("dishes"), list) else []:

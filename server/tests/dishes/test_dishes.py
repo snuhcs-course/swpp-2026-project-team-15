@@ -89,10 +89,12 @@ def test_rules_rank_fewest_missing_first_and_need_one_owned_item(catalog):
 def test_rules_only_without_a_model(catalog):
     body = (
         client_for(DishService(catalog))
-        .post("/dishes/suggest", json={"ingredients": ["김치", "밥"], "limit": 3})
+        .post("/dishes/suggest", json={"ingredients": ["김치", "밥"]})
         .json()
     )
-    assert body["source"] == "rules" and len(body["dishes"]) == 3
+    ranked = catalog.rank(["김치", "밥"])
+    assert body["source"] == "rules" and len(body["dishes"]) == len(ranked) > 5
+    assert [d["id"] for d in body["dishes"]] == [m.dish.id for m in ranked]  # no cap
     first = body["dishes"][0]
     assert first["reason"].startswith("필요한 재료") and first["videos"] == []
     assert first["search_url"].startswith("https://www.youtube.com/results?search_query=")
@@ -132,6 +134,26 @@ def test_model_choice_is_validated_and_have_missing_recomputed(catalog):
     assert all(c["id"] in catalog.dishes for c in sent["candidates"])
 
 
+def test_limit_is_ignored_and_empty_model_answer_is_not_an_error(catalog):
+    service = DishService(catalog, FakeLLM({"dishes": []}))
+    body = (
+        client_for(service)
+        .post("/dishes/suggest", json={"ingredients": ["김치", "밥"], "limit": 1})
+        .json()
+    )
+    assert body == {"source": "llm", "dishes": []}
+    assert "limit" not in json.dumps(service.llm.calls[0][1])
+
+
+def test_unknown_ingredient_gives_empty_rules_list(catalog):
+    body = (
+        client_for(DishService(catalog))
+        .post("/dishes/suggest", json={"ingredients": ["우주식량"]})
+        .json()
+    )
+    assert body == {"source": "rules", "dishes": []}
+
+
 def test_model_failure_falls_back_to_rules(catalog):
     llm = FakeLLM(DishLLMError("down"))
     body = (
@@ -142,14 +164,14 @@ def test_model_failure_falls_back_to_rules(catalog):
     assert body["source"] == "rules" and body["dishes"]
 
 
-def test_all_unknown_model_ids_fall_back_to_rules(catalog):
+def test_all_unknown_model_ids_are_dropped(catalog):
     llm = FakeLLM({"dishes": [{"id": "x", "reason": "", "keywords": []}]})
     body = (
         client_for(DishService(catalog, llm))
         .post("/dishes/suggest", json={"ingredients": ["계란"]})
         .json()
     )
-    assert body["source"] == "rules"
+    assert body == {"source": "llm", "dishes": []}
 
 
 @pytest.mark.parametrize(
@@ -157,8 +179,6 @@ def test_all_unknown_model_ids_fall_back_to_rules(catalog):
     [
         {},
         {"ingredients": []},
-        {"ingredients": ["계란"], "limit": 0},
-        {"ingredients": ["계란"], "limit": 9},
     ],
 )
 def test_bad_suggest_input_is_422(catalog, payload):
@@ -409,11 +429,7 @@ def test_cache_is_optional_and_expires():
 
 def test_videos_and_search_link_in_suggestions(catalog):
     service = DishService(catalog, None, VideoCache(FIXTURE))
-    body = (
-        client_for(service)
-        .post("/dishes/suggest", json={"ingredients": ["김치", "밥"], "limit": 8})
-        .json()
-    )
+    body = client_for(service).post("/dishes/suggest", json={"ingredients": ["김치", "밥"]}).json()
     dish = next(d for d in body["dishes"] if d["id"] == "kimchi-fried-rice")
     assert [v["video_id"] for v in dish["videos"]] == ["FAKE_TEST_ID_01", "FAKE_TEST_ID_02"]
     assert dish["videos"][0]["embeddable"] is True

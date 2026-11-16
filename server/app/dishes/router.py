@@ -42,7 +42,7 @@ def list_dishes(service: DishServiceDep) -> DishList:
     "/suggest", summary="Dishes to cook from the ingredients at hand", operation_id="suggest_dishes"
 )
 def suggest(body: SuggestRequest, service: DishServiceDep) -> SuggestResponse:
-    return service.suggest(body.ingredients, body.limit)
+    return service.suggest(body.ingredients)
 
 
 @router.post(

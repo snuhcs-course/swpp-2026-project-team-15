@@ -19,7 +19,7 @@ Interactive OpenAPI documentation is at `/docs`. `GET /health` is liveness; `GET
 | --- | --- |
 | `POST /analyze` | One photo (`image`) or 2–15 views of one fridge (`images`) → ingredient candidates (OpenRouter, Gemini or recorded fixtures) |
 | `GET /dishes` | The baseline dish list |
-| `POST /dishes/suggest` | `{ "ingredients": ["김치", "쌀"], "limit": 5 }` → dishes with `have`, `missing`, a short `reason`, cached `videos` and a YouTube `search_url` |
+| `POST /dishes/suggest` | `{ "ingredients": ["김치", "쌀"] }` → every fitting dish (best first, no fixed count; `limit` is deprecated and ignored), each with `have`, `missing`, a short `reason`, cached `videos` and a YouTube `search_url` |
 | `POST /dishes/adapt` | `{ "dish_id": "...", "ingredients": [...] }` → substitutes or skips for the missing ingredients |
 | `GET /recipes/ingredients` | `{ "names": [...] }` for entry completion (names from the dish data; the path is kept for the app) |
 | `POST /recipes/ingredient-suggestions` | `{ "ingredients": [...] }` → ingredients that would complete the most dishes |

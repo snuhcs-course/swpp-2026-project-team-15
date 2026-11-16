@@ -117,8 +117,8 @@ def test_unknown_id_and_bad_schema(view):
     assert out["schema_valid"] and not out["ids_in_catalog"] and not out["have_missing_consistent"]
     broken = {"source": "x", "dishes": []}
     assert not scoring.check_suggest(case(), broken, view)["schema_valid"]
-    over = {"source": "llm", "dishes": [dish(view, "kimchi-rolled")] * 6}
-    assert not scoring.check_suggest(case(), over, view)["schema_valid"]
+    many = {"source": "llm", "dishes": [dish(view, "kimchi-rolled")] * 6}
+    assert scoring.check_suggest(case(), many, view)["schema_valid"]  # no length cap any more
 
 
 def test_inconsistent_have_missing(view):
@@ -297,6 +297,6 @@ def test_failing_model_gives_valid_rules_answer(catalog, view):
     from app.dishes.service import DishService
 
     svc = DishService(catalog, FailingLLM())
-    r = svc.suggest(["김치", "밥"], 5).model_dump()
-    assert r["source"] == "rules" and scoring.suggest_schema_ok(r, 5)
+    r = svc.suggest(["김치", "밥"]).model_dump()
+    assert r["source"] == "rules" and scoring.suggest_schema_ok(r)
     assert all(d["id"] in view.dish_keys for d in r["dishes"])
