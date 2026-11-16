@@ -34,3 +34,7 @@ Recall/precision/≤2-missing for failed calls count the failed input as empty, 
 ### Limits
 
 12 inputs and one run per variant: differences below about 2 points or $0.00003 are noise. Latency varies by call. Quality is consistency with the rule-made reference. A `max_tokens` of 4096 was chosen from the longest answers of 12 inputs; a longer input list could need more.
+
+## Round 2: output size (criteria frozen 2026-11-16, before any call)
+
+Question: with the prompt chosen in `../dish_naive/` round 2, does asking for less output lower the cost per call? Variants O0 to O3, the rule and the cap are in `criteria_round2.json`. Results are added below after the runs.

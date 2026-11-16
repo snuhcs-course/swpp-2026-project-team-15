@@ -1,0 +1,30 @@
+{
+  "name": "dish_pipeline_round2",
+  "version": 1,
+  "frozen": "2026-11-16, before the analysis is run; no model or API call is made in this study",
+  "question": "Among the links a model with web search provides for a dish, how many are public and embeddable, and how many of those are really recipe videos of the dish?",
+  "data": "stored outputs of the second YouTube discovery study (candidates.json, judgements.json of data/youtube-discovery-v2/ in that clone), copied read-only into data/youtube-discovery-v2/ of this clone; not committed",
+  "links": "model-provided links = the ids in candidates[dish].methods.B (method B: 'most popular, best-regarded recipe videos, up to 8, any language'); B2 is reported as a secondary source",
+  "pass_check": "the server check of the target design: the video exists, is public and embeddable (candidates[dish].videos[id].usable); no title filter, no ranking, no count cutoff; the model's order is kept",
+  "relevance": {
+    "primary": "gemini-2.5-pro judgement (evaluator E)",
+    "secondary": "claude-haiku-4.5 judgement (J1)",
+    "agreement": "share of identical labels and Cohen's kappa between the two on the same links",
+    "old_rule": "J0: the normalised title (spaces removed) contains the normalised dish name from server/app/dishes/dishes.json"
+  },
+  "dishes": "the dishes with both judgements and no error in judgements.json (27 of the 40)",
+  "metrics": [
+    "links per dish: model-provided, usable (embeddable and public), usable and relevant (E and J1)",
+    "share of usable links that are relevant, pooled over links and as a mean over dishes",
+    "number of dishes with 0, 1, 2, 3 or more relevant usable links; dishes with at least one",
+    "share of dishes whose first usable link in the model's order is relevant",
+    "the same relevance shares under the old title rule J0, and the counts of links J0 accepts that E rejects and the reverse",
+    "failure types of the usable links E calls irrelevant, assigned by the assistant from title, channel, description and duration (judge reasons were not stored): neighbouring dish, other dish, vlog or eating show, short (60 s or less), compilation or advertisement, other"
+  ],
+  "decision_use": "Reported only. It tells whether a server without any relevance check (embeddable filter only) would mostly show real recipe videos of the dish; no pass/fail threshold is set because the design decision belongs to the owner.",
+  "limits": [
+    "relevance comes from language models that agreed with one labeler's 60 labels at kappa 0.61 (barely above the pre-set 0.6) and judge metadata, not the video",
+    "27 dishes, one run of the model discovery, the dishes are mostly fried-rice dishes first in the list",
+    "failure types are one person's reading of titles and descriptions"
+  ]
+}

@@ -62,3 +62,7 @@ Reported only: input 26,477 and output 27,608 tokens (about 1,000 per call each)
 ### Limits
 
 Single run at temperature 0, 31 inputs, one model. The reference is rule-made from the same list and counts a dish with two missing ingredients as wrong. The hybrid comparison covers the 27 answered-or-failed inputs of its own run and was produced with another `max_tokens` (1,024) and another prompt.
+
+## Round 2: prompt definition (criteria frozen 2026-11-16, before any call)
+
+Round 1 found that the model reads `have` as "usually in this dish". Round 2 tests whether a prompt that defines `have` as the user's own items, with or without a schema that restricts `have` to those items, fixes this. Variants P0 to P3, the 27 inputs, the adoption rule and the call cap are in `criteria_round2.json`. P3 (no `have`) is measured but cannot be adopted because the app needs `have`. Results are added below after the runs.

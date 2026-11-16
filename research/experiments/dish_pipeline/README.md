@@ -37,3 +37,7 @@ P1 and P4 rows come from 12 per-dish unit calls (one seeded dish per input); the
 ### Limits
 
 12 inputs, one run, one discovery model and plugin (not Google grounding; a handful of search results per request); P1 and P4 are modelled from 12 unit calls, one dish per input, so their coverage rests on 12 dishes (10 hits); the judge is unvalidated; differences below about 10 points of coverage or $0.002 are within noise. Title-based relevance only. The structure with a model-found link was not compared with the search-API method here, so this result says nothing about which discovery method is better, only about the cost and coverage of model discovery inside this pipeline.
+
+## Round 2: relevance of model-provided links (criteria frozen 2026-11-16, before the analysis)
+
+No new call: the stored outputs of the second YouTube discovery study are analysed offline. What is counted, the judges used and the failure types are fixed in `criteria_round2.json`. Results are added below after the analysis.
