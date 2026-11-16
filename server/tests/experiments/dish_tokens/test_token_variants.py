@@ -19,8 +19,16 @@ def test_variants_change_only_what_they_claim():
     assert payload_for("V3", ["김치"], NAMES)["reasoning"] == {"enabled": False}
     schema = payload_for("V4", ["김치"], NAMES)["response_format"]["json_schema"]["schema"]
     item = schema["properties"]["dishes"]["items"]
-    assert set(item["properties"]) == {"name", "missing"} and item["required"] == ["name", "missing"]
-    assert "have" in base["response_format"]["json_schema"]["schema"]["properties"]["dishes"]["items"]["properties"]
+    assert set(item["properties"]) == {"name", "missing"} and item["required"] == [
+        "name",
+        "missing",
+    ]
+    assert (
+        "have"
+        in base["response_format"]["json_schema"]["schema"]["properties"]["dishes"]["items"][
+            "properties"
+        ]
+    )
 
 
 def test_message_layouts():
@@ -34,7 +42,9 @@ def test_qualification_needs_no_truncation_and_two_points():
     assert qualifies({"have_subset_share": 0.94, "reference_recall": 0.49}, base, 0)
     assert not qualifies({"have_subset_share": 0.92, "reference_recall": 0.5}, base, 0)
     assert not qualifies(base, base, 1)
-    assert qualifies({"have_subset_share": 0.1, "reference_recall": 0.5}, base, 0, ("have_subset_share",))
+    assert qualifies(
+        {"have_subset_share": 0.1, "reference_recall": 0.5}, base, 0, ("have_subset_share",)
+    )
 
 
 def test_chat_reads_usage_and_flags_truncation(monkeypatch):
@@ -42,7 +52,9 @@ def test_chat_reads_usage_and_flags_truncation(monkeypatch):
         body = {
             "choices": [{"finish_reason": "stop", "message": {"content": '{"dishes": []}'}}],
             "usage": {
-                "prompt_tokens": 10, "completion_tokens": 4, "cost": 0.5,
+                "prompt_tokens": 10,
+                "completion_tokens": 4,
+                "cost": 0.5,
                 "completion_tokens_details": {"reasoning_tokens": 2},
                 "prompt_tokens_details": {"cached_tokens": 6},
             },
@@ -52,10 +64,21 @@ def test_chat_reads_usage_and_flags_truncation(monkeypatch):
     monkeypatch.setattr(calls.httpx, "post", fake_post)
     call = calls.chat({"x": 1}, "key")
     assert call.ok and call.data == {"dishes": []} and call.cost_usd == 0.5
-    assert (call.prompt_tokens, call.completion_tokens, call.reasoning_tokens, call.cached_tokens) == (10, 4, 2, 6)
+    assert (
+        call.prompt_tokens,
+        call.completion_tokens,
+        call.reasoning_tokens,
+        call.cached_tokens,
+    ) == (10, 4, 2, 6)
 
     def cut(url, json, headers, timeout, follow_redirects):  # noqa: A002
-        return httpx.Response(200, json={"choices": [{"finish_reason": "length", "message": {"content": "{"}}], "usage": {}})
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"finish_reason": "length", "message": {"content": "{"}}],
+                "usage": {},
+            },
+        )
 
     monkeypatch.setattr(calls.httpx, "post", cut)
     assert calls.chat({}, "k").truncated
