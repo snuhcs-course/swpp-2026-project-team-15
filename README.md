@@ -9,14 +9,13 @@ SNU SWPP Fall 2026 · Team 15. The Android app recognises the ingredients in a f
 ├── .github/workflows/      # Server, Android and ARM checks
 ├── android/                # Compose app, DataStore, JVM/device tests
 ├── server/
-│   ├── app/dishes/         # Dish list, model-based suggestion and substitutes, video cache
+│   ├── app/dishes/         # Dish list, model-based suggestion, substitutes and video links
 │   ├── app/vision/         # Ingredient recognition providers
 │   ├── fixtures/           # Recorded recognition responses, synthetic demo image
 │   └── tests/              # Automated checks and protected references
 ├── research/               # Evaluation tools and experiments (the record of decisions)
-├── scripts/                # Android install, integrity check, packaging, video prefetch
-├── deploy/                 # nginx, runtime template, release and video-cache scripts
-├── docs/images/            # Images for the Wiki
+├── scripts/                # Android install, integrity check, packaging
+├── deploy/                 # nginx and the runtime template
 ├── Dockerfile              # Nonroot runtime API image
 └── compose.yaml            # nginx and API (no database)
 ```
@@ -42,7 +41,7 @@ cp .env.example .env          # VISION_PROVIDER=mock: no key, no network
 uv run --env-file .env uvicorn app.main:create_app_from_env --factory --port 8000
 ```
 
-Dish suggestions need `OPENROUTER_API_KEY` (without it `/dishes/suggest` answers 502; there is no rules fallback). Without a video cache the app shows a YouTube search link only. See [server README](server/README.md).
+Dish suggestions need `OPENROUTER_API_KEY` (without it `/dishes/suggest` answers 502; there is no rules fallback). `/dishes/videos` also needs `YOUTUBE_API_KEY`. See [server README](server/README.md).
 
 ## Install the app
 
@@ -57,7 +56,7 @@ See [Android setup](android/README.md) for SDK configuration and endpoint overri
 
 ## App and API
 
-The app uploads a photo, or the sharpest frames of a 5 s sweep, to `/analyze`; the user reviews the ingredient names; `/dishes/suggest` returns dishes (with `have`/`missing`, videos and a search link) and `/dishes/adapt` returns substitutes or skips.
+The app uploads a photo, or the sharpest frames of a 5 s sweep, to `/analyze`; the user reviews the ingredient names; `/dishes/suggest` returns dishes (with `have`/`missing` and a search link), `/dishes/videos` returns embeddable YouTube videos for one dish when the user opens it, and `/dishes/adapt` returns substitutes or skips.
 
 | Endpoint | Purpose |
 | --- | --- |

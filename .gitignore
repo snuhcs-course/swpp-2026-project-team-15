@@ -13,6 +13,7 @@ dist/
 
 # Local environment configuration
 .env
+deploy/runtime.env
 
 # Android
 .gradle/
