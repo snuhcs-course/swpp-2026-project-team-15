@@ -1,5 +1,7 @@
 # YouTube video discovery for the dish list
 
+> **Superseded by [study v2](../youtube_discovery_v2/README.md).** The decision below ("keep A") is withdrawn. The title filter (title contains the dish name) was not validated and it also scored relevance, so each method was graded by the rule that shaped its candidates; it cannot see famous videos with other titles or English titles. The numbers are kept as a record of that first measurement.
+
 Question: which way of finding YouTube cooking videos for a dish gives the most relevant, embeddable and popular videos per dish at an acceptable cost, without using the YouTube search quota?
 
 Scope: YouTube only. The dish list is the 130 dishes in `server/app/dishes/dishes.json`.
