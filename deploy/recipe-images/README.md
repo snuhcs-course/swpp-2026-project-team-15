@@ -1,7 +1,7 @@
 # Existing Pixabay images: manual database step
 
-**Preparation only; migration and URL recovery passed an isolated PostgreSQL 17
-rehearsal. Service integration and separate operational approval are still required.** No reset/import
+**Preparation only; isolated PostgreSQL 17 and API/image integration rehearsals
+passed. Separate operational approval is still required.** No reset/import
 is needed. Commit and verify this migration **before code deployment or a main
 push that triggers deployment**. The old API tolerates the added nullable column.
 

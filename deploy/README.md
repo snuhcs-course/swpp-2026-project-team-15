@@ -56,8 +56,8 @@ migration and URL mapping **before deploying new code**, including a main push
 that triggers CI deployment. Do not use `db.sh reset` for this image-only change.
 Readiness rollback restores code/config only, not URL values or image files.
 See [manual migration and URL recovery](recipe-images/README.md). PostgreSQL
-migration/recovery rehearsal passed; service integration and operational approval
-are still required before deployment.
+migration/recovery and isolated API/image rehearsals passed. Operational approval
+is still required before deployment.
 
 ## Developer operations over SSH
 
