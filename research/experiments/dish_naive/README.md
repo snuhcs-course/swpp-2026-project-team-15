@@ -96,3 +96,24 @@ One run per variant (two for the plan above), 27 inputs, one model. The referenc
 ## Round 2b: output cap 8192 (criteria frozen 2026-11-16, before any call)
 
 Round 2 compared the production prompt (P0) with the prompt that defines `have` as the user's own items (P1) at an output cap of 4,096 tokens. 2 to 5 of the 27 inputs were cut off and counted as empty, so the comparison measured truncations more than prompts. Round 2b repeats P0 and P1 on the same 27 inputs with the cap raised to 8,192 for both. The adoption rule, the numbers recorded without thresholds (how many dishes the model returns, cost, latency) and the call cap are in `criteria_round2b.json`. Results are added below after the runs.
+
+### Round 2b results (2026-11-16)
+
+Settings: `google/gemini-2.5-flash-lite`, temperature 0, `max_tokens` 8192 for both prompts, the 27 well-formed inputs, rule of `criteria_round2b.json` (frozen in `e4191fb`, runner `run_round2b.py` in `d6ce049`; run on commit `d6ce049`). 54 calls, 60 attempts (6 retries after HTTP 429), about $0.039. **P1 is not adopted; the production prompt and the 4,096-token cap stay.**
+
+| Variant | Failed calls (of 27) | Output tok (mean) | Cost per call | Names in list | `have` all owned | Non-empty | Recall | Precision | ≤2 missing | Dishes returned (min / median / max) | Latency median / max |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| P0 production prompt | 1 (1 cut off) | 1,457 | $0.000681 | 96.6% | 96.7% | 96.2% | 48.8% | 29.0% | 63.9% | 1 / 18 / 130 | 3.0 s / 20.3 s |
+| P1 `have` defined in the prompt | 2 (2 cut off) | 1,618 | $0.000748 | **99.7%** | 98.0% | 92.3% | 57.1% | 37.3% | 74.1% | 1 / 16 / 128 | 2.6 s / 19.8 s |
+
+**Rule outcome.** P1 passes four checks (names in the list ≥ P0, recall and precision ≥ P0 − 2 points, cost ≤ 1.15 × P0: $0.000748 against $0.000681) and fails three: (1) two answers (S24, S30) still ran to the 8,192-token limit, (2) `have` is 98.0%, below the 99% floor (the 100% of round 2 was measured on fewer, shorter answers), (3) non-empty answers are 92.3% against 96.2% (the two cut-off answers count as empty). Because P0 itself has a cut-off answer at 8,192 (S15), the "raise only the cap" branch of the rule does not apply either; the server stays as it is.
+
+**What the data say anyway**
+- **Raising the cap does not remove the truncations; the cause is the answer length.** Without a count limit the model sometimes lists nearly the whole dish list: 130 of 130 dishes for `달걀, 쌀` (P0, S04, 5,633 output tokens), 118 and 128 for P1 on S11 and S17. The cut-off answers are inputs where that listing did not finish within 8,192 tokens (P0: S15, which lists `김치, 김치, 밥, 밥`; P1: S24, S30). Three calls of the first-run list were 20 s or longer, close to the service's 30 s timeout for one model call.
+- **Median answers are short in both prompts** (18 and 16 dishes); the distribution has a heavy tail, so the cost per call is set by a few inputs.
+- **P1 improves the quality of what is returned** (names in the list 99.7% against 96.6%, `have` 98.0% against 96.7%, precision 37.3% against 29.0%) without raising the cost beyond the 15% allowance, but one run of 27 inputs cannot separate this from the cut-off answers, which count as empty and dominate recall and non-empty.
+- Run-to-run variation was not repeated for 8,192; the 4,096 runs showed identical answers on repeated inputs.
+
+### Limits (round 2b)
+
+One run per variant at temperature 0, 27 inputs (one case moves a share by about 3 points), one model. The reference set is rule-made from the dish list, not by people. Retries after HTTP 429 are not a result of the variant. Two of the three truncations are in P1, one in P0, which is too few to rank the prompts on robustness.
