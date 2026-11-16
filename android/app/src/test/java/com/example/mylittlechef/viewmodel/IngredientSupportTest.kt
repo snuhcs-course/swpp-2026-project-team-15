@@ -14,7 +14,6 @@ class IngredientSupportTest {
         override suspend fun ingredientNames() = IngredientCatalogResponse(emptyList())
         override suspend fun ingredientSuggestions(request: IngredientSuggestionRequest) = IngredientSuggestionResponse(emptyList())
         override suspend fun analyze(image: MultipartBody.Part): AnalyzeResponse = error("Not used")
-        override suspend fun recommend(request: RecommendRequest): RecommendResponse = error("Not used")
     }
 
     @Test fun lateSuggestionResponseCannotReplaceNewInventory() = runTest {

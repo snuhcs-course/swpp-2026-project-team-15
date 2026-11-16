@@ -20,10 +20,6 @@ interface MyLittleChefApi {
     @Multipart
     @POST("analyze")
     suspend fun analyze(@Part image: MultipartBody.Part): AnalyzeResponse
-
-    @POST("recipes/recommend")
-    suspend fun recommend(@Body request: RecommendRequest): RecommendResponse
-
 }
 
 /** Several views of the same fridge in one request. Kept apart so existing API fakes stay valid. */
@@ -50,7 +46,6 @@ object ApiClient {
 
     private val retrofit: Retrofit by lazy {
         val http = OkHttpClient.Builder()
-            // Revision may include two 60-second provider attempts when server retry is enabled.
             .readTimeout(150, TimeUnit.SECONDS)
             .retryOnConnectionFailure(false)
             .build()
@@ -61,8 +56,7 @@ object ApiClient {
             .build()
     }
 
-    // The default app never requires the unpublished local on-demand routes.
-    val api: DeployedRecipeApi by lazy { retrofit.create(DeployedRecipeApi::class.java) }
+    val api: IngredientSupportApi by lazy { retrofit.create(IngredientSupportApi::class.java) }
 
     val multiImageApi: MultiImageApi by lazy { retrofit.create(MultiImageApi::class.java) }
 }

@@ -31,7 +31,6 @@ import com.example.mylittlechef.ui.profile.EditAllergyScreen
 import com.example.mylittlechef.ui.profile.EditPantryScreen
 import com.example.mylittlechef.ui.profile.EditNicknameScreen
 import com.example.mylittlechef.ui.profile.EditUtensilScreen
-import com.example.mylittlechef.ui.recipe.RecipeDetailScreen
 import com.example.mylittlechef.data.local.PreferencesAppDataReset
 import com.example.mylittlechef.data.local.PreferencesFridgeRepository
 import com.example.mylittlechef.data.local.IngredientPresentationProvider
@@ -41,7 +40,6 @@ import com.example.mylittlechef.viewmodel.DataResetViewModel
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.IngredientCatalogViewModel
 import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
-import com.example.mylittlechef.viewmodel.RecipeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
 @Composable
@@ -70,14 +68,6 @@ fun AppNavHost(
     val user: UserViewModel = viewModel(factory = userFactory)
     val fridge: FridgeViewModel = viewModel(factory = fridgeFactory)
     val applicationContext = LocalContext.current.applicationContext
-    val recipeFactory = remember(applicationContext) {
-        object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                RecipeViewModel(ingredientIds = IngredientPresentationProvider.get(applicationContext).ingredientIds) as T
-        }
-    }
-    val recipes: RecipeViewModel = viewModel(factory = recipeFactory)
     val ingredientSuggestions: IngredientSuggestionViewModel = viewModel()
     val ingredientCatalog: IngredientCatalogViewModel = viewModel()
     val dataResetFactory = remember(store, applicationContext) {
@@ -91,9 +81,6 @@ fun AppNavHost(
 
     // Wait for persisted data before choosing the first screen or fetching recommendations.
     if (!user.isLoaded || !fridge.isLoaded) return
-    LaunchedEffect(fridge.ingredients, user.allergies, user.utensils) {
-        recipes.updateUserContext(fridge.ingredients, user.allergies, user.utensils)
-    }
     val startDestination = remember { if (user.onboardingComplete) Routes.MAIN else Routes.ONBOARDING }
 
     NavHost(
@@ -120,7 +107,6 @@ fun AppNavHost(
             MainScreen(
                 user = user,
                 fridge = fridge,
-                recipes = recipes,
                 ingredientSuggestions = ingredientSuggestions,
                 dataReset = dataReset,
                 onDataResetDone = {
@@ -144,10 +130,6 @@ fun AppNavHost(
                 },
                 onEditPantryClick = {
                     navController.navigate(Routes.EDIT_PANTRY)
-                },
-                onRecipeCardClick = {
-                    recipe ->
-                    navController.navigate("${Routes.RECIPE_DETAIL}/${recipe.id}")
                 }
             )
         }
@@ -249,34 +231,6 @@ fun AppNavHost(
                 onBackClick = { navController.popBackStack() },
                 onSaveClick = { navController.popBackStack() }
             )
-        }
-
-        composable(
-            route = "${Routes.RECIPE_DETAIL}/{recipeId}"
-        ) { backStackEntry ->
-
-            val recipeId = backStackEntry.arguments
-                ?.getString("recipeId")
-                ?.toLongOrNull()
-
-            val recipe = recipes.find(recipeId)
-
-            if (recipe != null) {
-                RecipeDetailScreen(
-                    user = user,
-                    recipe = recipe,
-                    onBackClick = {
-                        navController.popBackStack()
-                    },
-                    onLikeClick = {},
-                    revisionState = recipes.revisionState(recipe.id),
-                    batchRevision = recipes.supportsBatchRevision,
-                    onRequestRevision = if (recipes.supportsRevision) ({
-                        recipes.updateUserContext(fridge.ingredients, user.allergies, user.utensils)
-                        recipes.requestRevision(recipe.id)
-                    }) else null
-                )
-            }
         }
     }
 }
