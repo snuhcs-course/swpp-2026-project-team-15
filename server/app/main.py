@@ -64,6 +64,7 @@ def _dish_service(settings: Settings) -> DishService:
 
 def create_app_from_env() -> FastAPI:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)  # its INFO lines print full request URLs
     settings = Settings.from_env()
     return create_app(_build_vision(settings), _dish_service(settings))
 

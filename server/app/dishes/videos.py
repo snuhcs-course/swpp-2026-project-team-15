@@ -127,10 +127,11 @@ class VideoFinder:
             raise VideoError("The model returned an invalid answer") from None
 
     def _check(self, ids: list[str]) -> list[Video]:
-        params = {"part": "snippet,status", "id": ",".join(ids), "key": self._youtube_key}
+        params = {"part": "snippet,status", "id": ",".join(ids)}
+        headers = {"X-Goog-Api-Key": self._youtube_key}  # a header keeps the key out of URL logs
         try:
             with httpx.Client(timeout=20, transport=self._transport) as client:
-                response = client.get(YOUTUBE_VIDEOS, params=params)
+                response = client.get(YOUTUBE_VIDEOS, params=params, headers=headers)
             if response.status_code != 200:
                 raise VideoError(f"YouTube returned HTTP {response.status_code}")
             items = {i["id"]: i for i in response.json().get("items", [])}

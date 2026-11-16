@@ -324,6 +324,8 @@ def _finder(calls, *, answer=None, items=None, openrouter_status=200, youtube_st
                 return httpx.Response(openrouter_status)
             body = {"choices": [{"message": {"content": text, "annotations": []}}]}
             return httpx.Response(200, json=body)
+        assert "yt-key" not in str(request.url)  # the key travels in a header, not in the URL
+        assert request.headers["x-goog-api-key"] == "yt-key"
         calls.append(("youtube", dict(request.url.params)))
         if youtube_status != 200:
             return httpx.Response(youtube_status)
