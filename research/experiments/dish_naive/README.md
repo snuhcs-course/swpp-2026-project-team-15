@@ -66,3 +66,29 @@ Single run at temperature 0, 31 inputs, one model. The reference is rule-made fr
 ## Round 2: prompt definition (criteria frozen 2026-11-16, before any call)
 
 Round 1 found that the model reads `have` as "usually in this dish". Round 2 tests whether a prompt that defines `have` as the user's own items, with or without a schema that restricts `have` to those items, fixes this. Variants P0 to P3, the 27 inputs, the adoption rule and the call cap are in `criteria_round2.json`. P3 (no `have`) is measured but cannot be adopted because the app needs `have`. Results are added below after the runs.
+
+### Round 2 results (2026-11-16)
+
+Settings: `google/gemini-2.5-flash-lite`, temperature 0, `max_tokens` 4096, the 27 well-formed inputs, variants and rule of `criteria_round2.json` (frozen in `0fac1ca`, runner `run_round2.py`). **No variant is adopted; the production prompt stays.**
+
+| Variant | Failed calls (of 27) | Input tok | Output tok | Cost per call | Names in list | `have` all owned | `missing` none owned | Non-empty | Recall | Precision | ≤2 missing |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| P0 production prompt | 2 (2 cut off) | 981 | 1,248 | $0.000597 | 95.8% | 95.8% | 99.2% | 92.3% | 45.7% | 34.7% | 69.7% |
+| P1 `have` defined in the prompt | 4 (4 cut off) | 1,005 | 1,105 | $0.000542 | 99.7% | **100%** | 98.0% | 84.6% | 33.5% | 39.4% | 80.1% |
+| P2 P1 + schema enum for `have` | 5 (5 cut off) | 1,005 | 1,154 | $0.000562 | 98.0% | **100%** | 98.2% | 84.6% | 37.1% | 47.7% | 88.6% |
+| P3 no `have` (not adoptable) | 3 (3 cut off) | 975 | 1,211 | $0.000582 | 99.9% | n/a | 97.6% | 92.3% | 48.8% | 25.3% | 58.3% |
+
+This is run B. Run A (the same plan, 108 calls, commit `208f963`) lost 15 calls to HTTP 429 (provider rate limit: P0 8, P1 4, P2 3) and was repeated with a retry after 429 (amendment in `criteria_round2.json`, committed before the repeat). Run B needed 10 retried attempts (118 attempts for 108 calls); the first run and the repeat together used 226 attempts and about $0.114.
+
+**Rule outcome.** P1 and P2 each fail four checks: (1) cut-off answers (4 and 5 inputs ran to the 4,096-token limit, against 2 for P0), (2) the share of raw names in the dish list is below 100% (99.7% and 98.0%; P0 95.8%), (3) non-empty answers fall more than 2 points below P0 (84.6% against 92.3%) and (4) so does recall (the cut-off answers count as empty, which dominates both). They pass the `have` check and the precision check. So the rule adopts nothing.
+
+**What the data say anyway**
+- **The prompt definition removes the invented `have` items:** all 100% of returned dishes list only owned ingredients with P1 and P2 (P0: 95.8%; run A: 95.2%). The enum in the schema (P2) adds nothing over the prompt definition on `have`, and it lowers the share of names in the list (98.0% against 99.7%).
+- **The truncations are the open problem, not `have`.** Answers that fit are shorter with P1 and P2 (mean 597 and 498 output tokens over the answers that completed, against 1,025 for P0), but the inputs on which the model enumerates dozens of dishes still run to the 4,096-token limit: S04 and S15 with P0; S11, S17, S24, S30 with P1; S01, S07, S09, S11, S26 with P2; S09, S11, S21 with P3. The limit of 4,096, chosen earlier from 12 inputs, is too small for these 27 inputs; raising it would only move the cost because the answer length is set by how many dishes the model lists.
+- **Run to run, at temperature 0, the answers do not change:** on the inputs that succeeded in both runs, the returned dish sets are identical (18 of 18 for P0, 19 of 19 for P1, 20 of 20 for P2, 24 of 24 for P3). Differences between variants are therefore differences of the prompt and not of chance on these inputs, but the inputs that fail to complete differ between variants.
+- **Recall and precision change with the number of failures** because failed inputs count as empty answers; the comparison of recall between variants mostly measures how many answers were cut off.
+- **P3** (no `have`) cannot be adopted (the app shows `have`), and it is not cheaper: its answers are longer (1,211 output tokens) because the model lists more dishes.
+
+### Limits (round 2)
+
+One run per variant (two for the plan above), 27 inputs, one model. The reference set is made by rule from the same dish list, not by people. A rate-limit failure is not a result of the variant, but the cut-off answers are. The enum schema depends on the provider enforcing it; it accepted every request.
