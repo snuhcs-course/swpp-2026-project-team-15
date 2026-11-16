@@ -1,0 +1,246 @@
+{
+ "note": "One labeler (the assistant), a draft, written from title, channel, duration, description and tags before any judge was run. Relevant = the main content is cooking this dish (any language, any popular variant). Ids only; titles are not stored.",
+ "sample_seed": 20261116,
+ "labels": {
+  "spam-bean-sprout:I3w8zAFa_G4": {
+   "relevant": true,
+   "note": ""
+  },
+  "spam-bean-sprout:qT07czBXHe8": {
+   "relevant": true,
+   "note": ""
+  },
+  "kimchi-pancake:36QacD1BdVw": {
+   "relevant": true,
+   "note": ""
+  },
+  "bibimbap:6QQ67F8y2b8": {
+   "relevant": true,
+   "note": ""
+  },
+  "dumpling-stew:eTyUgGFb3bg": {
+   "relevant": false,
+   "note": "restaurant feature, not a recipe"
+  },
+  "egg-fried-rice:wVE5Sw61yDE": {
+   "relevant": true,
+   "note": ""
+  },
+  "garlic-fried-rice:-iS7UO9kkVc": {
+   "relevant": true,
+   "note": ""
+  },
+  "janchi-noodle:u8IVxXunABY": {
+   "relevant": true,
+   "note": ""
+  },
+  "dumpling-stew:Ar2ReY7BOo8": {
+   "relevant": true,
+   "note": ""
+  },
+  "egg-fried-rice:lfyjRGNAUQo": {
+   "relevant": true,
+   "note": ""
+  },
+  "cream-pasta:0bnFoRQebq0": {
+   "relevant": true,
+   "note": ""
+  },
+  "garlic-fried-rice:f0hg6R84f78": {
+   "relevant": true,
+   "note": ""
+  },
+  "french-toast:f902aBcOg4I": {
+   "relevant": true,
+   "note": ""
+  },
+  "tofu-braise:As8bN8Yr8oQ": {
+   "relevant": true,
+   "note": ""
+  },
+  "omurice:AlK2Gl6kHZI": {
+   "relevant": true,
+   "note": ""
+  },
+  "kimchi-fried-rice:TRxn6bihO0U": {
+   "relevant": true,
+   "note": ""
+  },
+  "bacon-fried-rice:MYM5JvHymk0": {
+   "relevant": true,
+   "note": ""
+  },
+  "cabbage-salad:pno8mrD6bJw": {
+   "relevant": true,
+   "note": ""
+  },
+  "doenjang-stew:NS7rHwKPyV8": {
+   "relevant": true,
+   "note": ""
+  },
+  "bibim-noodle:yiBvT475p2Y": {
+   "relevant": true,
+   "note": ""
+  },
+  "sausage-stir:FE-26VSGyy8": {
+   "relevant": true,
+   "note": ""
+  },
+  "ham-fried-rice:5Ciuii1ohtQ": {
+   "relevant": true,
+   "note": ""
+  },
+  "pork-lettuce:j7s9VRsrm9o": {
+   "relevant": false,
+   "note": "different dish (scallion jeyuk with pork belly)"
+  },
+  "sausage-stir:tXCCIvHUmJM": {
+   "relevant": true,
+   "note": ""
+  },
+  "cabbage-salad:kCkxIsfx-1Q": {
+   "relevant": false,
+   "note": "onion salad; cabbage secondary"
+  },
+  "sausage-stir:zju9xDIG_Jg": {
+   "relevant": true,
+   "note": ""
+  },
+  "tofu-soup:GP8_7D5eM6A": {
+   "relevant": false,
+   "note": "sundubu stew, not tofu soup"
+  },
+  "kimchi-tuna-fried-rice:Lf44Fk7H24s": {
+   "relevant": false,
+   "note": "no tuna"
+  },
+  "bibimbap:stOvKCnI-dM": {
+   "relevant": true,
+   "note": ""
+  },
+  "pork-bowl:rorN2QL3lbY": {
+   "relevant": false,
+   "note": "chashu bowl"
+  },
+  "ramyeon-egg:wgkD9uKwT98": {
+   "relevant": false,
+   "note": "egg rice and ramen-soup egg soup"
+  },
+  "kimchi-stir:R6IT_f0XPT8": {
+   "relevant": false,
+   "note": "kimchi rice, not kimchi side dish"
+  },
+  "tofu-soup:Be7qM1hRpUM": {
+   "relevant": false,
+   "note": "three tofu dishes compilation"
+  },
+  "steamed-egg-microwave:sRixoUrezuI": {
+   "relevant": false,
+   "note": "ramen-broth steamed egg, not microwave"
+  },
+  "egg-fried-rice:kR77WlHRZrs": {
+   "relevant": true,
+   "note": ""
+  },
+  "cream-pasta:xPhKQDF2FLw": {
+   "relevant": true,
+   "note": ""
+  },
+  "kimchi-fried-rice:oO9DBf44A18": {
+   "relevant": true,
+   "note": ""
+  },
+  "pork-bowl:hliQ29fbFEA": {
+   "relevant": false,
+   "note": "ground beef bulgogi"
+  },
+  "tuna-pasta:3NuWpKWaqjM": {
+   "relevant": false,
+   "note": "seafood pasta"
+  },
+  "pork-lettuce:5Zma-Hrsr_o": {
+   "relevant": false,
+   "note": "pork chops with slaw"
+  },
+  "bibimbap:nB5voELYrAU": {
+   "relevant": true,
+   "note": ""
+  },
+  "omurice:bcJlmhoYNfI": {
+   "relevant": true,
+   "note": ""
+  },
+  "tuna-pasta:SovEZfUbtHU": {
+   "relevant": true,
+   "note": ""
+  },
+  "french-toast:EcgxV1KLjvI": {
+   "relevant": true,
+   "note": ""
+  },
+  "tuna-fried-rice:oO9DBf44A18": {
+   "relevant": false,
+   "note": "kimchi fried rice, no tuna"
+  },
+  "ham-cheese-sandwich:ad5QOYLt_cI": {
+   "relevant": true,
+   "note": ""
+  },
+  "french-toast:r1ZLSbQ0r0I": {
+   "relevant": true,
+   "note": ""
+  },
+  "omurice:xAawGfEhzf4": {
+   "relevant": true,
+   "note": ""
+  },
+  "ham-cheese-sandwich:BhfXreY5-mA": {
+   "relevant": true,
+   "note": ""
+  },
+  "french-toast:1nqpTkHpYyE": {
+   "relevant": true,
+   "note": ""
+  },
+  "kimchi-tuna-fried-rice:84aXWQ_F8U4": {
+   "relevant": false,
+   "note": "kimchi tuna rice bowl, not fried rice"
+  },
+  "mushroom-fried-rice:Vw5N2x0lzrI": {
+   "relevant": true,
+   "note": ""
+  },
+  "doenjang-stew:dwW6weiwluI": {
+   "relevant": true,
+   "note": ""
+  },
+  "seaweed-soup:zoBZOgbOF2U": {
+   "relevant": true,
+   "note": ""
+  },
+  "dumpling-stew:CWLpSPQVv30": {
+   "relevant": true,
+   "note": ""
+  },
+  "ramyeon-egg:jbq1cyZoIJk": {
+   "relevant": true,
+   "note": ""
+  },
+  "steamed-egg-microwave:iNiy6DVJYBw": {
+   "relevant": true,
+   "note": ""
+  },
+  "tuna-porridge:pJzB3uwgk5Y": {
+   "relevant": false,
+   "note": "oatmeal seaweed porridge, not tuna porridge"
+  },
+  "shrimp-fried-rice:jbWdTYNtIwM": {
+   "relevant": true,
+   "note": ""
+  },
+  "ham-cheese-sandwich:bukrOikaNjg": {
+   "relevant": true,
+   "note": ""
+  }
+ }
+}

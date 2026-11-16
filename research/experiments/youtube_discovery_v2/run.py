@@ -117,8 +117,14 @@ def chat(orkey: str, model: str, prompt: str, *, json_mode: bool = False) -> dic
 
 
 def enrich(yt: YouTubeClient, ids: list[str]) -> dict[str, dict]:
-    items = yt.details(ids[:50]) if ids else []
-    return {i["id"]: scoring.to_candidate(i) for i in items}
+    """One videos.list call; the part list adds contentDetails (duration) to the app's default."""
+    if not ids:
+        return {}
+    data = yt._get(  # noqa: SLF001 - the app client's details() does not request contentDetails
+        "videos",
+        {"part": "snippet,contentDetails,statistics,status", "id": ",".join(ids[:50])},
+    )
+    return {i["id"]: scoring.to_candidate(i) for i in data.get("items", [])}
 
 
 def cmd_collect(args, crit) -> None:
@@ -157,7 +163,8 @@ def cmd_collect(args, crit) -> None:
                 else None
             )
         union = list(dict.fromkeys(i for ids in row["methods"].values() for i in (ids or [])))
-        if union and set(union) - set(row["videos"]):
+        stale = any(c["duration_s"] is None for c in row["videos"].values())
+        if union and (set(union) - set(row["videos"]) or stale):
             row["videos"] = {**row["videos"], **enrich(yt, union)}
         store[did] = row
         save("candidates.json", store)
