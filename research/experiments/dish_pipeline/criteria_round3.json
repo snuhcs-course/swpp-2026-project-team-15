@@ -93,5 +93,12 @@
   "failure types are a rule-based proxy",
   "a single request wording per variant"
  ],
- "amendments": []
+ "amendments": [
+  {
+   "date": "2026-11-16",
+   "before_any_judge_call": true,
+   "reason": "After 120 discovery calls (12 of them retries after HTTP 429), one call still failed after its two retries: egg-fried-rice, variant D1 (HTTP 429). The failure is kept in the stored data as a failed attempt.",
+   "change": "That single call is repeated once (collect --repeat-failed), which adds at most 3 calls (within the 140 cap). If it fails again it stays an error and counts as zero links for that dish and variant. No other call is repeated and nothing else is changed."
+  }
+ ]
 }

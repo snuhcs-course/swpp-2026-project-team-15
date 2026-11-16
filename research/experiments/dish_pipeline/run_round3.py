@@ -138,8 +138,11 @@ def cmd_collect(args, crit) -> None:
     for did in crit["dishes"]["list"]:
         row = store.get(did, {"ids": {}, "calls": {}, "videos": {}})
         for v in r3.VARIANTS:
-            if v in row["calls"]:  # a failed call is repeated only after an amendment
-                continue
+            failed = bool((row["calls"].get(v) or {}).get("error"))
+            if v in row["calls"] and not (args.repeat_failed and failed):
+                continue  # a failed call is repeated only after an amendment (--repeat-failed)
+            if v in row["calls"]:
+                row.setdefault("failed_attempts", {})[v] = row["calls"][v]
             if discovery_calls() >= cap:
                 print("discovery call cap reached")
                 save("collected.json", store)
@@ -342,6 +345,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("command", choices=["plan", "collect", "judge", "analyze"])
     ap.add_argument("--allow-live-api", action="store_true")
+    ap.add_argument("--repeat-failed", action="store_true")
     args = ap.parse_args(argv)
     crit = criteria()
     if args.command == "plan" or (args.command in ("collect", "judge") and not args.allow_live_api):
