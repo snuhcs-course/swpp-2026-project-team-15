@@ -177,7 +177,7 @@ private fun DataResetSection(dataReset: DataResetViewModel, onDone: () -> Unit) 
         AlertDialog(
             onDismissRequest = { confirming = false },
             title = { Text("데이터를 초기화할까요?") },
-            text = { Text("냉장고, 프로필, 즐겨찾기가 모두 지워져요. 되돌릴 수 없어요.") },
+            text = { Text("냉장고, 프로필, 즐겨찾기, 화면 모드가 모두 지워져요. 되돌릴 수 없어요.") },
             confirmButton = {
                 TextButton(
                     modifier = Modifier.testTag("confirm-reset-data"),

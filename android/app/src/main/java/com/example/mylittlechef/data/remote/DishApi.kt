@@ -23,7 +23,7 @@ data class DishSummaryDto(
     val aliases: List<String>?
 )
 
-data class DishSuggestRequest(val ingredients: List<String>, val limit: Int = 8)
+data class DishSuggestRequest(val ingredients: List<String>)
 
 data class DishSuggestResponse(val source: String?, val dishes: List<DishDto>?)
 

@@ -131,8 +131,8 @@ fun DishScreen(
                 }
             }
             DishUiState.NoMatch -> Message(
-                "추천할 요리를 찾지 못했어요",
-                "재료를 더 추가한 뒤 다시 확인해 보세요.",
+                "지금 재료로 만들 수 있는 요리를 찾지 못했어요.",
+                "재료를 더 넣어 보세요.",
                 actionLabel = "다시 시도",
                 onAction = dishes::retry
             )

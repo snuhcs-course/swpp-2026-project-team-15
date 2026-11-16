@@ -4,7 +4,6 @@ package com.example.mylittlechef.data.local
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -15,22 +14,15 @@ interface AppDataReset {
 }
 
 /**
- * Clears every stored preference (fridge, nickname, utensils, allergies, likes, onboarding flag) except the
- * appearance setting, and deletes the photos and sweep frames in the cache. Nothing is sent to a server.
+ * Clears every stored preference (fridge, nickname, utensils, allergies, likes, onboarding flag, screen
+ * mode, which then follows the system setting again), and deletes the photos and sweep frames in the cache. Nothing is sent to a server.
  */
 class PreferencesAppDataReset(
     private val store: DataStore<Preferences>,
     private val cacheDir: File?
 ) : AppDataReset {
-    // Same key as PreferencesThemeRepository; AppDataResetTest fails if the two ever drift apart.
-    private val themeKey = stringPreferencesKey("appearance_theme_mode")
-
     override suspend fun resetAll() {
-        store.edit { prefs ->
-            val theme = prefs[themeKey]
-            prefs.clear()
-            if (theme != null) prefs[themeKey] = theme
-        }
+        store.edit { prefs -> prefs.clear() }
         cacheDir?.let { dir -> withContext(Dispatchers.IO) { CaptureCache.clear(dir) } }
     }
 }

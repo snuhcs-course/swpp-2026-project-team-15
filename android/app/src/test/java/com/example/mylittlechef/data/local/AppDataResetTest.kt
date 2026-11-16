@@ -27,7 +27,7 @@ class AppDataResetTest {
         }
     }
 
-    @Test fun resetClearsUserDataKeepsTheAppearanceAndDeletesCapturedFiles() = runBlocking {
+    @Test fun resetClearsUserDataAndTheScreenModeAndDeletesCapturedFiles() = runBlocking {
         val cache = cacheWith("capture_1700000000.jpg", "sweep-1700000001/", "keep.txt", "capture_old.png")
         val job = SupervisorJob()
         try {
@@ -47,8 +47,8 @@ class AppDataResetTest {
             assertEquals("", profile.nickname)
             assertEquals(emptyList<Long>(), profile.likes)
             assertFalse(profile.onboardingComplete)
-            // Same key as the theme repository: the appearance survives a reset.
-            assertEquals(ThemeMode.DARK, theme.mode.first())
+            // The screen mode is cleared too, so it follows the system setting again.
+            assertEquals(ThemeMode.SYSTEM, theme.mode.first())
             assertEquals(listOf("capture_old.png", "keep.txt"), cache.listFiles()!!.map { it.name }.sorted())
         } finally { job.cancelAndJoin() }
     }
