@@ -28,8 +28,7 @@ ANDROID_SERIAL=<serial> sh scripts/install-android.sh http://127.0.0.1:8000/
 adb -s <serial> reverse tcp:8000 tcp:8000
 ```
 
-To prepare a local DB, start the server and launch the app together, use the
-[root local-demo instructions](../README.md#run-locally).
+To run the server on this computer, see the [root instructions](../README.md#run-locally).
 
 ## Build variants and endpoints
 

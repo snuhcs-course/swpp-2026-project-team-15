@@ -1,126 +1,85 @@
-# My Little Chef
+# My Little Chef — dish suggestion version
 
-SNU SWPP Fall 2026 · Team 15. Android ingredient recognition, local fridge/profile
-storage and recipe browsing, with a FastAPI backend.
+SNU SWPP Fall 2026 · Team 15. The Android app recognises the ingredients in a fridge from photos or a short sweep, keeps the fridge and profile on the phone, and suggests **dishes** to cook with them, with YouTube videos and substitutes for what is missing. This version has **no recipe database**: dishes come from one self-authored list on the server, and videos are YouTube embeds that link to YouTube. Other versions (for example the recipe-database version on `main`) are other branches or commits; there are no mode flags.
 
 ## Source layout
 
 ```text
 .
-├── .github/workflows/       # Server, Android and ARM checks; main deployment
+├── .github/workflows/      # Server, Android and ARM checks
 ├── android/                # Compose app, DataStore, JVM/device tests
 ├── server/
-│   ├── app/                # FastAPI routes, providers and DB access
-│   ├── recipe_filtering/   # Contributor filtering/ranking implementation
-│   ├── recipe_revision/    # Contributor recipe revision implementation
-│   ├── db/                 # Schema, SQLite CSV and PostgreSQL ZIP importers
-│   ├── fixtures/           # Runtime vision mocks and synthetic demo image
-│   └── tests/              # Automated checks and protected contributor references
-├── research/               # Evaluation tools and feature experiments
-├── scripts/                # Android install, local demo, integrity and packaging
-├── deploy/                 # nginx, runtime template, DB and release scripts
+│   ├── app/dishes/         # Dish list, suggestion, substitutes, video cache
+│   ├── app/vision/         # Ingredient recognition providers
+│   ├── fixtures/           # Recorded recognition responses, synthetic demo image
+│   └── tests/              # Automated checks and protected references
+├── research/               # Evaluation tools and experiments (the record of decisions)
+├── scripts/                # Android install, integrity check, packaging, video prefetch
+├── deploy/                 # nginx, runtime template, release and video-cache scripts
+├── docs/images/            # Images for the Wiki
 ├── Dockerfile              # Nonroot runtime API image
-└── compose.yaml            # nginx, API, PostgreSQL and explicit importer
+└── compose.yaml            # nginx and API (no database)
 ```
-
-`research/` reuses server modules; runtime code does not import research tools.
-Generated builds, environments, private data and credentials stay outside tracked source.
-
-## Install Android for the cloud server
-
-Requires Android SDK 37, Java and an authorized USB-debugging device. The committed
-Gradle daemon criteria select/provision JDK 25; CI starts with JDK 21.
-
-```sh
-sh scripts/install-android.sh
-# When several devices are connected:
-ANDROID_SERIAL=<serial> sh scripts/install-android.sh
-```
-
-Builds and installs only the isolated `.cloudtest` app. Open it on a device with
-Internet access. Debug/cloudTest default to `http://158.101.141.165/`.
-See [Android setup](android/README.md) for SDK configuration and endpoint overrides.
 
 ## Run locally
 
-Install uv/Python ≥3.12 and the Android prerequisites above. Supply the matching
-private October 19 entity ZIP. From repository root:
-
 ```sh
-sh scripts/run-local-demo.sh path/to/entities-2026-10-19.zip
-# Subsequent runs:
-sh scripts/run-local-demo.sh
+cd server
+uv sync --locked
+cp .env.example .env          # VISION_PROVIDER=mock: no key, no network
+uv run --env-file .env uvicorn app.main:create_app_from_env --factory --port 8000
 ```
 
-The script imports SQLite only when absent, creates `.env` if absent, installs
-cloudTest with a localhost endpoint, configures USB reverse and starts Uvicorn.
-Stop with Ctrl+C. Use `ANDROID_SERIAL=<serial>` to select a device. Both providers
-default to mock; configure live providers in the server environment.
+Without a model key the dish ranking uses the rules fallback; add `OPENROUTER_API_KEY` for the model. Without a video cache the app shows a YouTube search link only. See [server README](server/README.md).
+
+## Install the app
+
+Requires Android SDK 37, Java and an authorized USB-debugging device.
+
+```sh
+sh scripts/install-android.sh [http://host/]     # builds and installs only the isolated .cloudtest app
+adb reverse tcp:8000 tcp:8000                    # for a server on this computer
+```
+
+See [Android setup](android/README.md) for SDK configuration and endpoint overrides.
 
 ## App and API
 
-The app uploads a photo, or in video mode the sharpest frames of a 5 s sweep, to
-`/analyze`, saves user-reviewed ingredient names and
-requests `/recipes/recommend`. It uses the original recipe list/detail screens
-and local DataStore storage. The contributor ID-based filtering/revision endpoint
-remains available separately; the app does not call it.
+The app uploads a photo, or the sharpest frames of a 5 s sweep, to `/analyze`; the user reviews the ingredient names; `/dishes/suggest` returns dishes (with `have`/`missing`, videos and a search link) and `/dishes/adapt` returns substitutes or skips.
 
 | Endpoint | Purpose |
 | --- | --- |
-| POST `/analyze` | Photo (`image`) or 2–15 views of one fridge (`images`) → ingredient candidates |
-| POST `/recipes/recommend` | Ingredient names → recipes for the app |
-| POST `/recipes/recommendations` | Contributor ID-based filtering/revision API |
-| GET `/health` | Liveness |
-| GET `/ready` | Database and recipe-source readiness |
+| POST `/analyze` | Photo (`image`) or 2–15 views (`images`) → ingredient candidates |
+| GET `/dishes`, POST `/dishes/suggest`, POST `/dishes/adapt` | Dish list, suggestions, substitutes |
+| GET `/recipes/ingredients`, POST `/recipes/ingredient-suggestions` | Entry completion and "add this to complete more dishes" |
+| GET `/health`, GET `/ready` | Liveness; dish list loaded |
 
-OpenAPI: <http://127.0.0.1:8000/docs> while running. Local development uses SQLite;
-Compose uses PostgreSQL. See [server setup/API](server/README.md) and
-[deployment/DB reset](deploy/README.md).
+OpenAPI: <http://127.0.0.1:8000/docs> while running. Details: [server README](server/README.md), [deployment](deploy/README.md).
 
 ## Checks
 
 ```sh
-(cd server && uv sync --locked)
-uv run --project server --locked pre-commit install --allow-missing-config
-uv run --project server --locked pre-commit run --all-files
-(cd server && uv run --locked pytest --cov --cov-report=term-missing --cov-report=html)
-(cd android && sh ./gradlew lintDebug testDebugUnitTest assembleDebug assembleCloudTest)
+cd server && uv sync --locked
+uv run ruff check . ../scripts ../research/evaluation
+uv run ruff format --check . ../scripts ../research/evaluation
+python3 ../scripts/check_integration_policy.py
+uv run pytest
+cd ../android && sh ./gradlew lintDebug testDebugUnitTest assembleDebug assembleCloudTest
 ```
 
-CI runs Python/PostgreSQL checks, Android lint/JVM/APK builds and native ARM
-image/import checks. Successful main push CI triggers deployment of that exact
-revision. Deployment does not initialize/reset the DB or install an APK on a device.
-
-For connected tests, start a matching mock server and configure USB reverse 8000:
-
-```sh
-(cd android && sh ./gradlew -PcloudDeviceTest \
-  -PserverBaseUrl=http://127.0.0.1:8000/ \
-  -Pandroid.testInstrumentationRunnerArguments.notClass=com.example.mylittlechef.ExampleInstrumentedTest \
-  connectedCloudTestAndroidTest)
-```
-
-The original package-name sample test is excluded only for `.cloudtest`.
-Connected-device and opt-in live tests run separately from CI.
+CI runs the Python checks, Android lint/JVM tests/APK builds and a native ARM image/import smoke test. Device tests run locally.
 
 ## Runtime archive
 
 ```sh
 python3 scripts/package_server.py --output dist/server.tar.gz
-# After extracting on the target:
-cd server
-uv sync --locked --no-dev
-RECIPE_DB_PATH=/absolute/path/recipes.sqlite3 uv run --locked --no-dev \
-  uvicorn app.main:create_app_from_env --factory --host 0.0.0.0 --port 8000
+# On the target: cd server && uv sync --locked --no-dev && uv run --locked --no-dev uvicorn app.main:create_app_from_env --factory --host 0.0.0.0 --port 8000
 ```
-
-The archive uses committed runtime source with a commit/file-hash manifest.
-Supply the DB and environment separately; tests/research/private data are excluded.
 
 ## Further documentation
 
 - [Android installation and builds](android/README.md)
 - [Server setup and API](server/README.md)
-- [Compose deployment and recovery](deploy/README.md)
-- [Research commands](research/README.md)
+- [Deployment](deploy/README.md)
+- [Research](research/README.md)
 - [Project Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-15/wiki)
