@@ -32,3 +32,33 @@ One run at temperature 0, one model, 31 inputs (one case moves a share by about 
 PYTHONPATH=server:research uv run --project server --locked python -m experiments.dish_naive.run_naive                      # dry run, no call
 PYTHONPATH=server:research uv run --project server --locked python -m experiments.dish_naive.run_naive --allow-live-api   # real model calls (key in ~/.config/mylittlechef/openrouter.env)
 ```
+
+## Results — Run 1 (2026-11-16)
+
+System under test: commit `4fbea49` (naive path, `google/gemini-2.5-flash-lite`, temperature 0, `max_tokens` 2048, one call per case, 27 model calls, about $0.014). Criteria frozen in `52e808f` before any call. Raw results are in the ignored `data/dish-naive/`.
+
+| Metric (threshold) | Naive | Met |
+| --- | --- | --- |
+| Returned names in the dish list (100%) | 99.7% (1 of 374 names invented) | no |
+| `have` items all owned (≥95%) | 94.6% | no (by 0.4 point) |
+| `missing` items none owned (≥95%) | 99.2% | yes |
+| Non-empty when the reference is not empty (≥90%) | 84.6% | no |
+| Recall of the reference set (≥60%) | 33.0% (46.9% over the 22 answered cases) | no |
+| Precision against the reference (≥60%) | 32.2% | no |
+| Dishes with ≤2 missing by the reference (≥80%) | 73.2% | no |
+| Malformed input refused (100%) | 100% | yes |
+| Median latency (≤5 s) | 2.4 s | yes |
+| Model failure is 502 | unit-tested | yes |
+
+Reported only: input 26,477 and output 27,608 tokens (about 1,000 per call each), no reasoning tokens, no cached tokens. The earlier hybrid answers on the same 27 inputs score recall 66.8% and precision 37.4% against the same reference.
+
+### What failed
+
+- **Output too long: 5 of 27 calls were cut off** (`finish_reason: length` at 2,048 tokens: S04, S09, S15, S17, S18) and returned 502. With no fixed count the model lists 14–44 dishes with `have`/`missing` for most inputs (median 814 output tokens, up to 2,016). These five cases pull recall and the non-empty share down; excluding them the model's recall is 46.9%, still below the threshold. The setting that is wrong is the output budget, not the idea; the token study (`../dish_tokens/`) measures it.
+- **Invented `have` items**: with `[두부]` the model returns `김치국` with `have: [김치, 두부]` (15 of 20 dishes claim an ingredient the user does not have), and with `[떡, 어묵, 고추장, 대파]` it returns `두부김치` with `두부, 김치` as owned. It treats "have" as "usually in the dish". The server cannot notice this: it does not know the dish's ingredients.
+- **Breadth over fit**: for `[김치, 밥]` the model returns 14 dishes, including `김치찌개`, `김치국` and `김치파스타` that need other main ingredients; precision against the conservative reference is low. Whether a person would accept these dishes was not measured (no human labels).
+- One invented name (`S26`) was dropped by the name check, as designed.
+
+### Limits
+
+Single run at temperature 0, 31 inputs, one model. The reference is rule-made from the same list and counts a dish with two missing ingredients as wrong. The hybrid comparison covers the 27 answered-or-failed inputs of its own run and was produced with another `max_tokens` (1,024) and another prompt.
