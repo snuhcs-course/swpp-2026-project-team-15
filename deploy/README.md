@@ -55,8 +55,9 @@ For the existing-catalog image rollout, commit and verify the nullable image-col
 migration and URL mapping **before deploying new code**, including a main push
 that triggers CI deployment. Do not use `db.sh reset` for this image-only change.
 Readiness rollback restores code/config only, not URL values or image files.
-Manual migration and URL recovery instructions are prepared separately; this
-directory configuration alone is not an approved deployment procedure.
+See [manual migration and URL recovery](recipe-images/README.md). PostgreSQL
+migration/recovery rehearsal passed; service integration and operational approval
+are still required before deployment.
 
 ## Developer operations over SSH
 
