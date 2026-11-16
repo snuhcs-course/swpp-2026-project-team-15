@@ -252,6 +252,18 @@ def cmd_judge_validate(args, crit) -> None:
     print({m: (v["error"], v["calls"], round(v["cost"], 4)) for m, v in out.items()})
 
 
+def total_spend() -> float:
+    spent = 0.0
+    for row in load("candidates.json", {}).values():
+        spent += sum((c or {}).get("cost") or 0 for c in row["cost"].values())
+    spent += sum(
+        (v or {}).get("cost") or 0 for v in load("validation_judgements.json", {}).values()
+    )
+    for per_dish in load("judgements.json", {}).values():
+        spent += sum((v or {}).get("cost") or 0 for v in per_dish.values())
+    return spent
+
+
 def cmd_judge(args, crit) -> None:
     store = load("candidates.json", {})
     table = dish_table()
@@ -262,6 +274,9 @@ def cmd_judge(args, crit) -> None:
         if not usable:
             continue
         entries = [(c["video_id"], table[did], c) for c in usable]
+        if total_spend() >= args.budget_usd:
+            print(f"stopped before {did}: spent {total_spend():.2f} USD")
+            break
         for tag, model in (("J1", args.selector), ("E", args.evaluator)):
             if tag in done.get(did, {}) and not done[did][tag]["error"]:
                 continue
@@ -278,6 +293,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--allow-live-api", action="store_true")
     ap.add_argument("--max-search", type=int, default=0)
     ap.add_argument("--models", default="")
+    ap.add_argument("--budget-usd", type=float, default=1.45)
     ap.add_argument("--selector", default=SELECTOR_MODEL)
     ap.add_argument("--evaluator", default=EVALUATOR_MODEL)
     args = ap.parse_args(argv)

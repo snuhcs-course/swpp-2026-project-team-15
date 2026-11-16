@@ -73,6 +73,37 @@
     "The first model that reaches kappa >= 0.6 is used as E; the first one at or above 0.6 that is cheaper than E (or E itself) is used as J1. All attempts and their kappas are reported, including the failed ones. The labels were chosen without knowing the judges' answers, but the model choice uses the same 60 labels, so agreement figures are optimistic; this is stated in the results.",
     "Model-call budget stays at 200 in total (80 discovery + 2 first validation + at most 4 more validation calls + at most 80 judging calls)."
    ]
+  },
+  {
+   "date": "2026-11-16",
+   "before_any_judge_call_on_candidates": true,
+   "validation_results": {
+    "google/gemini-2.5-flash-lite": {
+     "kappa": 0.0
+    },
+    "google/gemini-2.5-flash": {
+     "kappa": 0.26
+    },
+    "google/gemini-2.5-pro": {
+     "kappa": 0.61,
+     "usd": 0.18
+    },
+    "anthropic/claude-haiku-4.5": {
+     "kappa": 0.61,
+     "usd": 0.04
+    },
+    "J0 (title rule)": {
+     "kappa": 0.37,
+     "recall": 0.57,
+     "precision": 0.96
+    }
+   },
+   "choice_by_the_amendment_rule": {
+    "E": "google/gemini-2.5-pro",
+    "J1": "anthropic/claude-haiku-4.5 (the first model at or above 0.6 that is cheaper than E)"
+   },
+   "budget_guard": "Spend so far is about 0.84 USD of 1.50. The judging run stops at 1.45 USD in total, dishes in the stored order; the analysis then covers only the dishes that have both judgements, and says so.",
+   "candidates_judged": "all usable candidates of a dish in one call per judge"
   }
  ]
 }
