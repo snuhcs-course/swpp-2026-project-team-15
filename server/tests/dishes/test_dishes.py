@@ -322,7 +322,7 @@ def _youtube_handler(calls):
             {
                 "id": "a",
                 "snippet": {
-                    "title": "A",
+                    "title": "초간단 김치 볶음밥",
                     "channelTitle": "C",
                     "thumbnails": {"medium": {"url": "u"}},
                 },
@@ -331,7 +331,7 @@ def _youtube_handler(calls):
             },
             {
                 "id": "b",
-                "snippet": {"title": "B", "channelTitle": "C"},
+                "snippet": {"title": "B 김치볶음밥 레시피", "channelTitle": "C"},
                 "statistics": {"viewCount": "500"},
                 "status": {"embeddable": True, "privacyStatus": "public"},
             },
@@ -353,11 +353,12 @@ def _youtube_handler(calls):
     return handler
 
 
-def test_top_videos_keeps_embeddable_by_views():
+def test_top_videos_prefers_titles_that_name_the_dish_then_views():
     calls = []
     client = YouTubeClient("k", transport=httpx.MockTransport(_youtube_handler(calls)))
     videos = top_videos(client, "김치볶음밥")
-    assert [v["video_id"] for v in videos] == ["b", "a", "d"]  # c is not embeddable
+    # c is not embeddable; b and a name the dish (more views first), d only fills up
+    assert [v["video_id"] for v in videos] == ["b", "a", "d"]
     assert videos[1]["thumbnail_url"] == "u" and videos[0]["thumbnail_url"].startswith(
         "https://i.ytimg.com/"
     )

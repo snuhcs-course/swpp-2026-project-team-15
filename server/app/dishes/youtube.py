@@ -95,13 +95,13 @@ class YouTubeClient:
             raise YouTubeError(f"YouTube returned HTTP {response.status_code}")
         return response.json()
 
-    def search(self, query: str, max_results: int = 10) -> list[str]:
+    def search(self, query: str, max_results: int = 25) -> list[str]:
         data = self._get(
             "search",
             {
                 "part": "id",
                 "type": "video",
-                "order": "viewCount",
+                "order": "relevance",
                 "videoEmbeddable": "true",
                 "maxResults": max_results,
                 "q": query,
@@ -134,13 +134,28 @@ def to_video(item: dict) -> dict | None:
     }
 
 
+def _norm(text: str) -> str:
+    return "".join(ch for ch in text.lower() if ch.isalnum())
+
+
 def top_videos(client: YouTubeClient, dish_name: str, keep: int = 3) -> list[dict]:
+    """Relevant videos first, then the most viewed among them.
+
+    A plain view-count search returns viral videos that have nothing to do with the dish (measured:
+    only 33 of 180 kept videos named the dish), so the search is relevance ordered, the title has
+    to contain the dish name, and views only rank the remaining candidates. If fewer than ``keep``
+    titles match, the most relevant ones fill up.
+    """
     ids = client.search(f"{dish_name} 레시피")
     if not ids:
         return []
+    order = {vid: i for i, vid in enumerate(ids)}
     videos = [v for item in client.details(ids) if (v := to_video(item))]
-    videos.sort(key=lambda v: v["view_count"] or 0, reverse=True)
-    return videos[:keep]
+    name = _norm(dish_name)
+    named = [v for v in videos if name and name in _norm(v["title"])]
+    named.sort(key=lambda v: v["view_count"] or 0, reverse=True)
+    rest = sorted((v for v in videos if v not in named), key=lambda v: order[v["video_id"]])
+    return (named + rest)[:keep]
 
 
 def prefetch(

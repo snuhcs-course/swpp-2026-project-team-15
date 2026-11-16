@@ -4,7 +4,12 @@ package com.example.mylittlechef.ui.dish
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
+import android.util.Log
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -48,7 +53,21 @@ private fun createPlayerWebView(context: Context, videoId: String): WebView = We
     settings.allowFileAccess = false
     settings.allowContentAccess = false
     settings.cacheMode = WebSettings.LOAD_DEFAULT
+    webChromeClient = object : WebChromeClient() {
+        override fun onConsoleMessage(message: ConsoleMessage): Boolean {
+            Log.d("DishPlayer", message.message())
+            return true
+        }
+    }
     webViewClient = object : WebViewClient() {
+        override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+            Log.d("DishPlayer", "error ${error.errorCode} ${error.description} ${request.url}")
+        }
+
+        override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, errorResponse: WebResourceResponse) {
+            Log.d("DishPlayer", "http ${errorResponse.statusCode} ${request.url}")
+        }
+
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val url = request.url.toString()
             // The embed itself and its assets stay inside; links out of the player go to the YouTube app or browser.
@@ -59,5 +78,5 @@ private fun createPlayerWebView(context: Context, videoId: String): WebView = We
             return false
         }
     }
-    loadDataWithBaseURL(DishLinks.EMBED_BASE_URL, DishLinks.embedHtml(videoId), "text/html", "utf-8", null)
+    loadUrl(DishLinks.embedUrl(videoId), mapOf("Referer" to DishLinks.EMBED_BASE_URL))
 }

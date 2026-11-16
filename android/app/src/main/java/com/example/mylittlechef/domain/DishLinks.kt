@@ -8,7 +8,8 @@ import java.net.URLEncoder
 object DishLinks {
     const val TERMS_URL = "https://www.youtube.com/t/terms"
     const val PRIVACY_URL = "https://policies.google.com/privacy"
-    const val EMBED_BASE_URL = "https://www.youtube.com"
+    /** Identifies the app to YouTube as the embedding client (the player refuses to load without a referrer of its own). */
+    const val EMBED_BASE_URL = "https://com.example.mylittlechef"
 
     private val VIDEO_ID = Regex("^[A-Za-z0-9_-]{11}$")
 
