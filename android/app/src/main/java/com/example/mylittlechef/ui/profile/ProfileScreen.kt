@@ -10,6 +10,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.testTag
+import com.example.mylittlechef.viewmodel.DataResetViewModel
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -41,7 +53,9 @@ fun ProfileScreen(
     onEditUtensilClick: () -> Unit,
     onEditAllergyClick: () -> Unit,
     onEditPantryClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    dataReset: DataResetViewModel? = null,
+    onDataResetDone: () -> Unit = {}
 )
 {
     ProfileContent(
@@ -51,6 +65,8 @@ fun ProfileScreen(
         onEditUtensilClick = onEditUtensilClick,
         onEditAllergyClick = onEditAllergyClick,
         onEditPantryClick = onEditPantryClick,
+        dataReset = dataReset,
+        onDataResetDone = onDataResetDone,
         modifier = modifier
             .background(color = MaterialTheme.colorScheme.background)
     )
@@ -64,7 +80,9 @@ fun ProfileContent(
     onEditUtensilClick: () -> Unit,
     onEditAllergyClick: () -> Unit,
     onEditPantryClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    dataReset: DataResetViewModel? = null,
+    onDataResetDone: () -> Unit = {}
 )
 {
     Column(
@@ -89,6 +107,7 @@ fun ProfileContent(
         Column(
             modifier = modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
         )
         {
             ProfileItem(
@@ -122,8 +141,56 @@ fun ProfileContent(
                 title = "기본 재료·조미료",
                 contents = listOf(pantrySummary)
             )
+
+            if (dataReset != null) {
+                Spacer(Modifier.height(24.dp))
+                DataResetSection(dataReset, onDataResetDone)
+                Spacer(Modifier.height(32.dp))
+            }
         }
 
+    }
+}
+
+/** Bottom section of 내 정보: wipes the local data after a confirmation and starts over at the onboarding. */
+@Composable
+private fun DataResetSection(dataReset: DataResetViewModel, onDone: () -> Unit) {
+    var confirming by rememberSaveable { mutableStateOf(false) }
+    HorizontalDivider(thickness = 1.dp, color = GreenGray)
+    Spacer(Modifier.height(16.dp))
+    Text(text = "데이터 초기화", style = MaterialTheme.typography.titleMedium)
+    Text(
+        text = "냉장고, 프로필, 즐겨찾기를 지우고 처음부터 다시 시작해요.",
+        style = MaterialTheme.typography.bodySmall,
+        modifier = Modifier.padding(vertical = 4.dp)
+    )
+    dataReset.error?.let {
+        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+    }
+    OutlinedButton(
+        onClick = { dataReset.dismissError(); confirming = true },
+        enabled = !dataReset.isResetting,
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+        modifier = Modifier.testTag("reset-data")
+    ) { Text(if (dataReset.isResetting) "초기화하고 있어요" else "데이터 초기화") }
+    if (confirming) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text("데이터를 초기화할까요?") },
+            text = { Text("냉장고, 프로필, 즐겨찾기가 모두 지워져요. 되돌릴 수 없어요.") },
+            confirmButton = {
+                TextButton(
+                    modifier = Modifier.testTag("confirm-reset-data"),
+                    onClick = {
+                        confirming = false
+                        dataReset.resetAll(onDone)
+                    }
+                ) { Text("초기화", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(modifier = Modifier.testTag("cancel-reset-data"), onClick = { confirming = false }) { Text("취소") }
+            }
+        )
     }
 }
 

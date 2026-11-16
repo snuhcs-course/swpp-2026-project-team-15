@@ -23,6 +23,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -268,11 +270,12 @@ private fun DishCard(dish: Dish, onOpen: () -> Unit, onAdapt: () -> Unit) {
             ) {
                 CardAction(
                     R.drawable.ic_play,
-                    if (dish.videos.isEmpty()) "영상" else "${dish.videos.size}",
+                    "영상",
                     large,
-                    "영상 보기",
+                    if (dish.videos.isEmpty()) "영상 보기" else "영상 ${dish.videos.size}개 보기",
                     Modifier.testTag("dish-videos-${dish.id}"),
-                    onOpen
+                    onOpen,
+                    count = dish.videos.size
                 )
                 if (dish.missing.isNotEmpty()) {
                     CardAction(
@@ -325,7 +328,8 @@ private fun CardAction(
     hideLabel: Boolean,
     description: String,
     modifier: Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    count: Int = 0
 ) {
     Column(
         modifier
@@ -336,7 +340,14 @@ private fun CardAction(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
+        if (count > 0) {
+            // The number sits on the icon so the label line and the card height stay the same as without videos.
+            BadgedBox(badge = { Badge { Text("$count") } }) {
+                Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
+            }
+        } else {
+            Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
+        }
         if (!hideLabel) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
         }

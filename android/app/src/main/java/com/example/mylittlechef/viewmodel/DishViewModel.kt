@@ -89,6 +89,19 @@ class DishViewModel(
         load(cleaned, wait = true)
     }
 
+    /** Forgets everything (data reset): running requests, answers, the selection and the last fridge. */
+    fun resetState() {
+        generation++
+        job?.cancel()
+        adaptations.clear()
+        lastNames = null
+        rawDishes = emptyList()
+        rawSource = ""
+        selectedDishId = null
+        selectedMode = DishSheetMode.VIDEOS
+        state = DishUiState.EmptyFridge
+    }
+
     fun retry() {
         val names = lastNames ?: return
         load(names, wait = false)

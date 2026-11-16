@@ -36,6 +36,7 @@ import com.example.mylittlechef.ui.recipe.RecipeScreen
 
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.ui.theme.DeepGreen
+import com.example.mylittlechef.viewmodel.DataResetViewModel
 import com.example.mylittlechef.viewmodel.DishViewModel
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
@@ -66,7 +67,9 @@ fun MainScreen(
     onRecipeCardClick: (Recipe) -> Unit,
     modifier: Modifier = Modifier,
     ingredientSuggestions: IngredientSuggestionViewModel? = null,
-    onEditPantryClick: () -> Unit = {}
+    onEditPantryClick: () -> Unit = {},
+    dataReset: DataResetViewModel? = null,
+    onDataResetDone: () -> Unit = {}
 ) {
     // 요리 추천 탭의 상태. 탭을 오가거나 화면을 돌려도 유지되도록 이 화면 단위로 만든다
     val dishes: DishViewModel = viewModel()
@@ -142,7 +145,12 @@ fun MainScreen(
                     onEditNicknameClick = onEditNicknameClick,
                     onEditUtensilClick = onEditUtensilClick,
                     onEditAllergyClick = onEditAllergyClick,
-                    onEditPantryClick = onEditPantryClick
+                    onEditPantryClick = onEditPantryClick,
+                    dataReset = dataReset,
+                    onDataResetDone = {
+                        dishes.resetState()
+                        onDataResetDone()
+                    }
                 )
             }
         }

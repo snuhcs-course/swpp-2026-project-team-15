@@ -85,7 +85,6 @@ private fun FridgeContent(
     var selecting by rememberSaveable { mutableStateOf(false) }
     var selectedNames by rememberSaveable { mutableStateOf(listOf<String>()) }
     var confirming by rememberSaveable { mutableStateOf(false) }
-    var menuExpanded by rememberSaveable { mutableStateOf(false) }
     var sortType by rememberSaveable { mutableStateOf(FridgeSortType.CATEGORY) }
     val selected = ingredients.map { it.name }.filter { it in selectedNames }
     val displayedIngredients = remember(ingredients, sortType, appearanceCatalog) {
@@ -111,7 +110,21 @@ private fun FridgeContent(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.fillMaxWidth()
             )
-            FridgeSortDropdown(selected = sortType, onSelected = { sortType = it })
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                FridgeSortDropdown(selected = sortType, onSelected = { sortType = it })
+                Spacer(Modifier.weight(1f))
+                IconButton(
+                    onClick = onSuggestionsClick,
+                    enabled = controlsEnabled,
+                    modifier = Modifier.testTag("fridge-suggestions")
+                ) {
+                    Icon(
+                        painterResource(R.drawable.ic_idea),
+                        contentDescription = "부족한 재료 추천",
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+            }
             if (selecting) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("${selected.size}개 선택", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
@@ -126,7 +139,9 @@ private fun FridgeContent(
                     modifier = Modifier.fillMaxWidth().testTag("delete-selected-ingredients")
                 ) { Text(if (controlsEnabled) "선택한 재료 삭제" else "재료를 삭제하고 있어요") }
             } else {
-                Text("재료를 길게 누르면 여러 개를 선택할 수 있어요", style = MaterialTheme.typography.bodySmall)
+                if (ingredients.isNotEmpty()) {
+                    Text("재료를 길게 누르면 선택해서 삭제할 수 있어요", style = MaterialTheme.typography.bodySmall)
+                }
             }
             Spacer(Modifier.height(12.dp))
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
@@ -163,27 +178,12 @@ private fun FridgeContent(
         if (!selecting) {
             Box(Modifier.align(Alignment.BottomEnd).padding(24.dp)) {
                 FloatingActionButton(
-                    onClick = { if (controlsEnabled) menuExpanded = !menuExpanded },
-                    modifier = Modifier.testTag("fridge-actions"),
+                    onClick = { if (controlsEnabled) onAddIngredientClick() },
+                    modifier = Modifier.testTag("fridge-add"),
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
-                    Icon(painterResource(R.drawable.ic_plus), contentDescription = "냉장고 작업 메뉴", modifier = Modifier.size(28.dp))
-                }
-                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                    DropdownMenuItem(text = { Text("부족한 재료 추천") }, enabled = controlsEnabled, onClick = {
-                        menuExpanded = false
-                        onSuggestionsClick()
-                    })
-                    DropdownMenuItem(text = { Text("냉장고 재료 삭제") }, enabled = controlsEnabled && ingredients.isNotEmpty(), onClick = {
-                        menuExpanded = false
-                        selectedNames = emptyList()
-                        selecting = true
-                    })
-                    DropdownMenuItem(text = { Text("냉장고 재료 추가") }, enabled = controlsEnabled, onClick = {
-                        menuExpanded = false
-                        onAddIngredientClick()
-                    })
+                    Icon(painterResource(R.drawable.ic_plus), contentDescription = "냉장고 재료 추가", modifier = Modifier.size(28.dp))
                 }
             }
         }

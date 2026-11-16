@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 
 import androidx.navigation.compose.NavHost
@@ -31,10 +32,12 @@ import com.example.mylittlechef.ui.profile.EditPantryScreen
 import com.example.mylittlechef.ui.profile.EditNicknameScreen
 import com.example.mylittlechef.ui.profile.EditUtensilScreen
 import com.example.mylittlechef.ui.recipe.RecipeDetailScreen
+import com.example.mylittlechef.data.local.PreferencesAppDataReset
 import com.example.mylittlechef.data.local.PreferencesFridgeRepository
 import com.example.mylittlechef.data.local.IngredientPresentationProvider
 import com.example.mylittlechef.data.local.PreferencesUserRepository
 import com.example.mylittlechef.data.local.localDataStore
+import com.example.mylittlechef.viewmodel.DataResetViewModel
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.IngredientCatalogViewModel
 import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
@@ -77,6 +80,14 @@ fun AppNavHost(
     val recipes: RecipeViewModel = viewModel(factory = recipeFactory)
     val ingredientSuggestions: IngredientSuggestionViewModel = viewModel()
     val ingredientCatalog: IngredientCatalogViewModel = viewModel()
+    val dataResetFactory = remember(store, applicationContext) {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                DataResetViewModel(PreferencesAppDataReset(store, applicationContext.cacheDir)) as T
+        }
+    }
+    val dataReset: DataResetViewModel = viewModel(factory = dataResetFactory)
 
     // Wait for persisted data before choosing the first screen or fetching recommendations.
     if (!user.isLoaded || !fridge.isLoaded) return
@@ -111,6 +122,14 @@ fun AppNavHost(
                 fridge = fridge,
                 recipes = recipes,
                 ingredientSuggestions = ingredientSuggestions,
+                dataReset = dataReset,
+                onDataResetDone = {
+                    // Like a fresh install: the first screen again, and Back cannot return to the old data.
+                    navController.navigate(Routes.ONBOARDING) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
                 onAddIngredientClick = {
                     navController.navigate(Routes.CAPTURE)
                 },
