@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException, status
 
 from app.dishes.dependencies import DishServiceDep
-from app.dishes.llm import DishLLMError
+from app.dishes.errors import DishLLMError, VideoError
 from app.dishes.schemas import (
     AdaptRequest,
     AdaptResponse,
@@ -22,7 +22,6 @@ from app.dishes.schemas import (
     VideosRequest,
     VideosResponse,
 )
-from app.dishes.videos import VideoError
 from app.schemas import ErrorResponse
 
 router = APIRouter(prefix="/dishes", tags=["dishes"])

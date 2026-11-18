@@ -22,8 +22,10 @@ from app.dishes.recipes import RecipeStore
 from app.dishes.router import ingredients_router
 from app.dishes.router import router as dishes_router
 from app.dishes.service import DishService
+from app.dishes.video_search import WebSearchVideoSource
 from app.dishes.video_store import VideoStore
-from app.dishes.videos import VideoFinder
+from app.dishes.videos import VideoCache, VideoFinder
+from app.dishes.youtube import YouTubeVerifier
 from app.vision.gemini import REQUEST_TIMEOUT_MS, GeminiVisionProvider
 from app.vision.openrouter import OpenRouterVisionProvider
 from app.vision.providers import FixtureVisionProvider, VisionProvider
@@ -60,8 +62,15 @@ def _dish_service(settings: Settings) -> DishService:
     model = os.environ.get("DISH_LLM_MODEL") or DEFAULT_MODEL
     llm = DishLLM(key, model) if key.strip() else None
     youtube_key = os.environ.get("YOUTUBE_API_KEY", "")
-    store = VideoStore.load(os.environ.get("DISH_VIDEOS"))
-    finder = VideoFinder(key, youtube_key, store=store) if youtube_key.strip() else None
+    finder = None
+    if youtube_key.strip():
+        source = WebSearchVideoSource(key) if key.strip() else None
+        finder = VideoFinder(
+            YouTubeVerifier(youtube_key),
+            VideoStore.load(os.environ.get("DISH_VIDEOS")),
+            VideoCache(),
+            source,
+        )
     recipes = RecipeStore.load(os.environ.get("DISH_RECIPES"))
     return DishService(Catalog.load(), llm, finder, recipes)
 

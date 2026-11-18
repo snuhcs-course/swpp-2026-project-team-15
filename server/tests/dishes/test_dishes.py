@@ -10,10 +10,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.dishes.catalog import Catalog
-from app.dishes.llm import DishLLM, DishLLMError
+from app.dishes.errors import DishLLMError, VideoError
+from app.dishes.llm import DishLLM
 from app.dishes.service import DishService, search_url
+from app.dishes.video_search import REQUEST, WebSearchVideoSource, extract_ids
 from app.dishes.video_store import VideoStore
-from app.dishes.videos import REQUEST, VideoError, VideoFinder, extract_ids, to_video
+from app.dishes.videos import VideoCache, VideoFinder
+from app.dishes.youtube import YouTubeVerifier, to_video
 from app.main import create_app
 from tests.conftest import StubVision
 
@@ -243,7 +246,7 @@ def _llm(handler) -> DishLLM:
 
 @pytest.fixture(autouse=True)
 def _no_retry_wait(monkeypatch):
-    monkeypatch.setattr("app.dishes.llm.RETRY_WAITS", (0, 0))
+    monkeypatch.setattr("app.dishes.http.RETRY_WAITS", (0, 0))
 
 
 def test_llm_keeps_the_complete_items_of_an_answer_cut_at_the_token_limit(caplog):
@@ -331,6 +334,7 @@ def test_llm_bad_payloads():
 
 # --- videos on request -----------------------------------------------------------------------
 
+NOW = datetime(2026, 11, 19, 12, 0, tzinfo=UTC)
 IDS = ["a" * 11, "b" * 11, "c" * 11, "d" * 11]
 
 
@@ -345,7 +349,18 @@ def _item(vid, *, embeddable=True, privacy="public", thumb=True):
     }
 
 
-def _finder(calls, *, answer=None, items=None, openrouter_status=200, youtube_status=200):
+def _finder(
+    calls,
+    *,
+    answer=None,
+    items=None,
+    openrouter_status=200,
+    youtube_status=200,
+    stored=None,
+    cache=None,
+    model=True,
+    handler_wrap=None,
+):
     """A VideoFinder whose two services are faked; ``calls`` records (host, payload/params)."""
     text = answer or " ".join(f"https://www.youtube.com/watch?v={v}" for v in IDS)
     listing = items if items is not None else [_item(v) for v in IDS]
@@ -364,7 +379,14 @@ def _finder(calls, *, answer=None, items=None, openrouter_status=200, youtube_st
             return httpx.Response(youtube_status)
         return httpx.Response(200, json={"items": listing})
 
-    return VideoFinder("or-key", "yt-key", transport=httpx.MockTransport(handler))
+    transport = httpx.MockTransport(handler_wrap(handler) if handler_wrap else handler)
+    return VideoFinder(
+        YouTubeVerifier("yt-key", transport=transport),
+        stored or VideoStore(),
+        cache or VideoCache(),
+        WebSearchVideoSource("or-key", transport=transport) if model else None,
+        now=lambda: NOW,
+    )
 
 
 def test_request_text_is_the_wording_chosen_in_round_3():
@@ -394,7 +416,7 @@ def test_finder_keeps_embeddable_public_videos_in_the_models_order():
         _item(IDS[2], privacy="private"),
     ]
     finder = _finder(calls, items=items)
-    videos = finder.find("kimchi-fried-rice", "김치볶음밥")
+    videos = finder.lookup("kimchi-fried-rice", "김치볶음밥")[0]
     assert [v.video_id for v in videos] == [IDS[0], IDS[3]]
     assert videos[0].thumbnail_url.startswith("https://i.ytimg.com/")
     model_call = next(p for k, p in calls if k == "model")
@@ -407,19 +429,18 @@ def test_finder_keeps_embeddable_public_videos_in_the_models_order():
 def test_finder_caches_a_dish_for_a_day():
     calls = []
     now = [1000.0]
-    finder = _finder(calls)
-    finder._clock = lambda: now[0]
-    finder.find("egg-roll", "계란말이")
-    finder.find("egg-roll", "계란말이")
+    finder = _finder(calls, cache=VideoCache(clock=lambda: now[0]))
+    finder.lookup("egg-roll", "계란말이")[0]
+    finder.lookup("egg-roll", "계란말이")[0]
     assert len(calls) == 2  # one model call and one YouTube call
     now[0] += 24 * 3600 + 1
-    finder.find("egg-roll", "계란말이")
+    finder.lookup("egg-roll", "계란말이")[0]
     assert len(calls) == 4
 
 
 def test_finder_empty_answer_is_an_answer_and_a_thumbnail_is_built_when_missing():
     calls = []
-    assert _finder(calls, answer="I found nothing").find("a", "A") == []
+    assert _finder(calls, answer="I found nothing").lookup("a", "A")[0] == []
     assert [k for k, _ in calls] == ["model"]  # nothing to look up
     video = to_video(_item("z" * 11, thumb=False))
     assert video.thumbnail_url == f"https://i.ytimg.com/vi/{'z' * 11}/mqdefault.jpg"
@@ -427,21 +448,21 @@ def test_finder_empty_answer_is_an_answer_and_a_thumbnail_is_built_when_missing(
 
 
 def test_finder_retries_a_rate_limited_model_call(monkeypatch):
-    monkeypatch.setattr("app.dishes.videos.RETRY_WAITS", (0, 0))
-    calls = []
-    finder = _finder(calls)
-    original = finder._transport.handler
+    monkeypatch.setattr("app.dishes.http.RETRY_WAITS", (0, 0))
     state = {"n": 0}
 
-    def handler(request):
-        if request.url.host == "openrouter.ai":
-            state["n"] += 1
-            if state["n"] < 3:
-                return httpx.Response(429)
-        return original(request)
+    def limit_twice(handler):
+        def wrapped(request):
+            if request.url.host == "openrouter.ai":
+                state["n"] += 1
+                if state["n"] < 3:
+                    return httpx.Response(429)
+            return handler(request)
 
-    finder._transport = httpx.MockTransport(handler)
-    assert len(finder.find("a", "A")) == 4 and state["n"] == 3
+        return wrapped
+
+    finder = _finder([], handler_wrap=limit_twice)
+    assert len(finder.lookup("a", "A")[0]) == 4 and state["n"] == 3
 
 
 @pytest.mark.parametrize(
@@ -449,7 +470,7 @@ def test_finder_retries_a_rate_limited_model_call(monkeypatch):
 )
 def test_finder_failures_are_errors_without_keys(kwargs):
     with pytest.raises(VideoError) as raised:
-        _finder([], **kwargs).find("a", "A")
+        _finder([], **kwargs).lookup("a", "A")[0]
     assert "key" not in str(raised.value).lower()
 
 
@@ -499,22 +520,16 @@ def test_app_starts_from_the_environment_without_any_database(monkeypatch):
 
 # --- stored videos ---------------------------------------------------------------------------
 
-NOW = datetime(2026, 11, 19, 12, 0, tzinfo=UTC)
 
-
-def _stored_finder(calls, *, fetched=NOW - timedelta(days=3), ids=None, **kwargs):
+def _stored(fetched=NOW - timedelta(days=3), ids=None, dish="egg-roll"):
     entry = {"fetched_at": fetched.isoformat(), "videos": [{"id": v} for v in (ids or IDS[:3])]}
-    store = VideoStore.load_data({"schema": 1, "dishes": {"egg-roll": entry}})
-    finder = _finder(calls, **kwargs)
-    finder._store = store
-    finder._now = lambda: NOW
-    return finder
+    return VideoStore.load_data({"schema": 1, "dishes": {dish: entry}})
 
 
 def test_stored_videos_are_checked_again_and_served_without_the_model():
     calls = []
-    items = [_item(v) for v in IDS[:3]]
-    videos, source = _stored_finder(calls, items=items).lookup("egg-roll", "계란말이")
+    finder = _finder(calls, stored=_stored(), items=[_item(v) for v in IDS[:3]])
+    videos, source = finder.lookup("egg-roll", "계란말이")
     assert source == "stored" and [v.video_id for v in videos] == IDS[:3]
     assert [k for k, _ in calls] == ["youtube"]  # one lookup, no model call
 
@@ -522,58 +537,55 @@ def test_stored_videos_are_checked_again_and_served_without_the_model():
 def test_stored_videos_that_were_deleted_or_closed_are_dropped_in_order():
     calls = []
     items = [_item(IDS[2]), _item(IDS[0], embeddable=False)]  # IDS[1] is gone, IDS[0] is closed
-    videos, source = _stored_finder(calls, items=items).lookup("egg-roll", "계란말이")
+    videos, source = _finder(calls, stored=_stored(), items=items).lookup("egg-roll", "계란말이")
     assert source == "stored" and [v.video_id for v in videos] == [IDS[2]]
     assert [k for k, _ in calls] == ["youtube"]
 
 
 def test_stored_videos_older_than_thirty_days_are_not_served():
     calls = []
-    old = NOW - timedelta(days=30)
-    videos, source = _stored_finder(calls, fetched=old).lookup("egg-roll", "계란말이")
+    finder = _finder(calls, stored=_stored(fetched=NOW - timedelta(days=30), ids=[IDS[3]]))
+    videos, source = finder.lookup("egg-roll", "계란말이")
     assert source == "discovered" and [k for k, _ in calls] == ["model", "youtube"]
     assert [v.video_id for v in videos] == IDS  # what the model proposed, not the stored list
 
 
 def test_everything_stored_is_gone_so_the_model_is_asked():
     calls = []
-    finder = _stored_finder(calls, ids=[IDS[0]])
-    finder._transport = httpx.MockTransport(_two_step(calls, gone=IDS[0]))
+
+    def without_first(handler):
+        def wrapped(request):
+            if request.url.host != "openrouter.ai":
+                ids = [v for v in request.url.params["id"].split(",") if v != IDS[0]]
+                calls.append(("youtube", ids))
+                return httpx.Response(200, json={"items": [_item(v) for v in ids]})
+            return handler(request)
+
+        return wrapped
+
+    finder = _finder(calls, stored=_stored(ids=[IDS[0]]), handler_wrap=without_first)
     videos, source = finder.lookup("egg-roll", "계란말이")
     assert source == "discovered" and IDS[0] not in [v.video_id for v in videos]
     assert [k for k, _ in calls] == ["youtube", "model", "youtube"]
 
 
-def _two_step(calls, gone):
-    """YouTube lists every id except ``gone``; the model proposes IDS."""
-
-    def handler(request):
-        if request.url.host == "openrouter.ai":
-            calls.append(("model", None))
-            text = " ".join(f"https://www.youtube.com/watch?v={v}" for v in IDS)
-            return httpx.Response(200, json={"choices": [{"message": {"content": text}}]})
-        calls.append(("youtube", None))
-        wanted = request.url.params["id"].split(",")
-        return httpx.Response(200, json={"items": [_item(v) for v in wanted if v != gone]})
-
-    return handler
-
-
 def test_youtube_failure_while_checking_stored_videos_is_an_error():
     with pytest.raises(VideoError):
-        _stored_finder([], youtube_status=403).lookup("egg-roll", "계란말이")
+        _finder([], stored=_stored(), youtube_status=403).lookup("egg-roll", "계란말이")
 
 
-def test_stored_path_works_without_a_model_key_but_discovery_does_not():
-    calls = []
-    finder = _stored_finder(calls, items=[_item(v) for v in IDS[:3]])
-    finder._openrouter_key = ""
+def test_stored_path_works_without_a_model_but_discovery_does_not():
+    finder = _finder([], stored=_stored(), items=[_item(v) for v in IDS[:3]], model=False)
     assert finder.lookup("egg-roll", "계란말이")[1] == "stored"
     with pytest.raises(VideoError):
         finder.lookup("unknown-dish", "없는요리")
 
 
 def test_videos_endpoint_reports_where_the_list_came_from(catalog):
-    service = DishService(catalog, FakeLLM(), _stored_finder([], items=[_item(v) for v in IDS[:3]]))
-    body = client_for(service).post("/dishes/videos", json={"dish_id": "egg-roll"}).json()
+    finder = _finder([], stored=_stored(), items=[_item(v) for v in IDS[:3]])
+    body = (
+        client_for(DishService(catalog, FakeLLM(), finder))
+        .post("/dishes/videos", json={"dish_id": "egg-roll"})
+        .json()
+    )
     assert body["source"] == "stored" and len(body["videos"]) == 3

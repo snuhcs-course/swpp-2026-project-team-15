@@ -12,8 +12,9 @@ import json
 import logging
 
 from app.dishes.catalog import Catalog
-from app.dishes.llm import DishLLM, DishLLMError
+from app.dishes.errors import DishLLMError
 from app.dishes.recipes import RecipeStore
+from app.dishes.roles import ChatModel
 from app.dishes.schemas import (
     Change,
     RecipeStep,
@@ -210,7 +211,7 @@ def _checked_changes(raw: object, recipe: SourceRecipe) -> list[Change]:
 
 
 class Reviser:
-    def __init__(self, catalog: Catalog, llm: DishLLM | None, recipes: RecipeStore):
+    def __init__(self, catalog: Catalog, llm: ChatModel | None, recipes: RecipeStore):
         self.catalog, self.llm, self.recipes = catalog, llm, recipes
 
     def view(self, dish_id: str, ingredients: list[str]) -> RecipeView | None:

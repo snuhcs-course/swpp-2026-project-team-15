@@ -20,7 +20,11 @@ import time
 import httpx
 
 from app.dishes.catalog import Catalog
-from app.dishes.videos import YOUTUBE_VIDEOS, VideoError, VideoFinder
+from app.dishes.errors import VideoError
+from app.dishes.video_search import WebSearchVideoSource
+from app.dishes.video_store import VideoStore
+from app.dishes.videos import VideoCache, VideoFinder
+from app.dishes.youtube import YOUTUBE_VIDEOS, YouTubeVerifier
 
 from .common import VIDEOS_FILE, load_json, now_iso, read_key, save_json
 
@@ -103,14 +107,19 @@ def main(argv: list[str] | None = None) -> int:
         print("missing key file in ~/.config/mylittlechef", file=sys.stderr)
         return 2
     transport = CountingTransport()
-    finder = VideoFinder(openrouter, youtube, transport=transport)
+    finder = VideoFinder(
+        YouTubeVerifier(youtube, transport=transport),
+        VideoStore(),
+        VideoCache(),
+        WebSearchVideoSource(openrouter, transport=transport),
+    )
     failures: dict[str, str] = {}
     for dish in todo:
         if transport.model_calls >= MAX_MODEL_CALLS or transport.cost_usd >= MAX_COST_USD:
             print("budget reached, stopping")
             break
         try:
-            videos = finder.find(dish.id, dish.name)
+            videos = finder.lookup(dish.id, dish.name)[0]
             extra = details(youtube, [v.video_id for v in videos], transport) if videos else {}
         except VideoError as error:
             failures[dish.id] = str(error)

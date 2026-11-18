@@ -8,10 +8,12 @@ import time
 
 import httpx
 
+from app.dishes.errors import DishLLMError
+from app.dishes.http import post_with_retry
+
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "google/gemini-2.5-flash-lite"
 MAX_TOKENS = 4096
-RETRY_WAITS = (3, 8)  # seconds before the first and the second retry after a 429
 log = logging.getLogger(__name__)
 
 
@@ -35,10 +37,6 @@ def salvage_list(text: str) -> dict | None:
             break
         items.append(item)
     return {start.group(1): items} if items else None
-
-
-class DishLLMError(Exception):
-    """The model call failed or returned unusable output (message is safe to show)."""
 
 
 class DishLLM:
@@ -70,12 +68,7 @@ class DishLLM:
                 timeout=30, transport=self._transport, follow_redirects=False
             ) as client:
                 headers = {"Authorization": f"Bearer {self._api_key}"}
-                response = client.post(ENDPOINT, json=payload, headers=headers)
-                for wait in RETRY_WAITS:  # the provider limits bursts: wait and try again
-                    if response.status_code != 429:
-                        break
-                    time.sleep(wait)
-                    response = client.post(ENDPOINT, json=payload, headers=headers)
+                response = post_with_retry(client, ENDPOINT, payload, headers)
             if response.status_code == 429 or response.status_code >= 500:
                 raise DishLLMError("The model service is temporarily unavailable")
             if response.status_code != 200:

@@ -7,9 +7,10 @@ import json
 from urllib.parse import quote_plus
 
 from app.dishes.catalog import Catalog
-from app.dishes.llm import DishLLM, DishLLMError
+from app.dishes.errors import DishLLMError, VideoError
 from app.dishes.recipes import RecipeStore
 from app.dishes.revision import Reviser
+from app.dishes.roles import ChatModel
 from app.dishes.schemas import (
     AdaptResponse,
     Substitution,
@@ -17,7 +18,7 @@ from app.dishes.schemas import (
     SuggestResponse,
     VideosResponse,
 )
-from app.dishes.videos import VideoError, VideoFinder
+from app.dishes.videos import VideoFinder
 
 
 def search_url(dish_name: str) -> str:
@@ -103,7 +104,7 @@ class DishService:
     def __init__(
         self,
         catalog: Catalog,
-        llm: DishLLM | None = None,
+        llm: ChatModel | None = None,
         finder: VideoFinder | None = None,
         recipes: RecipeStore | None = None,
     ):
