@@ -21,7 +21,7 @@ The decision record [decisions/dish-list-and-video-discovery.md](decisions/dish-
 - `experiments/dish_output_formats/`: answer formats constrained by closed lists (enums), function calls and a LangChain helper, compared with free text; round 2 compared per-request choices and a model mapping of unmatched ingredients (per-request choices adopted).
 - `experiments/youtube_discovery/` (superseded) and `experiments/youtube_discovery_v2/`: how to find videos; v2 validates a relevance judge against 60 hand-labelled videos before using it.
 - `experiments/dish_revision/`: adapting a stored recipe to the user's ingredients (36 synthetic cases, one model call plus a rule check); round 2 added a refusal before the call and a main-ingredient rule, measured also on 29 fridges for the recipes made from captions (adopted).
-- `experiments/dish_recipes/`: tools that snapshot the video lists, fetch captions through an unofficial route, and validate AI-structured recipes. Their outputs are third-party derived and are never committed.
+- `experiments/dish_recipes/`: tools that snapshot the video lists, fetch captions through an unofficial route (stopped), write recipes from the videos themselves with Gemini (study and build), and validate the recipes. Their outputs are third-party derived and are never committed.
 
 Architecture decisions (roles and the composition root, the factory, the video store policy, the revision check) are in [decisions/](decisions/), as ADRs 001 to 004.
 

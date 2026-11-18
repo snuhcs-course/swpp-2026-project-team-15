@@ -1,6 +1,6 @@
 # ADR 004: Revise a stored recipe with one model call and a rule check without a model
 
-- **Status:** Accepted (2026-11-19); amended the same day after round 2 of the evaluation
+- **Status:** Accepted (2026-11-19); amended the same day after round 2 of the evaluation; the recipe source (captions) is replaced by [ADR 006](adr-006-recipes-from-the-video.md), the check is unchanged
 
 ## Context
 
