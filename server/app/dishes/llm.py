@@ -3,11 +3,11 @@
 
 import json
 import logging
-import re
 import time
 
 import httpx
 
+from app.dishes.answers import salvage_list
 from app.dishes.errors import DishLLMError
 from app.dishes.http import post_with_retry
 
@@ -15,28 +15,6 @@ ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "google/gemini-2.5-flash-lite"
 MAX_TOKENS = 4096
 log = logging.getLogger(__name__)
-
-
-_LIST_START = re.compile(r'\s*\{\s*"(\w+)"\s*:\s*\[')
-
-
-def salvage_list(text: str) -> dict | None:
-    """The complete items of a cut-off ``{"key": [ {...}, {...`` answer, or None if there are none.
-
-    The model lists dishes best first, so a cut only loses the tail of the list."""
-    start = _LIST_START.match(text)
-    if not start:
-        return None
-    decoder, pos, items = json.JSONDecoder(), start.end(), []
-    while True:
-        while pos < len(text) and text[pos] in " \n\r\t,":
-            pos += 1
-        try:
-            item, pos = decoder.raw_decode(text, pos)
-        except ValueError:
-            break
-        items.append(item)
-    return {start.group(1): items} if items else None
 
 
 class DishLLM:

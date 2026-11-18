@@ -6,6 +6,8 @@ be in the dish list, a substitute must be something the user owns. ``have`` and 
 returned as the model wrote them (trimmed).
 """
 
+import json
+import re
 from urllib.parse import quote_plus
 
 from app.dishes.roles import DishCatalog, RecipeBook
@@ -73,3 +75,25 @@ def check_adapt(data: dict, missing: list[str], owned: list[str]) -> list[Substi
         used.add(gap)
         subs.append(Substitution(missing=gap, suggestion=f"{sub}(으)로 대신해요", uses=[sub]))
     return subs
+
+
+_LIST_START = re.compile(r'\s*\{\s*"(\w+)"\s*:\s*\[')
+
+
+def salvage_list(text: str) -> dict | None:
+    """The complete items of a cut-off ``{"key": [ {...}, {...`` answer, or None if there are none.
+
+    The model lists dishes best first, so a cut only loses the tail of the list."""
+    start = _LIST_START.match(text)
+    if not start:
+        return None
+    decoder, pos, items = json.JSONDecoder(), start.end(), []
+    while True:
+        while pos < len(text) and text[pos] in " \n\r\t,":
+            pos += 1
+        try:
+            item, pos = decoder.raw_decode(text, pos)
+        except ValueError:
+            break
+        items.append(item)
+    return {start.group(1): items} if items else None
