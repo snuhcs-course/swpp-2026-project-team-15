@@ -307,3 +307,11 @@ def test_suggest_marks_dishes_that_have_a_recipe(catalog):
     svc, _ = service(catalog, answer)
     flags = {d.name: d.has_recipe for d in svc.suggest(["밥"]).dishes}
     assert flags == {"김치볶음밥": True, "계란말이": False}
+
+
+def test_revise_prompt_tells_the_model_to_keep_owned_and_assumed_rows():
+    # Found on the phone (2026-11-19): 두부부침 with only 두부 owned dropped the assumed staples
+    # without a reason and was served as failed.
+    from app.dishes.prompts import REVISE_SYSTEM
+
+    assert "Keep every owned or assumed source ingredient" in REVISE_SYSTEM
