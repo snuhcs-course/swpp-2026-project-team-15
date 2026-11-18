@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Structured recipe restructured from a video's captions",
+  "title": "Structured recipe written from a cooking video (its captions or the video itself)",
   "type": "object",
   "additionalProperties": false,
   "required": ["dish_id", "video", "source", "generated_at", "servings", "ingredients", "steps", "tips", "uncertain", "caption_gaps"],
@@ -16,7 +16,7 @@
         "channel": {"type": "string"}
       }
     },
-    "source": {"const": "ai_structured_from_captions"},
+    "source": {"enum": ["ai_structured_from_captions", "ai_structured_from_video"]},
     "generated_at": {"type": "string", "minLength": 10},
     "servings": {"type": ["integer", "null"], "minimum": 1},
     "ingredients": {

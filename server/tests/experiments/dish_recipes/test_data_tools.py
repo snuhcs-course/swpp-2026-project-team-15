@@ -3,7 +3,6 @@ import json
 from types import SimpleNamespace
 
 import pytest
-
 from experiments.dish_recipes import captions, collect_videos, coverage, validate_recipe
 
 VIDEO = "abcdefghijk"

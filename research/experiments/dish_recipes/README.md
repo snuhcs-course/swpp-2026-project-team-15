@@ -38,3 +38,24 @@ uv run python -m experiments.dish_recipes.validate_recipe data/dish-recipes/reci
 ## Limits
 
 One dish gets one video's captions; that video is the model's first usable proposal, not a verified good recipe. Auto captions can be wrong or incomplete (`caption_gaps`). The validator checks form and ingredient grounding, not cooking correctness.
+
+## Recipes from the video itself
+
+The caption route stopped when YouTube refused automated caption requests from our address (2026-11-18). This section replaces it with Google's own video input: a Gemini model watches the public YouTube video and writes the recipe.
+
+**What the documentation says (read 2026-11-19).**
+
+- Gemini API, [video understanding](https://ai.google.dev/gemini-api/docs/video-understanding): YouTube URLs can be passed directly ("Pass YouTube URLs"); the feature is a preview, "available at no charge", and "pricing and rate limits are likely to change". Only public videos; the free tier allows at most 8 hours of YouTube video per day, the paid tier has no length limit; Gemini 2.5 and later accept up to 10 videos per request. Frames are sampled at 1 frame per second; a second of video costs about 300 tokens at the default resolution (258 per frame plus 32 for audio), about 100 at low resolution.
+- OpenRouter, [video inputs](https://openrouter.ai/docs/features/multimodal/videos): Chat Completions accept a `video_url` content part; "Google Gemini on AI Studio only supports YouTube links (not Vertex AI)", and OpenRouter sends video URLs only to providers that support them. The request therefore pins the provider to Google AI Studio without fallbacks. No media-resolution parameter is documented there, so the provider default is used.
+
+**Feasibility (two calls, `gemini-2.5-flash-lite`, before the study design was fixed).** Both answers came back through Google AI Studio with `finish_reason` stop and a usable recipe: a 252 s video took 74,556 input tokens, 24.5 s and $0.0094; a 464 s video took 137,114 input tokens, 43.5 s and $0.0170. That is about 296 input tokens per second of video, close to the documented default resolution; OpenRouter billed the tokens.
+
+**Study design** (fixed in [`criteria_video.json`](criteria_video.json) before any study call): the 16 dishes that have a caption-based recipe, the same video each, `gemini-2.5-flash-lite` and `gemini-2.5-flash`, one run each. Measured: valid recipe, whether the model says the video cooks the dish, ingredient agreement with the caption-based recipe (names with synonyms merged), ingredients not in the captions (each read by hand: plausible from the screen, invented, or unclear), amounts and servings given, steps, role labels, tokens, cost and latency. No pass/fail thresholds; the choice is a judgement next to the numbers.
+
+| Path | Content |
+| --- | --- |
+| `video_recipes.py` | Request (YouTube link as a `video_url` part), answer schema, response parsing, conversion to the stored format |
+| `run_video_recipes.py` | `study`, `analyze` and `build` (one recipe per dish from the first verified video the model confirms is the dish, at most three tried) |
+| `criteria_video.json` | The fixed study design |
+
+Raw answers and recipes go to a working directory outside the repository (`--workdir`); they are third-party-derived and never committed.

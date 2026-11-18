@@ -5,8 +5,10 @@
 
 Rules beyond the schema: steps are numbered 1..n, no step is longer than 300 characters, the text
 is Korean, and every ingredient name appears in the captions (spaces ignored, synonyms accepted)
-unless it is listed under `uncertain`. The captions come from `--input` (an inputs/<dish>.json
-file) or, by default, from data/dish-recipes/inputs/<dish_id>.json. Exit code 0 means valid.
+unless it is listed under `uncertain` (recipes written from the video itself have no captions to
+check against, so this last rule applies only to caption-based recipes). The captions come from
+`--input` (an inputs/<dish>.json file) or, by default, from data/dish-recipes/inputs/<dish_id>.json.
+Exit code 0 means valid.
 """
 
 from __future__ import annotations
@@ -93,6 +95,8 @@ def check_recipe(recipe: dict, record: dict | None) -> list[str]:
     body = " ".join(s["text"] for s in recipe["steps"])
     if len(HANGUL.findall(body)) < 0.5 * max(1, len(re.sub(r"\s", "", body))):
         problems.append("steps are not mostly Korean")
+    if recipe["source"] == "ai_structured_from_video":
+        return problems  # written from the video itself: there are no captions to check against
     if record is None:
         problems.append("captions not found: cannot check the ingredients")
         return problems
