@@ -51,7 +51,7 @@ def request_cost(row: dict) -> float:
 
 def run_case(case: dict, store: RecipeStore, catalog: Catalog, llm: RecordingLLM, usage: Usage):
     before = len(usage.rows)
-    reviser = Reviser(catalog, llm, store)
+    reviser = Reviser(catalog, catalog, llm, store)
     row = {"id": case["id"], "expect": case["expect"], "status": "error", "valid": False}
     try:
         result = reviser.revise(case["dish_id"], case["ingredients"])

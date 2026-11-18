@@ -8,7 +8,7 @@ from experiments.dish_revision import run_revision, scoring
 
 from app.dishes.catalog import Catalog
 from app.dishes.recipes import RecipeStore
-from app.dishes.revision import availability
+from app.dishes.revision import Reviser
 
 HERE = Path(run_revision.__file__).parent
 CATALOG = Catalog.load()
@@ -21,7 +21,9 @@ def test_frozen_cases_follow_the_labelling_rule():
     for case in cases:
         recipe = store.get(case["dish_id"])
         assert recipe is not None and CATALOG.get(case["dish_id"]) is not None
-        status = availability(CATALOG, recipe, case["ingredients"])
+        status = Reviser(CATALOG, CATALOG, None, RecipeStore()).availability(
+            recipe, case["ingredients"]
+        )
         missing = [
             r.role for r, s in zip(recipe.ingredients, status, strict=True) if s == "unavailable"
         ]

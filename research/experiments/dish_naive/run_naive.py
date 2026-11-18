@@ -24,8 +24,9 @@ from pydantic import ValidationError
 
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DEFAULT_MODEL, MAX_TOKENS, DishLLM, DishLLMError
+from app.dishes.prompts import SUGGEST_SYSTEM
 from app.dishes.schemas import SuggestRequest
-from app.dishes.service import SUGGEST_SYSTEM, DishService
+from app.dishes.service import DishService
 
 from . import scoring
 
@@ -156,7 +157,7 @@ def main(argv: list[str] | None = None) -> int:
     inner = DishLLM(key, DEFAULT_MODEL, transport=UsageTransport(usage))
     llm = RecordingLLM(inner)
     service = DishService(catalog, llm)
-    names = set(service._by_name)  # noqa: SLF001 - the list the model is shown
+    names = {d.name for d in service.catalog.all()}  # the list the model is shown
     hybrid = hybrid_answers(args.hybrid)
 
     per_case, results, hybrid_results, refused = [], [], [], {}

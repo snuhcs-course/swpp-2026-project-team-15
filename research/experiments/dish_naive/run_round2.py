@@ -20,7 +20,8 @@ from pathlib import Path
 from experiments.dish_tokens.calls import Call, chat, json_schema_format, read_key
 
 from app.dishes.catalog import Catalog
-from app.dishes.service import SUGGEST_SCHEMA, SUGGEST_SYSTEM, DishService, suggest_user_message
+from app.dishes.prompts import SUGGEST_SCHEMA, SUGGEST_SYSTEM, suggest_user_message
+from app.dishes.service import DishService
 
 from . import scoring
 from .run_naive import missing_counts, reference

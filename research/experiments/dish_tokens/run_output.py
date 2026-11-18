@@ -21,8 +21,10 @@ from experiments.dish_naive import run_round2 as r2
 from experiments.dish_naive import scoring
 from experiments.dish_naive.run_naive import missing_counts, reference
 
+from app.dishes.answers import check_suggest
 from app.dishes.catalog import Catalog
-from app.dishes.service import DishService, suggest_user_message
+from app.dishes.prompts import suggest_user_message
+from app.dishes.service import DishService
 
 from .calls import json_schema_format, read_key
 
@@ -96,7 +98,7 @@ def score_rows(rows, inputs, catalog, service, name_set, drop_have=False) -> dic
                     for d in items
                     if isinstance(d, dict) and isinstance(d.get("name"), str)
                 ]
-            dishes = [d.model_dump() for d in service.check_suggest(data)]
+            dishes = [d.model_dump() for d in check_suggest(data, service.catalog, service.recipes)]
             if drop_have:
                 for d in dishes:
                     d["have"] = []
@@ -180,7 +182,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     catalog = Catalog.load()
     service = DishService(catalog)
-    names = list(service._by_name)  # noqa: SLF001
+    names = [d.name for d in service.catalog.all()]
     name_set = set(names)
     reuse = lambda variant: [  # noqa: E731
         row for row in study1["variants"][variant]["rows"] if row["id"] in inputs

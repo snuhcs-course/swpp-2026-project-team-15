@@ -1,0 +1,75 @@
+# AI-generated with Claude Code (Sonnet 5.5), 2026-11-19; reviewed by Jaehyuk Choi.
+"""Check what the model answered before the user sees it. No model call, no network.
+
+The model's order is kept. Only what the closed lists can decide is decided here: a dish name must
+be in the dish list, a substitute must be something the user owns. ``have`` and ``missing`` are
+returned as the model wrote them (trimmed).
+"""
+
+from urllib.parse import quote_plus
+
+from app.dishes.roles import DishCatalog, RecipeBook
+from app.dishes.schemas import Substitution, SuggestedDish
+
+
+def search_url(dish_name: str) -> str:
+    return f"https://www.youtube.com/results?search_query={quote_plus(dish_name + ' 레시피')}"
+
+
+def strings(value: object, *, unique: bool = True) -> list[str]:
+    """The non-empty trimmed strings of a list; anything else is an empty list."""
+    if not isinstance(value, list):
+        return []
+    out: list[str] = []
+    for item in value:
+        text = item.strip() if isinstance(item, str) else ""
+        if text and not (unique and text in out):
+            out.append(text)
+    return out
+
+
+def check_suggest(
+    data: dict, catalog: DishCatalog, recipes: RecipeBook | None
+) -> list[SuggestedDish]:
+    """Keep the model's order; drop names outside the list and repeated names."""
+    out: list[SuggestedDish] = []
+    seen: set[str] = set()
+    items = data.get("dishes")
+    for item in items if isinstance(items, list) else []:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        dish = catalog.by_name(name.strip()) if isinstance(name, str) else None
+        if dish is None or dish.id in seen:
+            continue
+        seen.add(dish.id)
+        out.append(
+            SuggestedDish(
+                id=dish.id,
+                name=dish.name,
+                category=dish.category,
+                have=strings(item.get("have")),
+                missing=strings(item.get("missing")),
+                search_url=search_url(dish.name),
+                has_recipe=recipes is not None and dish.id in recipes,
+            )
+        )
+    return out
+
+
+def check_adapt(data: dict, missing: list[str], owned: list[str]) -> list[Substitution]:
+    subs: list[Substitution] = []
+    used: set[str] = set()
+    items = data.get("substitutions")
+    for item in items if isinstance(items, list) else []:
+        if not isinstance(item, dict):
+            continue
+        gap, sub = item.get("missing"), item.get("substitute")
+        if gap not in missing or gap in used or not isinstance(sub, str):
+            continue
+        sub = sub.strip()
+        if sub not in owned:
+            continue
+        used.add(gap)
+        subs.append(Substitution(missing=gap, suggestion=f"{sub}(으)로 대신해요", uses=[sub]))
+    return subs

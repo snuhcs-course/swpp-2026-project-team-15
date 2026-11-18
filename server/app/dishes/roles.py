@@ -9,6 +9,7 @@ must pass.
 from datetime import datetime
 from typing import Protocol
 
+from app.dishes.catalog import Dish
 from app.dishes.schemas import SourceRecipe, Video
 
 
@@ -46,3 +47,27 @@ class RecipeBook(Protocol):
     def get(self, dish_id: str) -> SourceRecipe | None: ...
 
     def __contains__(self, dish_id: str) -> bool: ...
+
+
+class DishCatalog(Protocol):
+    def get(self, dish_id: str) -> Dish | None: ...
+
+    def by_name(self, name: str) -> Dish | None: ...
+
+    def all(self) -> list[Dish]: ...
+
+    def __len__(self) -> int: ...
+
+
+class IngredientIndex(Protocol):
+    """What the dish list knows about ingredient names."""
+
+    def owned(self, ingredients: list[str]) -> set[str]: ...
+
+    def status(self, name: str, owned: set[str]) -> str:
+        """ "owned", "assumed" (a staple at home) or "unavailable"."""
+        ...
+
+    def ingredient_names(self) -> list[str]: ...
+
+    def additions(self, ingredients: list[str], limit: int = 5) -> list[dict]: ...

@@ -57,6 +57,7 @@ class Catalog:
             if dish.id in self.dishes:
                 raise ValueError(f"duplicate dish id {dish.id}")
             self.dishes[dish.id] = dish
+        self._by_name = {d.name: d for d in self.dishes.values()}
 
     @classmethod
     def load(cls, path: Path | str | None = None, staples: frozenset[str] | None = None):
@@ -69,6 +70,12 @@ class Catalog:
 
     def get(self, dish_id: str) -> Dish | None:
         return self.dishes.get(dish_id)
+
+    def by_name(self, name: str) -> Dish | None:
+        return self._by_name.get(name)
+
+    def all(self) -> list[Dish]:
+        return list(self.dishes.values())
 
     def owned(self, ingredients: list[str]) -> set[str]:
         """Names the user has, widened by synonyms and by what an item can stand in for."""

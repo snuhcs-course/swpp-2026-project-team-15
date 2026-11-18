@@ -9,10 +9,11 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+from app.dishes.answers import search_url
 from app.dishes.catalog import Catalog
 from app.dishes.errors import DishLLMError, VideoError
 from app.dishes.llm import DishLLM
-from app.dishes.service import DishService, search_url
+from app.dishes.service import DishService
 from app.dishes.video_search import REQUEST, WebSearchVideoSource, extract_ids
 from app.dishes.video_store import VideoStore
 from app.dishes.videos import VideoCache, VideoFinder
@@ -214,7 +215,7 @@ def test_adapt_nothing_missing_needs_no_model_and_errors_are_clear(catalog):
 
 
 def test_ingredient_names_come_from_the_dish_data(catalog):
-    client = client_for(DishService(catalog))
+    client = client_for(DishService(catalog, index=catalog))
     names = client.get("/recipes/ingredients").json()["names"]
     assert names == sorted(set(names))
     for expected in ("김치", "쌀", "달걀", "대파", "소금", "양파", "참치캔"):
@@ -224,7 +225,7 @@ def test_ingredient_names_come_from_the_dish_data(catalog):
 
 
 def test_ingredient_suggestions_complete_the_most_dishes(catalog):
-    client = client_for(DishService(catalog))
+    client = client_for(DishService(catalog, index=catalog))
     body = client.post("/recipes/ingredient-suggestions", json={"ingredients": ["밥", "김치"]})
     suggestions = body.json()["suggestions"]
     assert suggestions and len(suggestions) <= 5

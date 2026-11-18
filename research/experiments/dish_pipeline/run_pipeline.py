@@ -18,6 +18,7 @@ from pathlib import Path
 from experiments.dish_tokens.calls import Call, chat, json_schema_format, read_key
 from experiments.dish_tokens.run_tokens import MODEL, payload_for
 
+from app.dishes.answers import check_suggest
 from app.dishes.catalog import Catalog
 from app.dishes.service import DishService
 
@@ -202,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
     fetch = d.youtube_fetcher(yt)
     catalog = Catalog.load()
     service = DishService(catalog)
-    names = list(service._by_name)  # noqa: SLF001
+    names = [d.name for d in service.catalog.all()]
     rng = random.Random(criteria["inputs"]["seed"])
     n_calls = 0
     rows: dict[str, list[dict]] = {}
@@ -211,7 +212,11 @@ def main(argv: list[str] | None = None) -> int:
     for case_id, ingredients in inputs.items():
         call = chat(payload_for(args.selection, ingredients, names), key)
         n_calls += 1
-        dishes = [x.name for x in service.check_suggest(call.data)] if call.data else []
+        dishes = (
+            [x.name for x in check_suggest(call.data, service.catalog, service.recipes)]
+            if call.data
+            else []
+        )
         selections[case_id] = (call, dishes)
 
     # P2: one batched discovery call for all selected dishes
@@ -255,7 +260,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             n_calls += 1
             parsed = d.parse_dishes(call.data)
-            dishes = [n for n in parsed if n in service._by_name]  # noqa: SLF001
+            dishes = [n for n in parsed if service.catalog.by_name(n) is not None]
             calls, check, verdicts = [call], None, {}
             if dishes:
                 check, verdicts, jc = run_request(

@@ -19,8 +19,10 @@ from pathlib import Path
 from experiments.dish_naive import scoring
 from experiments.dish_naive.run_naive import missing_counts, reference
 
+from app.dishes.answers import check_suggest
 from app.dishes.catalog import Catalog
-from app.dishes.service import SUGGEST_SCHEMA, SUGGEST_SYSTEM, DishService, suggest_user_message
+from app.dishes.prompts import SUGGEST_SCHEMA, SUGGEST_SYSTEM, suggest_user_message
+from app.dishes.service import DishService
 
 from .calls import Call, chat, json_schema_format, read_key
 
@@ -100,7 +102,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     catalog = Catalog.load()
     service = DishService(catalog)
-    names = list(service._by_name)  # noqa: SLF001
+    names = [d.name for d in service.catalog.all()]
     name_set = set(names)
     per_variant: dict[str, dict] = {}
     for variant in variants:
@@ -120,7 +122,10 @@ def main(argv: list[str] | None = None) -> int:
                     if isinstance(items, list)
                     else []
                 )
-                dishes = [d.model_dump() for d in service.check_suggest(call.data)]
+                dishes = [
+                    d.model_dump()
+                    for d in check_suggest(call.data, service.catalog, service.recipes)
+                ]
             results.append(
                 scoring.case_result(
                     raw_names,

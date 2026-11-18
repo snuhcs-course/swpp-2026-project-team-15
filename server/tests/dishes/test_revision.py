@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DishLLMError
 from app.dishes.recipes import RecipeStore
+from app.dishes.revision import Reviser
 from app.dishes.schemas import SourceRecipe
 from app.dishes.service import DishService
 from app.main import create_app
@@ -66,7 +67,9 @@ def store() -> RecipeStore:
 
 def service(catalog, *answers) -> tuple[DishService, FakeLLM]:
     llm = FakeLLM(*answers)
-    return DishService(catalog, llm, None, store()), llm
+    recipes = store()
+    reviser = Reviser(catalog, catalog, llm, recipes)
+    return DishService(catalog, llm, None, recipes, reviser, catalog), llm
 
 
 def revised(catalog, data, ingredients=("밥", "김치")):
@@ -99,7 +102,7 @@ def test_availability_marks_owned_assumed_unavailable(catalog):
 
 
 def test_nothing_missing_needs_no_model_call(catalog):
-    svc = DishService(catalog, None, None, store())
+    svc, _ = service(catalog)
     result = svc.reviser.revise("kimchi-fried-rice", ["밥", "김치", "대파", "달걀"])
     assert result.status == "revised" and result.changes == []
     assert [i.name for i in result.revised.ingredients][0] == "밥"
@@ -177,7 +180,7 @@ def test_model_failure_and_missing_model(catalog):
     with pytest.raises(DishLLMError):
         svc.reviser.revise("kimchi-fried-rice", ["밥"])
     with pytest.raises(DishLLMError):
-        DishService(catalog, None, None, store()).reviser.revise("kimchi-fried-rice", ["밥"])
+        Reviser(catalog, catalog, None, store()).revise("kimchi-fried-rice", ["밥"])
 
 
 def test_log_has_no_recipe_text_or_ingredients(catalog, caplog):

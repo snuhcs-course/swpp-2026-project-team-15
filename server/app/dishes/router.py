@@ -1,7 +1,7 @@
 # AI-generated with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
 from fastapi import APIRouter, HTTPException, status
 
-from app.dishes.dependencies import DishServiceDep
+from app.dishes.dependencies import DishServiceDep, IndexDep, ReviserDep
 from app.dishes.errors import DishLLMError, VideoError
 from app.dishes.schemas import (
     AdaptRequest,
@@ -40,7 +40,7 @@ def list_dishes(service: DishServiceDep) -> DishList:
             key_ingredients=list(d.key_ingredients),
             aliases=list(d.aliases),
         )
-        for d in service.catalog.dishes.values()
+        for d in service.catalog.all()
     ]
     return DishList(dishes=dishes, count=len(dishes))
 
@@ -103,7 +103,7 @@ def videos(body: VideosRequest, service: DishServiceDep) -> VideosResponse:
     responses={404: {"model": ErrorResponse, "description": "No recipe for this dish"}},
 )
 def recipe(dish_id: str, service: DishServiceDep) -> SourceRecipe:
-    found = service.recipes.get(dish_id)
+    found = service.recipes.get(dish_id) if service.recipes is not None else None
     if found is None:
         raise HTTPException(404, "No recipe for this dish")
     return found
@@ -115,8 +115,8 @@ def recipe(dish_id: str, service: DishServiceDep) -> SourceRecipe:
     operation_id="dish_recipe_view",
     responses={404: {"model": ErrorResponse, "description": "No recipe for this dish"}},
 )
-def recipe_view(body: RecipeRequest, service: DishServiceDep) -> RecipeView:
-    view = service.reviser.view(body.dish_id, body.ingredients)
+def recipe_view(body: RecipeRequest, reviser: ReviserDep) -> RecipeView:
+    view = reviser.view(body.dish_id, body.ingredients)
     if view is None:
         raise HTTPException(404, "No recipe for this dish")
     return view
@@ -131,9 +131,9 @@ def recipe_view(body: RecipeRequest, service: DishServiceDep) -> RecipeView:
         502: {"model": ErrorResponse, "description": "The model call failed"},
     },
 )
-def revise(body: ReviseRequest, service: DishServiceDep) -> ReviseResponse:
+def revise(body: ReviseRequest, reviser: ReviserDep) -> ReviseResponse:
     try:
-        result = service.reviser.revise(body.dish_id, body.ingredients)
+        result = reviser.revise(body.dish_id, body.ingredients)
     except DishLLMError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
     if result is None:
@@ -144,8 +144,8 @@ def revise(body: ReviseRequest, service: DishServiceDep) -> ReviseResponse:
 @ingredients_router.get(
     "/ingredients", summary="Ingredient names for entry completion", operation_id="dish_ingredients"
 )
-def ingredient_names(service: DishServiceDep) -> IngredientCatalogResponse:
-    return IngredientCatalogResponse(names=service.catalog.ingredient_names())
+def ingredient_names(index: IndexDep) -> IngredientCatalogResponse:
+    return IngredientCatalogResponse(names=index.ingredient_names())
 
 
 @ingredients_router.post(
@@ -154,8 +154,8 @@ def ingredient_names(service: DishServiceDep) -> IngredientCatalogResponse:
     operation_id="dish_ingredient_suggestions",
 )
 def ingredient_suggestions(
-    body: IngredientSuggestionRequest, service: DishServiceDep
+    body: IngredientSuggestionRequest, index: IndexDep
 ) -> IngredientSuggestionResponse:
     return IngredientSuggestionResponse(
-        suggestions=[IngredientSuggestion(**s) for s in service.catalog.additions(body.ingredients)]
+        suggestions=[IngredientSuggestion(**s) for s in index.additions(body.ingredients)]
     )
