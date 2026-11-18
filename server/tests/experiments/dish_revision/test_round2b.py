@@ -19,3 +19,31 @@ def test_keep_variant_refuses_an_unknown_prompt():
 def test_dry_run_makes_no_call(capsys):
     assert run_round2b.main([]) == 0
     assert "dry run" in capsys.readouterr().out
+
+
+def test_real_cases_hold_only_main_ingredients_and_are_seeded():
+    from app.dishes.recipes import RecipeStore, SourceRecipe
+
+    def recipe(dish_id):
+        return SourceRecipe.model_validate(
+            {
+                "dish_id": dish_id,
+                "video": None,
+                "source": "ai_structured_from_video",
+                "generated_at": "2026-11-19T00:00:00Z",
+                "servings": None,
+                "ingredients": [
+                    {"name": "밥", "amount": None, "role": "main"},
+                    {"name": "대파", "amount": None, "role": "secondary"},
+                ],
+                "steps": [{"n": 1, "text": "볶는다"}, {"n": 2, "text": "담는다"}],
+                "tips": [],
+                "uncertain": [],
+                "caption_gaps": False,
+            }
+        )
+
+    store = RecipeStore({d: recipe(d) for d in ("a", "b", "c")})
+    first = run_round2b.real_cases(store, ["a", "b", "c"], 2)
+    assert first == run_round2b.real_cases(store, ["c", "b", "a"], 2)
+    assert all(c["ingredients"] == ["밥"] for c in first) and len(first) == 2

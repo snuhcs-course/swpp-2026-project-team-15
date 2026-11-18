@@ -92,3 +92,5 @@ Refusal precision was 1.00 in every cell. Change reasons in the raw revising ans
 ## Round 2b: keep owned and assumed rows (design, 2026-11-19, before any call)
 
 Trigger: on the phone, 두부부침 with only 두부 owned failed twice (`unexplained_change`): the model kept only 두부 in the ingredient list and dropped the assumed staples, one of them (식용유) without a reason. Question: does one added sentence in rule 2 ("keep every owned or assumed source ingredient the revised recipe still uses in the ingredient list, with its source amount") stop such answers? Variants `old` (served text) and `keep`; the 36 frozen synthetic cases plus the demo case, one run each through the served `Reviser`. Metrics and plan: [criteria_round2b.json](criteria_round2b.json). No pass/fail thresholds; the decision is written after the numbers. Runner: `run_round2b.py` (dry run by default).
+
+Amendment (2026-11-19, before the real-sample calls): the synthetic fixtures have no assumed rows, so they cannot show the targeted failure. Added 20 served recipes sampled with seed 20261119, fridge = the recipe's main ingredients only, old vs keep, one run each.

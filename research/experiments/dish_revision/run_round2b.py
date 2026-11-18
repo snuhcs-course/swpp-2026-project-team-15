@@ -48,6 +48,20 @@ def dropped_assumed(response, status: list[str]) -> int:
     )
 
 
+def real_cases(store: RecipeStore, ids: list[str], n: int, seed: int = 20261119) -> list[dict]:
+    """n served recipes (seeded); the fridge holds only the main ingredients (pure, tested)."""
+    import random
+
+    ids = sorted(ids)
+    rng = random.Random(seed)
+    out = []
+    for dish_id in rng.sample(ids, min(n, len(ids))):
+        mains = [r.name for r in store.get(dish_id).ingredients if r.role == "main"]
+        if mains:
+            out.append({"id": f"real-{dish_id}", "dish_id": dish_id, "ingredients": mains})
+    return out
+
+
 def run(cases: list[dict], store: RecipeStore, catalog: Catalog, llm: DishLLM) -> list[dict]:
     rows = []
     for case in cases:
@@ -69,6 +83,7 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--allow-live-api", action="store_true")
     p.add_argument("--demo-recipes", type=Path, help="served recipe file for the tofu-pan case")
+    p.add_argument("--real-sample", type=int, default=0, help="also run N served recipes")
     a = p.parse_args(argv)
     if not a.allow_live_api:
         print("dry run: 36 synthetic cases x 2 variants (+1 demo case x 2)")
@@ -85,6 +100,10 @@ def main(argv: list[str] | None = None) -> int:
             demo = RecipeStore.load(a.demo_recipes)
             demo_case = [{"id": "demo-tofu-pan", "dish_id": "tofu-pan", "ingredients": ["두부"]}]
             result[name]["demo"] = run(demo_case, demo, catalog, llm)
+            if a.real_sample:
+                ids = list(json.loads(a.demo_recipes.read_text())["recipes"])
+                real = real_cases(demo, ids, a.real_sample)
+                result[name]["real"] = run(real, demo, catalog, llm)
     prompts.REVISE_SYSTEM = OLD
     OUT.mkdir(parents=True, exist_ok=True)
     path = OUT / f"round2b-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}.json"
