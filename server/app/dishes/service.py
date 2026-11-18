@@ -31,6 +31,7 @@ class DishService:
         recipes: RecipeBook | None = None,
         reviser: Reviser | None = None,
         index: IngredientIndex | None = None,
+        assumed: frozenset[str] = frozenset(),
     ):
         self.catalog = catalog
         self.llm = llm
@@ -38,6 +39,7 @@ class DishService:
         self.recipes = recipes
         self.reviser = reviser
         self.index = index
+        self.assumed = assumed
         self._vocabulary = ingredient_vocabulary(catalog.all())
 
     def suggest(self, ingredients: list[str]) -> SuggestResponse:
@@ -45,7 +47,7 @@ class DishService:
         if self.llm is None:
             raise DishLLMError(MODEL_NOT_CONFIGURED)
         names = [d.name for d in self.catalog.all()]
-        choices = suggest_choices(ingredients, names, self._vocabulary)
+        choices = suggest_choices(ingredients, names, self._vocabulary, self.assumed)
         request = suggest_request(choices)
         data = self.llm.complete(request.system, request.user, request.name, request.schema)
         dishes = fewest_missing_first(check_suggest(data, self.catalog, self.recipes, choices))

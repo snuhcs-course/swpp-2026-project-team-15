@@ -42,3 +42,8 @@ def test_data_files_are_read_at_startup_and_a_bad_one_stops_it(tmp_path):
         build_dish_service({"YOUTUBE_API_KEY": "y", "DISH_VIDEOS": str(bad)})
     with pytest.raises(OSError):
         build_dish_service({"DISH_RECIPES": str(tmp_path / "missing.json")})
+
+
+def test_the_built_service_assumes_the_catalog_staples():
+    service = build_dish_service({})
+    assert service.assumed == service.catalog.staples and "간장" in service.assumed

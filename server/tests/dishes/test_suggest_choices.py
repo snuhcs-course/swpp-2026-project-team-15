@@ -92,3 +92,21 @@ def test_owned_ingredient_is_never_returned_as_missing():
     dish = _post(RecordingModel(answer), ["달걀", "밥"]).json()["dishes"][0]
     assert dish["missing"] == ["대파"]  # 계란 is owned as 달걀
     assert dish["have"] == ["달걀", "밥"]  # 치즈 is not one of the user's items
+
+
+def test_assumed_staples_are_not_missing_choices():
+    choices = suggest_choices(["두부"], NAMES, VOCAB, CATALOG.staples)
+    assert "간장" in VOCAB and "간장" not in choices.missing
+    assert not set(choices.missing) & CATALOG.staples
+    assert "대파" in choices.missing
+
+
+def test_the_running_service_leaves_staples_out_of_the_missing_choices():
+    model = RecordingModel({"dishes": []})
+    client = TestClient(
+        create_app(StubVision(), dishes=DishService(CATALOG, model, assumed=CATALOG.staples))
+    )
+    assert client.post("/dishes/suggest", json={"ingredients": ["두부"]}).status_code == 200
+    schema = model.sent[0][3]
+    missing = schema["properties"]["dishes"]["items"]["properties"]["missing"]["items"]["enum"]
+    assert "간장" not in missing and "참기름" not in missing

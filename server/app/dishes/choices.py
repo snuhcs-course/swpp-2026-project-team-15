@@ -4,9 +4,11 @@
 ``name`` is one of the dish names, ``have`` one of the user's own strings, and ``missing`` one of
 the dish list's key ingredients that the user does not own (exact spelling, spaces ignored, or a
 synonym group). Because an owned ingredient is not a choice for ``missing``, the model cannot list
-it there. Unmatched forms (e.g. 다진마늘 for 마늘) are not mapped: asking the model to map them
-merged different ingredients (두유 as 두부, 쪽파 as 대파) in
-research/experiments/dish_output_formats (round 2).
+it there. Seasonings assumed at home (staples.json) are not choices for ``missing`` either: they
+made every answer longer and pushed common requests into the output limit (round 4 of
+research/experiments/dish_output_formats). Unmatched forms (e.g. 다진마늘 for 마늘) are not
+mapped: asking the model to map them merged different ingredients (두유 as 두부, 쪽파 as 대파) in
+round 2 of the same study.
 """
 
 from collections.abc import Iterable
@@ -49,18 +51,28 @@ def user_items(ingredients: list[str]) -> list[str]:
 
 def owned_vocabulary(items: list[str], vocabulary: list[str]) -> set[str]:
     """Vocabulary names the user owns by exact spelling (spaces ignored) or a synonym group."""
-    forms = {_norm(i) for i in items}
-    for group in SYNONYM_GROUPS:
-        if forms & group:
-            forms |= group
+    forms = with_synonyms(_norm(i) for i in items)
     return {v for v in vocabulary if v in forms}
 
 
+def with_synonyms(names: Iterable[str]) -> set[str]:
+    """The names plus every spelling of their synonym groups."""
+    forms = set(names)
+    for group in SYNONYM_GROUPS:
+        if forms & group:
+            forms |= group
+    return forms
+
+
 def suggest_choices(
-    ingredients: list[str], dish_names: list[str], vocabulary: list[str]
+    ingredients: list[str],
+    dish_names: list[str],
+    vocabulary: list[str],
+    assumed: frozenset[str] = frozenset(),
 ) -> SuggestChoices:
+    """``assumed`` are the staples taken to be at home; they are never a ``missing`` choice."""
     items = user_items(ingredients)
-    owned = owned_vocabulary(items, vocabulary)
+    excluded = owned_vocabulary(items, vocabulary) | with_synonyms(assumed)
     return SuggestChoices(
-        names=list(dish_names), have=items, missing=[v for v in vocabulary if v not in owned]
+        names=list(dish_names), have=items, missing=[v for v in vocabulary if v not in excluded]
     )

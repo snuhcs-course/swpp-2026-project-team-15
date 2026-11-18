@@ -59,7 +59,13 @@ def build_dish_service(env: Mapping[str, str] | None = None, model_key: str = ""
     reviser = Reviser(catalog, catalog, llm, recipes)
     key = env.get("DISH_LLM_API_KEY") or model_key
     return DishService(
-        catalog, llm, build_video_finder(env, key), recipes, reviser=reviser, index=catalog
+        catalog,
+        llm,
+        build_video_finder(env, key),
+        recipes,
+        reviser=reviser,
+        index=catalog,
+        assumed=catalog.staples,
     )
 
 
