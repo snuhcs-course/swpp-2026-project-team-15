@@ -126,7 +126,8 @@ private fun RecipeContent(recipe: DishRecipe, revision: ReviseUiState?, onRevise
 
 private fun attribution(recipe: DishRecipe): String {
     val video = listOfNotNull(recipe.videoChannel, recipe.videoTitle).joinToString(" · ")
-    return if (video.isBlank()) "AI가 영상의 자막에서 정리한 레시피" else "AI가 영상의 자막에서 정리한 레시피 · $video"
+    val origin = if (recipe.fromVideo) "AI가 영상을 보고 정리한 레시피" else "AI가 영상의 자막에서 정리한 레시피"
+    return if (video.isBlank()) origin else "$origin · $video"
 }
 
 @Composable

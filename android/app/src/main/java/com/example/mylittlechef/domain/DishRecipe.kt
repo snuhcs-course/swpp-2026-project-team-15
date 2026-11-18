@@ -21,7 +21,9 @@ data class DishRecipe(
     val steps: List<RecipeStep>,
     val tips: List<String>,
     val uncertain: List<String>,
-    val captionGaps: Boolean
+    val captionGaps: Boolean,
+    /** True when the recipe was written from the video itself rather than from its captions. */
+    val fromVideo: Boolean = false
 ) {
     val hasMissing get() = ingredients.any { it.availability == Availability.UNAVAILABLE }
 }
@@ -74,7 +76,8 @@ fun RecipeViewResponse.toDishRecipe(): DishRecipe? {
         steps = steps,
         tips = source.tips.orEmpty().filter { it.isNotBlank() },
         uncertain = source.uncertain.orEmpty().filter { it.isNotBlank() },
-        captionGaps = source.captionGaps == true
+        captionGaps = source.captionGaps == true,
+        fromVideo = source.source == "ai_structured_from_video"
     )
 }
 

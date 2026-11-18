@@ -184,5 +184,11 @@ class DishRecipeSessionTest {
         val recipe = view().toDishRecipe()!!
         assertEquals("채널", recipe.videoChannel)
         assertEquals(2, recipe.steps.size)
+        assertEquals(false, recipe.fromVideo)
+    }
+
+    @Test fun recipesWrittenFromTheVideoAreMarkedAsSuch() {
+        val recipe = view().copy(recipe = source().copy(source = "ai_structured_from_video")).toDishRecipe()!!
+        assertTrue(recipe.fromVideo)
     }
 }

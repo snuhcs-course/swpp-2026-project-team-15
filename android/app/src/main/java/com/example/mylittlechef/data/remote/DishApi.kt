@@ -80,7 +80,8 @@ data class SourceRecipeDto(
     val steps: List<RecipeStepDto>?,
     val tips: List<String>?,
     val uncertain: List<String>?,
-    @SerializedName("caption_gaps") val captionGaps: Boolean?
+    @SerializedName("caption_gaps") val captionGaps: Boolean?,
+    val source: String? = null
 )
 
 data class RecipeViewRequest(
