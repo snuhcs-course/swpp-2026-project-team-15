@@ -152,6 +152,13 @@ fun ProfileContent(
     }
 }
 
+/** One wording for what a reset erases, so the row and the dialog cannot drift apart. */
+internal object DataResetCopy {
+    private const val ERASED = "냉장고, 프로필, 즐겨찾기, 화면 모드"
+    const val SUMMARY = "${ERASED}를 지우고 처음부터 다시 시작해요."
+    const val CONFIRM = "${ERASED}가 모두 지워져요. 되돌릴 수 없어요."
+}
+
 /** Bottom section of 내 정보: wipes the local data after a confirmation and starts over at the onboarding. */
 @Composable
 private fun DataResetSection(dataReset: DataResetViewModel, onDone: () -> Unit) {
@@ -160,7 +167,7 @@ private fun DataResetSection(dataReset: DataResetViewModel, onDone: () -> Unit) 
     Spacer(Modifier.height(16.dp))
     Text(text = "데이터 초기화", style = MaterialTheme.typography.titleMedium)
     Text(
-        text = "냉장고, 프로필, 즐겨찾기를 지우고 처음부터 다시 시작해요.",
+        text = DataResetCopy.SUMMARY,
         style = MaterialTheme.typography.bodySmall,
         modifier = Modifier.padding(vertical = 4.dp)
     )
@@ -177,7 +184,7 @@ private fun DataResetSection(dataReset: DataResetViewModel, onDone: () -> Unit) 
         AlertDialog(
             onDismissRequest = { confirming = false },
             title = { Text("데이터를 초기화할까요?") },
-            text = { Text("냉장고, 프로필, 즐겨찾기, 화면 모드가 모두 지워져요. 되돌릴 수 없어요.") },
+            text = { Text(DataResetCopy.CONFIRM) },
             confirmButton = {
                 TextButton(
                     modifier = Modifier.testTag("confirm-reset-data"),
