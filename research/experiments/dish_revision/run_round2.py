@@ -45,7 +45,7 @@ def cost(row: dict) -> float:
 
 def run_set(name, cases, store, catalog, llm, usage) -> dict:
     per_variant: dict[str, list[dict]] = {v: [] for v in round2.VARIANTS}
-    calls, coverage, mismatch = [], [], []
+    calls, coverage, mismatch, raws = [], [], [], {}
     for case in cases:
         if len(usage.rows) >= CALL_CAP:
             print("call cap reached; stopping", file=sys.stderr)
@@ -55,6 +55,7 @@ def run_set(name, cases, store, catalog, llm, usage) -> dict:
         reviser = Reviser(catalog, catalog, llm, store)
         status = reviser.availability(recipe, case["ingredients"])
         before = len(usage.rows)
+        llm.last = None  # a case without a model call must not reuse the previous answer
         served = None
         try:
             served = reviser.revise(case["dish_id"], case["ingredients"]).status
@@ -100,6 +101,7 @@ def run_set(name, cases, store, catalog, llm, usage) -> dict:
         "latency_cost": round2.latency_cost(calls),
         "coverage": coverage,
         "served_vs_current_mismatch": mismatch,
+        "raw_answers": raws,
     }
 
 
@@ -108,6 +110,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--allow-live-api", action="store_true")
     parser.add_argument("--real-recipes", type=Path, help="recipes file made from captions")
     parser.add_argument("--build-real-cases", type=Path, help="write the real-recipe fridges here")
+    parser.add_argument("--real-only", action="store_true", help="skip the synthetic cases")
     args = parser.parse_args(argv)
     catalog = Catalog.load()
     if args.build_real_cases:
@@ -137,7 +140,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     usage = Usage()
     llm = RecordingLLM(DishLLM(key, DEFAULT_MODEL, transport=UsageTransport(usage)))
-    results = [run_set("synthetic", cases, synthetic, catalog, llm, usage)]
+    results = (
+        [] if args.real_only else [run_set("synthetic", cases, synthetic, catalog, llm, usage)]
+    )
     if args.real_recipes:
         real = RecipeStore.load(args.real_recipes)
         real_cases = json.loads(real_cases_path.read_text(encoding="utf-8"))["cases"]
