@@ -26,7 +26,7 @@ KEEP_SENTENCE = (
     " Keep every owned or assumed source ingredient that the revised recipe still uses in the"
     " ingredient list, with its source amount; only omitted or replaced ingredients leave the list."
 )
-OLD = prompts.REVISE_SYSTEM
+OLD = prompts.REVISE_SYSTEM.replace(KEEP_SENTENCE, "", 1)  # the text served before 2b
 
 
 def keep_variant(text: str) -> str:
@@ -83,6 +83,7 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--allow-live-api", action="store_true")
     p.add_argument("--demo-recipes", type=Path, help="served recipe file for the tofu-pan case")
+    p.add_argument("--skip-synthetic", action="store_true")
     p.add_argument("--real-sample", type=int, default=0, help="also run N served recipes")
     a = p.parse_args(argv)
     if not a.allow_live_api:
@@ -95,11 +96,14 @@ def main(argv: list[str] | None = None) -> int:
     result: dict = {"started": datetime.now(UTC).isoformat()}
     for name, text in (("old", OLD), ("keep", keep_variant(OLD))):
         prompts.REVISE_SYSTEM = text
-        result[name] = {"synthetic": run(cases, synthetic, catalog, llm)}
+        result[name] = (
+            {} if a.skip_synthetic else {"synthetic": run(cases, synthetic, catalog, llm)}
+        )
         if a.demo_recipes:
             demo = RecipeStore.load(a.demo_recipes)
             demo_case = [{"id": "demo-tofu-pan", "dish_id": "tofu-pan", "ingredients": ["두부"]}]
-            result[name]["demo"] = run(demo_case, demo, catalog, llm)
+            if not a.skip_synthetic:
+                result[name]["demo"] = run(demo_case, demo, catalog, llm)
             if a.real_sample:
                 ids = list(json.loads(a.demo_recipes.read_text())["recipes"])
                 real = real_cases(demo, ids, a.real_sample)

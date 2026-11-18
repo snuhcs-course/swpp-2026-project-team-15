@@ -94,3 +94,18 @@ Refusal precision was 1.00 in every cell. Change reasons in the raw revising ans
 Trigger: on the phone, 두부부침 with only 두부 owned failed twice (`unexplained_change`): the model kept only 두부 in the ingredient list and dropped the assumed staples, one of them (식용유) without a reason. Question: does one added sentence in rule 2 ("keep every owned or assumed source ingredient the revised recipe still uses in the ingredient list, with its source amount") stop such answers? Variants `old` (served text) and `keep`; the 36 frozen synthetic cases plus the demo case, one run each through the served `Reviser`. Metrics and plan: [criteria_round2b.json](criteria_round2b.json). No pass/fail thresholds; the decision is written after the numbers. Runner: `run_round2b.py` (dry run by default).
 
 Amendment (2026-11-19, before the real-sample calls): the synthetic fixtures have no assumed rows, so they cannot show the targeted failure. Added 20 served recipes sampled with seed 20261119, fridge = the recipe's main ingredients only, old vs keep, one run each.
+
+### Round 2b results (2026-11-19)
+
+Model calls: about 150 (two runs of the 36 synthetic + 1 demo case, then 20 served recipes x 2); cost under $0.06. One run per variant at temperature 0.
+
+| Set | Variant | Served revised | Refused | Failed (codes) | Other |
+|---|---|---|---|---|---|
+| 36 synthetic (24 revise, 12 refuse) | old | 20/24 | 12/12 | 4 (bad_reference 2, unavailable_ingredient 2) | |
+| | keep | 19/24 | 12/12 | 5 (mentions_unavailable 3, bad_reference 1, unavailable_ingredient 1) | |
+| Demo case 두부부침 with ['두부'] | old | | | failed (unexplained_change) | twice before on the server |
+| | keep | revised | | | |
+| 20 served recipes, fridge = main ingredients | old | 11 | 4 | 5 (mentions_unavailable 3, unavailable_ingredient 2) | |
+| | keep | 12 | 3 | 4 (mentions_unavailable 3, unavailable_ingredient 1) | 1 provider error (cut-off answer) |
+
+Interpretation: the sentence removes the failure seen on the phone, and neither set shows a cost of it; the case-by-case outcomes flip in both directions between the two runs (7 of 36 synthetic, 8 of 20 served), so run-to-run variation is larger than any difference between the variants and the sets cannot rank them. The synthetic fixtures have no assumed rows, and in the served sample the targeted failure (unexplained_change) did not occur in either variant, so this failure is rarer than the phone case suggested. Adopted: `keep` (judgement: removes an observed failure, no measured harm). Bigger finding: with only the main ingredients owned, about a quarter of served recipes end in a failed answer, mostly a step that still mentions an omitted ingredient (`mentions_unavailable`); this is not addressed here.
