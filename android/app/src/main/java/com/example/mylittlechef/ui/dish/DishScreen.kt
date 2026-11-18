@@ -160,6 +160,18 @@ fun DishScreen(
             onDismiss = { dishes.selectDish(null) }
         )
     }
+    val recipeDish = (dishes.state as? DishUiState.Success)?.dishes?.firstOrNull { it.id == dishes.recipes.openDishId }
+    if (recipeDish != null) {
+        LaunchedEffect(recipeDish.id, names) { dishes.recipes.requestRecipe(recipeDish.id) }
+        DishRecipeSheet(
+            dish = recipeDish,
+            recipe = dishes.recipes.recipeState(recipeDish.id),
+            revision = dishes.recipes.reviseState(recipeDish.id),
+            onRetryRecipe = { dishes.recipes.requestRecipe(recipeDish.id) },
+            onRevise = { dishes.recipes.requestRevision(recipeDish.id) },
+            onDismiss = dishes.recipes::close
+        )
+    }
     if (showInfo) {
         AlertDialog(
             onDismissRequest = { showInfo = false },
@@ -189,6 +201,7 @@ private fun DishList(state: DishUiState.Success, dishes: DishViewModel) {
                 thumbnail = (dishes.videoState(dish.id) as? VideoUiState.Success)
                     ?.videos?.firstNotNullOfOrNull { it.thumbnailUrl },
                 onOpen = { dishes.selectDish(dish.id, DishSheetMode.VIDEOS) },
+                onRecipe = { dishes.recipes.open(dish.id) },
                 onAdapt = {
                     dishes.selectDish(dish.id, DishSheetMode.ADAPT)
                     if (dishes.adaptState(dish.id) == null) dishes.requestAdapt(dish)
@@ -200,7 +213,7 @@ private fun DishList(state: DishUiState.Success, dishes: DishViewModel) {
 }
 
 @Composable
-private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onAdapt: () -> Unit) {
+private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onRecipe: () -> Unit, onAdapt: () -> Unit) {
     // With very large text the card keeps its shape: the category and the action labels give way, long lines wrap.
     val large = LocalDensity.current.fontScale >= 1.3f
     val ingredients = remember(dish) { dish.have.map { it to true } + dish.missing.map { it to false } }
@@ -259,18 +272,30 @@ private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onAdapt
             Spacer(Modifier.weight(0.05f))
             VerticalDivider(thickness = 1.dp, color = GreenGray, modifier = Modifier.heightIn(min = CardImageSize))
             Column(
-                Modifier.width(56.dp).heightIn(min = CardImageSize),
+                Modifier.width(108.dp).heightIn(min = CardImageSize),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                CardAction(
-                    R.drawable.ic_play,
-                    "영상",
-                    large,
-                    "영상 보기",
-                    Modifier.testTag("dish-videos-${dish.id}"),
-                    onOpen
-                )
+                Row {
+                    CardAction(
+                        R.drawable.ic_play,
+                        "영상",
+                        large,
+                        "영상 보기",
+                        Modifier.testTag("dish-videos-${dish.id}"),
+                        onOpen
+                    )
+                    if (dish.hasRecipe) {
+                        CardAction(
+                            R.drawable.ic_recipe,
+                            "레시피",
+                            large,
+                            "레시피 보기",
+                            Modifier.testTag("dish-recipe-${dish.id}"),
+                            onRecipe
+                        )
+                    }
+                }
                 if (dish.missing.isNotEmpty()) {
                     CardAction(
                         R.drawable.ic_swap,
@@ -327,7 +352,7 @@ private fun CardAction(
     Column(
         modifier
             .heightIn(min = 48.dp)
-            .width(56.dp)
+            .width(54.dp)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { contentDescription = "$description, $label" },
         horizontalAlignment = Alignment.CenterHorizontally,

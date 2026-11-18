@@ -19,7 +19,8 @@ data class Dish(
     val have: List<String>,
     val missing: List<String>,
     val reason: String,
-    val searchUrl: String
+    val searchUrl: String,
+    val hasRecipe: Boolean = false
 )
 
 data class Substitution(val missing: String, val suggestion: String, val uses: List<String>)
@@ -54,7 +55,8 @@ fun DishDto.toDish(): Dish? {
         have = have.orEmpty(),
         missing = missing.orEmpty(),
         reason = reason.orEmpty(),
-        searchUrl = DishLinks.safeSearchUrl(searchUrl, name)
+        searchUrl = DishLinks.safeSearchUrl(searchUrl, name),
+        hasRecipe = hasRecipe == true
     )
 }
 

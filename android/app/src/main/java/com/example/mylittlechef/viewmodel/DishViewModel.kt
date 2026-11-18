@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.mylittlechef.data.remote.DishAdaptRequest
 import com.example.mylittlechef.data.remote.DishApi
 import com.example.mylittlechef.data.remote.DishApiClient
+import com.example.mylittlechef.data.remote.DishRecipeApi
 import com.example.mylittlechef.data.remote.DishSuggestRequest
 import com.example.mylittlechef.data.remote.DishVideosRequest
 import com.example.mylittlechef.domain.Dish
@@ -55,8 +56,12 @@ sealed interface VideoUiState {
 
 class DishViewModel(
     private val api: DishApi = DishApiClient.api,
-    private val debounceMillis: Long = 400L
+    private val debounceMillis: Long = 400L,
+    recipeApi: DishRecipeApi = DishApiClient.recipeApi
 ) : ViewModel() {
+    /** The recipe sheet and the revision of a dish; kept next to the dish list it opens from. */
+    val recipes = DishRecipeSession(recipeApi, viewModelScope) { lastNames.orEmpty() }
+
     var state by mutableStateOf<DishUiState>(DishUiState.EmptyFridge)
         private set
     var sort by mutableStateOf(DishSort.FEWEST_MISSING)
@@ -108,6 +113,7 @@ class DishViewModel(
         job?.cancel()
         adaptations.clear()
         videoStates.clear()
+        recipes.reset()
         lastNames = null
         rawDishes = emptyList()
         rawSource = ""
@@ -125,6 +131,7 @@ class DishViewModel(
         val mine = ++generation
         job?.cancel()
         adaptations.clear() // substitutions depend on what the fridge holds
+        recipes.clear()
         if (names.isEmpty()) {
             rawDishes = emptyList()
             state = DishUiState.EmptyFridge
