@@ -18,7 +18,7 @@ The model answers a suggestion with dishes and, per dish, the ingredients the us
 - On 27 frozen inputs the owned-as-missing error went from 8.3% of dishes to 0 with recall and precision unchanged; answers are about one third longer (+$0.0001 and about +1 s per call).
 - A user item that matches no vocabulary entry (슬라이스치즈, 청양고추) does not remove its vocabulary form from `missing`; about 1% of dishes in a 15-list mapping set still showed such an item as missing.
 - Adding a synonym group or a key ingredient changes the lists automatically.
-- Lists are short at the median (16–18 dishes) but a few inputs still run away to about 100 dishes and about 8 s; ordering by `missing` puts cookable dishes first (dishes with at most one missing ingredient among the first five: 0.53 to 0.62 on stored answers).
+- Lists are short at the median (16–18 dishes among answers that were not cut) but common inputs still run to the 4,096-token limit (two live requests: cut after 7 and 13 complete dishes, about 8 s), partly because seasonings are allowed `missing` choices; ordering by `missing` puts cookable dishes first (dishes with at most one missing ingredient among the first five: 0.53 to 0.62 on stored answers).
 
 ## Not now
 
