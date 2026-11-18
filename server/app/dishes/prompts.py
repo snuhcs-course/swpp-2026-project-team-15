@@ -10,6 +10,7 @@ and the wording can change without touching it. Recipe text is data, never instr
 import json
 from dataclasses import dataclass
 
+from app.dishes.choices import SuggestChoices
 from app.dishes.schemas import SourceRecipe
 
 
@@ -21,6 +22,9 @@ class ModelRequest:
     schema: dict
 
 
+# SUGGEST_SYSTEM and SUGGEST_SCHEMA are the free-text format that the studies under
+# research/experiments measured before round 2 of the answer format study; they stay for
+# reproducing those runs. The service sends SUGGEST_CLOSED_SYSTEM with suggest_schema(choices).
 SUGGEST_SYSTEM = (
     "You help a Korean student living alone decide what to cook from the ingredients they have. "
     "Return every dish from the given dish list that can reasonably be cooked with the owned "
@@ -29,6 +33,16 @@ SUGGEST_SYSTEM = (
     "and 'missing' lists the main ingredients the user lacks. Basic seasonings and oil at home "
     "(salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish "
     "fits, return an empty list. Never add dishes just to fill the list."
+)
+SUGGEST_CLOSED_SYSTEM = (
+    "You help a Korean student living alone decide what to cook from the ingredients they have. "
+    "Return every dish from the given dish list that can reasonably be cooked with the owned "
+    "ingredients, best first. For each dish, 'have' lists ONLY ingredients that appear in the "
+    "user's owned list and that this dish uses, and 'missing' lists the main ingredients this "
+    "dish needs that are not in the owned list; both are chosen from the allowed values of the "
+    "answer format. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking "
+    "oil, sesame oil, water) are not listed. If no dish fits, return an empty list. Never add "
+    "dishes just to fill the list."
 )
 ADAPT_SYSTEM = (
     "A student wants to cook a dish but lacks some ingredients. For each missing ingredient, "
@@ -76,6 +90,33 @@ ADAPT_SCHEMA = {
     "required": ["substitutions"],
     "additionalProperties": False,
 }
+
+
+def _choice_array(values: list[str]) -> dict:
+    """An array of the given values only; with no values, only the empty array."""
+    if not values:
+        return {"type": "array", "maxItems": 0}
+    return {"type": "array", "items": {"type": "string", "enum": values}}
+
+
+def suggest_schema(choices: SuggestChoices) -> dict:
+    """The answer format of one suggestion request, closed to the request's lists."""
+    dish = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string", "enum": choices.names},
+            "have": _choice_array(choices.have),
+            "missing": _choice_array(choices.missing),
+        },
+        "required": ["have", "missing", "name"],
+        "additionalProperties": False,
+    }
+    return {
+        "type": "object",
+        "properties": {"dishes": {"type": "array", "items": dish}},
+        "required": ["dishes"],
+        "additionalProperties": False,
+    }
 
 
 def suggest_user_message(ingredients: list[str], names: list[str]) -> str:
@@ -155,9 +196,9 @@ def revise_user_message(
     return json.dumps(payload, ensure_ascii=False)
 
 
-def suggest_request(ingredients: list[str], dish_names: list[str]) -> ModelRequest:
-    user = suggest_user_message(ingredients, dish_names)
-    return ModelRequest(SUGGEST_SYSTEM, user, "dish_choice", SUGGEST_SCHEMA)
+def suggest_request(choices: SuggestChoices) -> ModelRequest:
+    user = suggest_user_message(choices.have, choices.names)
+    return ModelRequest(SUGGEST_CLOSED_SYSTEM, user, "dish_choice", suggest_schema(choices))
 
 
 def adapt_request(dish_name: str, missing: list[str], owned: list[str]) -> ModelRequest:

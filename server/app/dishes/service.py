@@ -5,6 +5,7 @@ the request (prompts.py), calls the model and has the answer checked (answers.py
 wording and no rules of its own. There is no rules fallback."""
 
 from app.dishes.answers import check_adapt, check_suggest, search_url, strings
+from app.dishes.choices import ingredient_vocabulary, suggest_choices
 from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError, VideoError
 from app.dishes.prompts import adapt_request, suggest_request
 from app.dishes.revision import Reviser
@@ -31,14 +32,18 @@ class DishService:
         self.recipes = recipes
         self.reviser = reviser
         self.index = index
+        self._vocabulary = ingredient_vocabulary(catalog.all())
 
     def suggest(self, ingredients: list[str]) -> SuggestResponse:
         """Raises DishLLMError when the model is missing or fails."""
         if self.llm is None:
             raise DishLLMError(MODEL_NOT_CONFIGURED)
-        request = suggest_request(ingredients, [d.name for d in self.catalog.all()])
+        names = [d.name for d in self.catalog.all()]
+        choices = suggest_choices(ingredients, names, self._vocabulary)
+        request = suggest_request(choices)
         data = self.llm.complete(request.system, request.user, request.name, request.schema)
-        return SuggestResponse(source="llm", dishes=check_suggest(data, self.catalog, self.recipes))
+        dishes = check_suggest(data, self.catalog, self.recipes, choices)
+        return SuggestResponse(source="llm", dishes=dishes)
 
     def videos(self, dish_id: str) -> VideosResponse | None:
         """None when the dish is unknown. Raises VideoError when the lookup fails or is off."""

@@ -2,14 +2,16 @@
 """Check what the model answered before the user sees it. No model call, no network.
 
 The model's order is kept. Only what the closed lists can decide is decided here: a dish name must
-be in the dish list, a substitute must be something the user owns. ``have`` and ``missing`` are
-returned as the model wrote them (trimmed).
+be in the dish list, ``have`` and ``missing`` must be within the request's choices (choices.py),
+and a substitute must be something the user owns. The re-check matters when a provider does not
+enforce the answer format.
 """
 
 import json
 import re
 from urllib.parse import quote_plus
 
+from app.dishes.choices import SuggestChoices
 from app.dishes.roles import DishCatalog, RecipeBook
 from app.dishes.schemas import Substitution, SuggestedDish
 
@@ -30,10 +32,24 @@ def strings(value: object, *, unique: bool = True) -> list[str]:
     return out
 
 
+def _within(values: list[str], allowed: list[str] | None) -> list[str]:
+    if allowed is None:
+        return values
+    allowed_set = set(allowed)
+    return [v for v in values if v in allowed_set]
+
+
 def check_suggest(
-    data: dict, catalog: DishCatalog, recipes: RecipeBook | None
+    data: dict,
+    catalog: DishCatalog,
+    recipes: RecipeBook | None,
+    choices: SuggestChoices | None = None,
 ) -> list[SuggestedDish]:
-    """Keep the model's order; drop names outside the list and repeated names."""
+    """Keep the model's order; drop names outside the list and repeated names. With the request's
+    choices, also drop ``have``/``missing`` entries outside them, so an owned ingredient never
+    comes back as missing."""
+    have_ok = choices.have if choices else None
+    missing_ok = choices.missing if choices else None
     out: list[SuggestedDish] = []
     seen: set[str] = set()
     items = data.get("dishes")
@@ -50,8 +66,8 @@ def check_suggest(
                 id=dish.id,
                 name=dish.name,
                 category=dish.category,
-                have=strings(item.get("have")),
-                missing=strings(item.get("missing")),
+                have=_within(strings(item.get("have")), have_ok),
+                missing=_within(strings(item.get("missing")), missing_ok),
                 search_url=search_url(dish.name),
                 has_recipe=recipes is not None and dish.id in recipes,
             )
