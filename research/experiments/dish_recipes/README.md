@@ -110,3 +110,25 @@ No item was clearly invented, but the unclear ones cannot be settled without wat
 - 20 recipes come from Shorts (60 s or less). They are thinner: median 9 ingredients and 9 steps with amounts for 50% of ingredients, against 10, 12.5 and 78% for longer videos.
 - Main labels: median one main ingredient per recipe; 된장찌개 and 군만두 have none, so the recipe check's main-ingredient rule does nothing for them.
 - The file keeps only the video id; title and channel are looked up live by the server.
+
+## Vertical videos
+
+Question: how many stored links are vertical (Shorts-like, 9:16)? The app's player area is horizontal (16:9), and the Data API has no "is a Short" field.
+
+Method (`orientation.py`): `videos.list` with `part=player&maxWidth=1000` returns `player.embedWidth`/`embedHeight` scaled with the video's aspect ratio kept (Data API reference, videos resource). Height > width is vertical. 1 quota unit per 50 ids; 8 units here. The API returns the sizes as strings; the first run compared them as text and called 364 of 365 links vertical ("563" > "1000"), which was caught by checking the known long videos and fixed (a test pins it).
+
+Check on videos of known orientation (2026-11-19): 5 titled `#shorts`/쇼츠 (23–80 s) all came back 1000×1778, 5 long recipe videos (703–1,270 s) all 1000×563; 10 of 10 matched.
+
+Results (365 stored links, 353 distinct videos, 128 dishes; 124 stored recipes):
+
+| Count | Value |
+| --- | --- |
+| Links: horizontal / vertical / square | 270 / 94 / 1 |
+| Distinct vertical videos | 93 |
+| Dishes whose first link is vertical | 25 |
+| Dishes whose links are all vertical | 12 |
+| Dishes by number of vertical links (0 / 1 / 2 / 3 / 4 / 5) | 73 / 34 / 11 / 4 / 4 / 2 |
+| Stored recipes made from a vertical video | 24 of 124 |
+| Duration as a proxy: vertical ≤ 60 s / vertical > 60 s / horizontal ≤ 60 s | 82 / 11 / 4 |
+
+Reading: about a quarter of the links are vertical and a fifth of the dishes would open with one. Duration is a poor stand-in for orientation (15 of 98 short-or-vertical cases disagree), so any later handling should use the orientation, not a length cut. How a vertical video looks in the app's player was not measured here (no phone run); that is the next step. Per-video orientation is stored outside the repository (`orientation.json` next to the recipe file).
