@@ -46,7 +46,9 @@ def load_criteria() -> dict:
 
 
 def dish_table() -> dict[str, dict]:
-    raw = json.loads((REPO / "server" / "app" / "dishes" / "dishes.json").read_text("utf-8"))
+    # the sample was drawn from the catalog of the freeze (130 dishes)
+    frozen = REPO / "research" / "experiments" / "dish_eval" / "catalog_at_freeze.json"
+    raw = json.loads(frozen.read_text("utf-8"))
     return {d["id"]: d for d in raw["dishes"]}
 
 

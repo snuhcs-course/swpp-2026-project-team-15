@@ -94,7 +94,7 @@ def test_model_answer_is_returned_as_written_after_the_name_check(catalog):
             ("존재하지 않는 요리", ["김치"], []),
             ("김치볶음밥", [" 밥 ", "김치", "김치"], ["대파", "계란"]),
             ("김치볶음밥", ["밥"], []),  # repeated name: dropped
-            ("김치죽", ["김치", "밥"], []),
+            ("김치비빔밥", ["김치", "밥"], []),
         )
     )
     body = (
@@ -103,7 +103,7 @@ def test_model_answer_is_returned_as_written_after_the_name_check(catalog):
         .json()
     )
     assert body["source"] == "llm"
-    assert [d["name"] for d in body["dishes"]] == ["김치볶음밥", "김치죽"]  # order kept, no cap
+    assert [d["name"] for d in body["dishes"]] == ["김치볶음밥", "김치비빔밥"]  # order kept, no cap
     first = body["dishes"][0]
     assert first["id"] == "kimchi-fried-rice"
     assert first["have"] == ["밥", "김치"] and first["missing"] == ["대파", "계란"]
@@ -131,13 +131,15 @@ def test_empty_model_answer_is_an_answer_not_an_error(catalog):
 
 
 def test_malformed_model_items_are_skipped(catalog):
-    llm = FakeLLM({"dishes": ["x", {"name": 3}, {"name": "김치죽", "have": "밥", "missing": None}]})
+    llm = FakeLLM(
+        {"dishes": ["x", {"name": 3}, {"name": "김치비빔밥", "have": "밥", "missing": None}]}
+    )
     body = (
         client_for(DishService(catalog, llm))
         .post("/dishes/suggest", json={"ingredients": ["김치"]})
         .json()
     )
-    assert [d["name"] for d in body["dishes"]] == ["김치죽"]
+    assert [d["name"] for d in body["dishes"]] == ["김치비빔밥"]
     assert body["dishes"][0]["have"] == [] and body["dishes"][0]["missing"] == []
 
 

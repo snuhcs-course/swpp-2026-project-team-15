@@ -3,6 +3,8 @@
 > **Scope note (naive-dishes branch).** This evaluation and its runner measure the earlier design (the model chooses ids from a candidate list; the server computes have/missing and falls back to rules), as of the commit recorded in each run. On the naive branch the service no longer has candidate ids, a rules fallback or a `limit`, so `run_eval.py` is kept as the record and does not run against the current service. The naive design is measured in [`../dish_naive/`](../dish_naive/README.md).
 
 
+Catalog later reduced to 128 dishes (two removed on 2026-11-19); the frozen cases are scored against the catalog of their freeze commit, kept as `catalog_at_freeze.json` (read-only; the tests of this study and of the studies that reuse its cases load it).
+
 Question: for a short list of ingredients, does the dish service show dishes a home cook can actually make, and when it proposes a substitute for a missing ingredient, is the substitute one the server's own table allows?
 
 Scope: the AI-backed endpoints `POST /dishes/suggest` and `POST /dishes/adapt` of the dish-list server (no recipe database; a closed list of 130 student dishes with key ingredients, equivalents, a substitution table and combinations). The model only chooses dishes from candidates the server computed and words substitutions the server allowed; `have` and `missing` are computed by the server.

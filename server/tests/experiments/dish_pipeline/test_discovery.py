@@ -23,14 +23,14 @@ def test_ids_come_from_ids_urls_and_titled_items():
 def test_parse_dishes_keeps_first_name_and_both_shapes():
     data = {
         "dishes": [
-            {"name": "김치죽", "video_ids": [A], "have": ["김치"], "missing": []},
-            {"name": "김치죽", "video_ids": [B]},
+            {"name": "김치비빔밥", "video_ids": [A], "have": ["김치"], "missing": []},
+            {"name": "김치비빔밥", "video_ids": [B]},
             {"name": "계란말이", "videos": [{"id": C, "title": "x"}]},
             {"video_ids": [A]},
         ]
     }
     parsed = d.parse_dishes(data)
-    assert parsed["김치죽"]["ids"] == [A] and parsed["계란말이"]["ids"] == [C]
+    assert parsed["김치비빔밥"]["ids"] == [A] and parsed["계란말이"]["ids"] == [C]
     assert d.parse_dishes(None) == {}
 
 
@@ -55,8 +55,8 @@ def test_rule_check_keeps_order_and_drops_unavailable_ids():
         seen.append(list(ids))
         return [items[i] for i in ids if i in items]
 
-    check = d.apply_rule_check({"김치죽": [B, A, "zzzzzzzzzzz", C], "빈": []}, fetch)
-    assert check["kept"] == {"김치죽": [A], "빈": []}
+    check = d.apply_rule_check({"김치비빔밥": [B, A, "zzzzzzzzzzz", C], "빈": []}, fetch)
+    assert check["kept"] == {"김치비빔밥": [A], "빈": []}
     assert check["returned_ids"] == 4 and check["existing_ids"] == 3 and check["list_calls"] == 1
     assert len(seen) == 1
 

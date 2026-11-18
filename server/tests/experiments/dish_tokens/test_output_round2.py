@@ -10,7 +10,7 @@ from experiments.dish_tokens.run_output import (
     split_missing,
 )
 
-NAMES = ["김치죽", "계란말이"]
+NAMES = ["김치비빔밥", "계란말이"]
 
 
 def item(schema):

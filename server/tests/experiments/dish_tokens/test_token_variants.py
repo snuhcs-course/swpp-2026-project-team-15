@@ -8,7 +8,7 @@ import pytest
 from experiments.dish_tokens import calls
 from experiments.dish_tokens.run_tokens import CEILING, main, payload_for, qualifies, user_message
 
-NAMES = ["김치죽", "계란말이"]
+NAMES = ["김치비빔밥", "계란말이"]
 
 
 def test_variants_change_only_what_they_claim():
@@ -32,7 +32,7 @@ def test_variants_change_only_what_they_claim():
 
 
 def test_message_layouts():
-    assert user_message("V2", ["김치", "밥"], NAMES) == "owned: 김치, 밥\ndishes: 김치죽, 계란말이"
+    assert user_message("V2", ["김치", "밥"], NAMES) == "owned: 김치, 밥\ndishes: 김치비빔밥, 계란말이"
     assert list(json.loads(user_message("B", ["김치"], NAMES))) == ["owned", "dishes"]
     assert list(json.loads(user_message("V5", ["김치"], NAMES))) == ["dishes", "owned"]
 

@@ -3,7 +3,7 @@
 
 from experiments.dish_naive.run_round2 import ADOPTABLE, decide, payload_for, prompts, schema_for
 
-NAMES = ["김치죽", "계란말이"]
+NAMES = ["김치비빔밥", "계란말이"]
 
 
 def _item(schema):

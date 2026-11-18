@@ -17,7 +17,7 @@ OLD_CASES = json.loads((HERE / "dish_eval" / "cases.json").read_text(encoding="u
 
 @pytest.fixture(scope="module")
 def catalog():
-    return Catalog.load()
+    return Catalog.load(HERE / "dish_eval" / "catalog_at_freeze.json")  # the catalog of the freeze
 
 
 def test_criteria_reuse_the_frozen_suggestion_inputs():

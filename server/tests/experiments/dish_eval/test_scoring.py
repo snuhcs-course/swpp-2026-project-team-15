@@ -17,7 +17,8 @@ THRESHOLDS = json.loads((HERE / "thresholds.json").read_text(encoding="utf-8"))
 
 @pytest.fixture(scope="module")
 def catalog():
-    return Catalog.load()
+    # the cases were frozen against this catalog (130 dishes); the live one has two dishes fewer
+    return Catalog.load(HERE / "catalog_at_freeze.json")
 
 
 @pytest.fixture(scope="module")

@@ -1,5 +1,6 @@
 # AI-generated with Claude Code (Sonnet 5.5), 2026-11-18; reviewed by Jaehyuk Choi.
 import json
+from pathlib import Path
 
 import httpx
 from experiments.dish_output_formats import formats, run_formats
@@ -7,7 +8,8 @@ from experiments.dish_tokens.calls import Call
 
 from app.dishes.catalog import Catalog
 
-CATALOG = Catalog.load()
+FROZEN = Path(__file__).resolve().parents[4] / "research/experiments/dish_eval/catalog_at_freeze.json"
+CATALOG = Catalog.load(FROZEN)  # the catalog of the study (130 dishes)
 NAMES = formats.dish_names(CATALOG)
 VOCAB = formats.ingredient_vocabulary(CATALOG)
 

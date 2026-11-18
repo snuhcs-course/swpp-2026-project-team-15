@@ -1299,20 +1299,6 @@
    "aliases": []
   },
   {
-   "id": "egg-salad",
-   "name": "계란샐러드",
-   "category": "샐러드",
-   "key_ingredients": [
-    "계란",
-    "마요네즈",
-    "양파"
-   ],
-   "optional": [
-    "양파"
-   ],
-   "aliases": []
-  },
-  {
    "id": "tuna-salad",
    "name": "참치샐러드",
    "category": "샐러드",
@@ -2116,21 +2102,6 @@
    ],
    "optional": [
     "당근"
-   ],
-   "aliases": []
-  },
-  {
-   "id": "kimchi-porridge",
-   "name": "김치죽",
-   "category": "죽",
-   "key_ingredients": [
-    "밥",
-    "김치",
-    "계란",
-    "참기름"
-   ],
-   "optional": [
-    "계란"
    ],
    "aliases": []
   },

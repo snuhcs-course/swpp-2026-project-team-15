@@ -65,7 +65,10 @@ def test_summarize_and_decide():
 
 def test_sample_is_reproducible_and_frozen():
     raw = json.loads(
-        (Path(__file__).resolve().parents[3] / "app" / "dishes" / "dishes.json").read_text("utf-8")
+        (
+            Path(__file__).resolve().parents[4]
+            / "research/experiments/dish_eval/catalog_at_freeze.json"
+        ).read_text("utf-8")
     )["dishes"]
     s = CRIT["sample"]
     again = sampling.build_sample(raw, s["cached"], s["seed"], s["extra_count"])
