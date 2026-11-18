@@ -59,3 +59,39 @@ The caption route stopped when YouTube refused automated caption requests from o
 | `criteria_video.json` | The fixed study design |
 
 Raw answers and recipes go to a working directory outside the repository (`--workdir`); they are third-party-derived and never committed.
+
+### Results (2026-11-19, one run per model, 32 calls, $0.88)
+
+| | `gemini-2.5-flash-lite` | `gemini-2.5-flash` |
+| --- | --- | --- |
+| Answers / valid recipes | 16 / 15 | 16 / 15 |
+| "Not the requested dish" | 1 (베이컨볶음밥: the video is a paprika and bacon fried rice) | 1 (same video) |
+| Ingredients agreeing with the caption-based recipe: median precision / recall | 0.71 / 0.73 | 0.85 / 0.79 |
+| Median ingredients / steps | 13 / 9 | 13 / 12 |
+| Ingredients with an amount | 63% | 66% |
+| Servings given | 2 of 15 | 7 of 15 |
+| Shared ingredients with the same main / non-main label as the caption-based recipe | 96 of 126 (76%) | 125 of 141 (89%) |
+| Ingredients not named in the captions | 31 | 42 |
+| Cost per video: median / total | $0.013 / $0.20 | $0.040 / $0.67 |
+| Latency: median / max | 35 s / 67 s | 19 s / 43 s |
+
+Both models received every video through Google AI Studio. A video costs about 296 input tokens per second (Shorts of 50–60 s cost $0.002–0.009); output is under 1,500 tokens.
+
+**Ingredients not in the captions, read by hand** (title, description and caption context; the video itself was not watched):
+
+| | lite | flash |
+| --- | --- | --- |
+| In the captions under another name (다진 생강 for 생강, 케첩 for 케찹, 고추냉이(와사비), 식용유 for "기름", 셀러리/샐러리) | 16 | 18 |
+| Not said but plausibly seen on screen (oil, sesame seeds, pepper; all of 비빔밥, whose captions are fragments) | 12 | 19 |
+| Unclear: neither said in the captions nor typical to see (김치 국물 for 김치볶음밥, 간장 for 김밥, 후추 for 불고기덮밥; flash also 굴소스 for 계란볶음밥, 빨간 파프리카 and 양송이버섯 for 오므라이스) | 3 | 5 |
+
+No item was clearly invented, but the unclear ones cannot be settled without watching the videos.
+
+**Side by side (6 dishes: 김치볶음밥, 계란볶음밥, 김밥, 오므라이스, 버섯볶음밥, 두부덮밥).** Both models follow the same cooking order as the caption-based recipes and often add the amounts shown on screen (계란볶음밥: 1공기 200 g, 대파 40 g, 식용유 4큰술). flash splits steps more finely (김밥 25 steps against 10–12) and copies the on-screen ingredient card more completely (오므라이스: 20 ingredients including the garnish). The clearest difference is the main label: lite marked 양파, 당근, 피망, 버섯, 소시지 and 체다 치즈 as main for 오므라이스 and 양파 and 대파 for 버섯볶음밥, which would make the recipe check refuse a change whenever one of them is missing; flash kept main to what the dish is built on in these cases, but marked only 김 as main for 김밥.
+
+**Interpretation.**
+
+- The video route works without the caption route and gives at least as much: agreement with the captions is high where the captions are good (된장찌개, 계란간장밥, 스팸마요덮밥 at 1.0 with flash) and the video adds amounts and visual items where they are not.
+- flash agrees more with the caption-based recipes, gives servings more often and labels main ingredients more consistently (89% against 76%). Since the recipe check refuses a change when a main ingredient is missing, the main label decides behaviour; this is the strongest reason to prefer flash. It costs three times as much per video but is faster.
+- The stored file is therefore built with flash. The labels are still one model's judgement: a wrong main label makes the check refuse too often (lite's 오므라이스) or too rarely (flash's 김밥), and the reference is itself AI-made from captions.
+- The "not the requested dish" answer for 베이컨볶음밥 is arguably too strict (a paprika and bacon fried rice is a variant); the build then tries the next verified video.

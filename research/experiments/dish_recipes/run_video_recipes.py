@@ -208,13 +208,16 @@ def analyze(workdir: Path) -> dict:
 # ---------- build ----------
 
 
-def build(workdir: Path, videos_file: Path, model: str, live: bool, max_calls: int) -> dict:
+def build(
+    workdir: Path, videos_file: Path, model: str, live: bool, max_calls: int, max_cost: float
+) -> dict:
     snapshot = json.loads(videos_file.read_text("utf-8"))["dishes"]
     names = dish_names()
     out_path, report_path = workdir / "recipes.json", workdir / "build-report.json"
     store = json.loads(out_path.read_text("utf-8"))["recipes"] if out_path.exists() else {}
     report = json.loads(report_path.read_text("utf-8")) if report_path.exists() else {"dishes": {}}
     calls = sum(len(d.get("tries", [])) for d in report["dishes"].values())
+    spent = sum(t["cost_usd"] for d in report["dishes"].values() for t in d.get("tries", []))
     for dish in sorted(names):
         if dish in store or report["dishes"].get(dish, {}).get("final"):
             continue
@@ -226,16 +229,18 @@ def build(workdir: Path, videos_file: Path, model: str, live: bool, max_calls: i
         if not live:
             continue
         for video in videos[len(entry["tries"]) :]:
-            if calls >= max_calls:
+            if calls >= max_calls or spent >= max_cost:
                 private_write(report_path, report)
-                print(f"stopped at the call cap ({max_calls})")
+                print(f"stopped at the cap ({calls} calls, ${spent:.2f})")
                 return report
             result = vr.call(vr.build_payload(names[dish], video["id"], model))
             calls += 1
+            spent += result.cost_usd
             answer = result.answer or {}
             entry["tries"].append(
                 {
                     "video": video["id"],
+                    "duration_s": video.get("duration_s"),
                     "ok": result.ok,
                     "error": result.error,
                     "is_requested_dish": answer.get("is_requested_dish"),
@@ -244,7 +249,8 @@ def build(workdir: Path, videos_file: Path, model: str, live: bool, max_calls: i
                     "latency_s": round(result.latency_s, 1),
                 }
             )
-            recipe = vr.to_recipe(dish, video, answer) if answer else None
+            # Only the video id is kept: the server looks the title and channel up live.
+            recipe = vr.to_recipe(dish, {"id": video["id"]}, answer) if answer else None
             problems = check_recipe(recipe, None) if recipe else ["no recipe"]
             entry["tries"][-1]["problems"] = problems if recipe else []
             if recipe and not problems:
@@ -273,6 +279,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--videos", type=Path)
     parser.add_argument("--model", default=VARIANTS["lite"])
     parser.add_argument("--max-calls", type=int, default=300)
+    parser.add_argument("--max-cost", type=float, default=5.0, help="USD, build only")
     parser.add_argument("--allow-live-api", action="store_true")
     args = parser.parse_args(argv)
     workdir = outside_repo(args.workdir)
@@ -284,7 +291,9 @@ def main(argv: list[str] | None = None) -> int:
     if not args.videos:
         print("--videos is required for build", file=sys.stderr)
         return 2
-    report = build(workdir, args.videos, args.model, args.allow_live_api, args.max_calls)
+    report = build(
+        workdir, args.videos, args.model, args.allow_live_api, args.max_calls, args.max_cost
+    )
     print(json.dumps({k: v for k, v in report.items() if k != "dishes"}, ensure_ascii=False))
     return 0
 
