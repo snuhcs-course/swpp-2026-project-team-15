@@ -31,6 +31,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -119,8 +120,17 @@ private fun VideoSection(
     Text("영상", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
     Spacer(Modifier.height(8.dp))
     if (playing != null) {
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            YouTubePlayer(playing.videoId, Modifier.widthIn(max = 480.dp))
+        var failed by remember(playing.videoId) { mutableStateOf(false) }
+        if (failed) {
+            Text(
+                "이 영상은 앱에서 재생할 수 없어요. YouTube에서 열어 보세요.",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+            )
+        } else {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                YouTubePlayer(playing.videoId, Modifier.widthIn(max = 480.dp), onError = { failed = true })
+            }
         }
         FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             TextButton(onClick = onClose) { Text("재생 닫기") }

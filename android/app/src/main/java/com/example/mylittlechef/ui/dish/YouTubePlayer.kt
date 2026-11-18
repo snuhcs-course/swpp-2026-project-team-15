@@ -5,7 +5,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.util.Log
+import android.os.Handler
+import android.os.Looper
 import android.webkit.ConsoleMessage
+import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -26,14 +29,15 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.example.mylittlechef.domain.DishLinks
 
 /**
- * Plays one video through YouTube's own embedded player. JavaScript is on for this WebView only,
- * the player is shown unchanged at 16:9, and any navigation away from the embed opens outside.
+ * Plays one video through YouTube's own embedded player (IFrame API) in a page pinned to the full
+ * WebView size. JavaScript is on for this WebView only, the player is shown unchanged at 16:9, any
+ * navigation away from the page opens outside, and player errors are reported through [onError].
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun YouTubePlayer(videoId: String, modifier: Modifier = Modifier) {
+fun YouTubePlayer(videoId: String, modifier: Modifier = Modifier, onError: (String) -> Unit = {}) {
     val context = LocalContext.current
-    val webView = remember(videoId) { createPlayerWebView(context, videoId) }
+    val webView = remember(videoId) { createPlayerWebView(context, videoId, onError) }
     DisposableEffect(webView) {
         onDispose {
             webView.stopLoading()
@@ -48,10 +52,14 @@ fun YouTubePlayer(videoId: String, modifier: Modifier = Modifier) {
 }
 
 @SuppressLint("SetJavaScriptEnabled")
-private fun createPlayerWebView(context: Context, videoId: String): WebView = WebView(context).apply {
+private fun createPlayerWebView(context: Context, videoId: String, onError: (String) -> Unit): WebView = WebView(context).apply {
     setBackgroundColor(Color.BLACK)
     settings.javaScriptEnabled = true
     settings.mediaPlaybackRequiresUserGesture = true
+    val main = Handler(Looper.getMainLooper())
+    addJavascriptInterface(object {
+        @JavascriptInterface fun onError(code: String) { main.post { onError(code) } }
+    }, DishLinks.PLAYER_BRIDGE)
     settings.allowFileAccess = false
     settings.allowContentAccess = false
     settings.cacheMode = WebSettings.LOAD_DEFAULT
@@ -64,6 +72,7 @@ private fun createPlayerWebView(context: Context, videoId: String): WebView = We
     webViewClient = object : WebViewClient() {
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
             Log.d("DishPlayer", "error ${error.errorCode} ${error.description} ${request.url}")
+            if (request.isForMainFrame) main.post { onError("load ${error.errorCode}") }
         }
 
         override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, errorResponse: WebResourceResponse) {
@@ -73,12 +82,12 @@ private fun createPlayerWebView(context: Context, videoId: String): WebView = We
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val url = request.url.toString()
             // The embed itself and its assets stay inside; links out of the player go to the YouTube app or browser.
-            if (request.isForMainFrame && url != DishLinks.EMBED_BASE_URL && !url.startsWith("https://www.youtube.com/embed/")) {
+            if (request.isForMainFrame && url != DishLinks.EMBED_PAGE_URL) {
                 openLink(view.context, url)
                 return true
             }
             return false
         }
     }
-    loadUrl(DishLinks.embedUrl(videoId), mapOf("Referer" to DishLinks.EMBED_BASE_URL))
+    loadDataWithBaseURL(DishLinks.EMBED_PAGE_URL, DishLinks.playerHtml(videoId), "text/html", "utf-8", null)
 }
