@@ -22,6 +22,7 @@ from app.dishes.recipes import RecipeStore
 from app.dishes.router import ingredients_router
 from app.dishes.router import router as dishes_router
 from app.dishes.service import DishService
+from app.dishes.video_store import VideoStore
 from app.dishes.videos import VideoFinder
 from app.vision.gemini import REQUEST_TIMEOUT_MS, GeminiVisionProvider
 from app.vision.openrouter import OpenRouterVisionProvider
@@ -59,7 +60,8 @@ def _dish_service(settings: Settings) -> DishService:
     model = os.environ.get("DISH_LLM_MODEL") or DEFAULT_MODEL
     llm = DishLLM(key, model) if key.strip() else None
     youtube_key = os.environ.get("YOUTUBE_API_KEY", "")
-    finder = VideoFinder(key, youtube_key) if key.strip() and youtube_key.strip() else None
+    store = VideoStore.load(os.environ.get("DISH_VIDEOS"))
+    finder = VideoFinder(key, youtube_key, store=store) if youtube_key.strip() else None
     recipes = RecipeStore.load(os.environ.get("DISH_RECIPES"))
     return DishService(Catalog.load(), llm, finder, recipes)
 

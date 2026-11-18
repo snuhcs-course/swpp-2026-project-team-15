@@ -2,6 +2,7 @@
 """Dish suggestions: the model answers from names and owned ingredients; the server checks names."""
 
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import httpx
@@ -11,6 +12,7 @@ from fastapi.testclient import TestClient
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DishLLM, DishLLMError
 from app.dishes.service import DishService, search_url
+from app.dishes.video_store import VideoStore
 from app.dishes.videos import REQUEST, VideoError, VideoFinder, extract_ids, to_video
 from app.main import create_app
 from tests.conftest import StubVision
@@ -493,3 +495,85 @@ def test_app_starts_from_the_environment_without_any_database(monkeypatch):
     assert client.post("/recipes/recommend", json={"ingredients": ["계란"]}).status_code == 404
     response = client.post("/dishes/suggest", json={"ingredients": ["계란", "대파"]})
     assert response.status_code == 502  # no key, no model, no fallback
+
+
+# --- stored videos ---------------------------------------------------------------------------
+
+NOW = datetime(2026, 11, 19, 12, 0, tzinfo=UTC)
+
+
+def _stored_finder(calls, *, fetched=NOW - timedelta(days=3), ids=None, **kwargs):
+    entry = {"fetched_at": fetched.isoformat(), "videos": [{"id": v} for v in (ids or IDS[:3])]}
+    store = VideoStore.load_data({"schema": 1, "dishes": {"egg-roll": entry}})
+    finder = _finder(calls, **kwargs)
+    finder._store = store
+    finder._now = lambda: NOW
+    return finder
+
+
+def test_stored_videos_are_checked_again_and_served_without_the_model():
+    calls = []
+    items = [_item(v) for v in IDS[:3]]
+    videos, source = _stored_finder(calls, items=items).lookup("egg-roll", "계란말이")
+    assert source == "stored" and [v.video_id for v in videos] == IDS[:3]
+    assert [k for k, _ in calls] == ["youtube"]  # one lookup, no model call
+
+
+def test_stored_videos_that_were_deleted_or_closed_are_dropped_in_order():
+    calls = []
+    items = [_item(IDS[2]), _item(IDS[0], embeddable=False)]  # IDS[1] is gone, IDS[0] is closed
+    videos, source = _stored_finder(calls, items=items).lookup("egg-roll", "계란말이")
+    assert source == "stored" and [v.video_id for v in videos] == [IDS[2]]
+    assert [k for k, _ in calls] == ["youtube"]
+
+
+def test_stored_videos_older_than_thirty_days_are_not_served():
+    calls = []
+    old = NOW - timedelta(days=30)
+    videos, source = _stored_finder(calls, fetched=old).lookup("egg-roll", "계란말이")
+    assert source == "discovered" and [k for k, _ in calls] == ["model", "youtube"]
+    assert [v.video_id for v in videos] == IDS  # what the model proposed, not the stored list
+
+
+def test_everything_stored_is_gone_so_the_model_is_asked():
+    calls = []
+    finder = _stored_finder(calls, ids=[IDS[0]])
+    finder._transport = httpx.MockTransport(_two_step(calls, gone=IDS[0]))
+    videos, source = finder.lookup("egg-roll", "계란말이")
+    assert source == "discovered" and IDS[0] not in [v.video_id for v in videos]
+    assert [k for k, _ in calls] == ["youtube", "model", "youtube"]
+
+
+def _two_step(calls, gone):
+    """YouTube lists every id except ``gone``; the model proposes IDS."""
+
+    def handler(request):
+        if request.url.host == "openrouter.ai":
+            calls.append(("model", None))
+            text = " ".join(f"https://www.youtube.com/watch?v={v}" for v in IDS)
+            return httpx.Response(200, json={"choices": [{"message": {"content": text}}]})
+        calls.append(("youtube", None))
+        wanted = request.url.params["id"].split(",")
+        return httpx.Response(200, json={"items": [_item(v) for v in wanted if v != gone]})
+
+    return handler
+
+
+def test_youtube_failure_while_checking_stored_videos_is_an_error():
+    with pytest.raises(VideoError):
+        _stored_finder([], youtube_status=403).lookup("egg-roll", "계란말이")
+
+
+def test_stored_path_works_without_a_model_key_but_discovery_does_not():
+    calls = []
+    finder = _stored_finder(calls, items=[_item(v) for v in IDS[:3]])
+    finder._openrouter_key = ""
+    assert finder.lookup("egg-roll", "계란말이")[1] == "stored"
+    with pytest.raises(VideoError):
+        finder.lookup("unknown-dish", "없는요리")
+
+
+def test_videos_endpoint_reports_where_the_list_came_from(catalog):
+    service = DishService(catalog, FakeLLM(), _stored_finder([], items=[_item(v) for v in IDS[:3]]))
+    body = client_for(service).post("/dishes/videos", json={"dish_id": "egg-roll"}).json()
+    assert body["source"] == "stored" and len(body["videos"]) == 3

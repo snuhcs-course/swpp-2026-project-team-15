@@ -51,6 +51,9 @@ class VideosResponse(BaseModel):
     dish_id: str
     videos: list[Video]
     search_url: str
+    source: str = (
+        "discovered"  # "stored": a saved list that was checked again; "discovered": found now
+    )
 
 
 class AdaptRequest(BaseModel):

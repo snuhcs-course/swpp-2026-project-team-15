@@ -155,10 +155,9 @@ class DishService:
             return None
         if self.finder is None:
             raise VideoError(NOT_CONFIGURED)
+        videos, source = self.finder.lookup(dish_id, dish.name)
         return VideosResponse(
-            dish_id=dish_id,
-            videos=self.finder.find(dish_id, dish.name),
-            search_url=search_url(dish.name),
+            dish_id=dish_id, videos=videos, search_url=search_url(dish.name), source=source
         )
 
     def adapt(

@@ -4,18 +4,23 @@
 A web-search model proposes YouTube videos for the dish; one batched YouTube lookup keeps those
 that exist, are public and can be embedded, in the model's order. There is no title filter, no
 sorting by views and no count limit (study: research/experiments/dish_pipeline, round 3).
-Results are kept in memory for a day; API data must not be cached longer than the YouTube terms
-allow.
+Videos stored for the dish (see video_store.py) are served first, after the same lookup has
+confirmed that they still exist, are public and can be embedded; the model is asked only when
+nothing usable is stored. Found videos are kept in memory for a day; API data must not be kept
+longer than the YouTube terms allow.
 """
 
 import logging
 import re
 import time
+from collections.abc import Callable
+from datetime import UTC, datetime
 
 import httpx
 
 from app.dishes.llm import RETRY_WAITS
 from app.dishes.schemas import Video
+from app.dishes.video_store import VideoStore
 
 OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
 YOUTUBE_VIDEOS = "https://www.googleapis.com/youtube/v3/videos"
@@ -73,9 +78,13 @@ class VideoFinder:
         model: str = WEB_MODEL,
         transport=None,
         clock=time.monotonic,
+        store: VideoStore | None = None,
+        now: Callable[[], datetime] = lambda: datetime.now(UTC),
     ):
-        if not openrouter_key.strip() or not youtube_key.strip():
-            raise ValueError("both API keys are required")
+        if not youtube_key.strip():
+            raise ValueError("a YouTube API key is required")
+        self._store = store or VideoStore()
+        self._now = now
         self._openrouter_key = openrouter_key
         self._youtube_key = youtube_key
         self._model = model
@@ -84,9 +93,19 @@ class VideoFinder:
         self._cache: dict[str, tuple[float, list[Video]]] = {}
 
     def find(self, dish_id: str, dish_name: str) -> list[Video]:
+        return self.lookup(dish_id, dish_name)[0]
+
+    def lookup(self, dish_id: str, dish_name: str) -> tuple[list[Video], str]:
+        """The videos and where they came from: "stored" or "discovered"."""
+        stored = self._store.fresh_ids(dish_id, self._now())
+        if stored:
+            videos = self._check(stored)
+            log.info("dish videos %s: stored=%d kept=%d", dish_id, len(stored), len(videos))
+            if videos:
+                return videos, "stored"
         cached = self._cache.get(dish_id)
         if cached and self._clock() - cached[0] < CACHE_SECONDS:
-            return cached[1]
+            return cached[1], "discovered"
         started = time.monotonic()
         ids = self._propose(dish_name)
         videos = self._check(ids) if ids else []
@@ -99,9 +118,11 @@ class VideoFinder:
         )
         if videos:
             self._cache[dish_id] = (self._clock(), videos)
-        return videos
+        return videos, "discovered"
 
     def _propose(self, dish_name: str) -> list[str]:
+        if not self._openrouter_key.strip():
+            raise VideoError("Video search is not configured on this server")
         payload = {
             "model": self._model,
             "temperature": 0,

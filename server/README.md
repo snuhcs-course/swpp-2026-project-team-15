@@ -24,7 +24,7 @@ Interactive OpenAPI documentation is at `/docs`. `GET /health` is liveness; `GET
 | `GET /recipes/ingredients` | `{ "names": [...] }` for entry completion (names from the dish data; the path is kept for the app) |
 | `POST /dishes/recipe` | `{ "dish_id", "ingredients" }` → the stored recipe with `owned` / `assumed` / `unavailable` per ingredient (404 without a stored recipe); `GET /dishes/{id}/recipe` returns the recipe alone |
 | `POST /dishes/revise` | `{ "dish_id", "ingredients" }` → `status` `revised` (with `revised` and `changes`, each with a reason and the source rows and steps it touches), `refused` (with a reason) or `failed` (the server check rejected the model's answer); one model call, none when nothing is missing |
-| `POST /dishes/videos` | `{ "dish_id" }` → embeddable YouTube videos for the dish (`video_id`, `title`, `channel`, `thumbnail_url`) and a search link |
+| `POST /dishes/videos` | `{ "dish_id" }` → embeddable YouTube videos for the dish (`video_id`, `title`, `channel`, `thumbnail_url`), a search link and `source` (`stored` or `discovered`) |
 | `POST /recipes/ingredient-suggestions` | `{ "ingredients": [...] }` → ingredients that would complete the most dishes |
 
 - **suggest**: the naive design. The model gets the dish names and the user's ingredients and answers `{dishes:[{name, have, missing}]}`. The server only drops names that are not in the list and repeated names, keeps the order and returns `have`/`missing` as written (trimmed). `source` is always `llm`. 502 when the model call fails or no key is set: there is no rules fallback. If the answer is cut at the 4096-token limit (the model may list many dishes), the complete dishes before the cut are kept, since the list is best first; a cut before the first complete dish is a 502. A 429 from the model service is retried twice (after 3 s and 8 s). Its quality is measured in `research/experiments/dish_naive/`.
@@ -40,11 +40,12 @@ Interactive OpenAPI documentation is at `/docs`. `GET /health` is liveness; `GET
 | `OPENROUTER_API_KEY` / `DISH_LLM_API_KEY` | Key of the dish model; without a key suggest/adapt answer 502 |
 | `DISH_LLM_MODEL` | Default `google/gemini-2.5-flash-lite` |
 | `DISH_RECIPES` | Path of the recipe file `{"schema": 1, "recipes": {dish_id: recipe}}`; without it no dish has a recipe (`has_recipe` is false and the app hides the recipe button) |
-| `YOUTUBE_API_KEY` | YouTube Data API v3 key for `/dishes/videos` (`videos.list`, about 1 quota unit per dish); without it the endpoint answers 502 |
+| `DISH_VIDEOS` | Path of a video snapshot `{"schema": 1, "dishes": {dish_id: {"fetched_at": ISO time, "videos": [{"id": ...}]}}}` (written by `research/experiments/dish_recipes/collect_videos.py`); optional, an unreadable or invalid file stops the server at startup |
+| `YOUTUBE_API_KEY` | YouTube Data API v3 key for `/dishes/videos` (`videos.list`, about 1 quota unit per call); without it the endpoint answers 502 |
 
 ## Videos from YouTube
 
-The server sends only IDs, titles, channel names and thumbnail URLs that the YouTube API returned, and keeps them in memory for 24 hours (API data may be stored for a limited time only; check the current YouTube API terms). The app shows "Videos provided by YouTube" with links to the YouTube Terms of Service and the Google Privacy Policy and plays videos with the embedded player.
+A dish with a stored entry younger than 30 days (the API terms do not allow keeping API data longer) is served from it, after one batched `videos.list` call has confirmed that each video still exists, is public and can be embedded; the rest are dropped, the stored order is kept, and titles and thumbnails come from that fresh response. When the entry is missing, too old or nothing is left, the model proposes videos as described above. The server sends only IDs, titles, channel names and thumbnail URLs that the YouTube API returned, and keeps them in memory for 24 hours (API data may be stored for a limited time only; check the current YouTube API terms). The app shows "Videos provided by YouTube" with links to the YouTube Terms of Service and the Google Privacy Policy and plays videos with the embedded player.
 
 ## Tests
 
