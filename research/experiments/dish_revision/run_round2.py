@@ -81,10 +81,14 @@ def run_set(name, cases, store, catalog, llm, usage) -> dict:
                     "steps": scoring.step_coverage(recipe, raw),
                 }
             )
+        raws[case["id"]] = raw
         for variant in round2.VARIANTS:
-            out = round2.decide(
-                variant, raw, recipe, dish.name, status, catalog, case["ingredients"]
-            )
+            if not requests and served is not None:  # nothing unavailable: no call is needed
+                out = {"status": served, "code": "no_call_needed", "call": False}
+            else:
+                out = round2.decide(
+                    variant, raw, recipe, dish.name, status, catalog, case["ingredients"]
+                )
             per_variant[variant].append({"id": case["id"], "expect": case["expect"], **out})
         if served is not None and per_variant["current"][-1]["status"] != served:
             mismatch.append(case["id"])

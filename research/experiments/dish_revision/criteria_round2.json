@@ -52,6 +52,11 @@
    "date": "2026-11-19",
    "before_rerun": true,
    "what": "The first run (report round2-20261118T153815Z) had a runner defect: for a case where the server needs no model call (nothing unavailable after synonyms and equivalents: mushroom-fried-rice:a, because the other mushrooms count as 새송이버섯), the runner reused the previous case's answer for the variants. The runner now clears the last answer per case, records such a case with the server's own outcome for every variant, and stores the raw answers. The real-recipe set is run again (29 cases); the synthetic results of the first run are kept (all 36 had a call; served and recomputed outcomes agreed)."
+  },
+  {
+   "date": "2026-11-19",
+   "before_rerun": true,
+   "what": "The second run (report round2-20261118T154021Z) still lacked the fix in the variant loop (the edit had not applied): mushroom-fried-rice:a showed 'no answer' instead of the server's own outcome, and raw answers were not stored. The loop is fixed and the real-recipe set is run a third time; the second run's other 28 outcomes are kept in its report for comparison."
   }
  ]
 }
