@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Structured recipe restructured from a video's captions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["dish_id", "video", "source", "generated_at", "servings", "ingredients", "steps", "tips", "uncertain", "caption_gaps"],
+  "properties": {
+    "dish_id": {"type": "string", "minLength": 1},
+    "video": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "channel"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{11}$"},
+        "title": {"type": "string"},
+        "channel": {"type": "string"}
+      }
+    },
+    "source": {"const": "ai_structured_from_captions"},
+    "generated_at": {"type": "string", "minLength": 10},
+    "servings": {"type": ["integer", "null"], "minimum": 1},
+    "ingredients": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "amount", "role"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "amount": {"type": ["string", "null"]},
+          "role": {"enum": ["main", "secondary", "seasoning"]}
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["n", "text"],
+        "properties": {
+          "n": {"type": "integer", "minimum": 1},
+          "text": {"type": "string", "minLength": 1, "maxLength": 300}
+        }
+      }
+    },
+    "tips": {"type": "array", "items": {"type": "string"}},
+    "uncertain": {"type": "array", "items": {"type": "string"}},
+    "caption_gaps": {"type": "boolean"}
+  }
+}
