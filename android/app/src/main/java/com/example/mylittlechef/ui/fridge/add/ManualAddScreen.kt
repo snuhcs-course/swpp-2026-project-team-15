@@ -4,6 +4,12 @@
 package com.example.mylittlechef.ui.fridge.add
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.unit.dp
+import androidx.activity.compose.BackHandler
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,7 +35,7 @@ fun ManualAddScreen(
     modifier: Modifier = Modifier
 )
 {
-    val editor = rememberIngredientEditorState()
+    val editor = rememberIngredientEditorState(startWithInput = true)
     LaunchedEffect(ingredientCatalog) { ingredientCatalog.load() }
     ManualAddContent(
         fridge = fridge,
@@ -51,29 +57,30 @@ private fun ManualAddContent(
     modifier: Modifier = Modifier
 )
 {
+    val save = rememberIngredientSave(fridge, onSaveClick)
+    BackHandler(enabled = save.busy) { }
     AddFlowScaffold(
-        onBackClick = onBackClick,
-        title = "추가할 재료들을 입력해 주세요",
+        onBackClick = { if (!save.busy) onBackClick() },
+        modifier = modifier,
+        title = "재료 직접 입력",
         bottomContent = {
-            NormalButton(
-                text = "냉장고에 반영",
-                buttonColor = DeepGreen,
-                textColor = MaterialTheme.colorScheme.onPrimary,
+            fridge.ingredientSaveError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            Button(
+                modifier = Modifier.fillMaxWidth(0.8f).heightIn(min = 52.dp),
+                enabled = !save.busy && editor.ingredients.any { it.name.isNotBlank() },
                 onClick = {
                     editor.finishEdit()
-                    if (editor.ingredients.isNotEmpty()) {
-                        fridge.addIngredients(editor.ingredients)
-                    }
-                    onSaveClick()
+                    save.submit(editor.ingredients.toList())
                 }
-            )
+            ) { Text(if (fridge.isSavingIngredients) "저장 중" else "저장") }
         }
     )
     {
         EditableIngredientList(
             editor = editor,
             ingredientNames = ingredientNames,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            enabled = !save.busy
         )
     }
 }

@@ -63,7 +63,8 @@ fun MainScreen(
     onRecipeCardClick: (Recipe) -> Unit,
     modifier: Modifier = Modifier,
     ingredientSuggestions: IngredientSuggestionViewModel? = null,
-    onEditPantryClick: () -> Unit = {}
+    onEditPantryClick: () -> Unit = {},
+    onManualAddClick: () -> Unit = onAddIngredientClick
 ) {
     // 탭 전환만 담당하는 NavController (최상위 NavController와 별개)
     val tabNavController = rememberNavController()
@@ -123,7 +124,8 @@ fun MainScreen(
                     user = user,
                     fridge = fridge,
                     ingredientSuggestions = ingredientSuggestions,
-                    onAddIngredientClick = onAddIngredientClick
+                    onAddIngredientClick = onAddIngredientClick,
+                    onManualAddClick = onManualAddClick
                 )
             }
             composable(Routes.RECIPE) {

@@ -17,7 +17,10 @@ PROMPT = (
     "List the food items visible in this refrigerator or pantry photo. "
     "For each item give name_raw (label text or description as seen), "
     "category (a generic Korean ingredient name usable in a recipe, e.g. 신라면 -> 라면) "
-    "and confidence between 0 and 1. Omit non-food objects."
+    "and confidence between 0 and 1. Omit non-food objects. "
+    "Report only ingredients visibly identifiable in the supplied image. "
+    "Do not invent ingredients from the room, containers or expected refrigerator contents. "
+    "If the photo has no identifiable food, return an empty list. Omit uncertain guesses."
 )
 
 
@@ -28,7 +31,10 @@ def multi_view_prompt(count: int) -> str:
         "and may overlap. List each distinct food item once, even if it appears in several "
         "photos. For each item give name_raw (label text or description as seen), "
         "category (a generic Korean ingredient name usable in a recipe, e.g. 신라면 -> 라면) "
-        "and confidence between 0 and 1. Omit non-food objects."
+        "and confidence between 0 and 1. Omit non-food objects. "
+        "Report only visibly identifiable ingredients; do not infer food from the scene or "
+        "containers. Return an empty list if no view contains identifiable food. "
+        "Omit uncertain guesses."
     )
 
 

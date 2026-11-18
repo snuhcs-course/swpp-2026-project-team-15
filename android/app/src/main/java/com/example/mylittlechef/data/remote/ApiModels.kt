@@ -17,13 +17,14 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 // Field names mirror server/app/{vision,recipes}/schemas.py; a mismatch silently becomes null in Gson.
 
 data class AnalyzeResponse(
-    val candidates: List<IngredientCandidateDto>
+    val candidates: List<IngredientCandidateDto>,
+    val review: AnalysisReviewDto? = null
 )
 
 data class IngredientCandidateDto(
     val name: String,
     @SerializedName("raw_texts") val rawTexts: List<String>,
-    val confidence: Double
+    val confidence: Double? = null
 )
 
 data class RecommendRequest(

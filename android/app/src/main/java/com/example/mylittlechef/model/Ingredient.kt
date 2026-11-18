@@ -7,5 +7,14 @@ data class Ingredient(
     val name: String,
 
     // TODO: ingredient image resource
-    @DrawableRes val imageRes: Int? = null
+    @DrawableRes val imageRes: Int? = null,
+    // Review-only evidence. Fridge persistence continues to store confirmed names only.
+    val recognition: RecognitionEvidence? = null
+)
+
+data class RecognitionEvidence(
+    val suggestedName: String,
+    val rawTexts: List<String>,
+    val confidence: Double?,
+    val needsReview: Boolean
 )

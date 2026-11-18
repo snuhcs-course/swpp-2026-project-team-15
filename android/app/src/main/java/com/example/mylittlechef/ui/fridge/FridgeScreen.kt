@@ -37,7 +37,8 @@ fun FridgeScreen(
     fridge: FridgeViewModel,
     onAddIngredientClick: () -> Unit,
     modifier: Modifier = Modifier,
-    ingredientSuggestions: IngredientSuggestionViewModel? = null
+    ingredientSuggestions: IngredientSuggestionViewModel? = null,
+    onManualAddClick: () -> Unit = onAddIngredientClick
 ) {
     val context = LocalContext.current.applicationContext
     val appearanceCatalog = remember(context) { IngredientPresentationProvider.get(context) }
@@ -56,13 +57,34 @@ fun FridgeScreen(
         FridgeContent(
             nickname = user.nickname,
             ingredients = fridge.ingredients,
-            controlsEnabled = fridge.removingIngredient == null && !fridge.isRemovingIngredients && !fridge.isSavingPantry,
+            controlsEnabled = fridge.removingIngredient == null && !fridge.isRemovingIngredients && !fridge.isSavingPantry && !fridge.isRestoringIngredients,
             onRemoveIngredients = fridge::removeIngredients,
             onAddIngredientClick = onAddIngredientClick,
+            onManualAddClick = onManualAddClick,
             onSuggestionsClick = { showSuggestions = true },
             appearanceCatalog = appearanceCatalog
         )
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
+        fridge.pendingRemoval?.let { receipt ->
+            Snackbar(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 88.dp)
+                    .testTag("fridge-undo"),
+                actionOnNewLine = true,
+                action = {
+                    TextButton(onClick = { fridge.undoRemoval(receipt.id) },
+                        enabled = !fridge.isRestoringIngredients && !fridge.isRemovingIngredients && !fridge.isSavingPantry,
+                        modifier = Modifier.testTag("undo-fridge-removal")) {
+                        Text(if (fridge.isRestoringIngredients) "복구 중" else "실행 취소",
+                            color = MaterialTheme.colorScheme.inversePrimary)
+                    }
+                },
+                dismissAction = {
+                    TextButton(onClick = { fridge.dismissUndo(receipt.id) }, enabled = !fridge.isRestoringIngredients) {
+                        Text("닫기", color = MaterialTheme.colorScheme.inverseOnSurface)
+                    }
+                }
+            ) { Text(fridge.undoError ?: "재료 ${receipt.items.size}개를 삭제했어요") }
+        }
     }
     if (showSuggestions && ingredientSuggestions != null) {
         ModalBottomSheet(onDismissRequest = { showSuggestions = false }) {
@@ -78,6 +100,7 @@ private fun FridgeContent(
     controlsEnabled: Boolean,
     onRemoveIngredients: (Set<String>, () -> Unit) -> Unit,
     onAddIngredientClick: () -> Unit,
+    onManualAddClick: () -> Unit,
     onSuggestionsClick: () -> Unit,
     appearanceCatalog: IngredientPresentationCatalog,
     modifier: Modifier = Modifier
@@ -85,7 +108,6 @@ private fun FridgeContent(
     var selecting by rememberSaveable { mutableStateOf(false) }
     var selectedNames by rememberSaveable { mutableStateOf(listOf<String>()) }
     var confirming by rememberSaveable { mutableStateOf(false) }
-    var menuExpanded by rememberSaveable { mutableStateOf(false) }
     var sortType by rememberSaveable { mutableStateOf(FridgeSortType.CATEGORY) }
     val selected = ingredients.map { it.name }.filter { it in selectedNames }
     val displayedIngredients = remember(ingredients, sortType, appearanceCatalog) {
@@ -106,12 +128,18 @@ private fun FridgeContent(
     Box(modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().padding(horizontal = 24.dp)) {
             Spacer(Modifier.height(24.dp))
-            TitleText(
-                text = nickname + " 님의 냉장고",
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                TitleText(text = nickname + " 님의 냉장고", color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f))
+                TextButton(enabled = controlsEnabled && ingredients.isNotEmpty(),
+                    modifier = Modifier.testTag("manage-fridge"),
+                    onClick = { selectedNames = emptyList(); selecting = true }) { Text("관리") }
+            }
             FridgeSortDropdown(selected = sortType, onSelected = { sortType = it })
+            if (!selecting) {
+                TextButton(onClick = onSuggestionsClick, enabled = controlsEnabled,
+                    modifier = Modifier.testTag("ingredient-suggestions")) { Text("추가 재료 추천") }
+            }
             if (selecting) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("${selected.size}개 선택", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
@@ -125,8 +153,6 @@ private fun FridgeContent(
                     enabled = controlsEnabled && selected.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth().testTag("delete-selected-ingredients")
                 ) { Text(if (controlsEnabled) "선택한 재료 삭제" else "재료를 삭제하고 있어요") }
-            } else {
-                Text("재료를 길게 누르면 여러 개를 선택할 수 있어요", style = MaterialTheme.typography.bodySmall)
             }
             Spacer(Modifier.height(12.dp))
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
@@ -150,7 +176,7 @@ private fun FridgeContent(
                                     selectedNames = listOf(name)
                                 } else if (name !in selectedNames) selectedNames = selectedNames + name
                             },
-                            modifier = Modifier.padding(horizontal = 16.dp).padding(top = 10.dp, bottom = 92.dp)
+                            modifier = Modifier.padding(horizontal = 16.dp).padding(top = 10.dp, bottom = 24.dp)
                         )
                         if (ingredients.isEmpty()) {
                             Text("냉장고가 비었어요", Modifier.align(Alignment.TopCenter).padding(top = 35.dp),
@@ -159,31 +185,24 @@ private fun FridgeContent(
                     }
                 }
             }
-        }
-        if (!selecting) {
-            Box(Modifier.align(Alignment.BottomEnd).padding(24.dp)) {
-                FloatingActionButton(
-                    onClick = { if (controlsEnabled) menuExpanded = !menuExpanded },
-                    modifier = Modifier.testTag("fridge-actions"),
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(painterResource(R.drawable.ic_plus), contentDescription = "냉장고 작업 메뉴", modifier = Modifier.size(28.dp))
-                }
-                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                    DropdownMenuItem(text = { Text("부족한 재료 추천") }, enabled = controlsEnabled, onClick = {
-                        menuExpanded = false
-                        onSuggestionsClick()
-                    })
-                    DropdownMenuItem(text = { Text("냉장고 재료 삭제") }, enabled = controlsEnabled && ingredients.isNotEmpty(), onClick = {
-                        menuExpanded = false
-                        selectedNames = emptyList()
-                        selecting = true
-                    })
-                    DropdownMenuItem(text = { Text("냉장고 재료 추가") }, enabled = controlsEnabled, onClick = {
-                        menuExpanded = false
-                        onAddIngredientClick()
-                    })
+            if (!selecting) {
+                Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(onClick = onManualAddClick, enabled = controlsEnabled,
+                        modifier = Modifier.weight(1f).heightIn(min = 56.dp).testTag("fridge-manual-add"),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)) {
+                        Icon(painterResource(R.drawable.ic_edit), contentDescription = null,
+                            modifier = Modifier.size(20.dp).testTag("manual-action-icon"))
+                        Spacer(Modifier.width(6.dp))
+                        Text("직접 입력")
+                    }
+                    OutlinedButton(onClick = onAddIngredientClick, enabled = controlsEnabled,
+                        modifier = Modifier.weight(1f).heightIn(min = 56.dp).testTag("fridge-photo-add"),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)) {
+                        Icon(painterResource(R.drawable.ic_camera), contentDescription = null,
+                            modifier = Modifier.size(20.dp).testTag("photo-action-icon"))
+                        Spacer(Modifier.width(6.dp))
+                        Text("사진 인식")
+                    }
                 }
             }
         }

@@ -1,3 +1,4 @@
+// HE ingredient/exploration changes assisted by Codex, 2026-11-10; human review pending.
 // AI-assisted with Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.viewmodel
 
@@ -5,6 +6,7 @@ import androidx.compose.runtime.*
 import com.example.mylittlechef.data.remote.*
 import com.example.mylittlechef.model.Ingredient
 import com.example.mylittlechef.model.Recipe
+import com.example.mylittlechef.domain.IngredientNames
 import kotlinx.coroutines.*
 
 /** Explicit batch only. Never implies that the server revised a user-selected dish. */
@@ -24,6 +26,8 @@ class CloudRecipeRevisionSession(
         private set
     var message by mutableStateOf<String?>(null)
         private set
+    var unregisteredNames by mutableStateOf<List<String>>(emptyList())
+        private set
     val canRequest get() = !loading
 
     fun state(id: Long) = states[id] ?: RevisionUiState()
@@ -33,21 +37,21 @@ class CloudRecipeRevisionSession(
         if (context == normalized) return false
         context = normalized; generation++; job?.cancel(); job = null
         loading = false; message = null
+        unregisteredNames = emptyList()
         originals = emptyList(); states.clear()
         return true
     }
 
-    fun request() {
+    fun request(omitUnknown: Boolean = false) {
         if (!canRequest) return
         val snapshot = context ?: return
-        val aliases = mapOf("달걀" to "계란", "후춧가루" to "후추")
-        val names = snapshot.names.map { aliases[it] ?: it }
-        val unknown = names.filter { it !in ingredientIds }
-        if (unknown.isNotEmpty()) {
+        val (ids, unknown) = IngredientNames.resolve(snapshot.names, ingredientIds)
+        if (unknown.isNotEmpty() && !omitUnknown) {
+            unregisteredNames = unknown
             message = "AI 요청용 재료 ID를 확인할 수 없어요: ${unknown.joinToString(", ")}. 일반 레시피 목록은 계속 볼 수 있어요."
             return
         }
-        val ids = names.map { ingredientIds.getValue(it) }.distinct().sorted()
+        unregisteredNames = emptyList()
         val version = generation
         loading = true; message = null
         job = scope.launch {

@@ -1,7 +1,12 @@
+// HE ingredient/exploration changes assisted by Codex, 2026-11-10; human review pending.
 // Cached deployed batch suggestions assisted by Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.ui.recipe
 
 import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,11 +65,26 @@ fun RecipeDetailScreen(
     onLikeClick: () -> Unit,
     revisionState: RevisionUiState = RevisionUiState(),
     onRequestRevision: (() -> Unit)? = null,
-    batchRevision: Boolean = false
+    batchRevision: Boolean = false,
+    fridge: com.example.mylittlechef.viewmodel.FridgeViewModel? = null,
+    selectedState: com.example.mylittlechef.viewmodel.SelectedRevisionState? = null,
+    onCancelRevision: () -> Unit = {},
+    onReviewIngredients: () -> Unit = {},
+    onIgnoreUnknown: () -> Unit = {},
+    onReloadRecipes: () -> Unit = {}
 )
 {
     var showSuggestion by rememberSaveable(recipe.id) { mutableStateOf(false) }
-    val shown = if (showSuggestion && revisionState.status == RevisionStatus.REVISED) revisionState.recipe ?: recipe else recipe
+    var showCompletion by rememberSaveable(recipe.id) { mutableStateOf(false) }
+    val base = selectedState?.original ?: recipe
+    val shown = if(selectedState != null) {
+        if(showSuggestion && selectedState.status == RevisionStatus.REVISED) selectedState.suggestion ?: base else base
+    } else if (showSuggestion && revisionState.status == RevisionStatus.REVISED) revisionState.recipe ?: recipe else recipe
+    val scope = rememberCoroutineScope()
+    val ingredientAnchor = remember { BringIntoViewRequester() }
+    fun leave() { if(selectedState?.status == RevisionStatus.LOADING) onCancelRevision(); onBackClick() }
+    BackHandler(enabled=selectedState != null) { leave() }
+    if(showCompletion && fridge != null) CookingCompletionDialog(shown, fridge) { showCompletion = false }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -75,7 +95,7 @@ fun RecipeDetailScreen(
         RecipeDetailHeader(
             user = user,
             recipe = recipe,
-            onBackClick = onBackClick,
+            onBackClick = ::leave,
             onLikeClick = onLikeClick
         )
 
@@ -104,8 +124,14 @@ fun RecipeDetailScreen(
                     .clip(RoundedCornerShape(24.dp)).align(Alignment.CenterHorizontally))
 
                 RecipeMeta(recipe.time)
-                recipe.servingText?.let { Text("원본 분량: $it") }
-                if (onRequestRevision != null) {
+                shown.servingText?.let { Text(if(showSuggestion && shown !== base) "제안 분량: $it" else "원본 분량: $it") }
+                if(selectedState != null) {
+                    SelectedRevisionPanel(selectedState,showSuggestion,
+                        onRequest={showSuggestion=true;onRequestRevision?.invoke()},
+                        onToggle={showSuggestion=!showSuggestion},onCancel=onCancelRevision,
+                        onOriginal={showSuggestion=false;scope.launch { ingredientAnchor.bringIntoView() }},
+                        onReview=onReviewIngredients,onIgnore={showSuggestion=true;onIgnoreUnknown()},onReload=onReloadRecipes)
+                } else if (onRequestRevision != null) {
                     Text(if (shown === recipe) "원본 레시피" else "AI 수정 제안", style = MaterialTheme.typography.titleMedium)
                     Text(if (batchRevision) "AI 요청은 목록의 ‘AI 레시피 제안 받기’에서 해 주세요. 서버가 수정할 레시피를 선택해요."
                         else "원본을 보고 재료를 추가로 준비하거나 AI 조정을 요청할 수 있어요.")
@@ -141,14 +167,19 @@ fun RecipeDetailScreen(
                     }
                     Text("현재 AI 요청에는 알레르기·조리도구 조건이 반영되지 않아요.", style = MaterialTheme.typography.bodySmall)
                 }
-                val missing = if (recipe.availabilityKnown) shown.missing.orEmpty().map { it.name }.toSet() else emptySet()
-                if (recipe.availabilityKnown && missing.isNotEmpty()) {
+                val missing = if (shown.availabilityKnown) shown.missing.orEmpty().map { it.name }.toSet() else emptySet()
+                if (shown.availabilityKnown && missing.isNotEmpty()) {
                     Text("부족한 재료: ${missing.joinToString(", ")}", color = MaterialTheme.colorScheme.error)
                 }
                 HorizontalDivider()
-                RecipeIngredients(shown.ingredients, shown.ingredientQuantities, missing)
+                Box(Modifier.bringIntoViewRequester(ingredientAnchor)) {
+                    RecipeIngredients(shown.ingredients, shown.ingredientQuantities, missing)
+                }
                 HorizontalDivider()
                 RecipeSteps(shown.steps)
+                if(fridge != null) {
+                    Button(onClick = { showCompletion = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("요리 완료") }
+                }
             }
         }
     }

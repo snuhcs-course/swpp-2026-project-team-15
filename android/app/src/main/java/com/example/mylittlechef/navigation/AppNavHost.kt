@@ -1,3 +1,4 @@
+// HE ingredient/exploration changes assisted by Codex, 2026-11-10; human review pending.
 // AI-generated initial navigation scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 // Codex-assisted changes (GPT-6.1 Sol), 2026-10-14; human review pending.
@@ -19,6 +20,10 @@ import androidx.navigation.NavType
 
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.runtime.getValue
+import com.example.mylittlechef.data.local.UsageGuideRepository
+import com.example.mylittlechef.ui.help.FirstUseGuide
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.mylittlechef.ui.fridge.add.AnalyzeScreen
@@ -84,6 +89,9 @@ fun AppNavHost(
         recipes.updateUserContext(fridge.ingredients, user.allergies, user.utensils)
     }
     val startDestination = remember { if (user.onboardingComplete) Routes.MAIN else Routes.ONBOARDING }
+    val guideRepository = remember(store) { UsageGuideRepository(store) }
+    val currentEntry by navController.currentBackStackEntryAsState()
+    FirstUseGuide(guideRepository, enabled = currentEntry?.destination?.route == Routes.MAIN && user.onboardingComplete)
 
     NavHost(
         navController = navController,
@@ -114,6 +122,7 @@ fun AppNavHost(
                 onAddIngredientClick = {
                     navController.navigate(Routes.CAPTURE)
                 },
+                onManualAddClick = { navController.navigate(Routes.MANUAL_ADD) },
                 onEditNicknameClick = {
                     navController.navigate(Routes.EDIT_NICKNAME)
                 },
@@ -182,8 +191,7 @@ fun AppNavHost(
                     navController.popBackStack()
                 },
                 onSaveClick = {
-                    navController.popBackStack()
-                    navController.popBackStack()
+                    navController.popBackStack(Routes.MAIN, inclusive = false)
                 }
             )
         }
@@ -251,6 +259,17 @@ fun AppNavHost(
                     },
                     onLikeClick = {},
                     revisionState = recipes.revisionState(recipe.id),
+                    fridge = fridge,
+                    selectedState = recipes.selectedRevisionState(recipe.id),
+                    onCancelRevision = { recipes.cancelRevision(recipe.id) },
+                    onReviewIngredients = {
+                        navController.navigate(Routes.MAIN) { popUpTo(Routes.MAIN) { inclusive=true }; launchSingleTop=true }
+                    },
+                    onIgnoreUnknown = {
+                        recipes.updateUserContext(fridge.ingredients,user.allergies,user.utensils)
+                        recipes.requestRevision(recipe.id,ignoreUnknown=true)
+                    },
+                    onReloadRecipes = { recipes.search(recipes.searchQuery,fridge.ingredients);navController.popBackStack() },
                     batchRevision = recipes.supportsBatchRevision,
                     onRequestRevision = if (recipes.supportsRevision) ({
                         recipes.updateUserContext(fridge.ingredients, user.allergies, user.utensils)

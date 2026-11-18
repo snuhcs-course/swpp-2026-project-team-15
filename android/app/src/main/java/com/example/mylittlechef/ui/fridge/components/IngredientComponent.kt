@@ -32,6 +32,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -39,6 +41,9 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.google.gson.Gson
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -128,7 +133,8 @@ fun IngredientItem(
 fun EditableIngredientList(
     editor: IngredientEditorState,
     ingredientNames: List<String> = emptyList(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 )
 {
     Column(
@@ -143,6 +149,20 @@ fun EditableIngredientList(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     )
     {
+        Text("한 번에 여러 재료를 추가할 수 있어요. 이름을 누르면 수정할 수 있어요.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        editor.removedName?.let { name ->
+            Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(12.dp)) {
+                Row(Modifier.fillMaxWidth().padding(start = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${name.ifBlank { "빈 항목" }} 삭제됨", Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.onSecondaryContainer)
+                    TextButton(onClick = editor::undoRemove, enabled = enabled, modifier = Modifier.testTag("undo-candidate-removal")) {
+                        Text("실행 취소")
+                    }
+                    TextButton(onClick = editor::dismissUndo, enabled = enabled) { Text("닫기") }
+                }
+            }
+        }
         editor.ingredients.forEachIndexed { i, ingredient ->
             IngredientRow(
                 name = ingredient.name,
@@ -176,13 +196,26 @@ fun EditableIngredientList(
                     editor.rename(i, selected)
                     editor.finishEdit()
                 },
-                imageRes = ingredient.imageRes
+                imageRes = ingredient.imageRes,
+                enabled = enabled
             )
+            ingredient.recognition?.let { evidence ->
+                Text(if (evidence.needsReview) "확인 필요 · 사진과 비교해 주세요" else "사진과 비교해 확인해 주세요",
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (evidence.rawTexts.isNotEmpty()) {
+                    Text("인식한 내용: ${evidence.rawTexts.joinToString(", ")}",
+                        style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                if (ingredient.name != evidence.suggestedName) {
+                    Text("처음 제안한 이름: ${evidence.suggestedName}", style = MaterialTheme.typography.bodySmall)
+                }
+            }
         }
 
         DashedButton(
             text = "+ 식재료 추가",
             onClick = editor::startAdd,
+            enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
         )
@@ -199,7 +232,8 @@ fun IngredientRow(
     suggestions: List<String> = emptyList(),
     onSuggestionSelected: (String) -> Unit = {},
     modifier: Modifier = Modifier,
-    @DrawableRes imageRes: Int? = null
+    @DrawableRes imageRes: Int? = null,
+    enabled: Boolean = true
 )
 {
     Column(
@@ -216,7 +250,7 @@ fun IngredientRow(
                 .background(Gray)
                 .padding(
                     start = 24.dp,
-                    end = 12.dp,
+                    end = 48.dp,
                     top = 4.dp,
                     bottom = 4.dp
                 ),
@@ -228,6 +262,9 @@ fun IngredientRow(
                 OutlinedTextField(
                     value = name,
                     onValueChange = onNameChange,
+                    enabled = enabled,
+                    placeholder = { Text("재료 이름") },
+                    singleLine = true,
                     modifier = Modifier.weight(1f),
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Done
@@ -243,6 +280,7 @@ fun IngredientRow(
                 // Text for ingredient name
                 Text(
                     text = name,
+                    modifier = Modifier.weight(1f).clickable(enabled = enabled, onClick = onEditClick),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     overflow = TextOverflow.Ellipsis
@@ -251,13 +289,14 @@ fun IngredientRow(
                 // IconButton for edit click
                 IconButton(
                     onClick = onEditClick,
+                    enabled = enabled,
                     modifier = Modifier
-                        .size(15.dp)
+                        .size(48.dp)
                 )
                 {
                     Icon(
                         painter = painterResource(R.drawable.ic_edit),
-                        contentDescription = "edit",
+                        contentDescription = "$name 수정",
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -283,15 +322,16 @@ fun IngredientRow(
             // IconButton for remove click
             IconButton(
                 onClick = onRemoveClick,
+                enabled = enabled,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .size(24.dp)
+                    .size(48.dp)
                     .offset(x = 6.dp, y = (-6).dp)
             )
             {
                 Icon(
                     painter = painterResource(R.drawable.ic_remove),
-                    contentDescription = "remove",
+                    contentDescription = "$name 삭제",
                     tint = Color.Unspecified
                 )
             }
@@ -327,49 +367,83 @@ class IngredientEditorState(
     initial: List<Ingredient> = emptyList()
 )
 {
-    val ingredients = mutableStateListOf<Ingredient>()
+    val ingredients = mutableStateListOf<Ingredient>().apply { addAll(initial) }
+    private data class RemovedRow(val item: Ingredient, val index: Int)
+    private data class SavedEditor(val rows: List<Ingredient>, val editing: Int?, val removed: RemovedRow?)
+    companion object {
+        val StateSaver = Saver<IngredientEditorState, String>(
+            save = { Gson().toJson(SavedEditor(it.ingredients.toList(), it.editingIndex, it.removedRow)) },
+            restore = { encoded -> runCatching {
+                val saved = Gson().fromJson(encoded, SavedEditor::class.java)
+                IngredientEditorState(checkNotNull(saved.rows)).apply {
+                    editingIndex = saved.editing?.takeIf { it in ingredients.indices }
+                    removedRow = saved.removed
+                }
+            }.getOrNull() }
+        )
+    }
+    private var removedRow by mutableStateOf<RemovedRow?>(null)
+    val removedName: String? get() = removedRow?.item?.name
+
+    fun dismissUndo() { removedRow = null }
+
+    fun undoRemove() {
+        val row = removedRow ?: return
+        val index = row.index.coerceIn(0, ingredients.size)
+        ingredients.add(index, row.item)
+        editingIndex = editingIndex?.let { if (it >= index) it + 1 else it }
+        removedRow = null
+    }
 
     var editingIndex by mutableStateOf<Int?>(null)
         private set
-
-    // TODO: implement
 
     fun replaceAll(list: List<Ingredient>) {
         ingredients.clear()
         ingredients.addAll(list)
         editingIndex = null
+        removedRow = null
     }
 
     fun startAdd() {
         finishEdit()
         val ingredient = Ingredient(name = "")
         ingredients.add(ingredient)
-        editingIndex = ingredients.indexOf(ingredient)
+        editingIndex = ingredients.lastIndex
     }
 
     fun toggleEdit(index: Int) {
+        if (index !in ingredients.indices) return
         if (editingIndex == index) {
             finishEdit()
         }
         else {
+            val previous = editingIndex
+            val shifts = previous != null && previous < index && ingredients[previous].name.isBlank()
             finishEdit()
-            editingIndex = index
+            editingIndex = if (shifts) index - 1 else index
         }
     }
 
     fun rename(index: Int, name: String) {
+        if (index !in ingredients.indices) return
         ingredients[index] = ingredients[index].copy(name = name)
     }
 
     fun remove(index: Int) {
-        ingredients.removeAt(index)
-        if (editingIndex == index) editingIndex = null
+        if (index !in ingredients.indices) return
+        removedRow = RemovedRow(ingredients.removeAt(index), index)
+        editingIndex = editingIndex?.let { when {
+            it == index -> null
+            it > index -> it - 1
+            else -> it
+        } }
     }
 
     fun finishEdit() {
         val index = editingIndex ?: return
 
-        if (ingredients[index].name.isBlank()) {
+        if (index in ingredients.indices && ingredients[index].name.isBlank()) {
             ingredients.removeAt(index)
         }
 
@@ -379,5 +453,8 @@ class IngredientEditorState(
 
 @Composable
 fun rememberIngredientEditorState(
-    initial: List<Ingredient> = emptyList()
-): IngredientEditorState = remember { IngredientEditorState(initial)  }
+    initial: List<Ingredient> = emptyList(),
+    startWithInput: Boolean = false
+): IngredientEditorState = rememberSaveable(saver = IngredientEditorState.StateSaver) {
+    IngredientEditorState(initial).apply { if (startWithInput && initial.isEmpty()) startAdd() }
+}

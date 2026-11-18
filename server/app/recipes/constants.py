@@ -1,3 +1,4 @@
+# HE naming/exploration changes assisted by Codex, 2026-11-10; human review pending.
 # AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 """Ingredient naming rules shared by recognition and recommendation."""
 
@@ -33,11 +34,19 @@ _SYNONYM_GROUPS: tuple[frozenset[str], ...] = (
 # Owning the left ingredient means the right forms can be prepared from it at home.
 _PREPARED_FORMS: dict[str, tuple[str, ...]] = {
     "대파": ("다진파",),
+    "마늘": ("다진마늘",),
 }
 
 
+def normalize_name(name: str) -> str:
+    """AI-assisted HE naming rule, 2026-11-10: spacing is not a substitution."""
+    import unicodedata
+
+    return "".join(unicodedata.normalize("NFKC", name).split()).casefold()
+
+
 def with_synonyms(names: list[str] | tuple[str, ...]) -> set[str]:
-    expanded = {name.strip() for name in names if name.strip()}
+    expanded = {normalize_name(name) for name in names if normalize_name(name)}
     for name in list(expanded):
         expanded.update(_PREPARED_FORMS.get(name, ()))
     for group in _SYNONYM_GROUPS:
