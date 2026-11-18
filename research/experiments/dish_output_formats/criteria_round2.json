@@ -1,0 +1,82 @@
+{
+  "name": "dish_output_formats round 2",
+  "version": 1,
+  "frozen": "2026-11-19, before any model call of round 2",
+  "question": "Can the answer format make it impossible to list an ingredient the user owns as `missing`, and how should user ingredients that do not match the ingredient vocabulary (다진마늘, egg, a typing mistake) be handled so that they still count as owned?",
+  "context": "In round 1 (S2) the `missing` enum was the whole vocabulary of 63 names, so a model could name an ingredient the user owns as missing (8.3% of dishes against 0.8% for free text). The design under test: a per-request enum for `missing` (vocabulary minus the entries the user owns), and for user items without a vocabulary match an exception list that the model itself maps to a vocabulary name or to none before it writes the dishes.",
+  "reused_unchanged": "model google/gemini-2.5-flash-lite, temperature 0, max_tokens 4096, response_format json_schema strict with provider.require_parameters, the 27 well-formed inputs of ../dish_naive/criteria.json, the scorer ../dish_naive/scoring.py, the rule-made reference set, vocabulary (63) and dish names (130) as in round 1, pacing 1 s, HTTP 429 repeated at most twice after 5 s and 15 s (every attempt counts toward the cap); round 1 results are not edited",
+  "matching_by_the_server": "an owned item matches a vocabulary entry when, after trimming and removing spaces, it is that name or in the same synonym group of server/app/dishes/synonyms.py (SYNONYM_GROUPS only; no PREPARED_FORMS, no catalog equivalents). Items without a match are 'unmatched' and numbered X1, X2, ... in the order of the request (duplicates removed).",
+  "variants": {
+    "R0": "S2 of round 1, re-run the same day: `missing` enum = the whole vocabulary; `have` enum = the user's items; user message {owned, dishes}",
+    "R1": "as R0 but the per-request `missing` enum = vocabulary minus the entries matched to the user's items by the server (deterministic); prompt unchanged",
+    "R2": "as R1, and when the request has unmatched items: the user message is {owned, unmatched: {X1: item, ...}, dishes}; the answer object has `mapping` FIRST ([{item: enum of the X numbers, same_as: enum of the vocabulary plus \"none\"}]) and then `dishes`; the prompt is the S2 prompt plus the addendum below; after the answer the server removes from every dish's `missing` each vocabulary name that the model's own mapping says the user owns (deterministic; the number of removals is counted); unmatched owned items stay in `have` under the user's wording (the `have` enum holds the user's original strings). A request without unmatched items is answered exactly as R1."
+  },
+  "prompts": {
+    "R0_R1": "You help a Korean student living alone decide what to cook from the ingredients they have. Return every dish from the given dish list that can reasonably be cooked with the owned ingredients, best first. For each dish, 'have' lists ONLY ingredients that appear in the user's owned list and that this dish uses, and 'missing' lists the main ingredients this dish needs that are not in the owned list; both are chosen from the allowed values of the answer format. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish fits, return an empty list. Never add dishes just to fill the list.",
+    "R2_addendum": "Some owned items cannot be matched to the ingredient vocabulary by spelling; the user message lists them under 'unmatched' with a number (X1, X2, ...). Before the dishes, fill 'mapping': one entry per number, with 'same_as' = the vocabulary ingredient that the item IS, only when it is the same ingredient in another form, cut, brand, spelling or language (다진마늘 is 마늘, 삼겹살 is 돼지고기, a typing mistake of a vocabulary name is that name), or 'none'. Use 'none' when the item is a different ingredient or merely something that could replace one (쪽파 is not 대파, 마늘종 is not 마늘, 적양배추 is not 양배추). Then answer the dishes: 'have' keeps the user's own wording of every owned item the dish uses, and 'missing' lists only ingredients the user does not own, also taking your mapping into account.",
+    "R2": "You help a Korean student living alone decide what to cook from the ingredients they have. Return every dish from the given dish list that can reasonably be cooked with the owned ingredients, best first. For each dish, 'have' lists ONLY ingredients that appear in the user's owned list and that this dish uses, and 'missing' lists the main ingredients this dish needs that are not in the owned list; both are chosen from the allowed values of the answer format. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish fits, return an empty list. Never add dishes just to fill the list. Some owned items cannot be matched to the ingredient vocabulary by spelling; the user message lists them under 'unmatched' with a number (X1, X2, ...). Before the dishes, fill 'mapping': one entry per number, with 'same_as' = the vocabulary ingredient that the item IS, only when it is the same ingredient in another form, cut, brand, spelling or language (다진마늘 is 마늘, 삼겹살 is 돼지고기, a typing mistake of a vocabulary name is that name), or 'none'. Use 'none' when the item is a different ingredient or merely something that could replace one (쪽파 is not 대파, 마늘종 is not 마늘, 적양배추 is not 양배추). Then answer the dishes: 'have' keeps the user's own wording of every owned item the dish uses, and 'missing' lists only ingredients the user does not own, also taking your mapping into account."
+  },
+  "mapping_set": {
+    "file": "mapping_set.json",
+    "size": "40 lists of 3-6 items with 43 unmatched items: 27 should map to a vocabulary name, 16 are traps that should be 'none'; 3 of the 43 are marked ambiguous; 26 lists contain at least one item to merge, 12 contain only traps, 2 are controls without any unmatched item",
+    "label_source": "one labeller (the AI assistant), written before any call from the vocabulary; a draft",
+    "ambiguous_items": "reported separately and left out of the accuracy and false-merge rates"
+  },
+  "call_plan": {
+    "R0_frozen_27": 27,
+    "R1_frozen_27": 27,
+    "R2_frozen_27": 27,
+    "R2_mapping_40": 40,
+    "R1_mapping_first_15": 15,
+    "R0_mapping_first_15": 15,
+    "planned_calls": 151,
+    "call_cap": 160,
+    "note": "The task text asked for R0, R1 and R2 on all 40 lists, which with the 81 calls of the frozen inputs makes 201 calls and exceeds the cap of 160. R2 is the variant under test for the mapping, so it runs on all 40 lists; R0 and R1 run on the first 15 lists (paired comparison for the original problem on the same lists). The 9 spare calls are for 429 retries. If the cap is reached the unfinished part is reported as not run."
+  },
+  "cost_cap_usd": 0.25,
+  "order": [
+    "R0 frozen",
+    "R1 frozen",
+    "R2 frozen",
+    "R2 mapping",
+    "R1 mapping(15)",
+    "R0 mapping(15)"
+  ],
+  "constraint_violations": {
+    "names_outside_list": "raw dish names that are not one of the 130",
+    "have_outside_owned": "raw `have` items that are not exactly one of the user's strings",
+    "missing_outside_vocabulary": "raw `missing` items outside the 63 names",
+    "missing_outside_request_enum": "raw `missing` items outside the per-request enum (R1, R2: an entry the server matched to a user item)",
+    "mapping_outside_enum": "R2: a mapping item that is not an X number of the request, or a same_as outside the vocabulary plus none"
+  },
+  "metrics": [
+    "violations per kind, failed calls, answers cut off (finish_reason length)",
+    "owned_listed_as_missing: share of returned dishes whose final `missing` (after the R2 removal step) contains a vocabulary name that the user owns; on the 27 frozen inputs by the round-1 scorer (exact or synonym, 1 - missing_disjoint_share); on the mapping set against expected_owned = matched vocabulary names plus the expected non-ambiguous same_as names",
+    "mapping set, R2: accuracy = items whose same_as equals the label / non-ambiguous unmatched items; false_merge = label none but the model named a vocabulary entry (the dangerous error; rate over all non-ambiguous unmatched items); missed_merge = label is a vocabulary name but the model said none or omitted the item; wrong_target = a different vocabulary name; ambiguous items reported separately",
+    "wrongly_hidden: R2 removals of a vocabulary name from `missing` that the user does not own according to the labels (the harm of a false merge)",
+    "removals made by the R2 step (count)",
+    "nonempty_when_possible, reference recall and precision, missing_disjoint, have_subset on the 27 inputs",
+    "dishes returned per input (no threshold), tokens, cost per call (from tokens), latency median and p95"
+  ],
+  "limits": [
+    "one run per variant at temperature 0, one model, one serving provider; 27 frozen inputs plus 40 invented lists (one case moves a share by 2-4 points)",
+    "the mapping labels are one labeller's draft; three items are marked ambiguous and the traps are my choice of what counts as 'only a substitute'",
+    "R0 and R1 run on 15 of the 40 lists only (call cap)",
+    "the reference set is made by rule; recall and precision measure agreement with that rule",
+    "429 retries are not results of a variant; provider and routing may differ from round 1",
+    "no threshold or rule decides anything; the reader should weigh the intervals and the examples"
+  ],
+  "amendments": [],
+  "analysis_plan": {
+    "no_thresholds": "The study has no pass/fail thresholds and no adoption rule. Every number is reported and interpreted in words after the run; the recommendation is a judgement, not a rule outcome.",
+    "reported_for_every_variant_and_set": [
+      "all counts of the metrics list (violations per kind, cut-off and failed calls, dishes returned per input as a full distribution, owned_listed_as_missing as count and share, removals, tokens, cost, latency median and p95)",
+      "reference recall and precision on the frozen inputs as totals and per input"
+    ],
+    "paired_comparisons": "per input (the same frozen input or the same list answered by two variants): R1 against R0, R2 against R0, R2 against R1 on owned_listed_as_missing per returned dish, dishes returned, per-input reference recall and precision (frozen inputs), cost and latency; the mean paired difference with a percentile bootstrap 95% interval over the inputs (2000 resamples, seed 20261119); inputs where a variant failed are listed and left out of that pair; the mapping set is compared on its first 15 lists for R0 and R1 and on all 40 for R2 against itself only",
+    "mapping_errors": "R2 on the mapping set: every item with its label and the model's same_as in a table (not only rates), the false merges and wrongly hidden removals with the dish they changed, the missed merges and wrong targets, and the ambiguous items apart",
+    "examples": "at least three inputs of each kind are shown with the raw answer when they exist: an owned item listed as missing, a mapping that is right although the spelling differs, a mapping that is wrong, a cut-off answer",
+    "interpretation": "written after the run in plain words: what the numbers show, what they cannot show (one run, one labeller, 27 + 40 inputs, one model and provider), which variant looks best and why, what remains uncertain, then a recommendation",
+    "server_change": "R1 or R2 is implemented in server/app/dishes only if that interpretation supports it, stated plainly; otherwise the server stays unchanged and the recommendation is written down"
+  }
+}

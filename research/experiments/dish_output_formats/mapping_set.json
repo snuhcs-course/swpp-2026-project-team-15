@@ -1,0 +1,513 @@
+{
+ "name": "dish_output_formats round 2 mapping set",
+ "frozen": "2026-11-19, before any model call of round 2",
+ "labeller": "one person (the AI assistant); a draft, not checked by anyone else; written before any call from the vocabulary of 63 names",
+ "meaning": "`expected` maps every user item that does NOT match a vocabulary name (exact spelling after trimming and removing spaces, or a synonym group of server/app/dishes/synonyms.py) to the vocabulary name it is the SAME ingredient as (another form, cut, brand, spelling or language), or to \"none\" when it is a different ingredient or only a possible substitute (traps). `ambiguous` lists items whose label is arguable; they are reported but never enter the rule.",
+ "lists": [
+  {
+   "id": "M01",
+   "ingredients": [
+    "깐마늘",
+    "양파",
+    "계란",
+    "밥"
+   ],
+   "expected": {
+    "깐마늘": "마늘"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M02",
+   "ingredients": [
+    "다진마늘",
+    "대파",
+    "돼지고기"
+   ],
+   "expected": {
+    "다진마늘": "마늘"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M03",
+   "ingredients": [
+    "마늘종",
+    "계란",
+    "밥",
+    "간장"
+   ],
+   "expected": {
+    "마늘종": "none"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M04",
+   "ingredients": [
+    "쪽파",
+    "계란",
+    "밥"
+   ],
+   "expected": {
+    "쪽파": "none"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M05",
+   "ingredients": [
+    "쪽파",
+    "대파",
+    "두부",
+    "양파"
+   ],
+   "expected": {
+    "쪽파": "none"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M06",
+   "ingredients": [
+    "달걀",
+    "김치",
+    "밥",
+    "참치 통조림"
+   ],
+   "expected": {},
+   "ambiguous": []
+  },
+  {
+   "id": "M07",
+   "ingredients": [
+    "배추김치",
+    "두부",
+    "애호박",
+    "양파"
+   ],
+   "expected": {},
+   "ambiguous": []
+  },
+  {
+   "id": "M08",
+   "ingredients": [
+    "슬라이스치즈",
+    "식빵",
+    "계란",
+    "버터"
+   ],
+   "expected": {
+    "슬라이스치즈": "치즈"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M09",
+   "ingredients": [
+    "적양배추",
+    "당근",
+    "마요네즈"
+   ],
+   "expected": {
+    "적양배추": "none"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M10",
+   "ingredients": [
+    "양배추",
+    "적양배추",
+    "소시지",
+    "계란"
+   ],
+   "expected": {
+    "적양배추": "none"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M11",
+   "ingredients": [
+    "삼겹살",
+    "김치",
+    "양파",
+    "밥"
+   ],
+   "expected": {
+    "삼겹살": "돼지고기"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M12",
+   "ingredients": [
+    "청양고추",
+    "두부",
+    "대파",
+    "된장"
+   ],
+   "expected": {
+    "청양고추": "고추"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M13",
+   "ingredients": [
+    "표고버섯",
+    "양파",
+    "계란",
+    "밥"
+   ],
+   "expected": {
+    "표고버섯": "버섯"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M14",
+   "ingredients": [
+    "닭가슴살",
+    "양파",
+    "당근",
+    "감자"
+   ],
+   "expected": {
+    "닭가슴살": "닭고기"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M15",
+   "ingredients": [
+    "스팸",
+    "계란",
+    "밥",
+    "김"
+   ],
+   "expected": {
+    "스팸": "햄"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M16",
+   "ingredients": [
+    "신라면",
+    "계란",
+    "대파"
+   ],
+   "expected": {
+    "신라면": "라면"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M17",
+   "ingredients": [
+    "햇반",
+    "김치",
+    "참기름"
+   ],
+   "expected": {
+    "햇반": "밥"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M18",
+   "ingredients": [
+    "비비고 만두",
+    "대파",
+    "간장"
+   ],
+   "expected": {
+    "비비고 만두": "만두"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M19",
+   "ingredients": [
+    "오뚜기 카레",
+    "감자",
+    "당근",
+    "양파"
+   ],
+   "expected": {
+    "오뚜기 카레": "카레"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M20",
+   "ingredients": [
+    "egg",
+    "양파",
+    "햄"
+   ],
+   "expected": {
+    "egg": "계란"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M21",
+   "ingredients": [
+    "kimchi",
+    "밥",
+    "계란"
+   ],
+   "expected": {
+    "kimchi": "김치"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M22",
+   "ingredients": [
+    "tofu",
+    "대파",
+    "간장"
+   ],
+   "expected": {
+    "tofu": "두부"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M23",
+   "ingredients": [
+    "cheese",
+    "식빵",
+    "햄"
+   ],
+   "expected": {
+    "cheese": "치즈"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M24",
+   "ingredients": [
+    "달갈",
+    "밥",
+    "김"
+   ],
+   "expected": {
+    "달갈": "계란"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M25",
+   "ingredients": [
+    "두뷰",
+    "대파",
+    "된장"
+   ],
+   "expected": {
+    "두뷰": "두부"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M26",
+   "ingredients": [
+    "돼지괴기",
+    "김치",
+    "양파"
+   ],
+   "expected": {
+    "돼지괴기": "돼지고기"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M27",
+   "ingredients": [
+    "쌀",
+    "양파",
+    "감자",
+    "당근"
+   ],
+   "expected": {
+    "쌀": "밥"
+   },
+   "ambiguous": [
+    "쌀"
+   ]
+  },
+  {
+   "id": "M28",
+   "ingredients": [
+    "들기름",
+    "두부",
+    "밥"
+   ],
+   "expected": {
+    "들기름": "none"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M29",
+   "ingredients": [
+    "두유",
+    "식빵",
+    "계란"
+   ],
+   "expected": {
+    "두유": "none"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M30",
+   "ingredients": [
+    "생크림",
+    "파스타면",
+    "베이컨",
+    "양파"
+   ],
+   "expected": {
+    "생크림": "none",
+    "파스타면": "스파게티면"
+   },
+   "ambiguous": [
+    "파스타면"
+   ]
+  },
+  {
+   "id": "M31",
+   "ingredients": [
+    "쌈장",
+    "상추",
+    "삼겹살"
+   ],
+   "expected": {
+    "쌈장": "none",
+    "삼겹살": "돼지고기"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M32",
+   "ingredients": [
+    "올리고당",
+    "부침가루",
+    "계란"
+   ],
+   "expected": {
+    "올리고당": "none"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M33",
+   "ingredients": [
+    "부추",
+    "계란",
+    "부침가루"
+   ],
+   "expected": {
+    "부추": "none"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M34",
+   "ingredients": [
+    "청경채",
+    "두부",
+    "마늘"
+   ],
+   "expected": {
+    "청경채": "none"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M35",
+   "ingredients": [
+    "미나리",
+    "오징어",
+    "고추장"
+   ],
+   "expected": {
+    "미나리": "none"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M36",
+   "ingredients": [
+    "팽이버섯",
+    "양송이버섯",
+    "대파",
+    "소고기"
+   ],
+   "expected": {
+    "팽이버섯": "버섯",
+    "양송이버섯": "버섯"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M37",
+   "ingredients": [
+    "비엔나소시지",
+    "양파",
+    "케첩"
+   ],
+   "expected": {
+    "비엔나소시지": "소시지",
+    "케첩": "none"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M38",
+   "ingredients": [
+    "컵라면",
+    "계란",
+    "김치"
+   ],
+   "expected": {
+    "컵라면": "라면"
+   },
+   "ambiguous": [
+    "컵라면"
+   ]
+  },
+  {
+   "id": "M39",
+   "ingredients": [
+    "브로콜리",
+    "새우",
+    "마늘",
+    "소금"
+   ],
+   "expected": {
+    "브로콜리": "none"
+   },
+   "ambiguous": []
+  },
+  {
+   "id": "M40",
+   "ingredients": [
+    "잔파",
+    "두부",
+    "계란",
+    "다진마늘"
+   ],
+   "expected": {
+    "잔파": "none",
+    "다진마늘": "마늘"
+   },
+   "ambiguous": []
+  }
+ ]
+}
