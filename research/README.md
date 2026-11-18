@@ -18,7 +18,7 @@ The decision record [decisions/dish-list-and-video-discovery.md](decisions/dish-
 - `experiments/dish_eval/`: frozen cases and thresholds for suggestions and substitutes (first, rules-based design).
 - `experiments/dish_naive/`: the naive design (model sees dish names and the user's ingredients) against that reference, plus prompt and output-cap rounds.
 - `experiments/dish_tokens/` and `experiments/dish_pipeline/`: token cost of the selection call, the arrangement of the model calls for videos, and the wording of the video request (round 3).
-- `experiments/dish_output_formats/`: answer formats constrained by closed lists (enums), function calls and a LangChain helper, compared with free text.
+- `experiments/dish_output_formats/`: answer formats constrained by closed lists (enums), function calls and a LangChain helper, compared with free text; round 2 compared per-request choices and a model mapping of unmatched ingredients (per-request choices adopted).
 - `experiments/youtube_discovery/` (superseded) and `experiments/youtube_discovery_v2/`: how to find videos; v2 validates a relevance judge against 60 hand-labelled videos before using it.
 - `experiments/dish_revision/`: adapting a stored recipe to the user's ingredients (36 synthetic cases, one model call plus a rule check).
 - `experiments/dish_recipes/`: tools that snapshot the video lists, fetch captions through an unofficial route, and validate AI-structured recipes. Their outputs are third-party derived and are never committed.
