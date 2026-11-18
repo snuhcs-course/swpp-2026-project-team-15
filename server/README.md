@@ -22,6 +22,8 @@ Interactive OpenAPI documentation is at `/docs`. `GET /health` is liveness; `GET
 | `POST /dishes/suggest` | `{ "ingredients": ["김치", "쌀"] }` → every dish the model finds cookable (best first, no fixed count, possibly none), each with `have`, `missing`, cached `videos` and a YouTube `search_url` |
 | `POST /dishes/adapt` | `{ "dish_id": "...", "ingredients": [...], "missing": [...] }` → for each missing ingredient a substitute from the user's own ingredients, when the model finds one |
 | `GET /recipes/ingredients` | `{ "names": [...] }` for entry completion (names from the dish data; the path is kept for the app) |
+| `POST /dishes/recipe` | `{ "dish_id", "ingredients" }` → the stored recipe with `owned` / `assumed` / `unavailable` per ingredient (404 without a stored recipe); `GET /dishes/{id}/recipe` returns the recipe alone |
+| `POST /dishes/revise` | `{ "dish_id", "ingredients" }` → `status` `revised` (with `revised` and `changes`, each with a reason and the source rows and steps it touches), `refused` (with a reason) or `failed` (the server check rejected the model's answer); one model call, none when nothing is missing |
 | `POST /dishes/videos` | `{ "dish_id" }` → embeddable YouTube videos for the dish (`video_id`, `title`, `channel`, `thumbnail_url`) and a search link |
 | `POST /recipes/ingredient-suggestions` | `{ "ingredients": [...] }` → ingredients that would complete the most dishes |
 
@@ -37,6 +39,7 @@ Interactive OpenAPI documentation is at `/docs`. `GET /health` is liveness; `GET
 | `VISION_PROVIDER` | `mock` (default), `gemini` (`GEMINI_API_KEY`, `GEMINI_MODEL`) or `openrouter` (`OPENROUTER_API_KEY`, `OPENROUTER_VISION_MODEL`) |
 | `OPENROUTER_API_KEY` / `DISH_LLM_API_KEY` | Key of the dish model; without a key suggest/adapt answer 502 |
 | `DISH_LLM_MODEL` | Default `google/gemini-2.5-flash-lite` |
+| `DISH_RECIPES` | Path of the recipe file `{"schema": 1, "recipes": {dish_id: recipe}}`; without it no dish has a recipe (`has_recipe` is false and the app hides the recipe button) |
 | `YOUTUBE_API_KEY` | YouTube Data API v3 key for `/dishes/videos` (`videos.list`, about 1 quota unit per dish); without it the endpoint answers 502 |
 
 ## Videos from YouTube
