@@ -2,9 +2,14 @@
 """Contracts of the dish list, the ingredient index and the recipe book."""
 
 from app.dishes.catalog import Catalog, Dish
-from app.dishes.recipes import RecipeStore
+from app.dishes.recipes import CreditedRecipes, RecipeStore
 from app.dishes.schemas import SourceRecipe
-from tests.dishes.contracts.fakes import FakeCatalog, FakeIngredientIndex, FakeRecipeBook
+from tests.dishes.contracts.fakes import (
+    FakeCatalog,
+    FakeIngredientIndex,
+    FakeRecipeBook,
+    FakeVideoVerifier,
+)
 from tests.dishes.test_revision import RECIPE
 
 DISH = Dish(
@@ -98,3 +103,9 @@ class TestFakeRecipeBook(RecipeBookContract):
 class TestRecipeStore(RecipeBookContract):
     def make(self):
         return RecipeStore({"kimchi-fried-rice": SourceRecipe.model_validate(RECIPE)})
+
+
+class TestCreditedRecipes(RecipeBookContract):
+    def make(self):
+        store = RecipeStore({"kimchi-fried-rice": SourceRecipe.model_validate(RECIPE)})
+        return CreditedRecipes(store, FakeVideoVerifier({"abcdefghijk"}))

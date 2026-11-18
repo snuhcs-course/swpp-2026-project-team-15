@@ -1,12 +1,23 @@
 # AI-generated with Claude Code (Sonnet 5.5), 2026-11-18; reviewed by Jaehyuk Choi.
-"""Structured recipes of the dishes, one per dish, read once from a JSON file."""
+"""Structured recipes of the dishes, one per dish, read once from a JSON file.
+
+``CreditedRecipes`` wraps a recipe book and fills in the title and channel of each recipe's video
+from a live YouTube lookup, so the recipe file needs to keep only the video id (YouTube API data
+such as titles may not be stored longer than 30 days).
+"""
 
 import json
+import time
+from collections.abc import Callable
 from pathlib import Path
 
 from pydantic import ValidationError
 
-from app.dishes.schemas import SourceRecipe
+from app.dishes.errors import VideoError
+from app.dishes.roles import RecipeBook, VideoVerifier
+from app.dishes.schemas import RecipeVideo, SourceRecipe
+
+CREDIT_SECONDS = 24 * 3600  # how long a looked-up title and channel are reused
 
 SCHEMA = 1
 
@@ -42,3 +53,43 @@ class RecipeStore:
 
     def __len__(self) -> int:
         return len(self._recipes)
+
+
+class CreditedRecipes:
+    """A recipe book whose video credit (title, channel) comes from YouTube, not from the file.
+
+    A video that no longer exists or cannot be embedded, or a failed lookup, leaves the credit
+    empty; the recipe itself is still served.
+    """
+
+    def __init__(
+        self,
+        recipes: RecipeBook,
+        verifier: VideoVerifier,
+        clock: Callable[[], float] = time.monotonic,
+    ):
+        self._recipes, self._verifier, self._clock = recipes, verifier, clock
+        self._credits: dict[str, tuple[float, str, str]] = {}
+
+    def get(self, dish_id: str) -> SourceRecipe | None:
+        recipe = self._recipes.get(dish_id)
+        if recipe is None or recipe.video is None:
+            return recipe
+        title, channel = self._credit(recipe.video.id)
+        video = RecipeVideo(id=recipe.video.id, title=title, channel=channel)
+        return recipe.model_copy(update={"video": video})
+
+    def __contains__(self, dish_id: str) -> bool:
+        return dish_id in self._recipes
+
+    def _credit(self, video_id: str) -> tuple[str, str]:
+        cached = self._credits.get(video_id)
+        if cached and self._clock() - cached[0] < CREDIT_SECONDS:
+            return cached[1], cached[2]
+        try:
+            found = self._verifier.check([video_id])
+        except VideoError:
+            return "", ""  # not cached: the next request tries again
+        title, channel = (found[0].title, found[0].channel) if found else ("", "")
+        self._credits[video_id] = (self._clock(), title, channel)
+        return title, channel

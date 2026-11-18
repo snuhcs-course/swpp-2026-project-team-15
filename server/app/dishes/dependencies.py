@@ -15,9 +15,9 @@ from fastapi import Depends, HTTPException, Request
 
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DEFAULT_MODEL, DishLLM
-from app.dishes.recipes import RecipeStore
+from app.dishes.recipes import CreditedRecipes, RecipeStore
 from app.dishes.revision import Reviser
-from app.dishes.roles import ChatModel, IngredientIndex
+from app.dishes.roles import ChatModel, IngredientIndex, RecipeBook
 from app.dishes.service import DishService
 from app.dishes.video_search import WebSearchVideoSource
 from app.dishes.video_store import VideoStore
@@ -52,7 +52,10 @@ def build_dish_service(env: Mapping[str, str] | None = None, model_key: str = ""
     env = os.environ if env is None else env
     catalog = Catalog.load()
     llm = build_chat_model(env, model_key)
-    recipes = RecipeStore.load(env.get("DISH_RECIPES"))
+    recipes: RecipeBook = RecipeStore.load(env.get("DISH_RECIPES"))
+    youtube_key = env.get("YOUTUBE_API_KEY", "")
+    if youtube_key.strip():
+        recipes = CreditedRecipes(recipes, YouTubeVerifier(youtube_key))
     reviser = Reviser(catalog, catalog, llm, recipes)
     key = env.get("DISH_LLM_API_KEY") or model_key
     return DishService(

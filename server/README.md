@@ -47,6 +47,10 @@ Interactive OpenAPI documentation is at `/docs`. `GET /health` is liveness; `GET
 
 A dish with a stored entry younger than 30 days (the API terms do not allow keeping API data longer) is served from it, after one batched `videos.list` call has confirmed that each video still exists, is public and can be embedded; the rest are dropped, the stored order is kept, and titles and thumbnails come from that fresh response. When the entry is missing, too old or nothing is left, the model proposes videos as described above. The server sends only IDs, titles, channel names and thumbnail URLs that the YouTube API returned, and keeps them in memory for 24 hours (API data may be stored for a limited time only; check the current YouTube API terms). The app shows "Videos provided by YouTube" with links to the YouTube Terms of Service and the Google Privacy Policy and plays videos with the embedded player.
 
+## Recipes
+
+`DISH_RECIPES` points to a file of structured recipes, one per dish, written by a Gemini model that watched the dish's video (`source: ai_structured_from_video`) or restructured its captions (`ai_structured_from_captions`); the tools are in `research/experiments/dish_recipes/`. The text is derived from third-party videos, so the file is copied to the server by hand and never committed. It keeps only the video id: when `YOUTUBE_API_KEY` is set, the server looks up the video's title and channel live (one `videos.list` call per video, reused for 24 hours) and leaves the credit empty when the video is gone or the lookup fails.
+
 ## Tests
 
 From `server/`: `uv run pytest` (offline: fake model and YouTube transports, no network). `tests/experiments` holds the tests of the research tools; those that target the recipe-database version skip here.
