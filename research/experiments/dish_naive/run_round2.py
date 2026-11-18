@@ -19,6 +19,7 @@ from pathlib import Path
 
 from experiments.dish_tokens.calls import Call, chat, json_schema_format, read_key
 
+from app.dishes.answers import check_suggest
 from app.dishes.catalog import Catalog
 from app.dishes.prompts import SUGGEST_SCHEMA, SUGGEST_SYSTEM, suggest_user_message
 from app.dishes.service import DishService
@@ -137,7 +138,9 @@ def run_variant(
                 if isinstance(items, list)
                 else []
             )
-            dishes = [d.model_dump() for d in service.check_suggest(call.data)]
+            dishes = [
+                d.model_dump() for d in check_suggest(call.data, service.catalog, service.recipes)
+            ]
             returned = [{k: d[k] for k in ("name", "have", "missing")} for d in dishes]
         if variant == "P3":  # no `have` by construction: score it as empty so it cannot fail it
             for d in dishes:

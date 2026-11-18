@@ -19,6 +19,7 @@ from experiments.dish_naive import scoring
 from experiments.dish_naive.run_naive import missing_counts, reference
 from experiments.dish_tokens.calls import read_key
 
+from app.dishes.answers import check_suggest
 from app.dishes.catalog import Catalog
 from app.dishes.service import DishService
 
@@ -82,7 +83,11 @@ def run_set(variant, kind, cases, ctx, key, budget, sleep=time.sleep, send=forma
         for k, x in v.items():
             totals[k] = totals.get(k, 0) + x
         service_in = formats.service_data("S2", cleaned) if cleaned is not None else None
-        dishes = [d.model_dump() for d in service.check_suggest(service_in)] if service_in else []
+        dishes = (
+            [d.model_dump() for d in check_suggest(service_in, service.catalog, service.recipes)]
+            if service_in
+            else []
+        )
         tally["dishes"] += len(dishes)
         tally["removals"] += removed_n
         row = {

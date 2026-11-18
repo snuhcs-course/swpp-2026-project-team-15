@@ -23,6 +23,7 @@ from experiments.dish_naive import scoring
 from experiments.dish_naive.run_naive import missing_counts, reference
 from experiments.dish_tokens.calls import read_key
 
+from app.dishes.answers import check_suggest
 from app.dishes.catalog import Catalog
 from app.dishes.service import DishService
 
@@ -213,7 +214,11 @@ def run_variant(variant, cases, ctx, key, budget, chain_factory=None, sleep=time
         v = formats.count_violations(variant, call.data, ingredients, names, vocab)
         for k, x in v.items():
             totals[k] = totals.get(k, 0) + x
-        dishes = [d.model_dump() for d in service.check_suggest(data)] if data else []
+        dishes = (
+            [d.model_dump() for d in check_suggest(data, service.catalog, service.recipes)]
+            if data
+            else []
+        )
         raw_names = (
             [d["name"] for d in data["dishes"] if isinstance(d.get("name"), str)] if data else []
         )
