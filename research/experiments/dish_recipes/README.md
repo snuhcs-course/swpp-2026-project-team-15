@@ -29,6 +29,11 @@ uv run python -m experiments.dish_recipes.collect_videos --allow-live-api
 uv run --with youtube-transcript-api python -m experiments.dish_recipes.collect_captions --allow-network
 # report
 uv run python -m experiments.dish_recipes.coverage
+# recipes from the videos themselves (study, then the stored file; DIR outside the repository)
+uv run python -m experiments.dish_recipes.run_video_recipes study --workdir DIR --allow-live-api
+uv run python -m experiments.dish_recipes.run_video_recipes analyze --workdir DIR
+uv run python -m experiments.dish_recipes.run_video_recipes build --workdir DIR \
+    --videos VERIFIED_LINKS.json --model google/gemini-2.5-flash --max-cost 5 --allow-live-api
 # check a restructured recipe against its captions
 uv run python -m experiments.dish_recipes.validate_recipe data/dish-recipes/recipes/<dish>.json
 ```
@@ -95,3 +100,13 @@ No item was clearly invented, but the unclear ones cannot be settled without wat
 - flash agrees more with the caption-based recipes, gives servings more often and labels main ingredients more consistently (89% against 76%). Since the recipe check refuses a change when a main ingredient is missing, the main label decides behaviour; this is the strongest reason to prefer flash. It costs three times as much per video but is faster.
 - The stored file is therefore built with flash. The labels are still one model's judgement: a wrong main label makes the check refuse too often (lite's 오므라이스) or too rarely (flash's 김밥), and the reference is itself AI-made from captions.
 - The "not the requested dish" answer for 베이컨볶음밥 is arguably too strict (a paprika and bacon fried rice is a variant); the build then tries the next verified video.
+
+### The stored file (built 2026-11-19 with `gemini-2.5-flash`)
+
+- Input: the verified links per dish (365 links, every one of the 128 dishes has at least one; judged by two models and reviewed). For each dish the first verified video the model confirmed was tried first, at most three per dish.
+- 131 calls, $4.78, median 25 s per call (max 90 s); every answer came through Google AI Studio. Input tokens track the video's length at about 296 per second (51 s → 15,271, 831 s → 245,378), which matches the documented frame and audio rates and shows that the video itself, not only its title, was processed.
+- 128 of 128 dishes got a valid recipe. Three needed a second video: one answer timed out, one video showed another dish (간장조림치킨 for 닭볶음), one answer had a single ingredient.
+- Hand review of the 27 dishes whose `cooked_dish` differs from the dish name: most are variants or longer names (간장계란밥, 소고기 뭇국, 묵참김밥). Four videos cook a different dish although the model confirmed them, and their recipes were removed from the file: 짜장라면 (쟁반 간짜장), 두부국 (뚝배기 순두부찌개), 마늘새우볶음 (마늘쫑 건새우 볶음), 감자국 (감자옹심이국). Borderline and kept: 계란후라이 (계란덮밥), 김치비빔밥 (described as a bibimbap like kimchi fried rice), 닭볶음 (닭볶음탕). **The file serves 124 dishes.**
+- 20 recipes come from Shorts (60 s or less). They are thinner: median 9 ingredients and 9 steps with amounts for 50% of ingredients, against 10, 12.5 and 78% for longer videos.
+- Main labels: median one main ingredient per recipe; 된장찌개 and 군만두 have none, so the recipe check's main-ingredient rule does nothing for them.
+- The file keeps only the video id; title and channel are looked up live by the server.
