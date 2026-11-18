@@ -167,6 +167,83 @@ def test_violations_are_failures_not_repairs(catalog, patch, code):
     assert result.revised is None
 
 
+def test_a_missing_ingredient_the_dish_is_named_after_is_refused_without_a_call(catalog):
+    for owned, name in ((["김치", "계란"], "밥"), (["밥", "계란"], "김치")):
+        svc, llm = service(catalog, GOOD)
+        result = svc.reviser.revise("kimchi-fried-rice", owned)
+        assert result.status == "refused" and name in result.refusal_reason
+        assert llm.calls == []
+
+
+def test_dropping_an_unavailable_main_ingredient_is_a_refusal(catalog):
+    # 밥 is unavailable but the dish name check does not apply to a recipe of another name.
+    recipe = SourceRecipe.model_validate({**RECIPE, "dish_id": "omurice"})
+    data_without_rice = {
+        **GOOD,
+        "ingredients": [{"name": "김치", "amount": "1컵"}, {"name": "식용유", "amount": ""}],
+        "steps": ["기름에 김치를 볶는다."],
+        "changes": [
+            {"reason": "밥이 없어서 뺐어요.", "ingredient_refs": [1], "step_refs": [3]},
+            *GOOD["changes"],
+        ],
+    }
+    reviser = Reviser(
+        catalog, catalog, FakeLLM(data_without_rice), RecipeStore({"omurice": recipe})
+    )
+    result = reviser.revise("omurice", ["김치"])
+    assert result.status == "refused" and "밥" in result.refusal_reason
+
+
+def test_a_main_ingredient_replaced_by_an_owned_one_is_accepted(catalog):
+    data = {
+        **GOOD,
+        "ingredients": [
+            {"name": "밥", "amount": "2공기"},
+            {"name": "깍두기", "amount": "1컵"},
+            {"name": "식용유", "amount": ""},
+        ],
+        "steps": ["기름에 깍두기를 볶는다.", "밥을 넣어 볶는다."],
+        "changes": [
+            {"reason": "김치 대신 깍두기를 써요.", "ingredient_refs": [2], "step_refs": [2]},
+            *GOOD["changes"],
+        ],
+    }
+    recipe = SourceRecipe.model_validate({**RECIPE, "dish_id": "omurice"})
+    reviser = Reviser(catalog, catalog, FakeLLM(data), RecipeStore({"omurice": recipe}))
+    assert reviser.revise("omurice", ["밥", "깍두기"]).status == "revised"
+
+
+def test_dropping_an_owned_main_ingredient_fails(catalog):
+    data = {**GOOD, "ingredients": GOOD["ingredients"][1:]}
+    data["changes"] = [{"reason": "x", "ingredient_refs": [1], "step_refs": []}, *GOOD["changes"]]
+    result = revised(catalog, data)
+    assert result.status == "failed" and result.error.code == "main_dropped"
+
+
+def test_a_removed_one_character_ingredient_in_a_step_fails(catalog):
+    recipe = SourceRecipe.model_validate(
+        {
+            **RECIPE,
+            "dish_id": "omurice",
+            "ingredients": [
+                *RECIPE["ingredients"],
+                {"name": "김", "amount": "1장", "role": "secondary"},
+            ],
+        }
+    )
+    data = {
+        **GOOD,
+        "steps": ["기름에 김치를 볶는다.", "밥을 넣어 볶고 김을 뿌린다."],
+        "changes": [
+            *GOOD["changes"],
+            {"reason": "김이 없어요.", "ingredient_refs": [6], "step_refs": []},
+        ],
+    }
+    reviser = Reviser(catalog, catalog, FakeLLM(data), RecipeStore({"omurice": recipe}))
+    result = reviser.revise("omurice", ["밥", "김치"])
+    assert result.status == "failed" and result.error.code == "mentions_unavailable"
+
+
 def test_synonym_names_count_as_owned_and_kept(catalog):
     data = {**GOOD, "ingredients": [{"name": "달걀", "amount": "1개"}] + GOOD["ingredients"]}
     data["changes"] = GOOD["changes"][:1] + [
@@ -178,9 +255,9 @@ def test_synonym_names_count_as_owned_and_kept(catalog):
 def test_model_failure_and_missing_model(catalog):
     svc, _ = service(catalog, DishLLMError("down"))
     with pytest.raises(DishLLMError):
-        svc.reviser.revise("kimchi-fried-rice", ["밥"])
+        svc.reviser.revise("kimchi-fried-rice", ["밥", "김치"])
     with pytest.raises(DishLLMError):
-        Reviser(catalog, catalog, None, store()).revise("kimchi-fried-rice", ["밥"])
+        Reviser(catalog, catalog, None, store()).revise("kimchi-fried-rice", ["밥", "김치"])
 
 
 def test_log_has_no_recipe_text_or_ingredients(catalog, caplog):
@@ -216,7 +293,7 @@ def test_api_recipe_view_and_revise(catalog):
 
 def test_api_revise_returns_502_when_the_model_fails(catalog):
     svc, _ = service(catalog, DishLLMError("The model service is temporarily unavailable"))
-    body = {"dish_id": "kimchi-fried-rice", "ingredients": ["밥"]}
+    body = {"dish_id": "kimchi-fried-rice", "ingredients": ["밥", "김치"]}
     assert client(svc).post("/dishes/revise", json=body).status_code == 502
 
 

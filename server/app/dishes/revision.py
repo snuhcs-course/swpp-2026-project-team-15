@@ -1,15 +1,25 @@
 # AI-generated with Claude Code (Sonnet 5.5), 2026-11-18; reviewed by Jaehyuk Choi.
 """Revise a stored recipe so it uses only what the user has, or refuse.
 
-The server decides what is available (owned, a staple assumed at home, or unavailable); the model
-rewrites the recipe in ONE call; the check in revision_check.py then rejects any result that breaks
-a rule. A result that fails the check is reported as a failure and never repaired silently."""
+The server decides what is available (owned, a staple assumed at home, or unavailable) and refuses
+without a model call when an ingredient the dish is named after is unavailable; otherwise the model
+rewrites the recipe in ONE call and the checks in revision_check.py reject any result that breaks a
+rule. An answer that drops a main ingredient without an owned replacement is returned as a refusal;
+any other broken answer is a failure and is never repaired silently. Measured in
+research/experiments/dish_revision (round 2)."""
 
 import logging
 
 from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError
 from app.dishes.prompts import revise_request
-from app.dishes.revision_check import Violation, check
+from app.dishes.revision_check import (
+    RefusalNeeded,
+    Violation,
+    check,
+    check_main_kept,
+    check_short_mentions,
+    identity_missing,
+)
 from app.dishes.roles import ChatModel, DishCatalog, IngredientIndex, RecipeBook
 from app.dishes.schemas import (
     RecipeView,
@@ -66,6 +76,11 @@ class Reviser:
                 tips=recipe.tips,
             )
             return ReviseResponse(status="revised", revised=same, **base)
+        named = identity_missing(view.name, recipe, status)
+        if named:  # the dish is named after something the user lacks: no model call
+            log.info("dish revision: status=refused source=prescreen")
+            reason = f"요리 이름에 들어간 {named[0]}이(가) 없어서 이 요리로 바꾸기 어려워요."
+            return ReviseResponse(status="refused", refusal_reason=reason, **base)
         if self.llm is None:
             raise DishLLMError(MODEL_NOT_CONFIGURED)
         request = revise_request(recipe, view.name, status, ingredients)
@@ -78,6 +93,11 @@ class Reviser:
             return self._failed(base, Violation("incomplete", "A refusal needs a reason"))
         try:
             revised, changes = check(data, recipe, status, self.index, ingredients)
+            check_main_kept(recipe, status, revised, changes)
+            check_short_mentions(recipe, status, revised)
+        except RefusalNeeded as needed:
+            log.info("dish revision: status=refused source=check")
+            return ReviseResponse(status="refused", refusal_reason=needed.reason, **base)
         except Violation as violation:
             return self._failed(base, violation)
         log.info("dish revision: status=revised changes=%d", len(changes))
