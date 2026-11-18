@@ -18,6 +18,7 @@ from google.genai import types
 from app.config import Settings
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DEFAULT_MODEL, DishLLM
+from app.dishes.recipes import RecipeStore
 from app.dishes.router import ingredients_router
 from app.dishes.router import router as dishes_router
 from app.dishes.service import DishService
@@ -59,7 +60,8 @@ def _dish_service(settings: Settings) -> DishService:
     llm = DishLLM(key, model) if key.strip() else None
     youtube_key = os.environ.get("YOUTUBE_API_KEY", "")
     finder = VideoFinder(key, youtube_key) if key.strip() and youtube_key.strip() else None
-    return DishService(Catalog.load(), llm, finder)
+    recipes = RecipeStore.load(os.environ.get("DISH_RECIPES"))
+    return DishService(Catalog.load(), llm, finder, recipes)
 
 
 def create_app_from_env() -> FastAPI:

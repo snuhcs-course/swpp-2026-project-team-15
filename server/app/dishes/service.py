@@ -8,6 +8,8 @@ from urllib.parse import quote_plus
 
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DishLLM, DishLLMError
+from app.dishes.recipes import RecipeStore
+from app.dishes.revision import Reviser
 from app.dishes.schemas import (
     AdaptResponse,
     Substitution,
@@ -99,11 +101,17 @@ def _strings(value: object) -> list[str]:
 
 class DishService:
     def __init__(
-        self, catalog: Catalog, llm: DishLLM | None = None, finder: VideoFinder | None = None
+        self,
+        catalog: Catalog,
+        llm: DishLLM | None = None,
+        finder: VideoFinder | None = None,
+        recipes: RecipeStore | None = None,
     ):
         self.catalog = catalog
         self.llm = llm
         self.finder = finder
+        self.recipes = recipes or RecipeStore()
+        self.reviser = Reviser(catalog, llm, self.recipes)
         self._by_name = {d.name: d for d in catalog.dishes.values()}
 
     def suggest(self, ingredients: list[str]) -> SuggestResponse:
@@ -135,6 +143,7 @@ class DishService:
                     have=_strings(item.get("have")),
                     missing=_strings(item.get("missing")),
                     search_url=search_url(dish.name),
+                    has_recipe=dish.id in self.recipes,
                 )
             )
         return out

@@ -91,6 +91,13 @@ class Catalog:
     def _covered(self, key: str, owned: set[str]) -> bool:
         return key in owned or bool(with_synonyms([key]) & owned)
 
+    def status(self, name: str, owned: set[str]) -> str:
+        """'assumed' for a staple at home, 'owned' when the user has it, else 'unavailable'."""
+        key = name.strip().replace(" ", "")
+        if key in self.staples or set(self.equivalents.get(key, ())) & self.staples:
+            return "assumed"
+        return "owned" if self._covered(key, owned) else "unavailable"
+
     def rank(self, ingredients: list[str]) -> list[Match]:
         """Every dish sharing a main ingredient with the owned ones: fewest missing, then name."""
         owned = self.owned(ingredients)

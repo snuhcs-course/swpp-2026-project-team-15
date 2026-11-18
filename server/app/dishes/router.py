@@ -12,6 +12,11 @@ from app.dishes.schemas import (
     IngredientSuggestion,
     IngredientSuggestionRequest,
     IngredientSuggestionResponse,
+    RecipeRequest,
+    RecipeView,
+    ReviseRequest,
+    ReviseResponse,
+    SourceRecipe,
     SuggestRequest,
     SuggestResponse,
     VideosRequest,
@@ -89,6 +94,51 @@ def videos(body: VideosRequest, service: DishServiceDep) -> VideosResponse:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
     if result is None:
         raise HTTPException(422, "Unknown dish id")
+    return result
+
+
+@router.get(
+    "/{dish_id}/recipe",
+    summary="The stored recipe of one dish",
+    operation_id="dish_recipe",
+    responses={404: {"model": ErrorResponse, "description": "No recipe for this dish"}},
+)
+def recipe(dish_id: str, service: DishServiceDep) -> SourceRecipe:
+    found = service.recipes.get(dish_id)
+    if found is None:
+        raise HTTPException(404, "No recipe for this dish")
+    return found
+
+
+@router.post(
+    "/recipe",
+    summary="The stored recipe with what the user has of each ingredient",
+    operation_id="dish_recipe_view",
+    responses={404: {"model": ErrorResponse, "description": "No recipe for this dish"}},
+)
+def recipe_view(body: RecipeRequest, service: DishServiceDep) -> RecipeView:
+    view = service.reviser.view(body.dish_id, body.ingredients)
+    if view is None:
+        raise HTTPException(404, "No recipe for this dish")
+    return view
+
+
+@router.post(
+    "/revise",
+    summary="The recipe of one dish adapted to the ingredients the user has, or a refusal",
+    operation_id="revise_dish",
+    responses={
+        404: {"model": ErrorResponse, "description": "No recipe for this dish"},
+        502: {"model": ErrorResponse, "description": "The model call failed"},
+    },
+)
+def revise(body: ReviseRequest, service: DishServiceDep) -> ReviseResponse:
+    try:
+        result = service.reviser.revise(body.dish_id, body.ingredients)
+    except DishLLMError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+    if result is None:
+        raise HTTPException(404, "No recipe for this dish")
     return result
 
 
