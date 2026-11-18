@@ -7,7 +7,7 @@ a rule. A result that fails the check is reported as a failure and never repaire
 
 import logging
 
-from app.dishes.errors import DishLLMError
+from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError
 from app.dishes.prompts import revise_request
 from app.dishes.revision_check import Violation, check
 from app.dishes.roles import ChatModel, DishCatalog, IngredientIndex, RecipeBook
@@ -21,7 +21,6 @@ from app.dishes.schemas import (
 )
 
 log = logging.getLogger(__name__)
-NOT_CONFIGURED = "The model service is not configured"
 
 
 class Reviser:
@@ -68,7 +67,7 @@ class Reviser:
             )
             return ReviseResponse(status="revised", revised=same, **base)
         if self.llm is None:
-            raise DishLLMError(NOT_CONFIGURED)
+            raise DishLLMError(MODEL_NOT_CONFIGURED)
         request = revise_request(recipe, view.name, status, ingredients)
         data = self.llm.complete(request.system, request.user, request.name, request.schema)
         if data.get("can_revise") is False:

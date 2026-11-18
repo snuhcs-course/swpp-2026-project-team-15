@@ -5,7 +5,7 @@ the request (prompts.py), calls the model and has the answer checked (answers.py
 wording and no rules of its own. There is no rules fallback."""
 
 from app.dishes.answers import check_adapt, check_suggest, search_url, strings
-from app.dishes.errors import DishLLMError, VideoError
+from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError, VideoError
 from app.dishes.prompts import adapt_request, suggest_request
 from app.dishes.revision import Reviser
 from app.dishes.roles import ChatModel, DishCatalog, IngredientIndex, RecipeBook
@@ -13,7 +13,6 @@ from app.dishes.schemas import AdaptResponse, SuggestResponse, VideosResponse
 from app.dishes.videos import VideoFinder
 
 NO_SUBSTITUTE = "냉장고 재료로는 마땅한 대체를 찾지 못했어요."
-NOT_CONFIGURED = "The model service is not configured"
 
 
 class DishService:
@@ -36,7 +35,7 @@ class DishService:
     def suggest(self, ingredients: list[str]) -> SuggestResponse:
         """Raises DishLLMError when the model is missing or fails."""
         if self.llm is None:
-            raise DishLLMError(NOT_CONFIGURED)
+            raise DishLLMError(MODEL_NOT_CONFIGURED)
         request = suggest_request(ingredients, [d.name for d in self.catalog.all()])
         data = self.llm.complete(request.system, request.user, request.name, request.schema)
         return SuggestResponse(source="llm", dishes=check_suggest(data, self.catalog, self.recipes))
@@ -47,7 +46,7 @@ class DishService:
         if dish is None:
             return None
         if self.finder is None:
-            raise VideoError(NOT_CONFIGURED)
+            raise VideoError(MODEL_NOT_CONFIGURED)
         videos, source = self.finder.lookup(dish_id, dish.name)
         return VideosResponse(
             dish_id=dish_id, videos=videos, search_url=search_url(dish.name), source=source
@@ -73,7 +72,7 @@ class DishService:
                 note="부족한 재료가 없어요.",
             )
         if self.llm is None:
-            raise DishLLMError(NOT_CONFIGURED)
+            raise DishLLMError(MODEL_NOT_CONFIGURED)
         owned = strings(ingredients)
         request = adapt_request(dish.name, wanted, owned)
         data = self.llm.complete(request.system, request.user, request.name, request.schema)
