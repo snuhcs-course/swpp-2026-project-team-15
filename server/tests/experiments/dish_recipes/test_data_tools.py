@@ -16,11 +16,10 @@ def test_parse_duration():
     assert collect_videos.parse_duration("") == 0
 
 
-def test_pick_track_prefers_korean_manual_then_korean_auto_then_any():
+def test_pick_track_takes_korean_manual_then_korean_auto_and_nothing_else():
     assert captions.pick_track([("en", False), ("ko", True), ("ko", False)]) == ("ko", False)
     assert captions.pick_track([("en", False), ("ko", True)]) == ("ko", True)
-    assert captions.pick_track([("ja", True), ("en", False)]) == ("en", False)
-    assert captions.pick_track([("ja", True)]) == ("ja", True)
+    assert captions.pick_track([("ja", True), ("en", False)]) is None
     assert captions.pick_track([]) is None
 
 

@@ -29,12 +29,10 @@ class Transcript:
 
 
 def pick_track(tracks: list[tuple[str, bool]]) -> tuple[str, bool] | None:
-    """(language, is_generated) to use: Korean manual, Korean auto, then any manual, any auto."""
+    """(language, is_generated) to use: Korean manual, then Korean auto; no other language."""
     for wanted in (
         lambda t: t[0].startswith("ko") and not t[1],
         lambda t: t[0].startswith("ko"),
-        lambda t: not t[1],
-        lambda t: True,
     ):
         for track in tracks:
             if wanted(track):

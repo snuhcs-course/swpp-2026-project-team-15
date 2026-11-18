@@ -22,7 +22,7 @@ from .captions import Blocked, fetch_transcript
 from .common import INPUTS_DIR, MISSING_FILE, VIDEOS_FILE, load_json, save_json
 
 MAX_TRIES = 4
-PAUSE_S = 2.0
+PAUSE_S = 8.0
 
 
 def input_record(dish, video: dict, transcript) -> dict:

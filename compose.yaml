@@ -18,6 +18,7 @@ services:
   api:
     <<: *api
     restart: unless-stopped
+    volumes: ["${DISH_DATA_DIR:-./deploy/data}:/data:ro"]  # optional recipe and video files
     healthcheck:
       test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=10)"]
       interval: 30s

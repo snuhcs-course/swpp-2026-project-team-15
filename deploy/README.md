@@ -1,6 +1,6 @@
 # Running the server
 
-Compose runs nginx → FastAPI/Uvicorn from a fresh clone. There is no database and no host folder to prepare. Docker builds the locked Python dependencies and copies only the server runtime files.
+Compose runs nginx → FastAPI/Uvicorn from a fresh clone. There is no database. Recipe and video files are optional (see below). Docker builds the locked Python dependencies and copies only the server runtime files.
 
 ```bash
 git clone -b feat/youtube-recipe-demo git@github.com:snuhcs-course/swpp-2026-project-team-15.git
@@ -17,8 +17,10 @@ curl -f http://127.0.0.1:8080/ready
 | `RUNTIME_ENV` | Path of the key file (default `deploy/runtime.env`) |
 | `OPENROUTER_API_KEY` | Dish suggestions, substitutes, video proposals and photo recognition |
 | `YOUTUBE_API_KEY` | `videos.list` for `/dishes/videos` |
+| `DISH_DATA_DIR` | Host folder mounted read-only at `/data` in the API container (default `deploy/data`, gitignored) |
+| `DISH_RECIPES`, `DISH_VIDEOS` | Files inside that folder, set in `runtime.env` as `/data/recipes.json` and `/data/dish-videos.json`; without them no dish has a recipe and videos are found on request |
 
-Keys stay in `deploy/runtime.env` (gitignored): never in Git, images or the app.
+Keys stay in `deploy/runtime.env` (gitignored): never in Git, images or the app. The recipe and video files are made by the tools in `research/experiments/dish_recipes/`, contain content derived from third-party videos and are copied to the server by hand, not committed.
 
 ## Runtime details
 
