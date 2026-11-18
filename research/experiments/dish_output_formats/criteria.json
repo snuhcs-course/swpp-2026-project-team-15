@@ -118,7 +118,13 @@
     "S0 is run again on the same day because answers and provider routing can change between days",
     "429 retries are not results of a variant"
   ],
-  "amendments": [],
+  "amendments": [
+    {
+      "date": "2026-11-18",
+      "before": "results of the main run exist (171 calls, one attempt each, no 429)",
+      "note": "Two diagnostic calls (one for S5b input S01, one for S4 input S03) are made only to read the error text that the runner did not store (it kept the error class and status). They are not variants, are excluded from every table, and count toward the cap (173 of 200). No variant is repeated."
+    }
+  ],
   "client_code_functions": {
     "raw_response_format": [
       "formats.response_format_payload",
