@@ -205,3 +205,34 @@ Paired against P0 per input (mean difference, bootstrap 95% interval, n = 25–2
 **Adopted (judgement, not a rule outcome).** The PA wording, and the server orders the checked list by the model's own `missing` count, keeping the model's order for ties; nothing is dropped and no count is imposed. The list length is not solved: wording alone did not stop answers that run to the output limit (the two live requests above), and a cap would be a fixed count. The evidence for PA over P0 is weak (all paired intervals include zero); the ordering is the part that the stored answers support. Not tried: shuffling or regrouping the dish list sent to the model (the walk follows its order), and keeping seasonings out of the `missing` choices.
 
 **Limits.** One run per variant, one model and provider, 27 inputs; the reference sets and the rules' missing counts come from the catalog's key ingredients, not from people; the offline ordering check reuses the same answers.
+
+## Round 4: bounding the answer by structure (2026-11-19)
+
+After round 3 both demo requests still ran into the 4,096-token output limit (about 8 s). Design fixed before any call in `criteria_round4.json` (commit `aee797b`): the 27 frozen inputs plus the two demo inputs (D1 = 두부, D2 = 김치, 밥, 간장, 소금); the split variants and the names-only reference ran on the two demo inputs plus six inputs drawn with a fixed seed (8 inputs). No pass/fail threshold. 383 calls, $0.10, no HTTP 429 (also not in the 18 concurrent calls per split request).
+
+| | S_now (served) | S_noseason | S_shuffle | S_names (cost reference) | S_split | S_split_noseason |
+|---|---|---|---|---|---|---|
+| Inputs / requests | 29 / 29 | 29 / 29 | 29 / 29 | 8 / 8 | 8 / 144 | 8 / 144 |
+| Inputs with a cut answer | 6 | 2 | 9 | 0 | 0 | 0 |
+| Dishes returned: median / mean / max | 16 / 23.6 / 96 | 16 / 19.9 / 114 | 16 / 32.4 / 108 | 18 / 14.0 / 25 | 66 / 67.8 / 86 | 70 / 71.0 / 90 |
+| Missing per dish by the rules: 0 / 1 / 2 / 3+ | 9 / 22 / 33 / 35% | 11 / 21 / 33 / 36% | 7 / 16 / 28 / 49% | 20 / 28 / 40 / 13% | 5 / 20 / 26 / 49% | 5 / 18 / 27 / 50% |
+| First five with at most one missing (mean share) | 0.60 | 0.59 | 0.54 | 0.55 | 0.58 | 0.63 |
+| Staples among the missing items | 8.4% | 0% | 5.7% | — | 8.1% | 0% |
+| Owned ingredient listed as missing | 0 | 0 | 0 | 0 | 0 | 0 |
+| Reference recall / precision | 0.53 / 0.28 | 0.48 / 0.29 | 0.52 / 0.20 | 0.46 / 0.47 | 0.87 / 0.19 | 0.84 / 0.17 |
+| Wall time p50 / p95 | 2.1 / 8.9 s | 2.1 / 8.5 s | 2.0 / 9.3 s | 0.9 / 1.0 s | 1.9 / 5.0 s | 1.9 / 2.8 s |
+| Output tokens per input, cost per input | 1,334, $0.00063 | 983, $0.00048 | 1,698, $0.00078 | 99, $0.00013 | 3,853, $0.00199 | 3,713, $0.00193 |
+
+Demo inputs: S_now cut both (7 and 13 dishes kept, 8.1 and 8.2 s); S_noseason answered both in full (11 dishes in 1.7 s, 13 in 3.0 s); the split variants returned 62–69 dishes in 1.6–1.9 s.
+
+Paired against S_now per input (mean difference, bootstrap 95% interval): S_noseason dishes −3.7 (−16.3 to +7.9), recall −0.08 (−0.16 to −0.01), precision −0.02 (−0.06 to +0.02), cost −$0.00014 (−0.00041 to +0.00011); S_split_noseason (n = 8) dishes +53 (+43 to +63), rules-missing mean +0.72 (+0.48 to +0.99), recall +0.23 (+0.12 to +0.34), precision −0.21 (−0.31 to −0.13), wall −1.8 s (−4.0 to +0.05), cost +$0.0012 (+0.0007 to +0.0015); S_shuffle precision −0.09 (−0.19 to −0.01), rules-missing mean +0.24 (−0.03 to +0.53).
+
+**What the numbers show.**
+- Taking the staples out of the `missing` choices shortens every answer (output tokens −26%, cost −23%) and cut answers drop from 6 to 2 of 29; both demo inputs are answered in full and fast. It does not stop every runaway: 밥 + 계란 + an unknown item still returned 114 dishes (cut). Recall falls a little (the interval just excludes zero) while precision and the first-five share do not move.
+- Splitting by the catalog's categories removes the cut answers and the slow tail (p95 2.8–5.0 s, no 429 with 18 concurrent calls), but each category answer lists most of its own dishes: 62–90 dishes per input, half of them missing three or more ingredients, three times the cost. That is the opposite of the promise "what you can cook now", and the server's ordering keeps the first five about as good as before, not better.
+- Shuffling the dish list makes lists longer and less precise; the walk in list order is not what decides which dishes appear, so changing the order does not help.
+- Names only is the cost floor (about a fifth of S_now, under a second) but the cards would have no missing list.
+
+**Adopted (judgement, not a rule outcome).** S_noseason: the server leaves the staples it assumes at home (staples.json plus water, with their synonym spellings) out of the `missing` choices; the wording and the ordering are unchanged. The split is not adopted: it fixes the cut answers by making every list three to four times longer. What remains: an occasional runaway answer on very common inputs (2 of 29 here), which the server still salvages and orders.
+
+**Limits.** One run per variant, one model and provider; the split variants and names-only on 8 inputs; reference sets and rule-based missing counts come from the catalog, not from people.
