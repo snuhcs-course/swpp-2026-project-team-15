@@ -185,7 +185,7 @@ def test_adapt_keeps_substitutes_that_come_from_the_owned_list(catalog):
     body = _adapt(catalog, llm, ["양파", "밥"], ["대파", "계란"]).json()
     assert body["source"] == "llm" and body["note"] == "" and body["skip_ok"] == []
     assert body["substitutions"] == [
-        {"missing": "대파", "suggestion": "양파(으)로 대신해요", "uses": ["양파"]}
+        {"missing": "대파", "suggestion": "양파로 대신해요", "uses": ["양파"]}
     ]
     assert llm.calls[0][1] == {
         "dish": "계란말이",

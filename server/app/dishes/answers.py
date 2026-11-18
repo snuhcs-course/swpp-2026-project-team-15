@@ -12,6 +12,7 @@ import re
 from urllib.parse import quote_plus
 
 from app.dishes.choices import SuggestChoices
+from app.dishes.korean import attach
 from app.dishes.roles import DishCatalog, RecipeBook
 from app.dishes.schemas import Substitution, SuggestedDish
 
@@ -89,7 +90,9 @@ def check_adapt(data: dict, missing: list[str], owned: list[str]) -> list[Substi
         if sub not in owned:
             continue
         used.add(gap)
-        subs.append(Substitution(missing=gap, suggestion=f"{sub}(으)로 대신해요", uses=[sub]))
+        subs.append(
+            Substitution(missing=gap, suggestion=f"{attach(sub, '으로')} 대신해요", uses=[sub])
+        )
     return subs
 
 

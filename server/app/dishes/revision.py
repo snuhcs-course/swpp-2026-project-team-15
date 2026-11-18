@@ -11,6 +11,7 @@ research/experiments/dish_revision (round 2)."""
 import logging
 
 from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError
+from app.dishes.korean import attach
 from app.dishes.prompts import revise_request
 from app.dishes.revision_check import (
     RefusalNeeded,
@@ -79,7 +80,9 @@ class Reviser:
         named = identity_missing(view.name, recipe, status)
         if named:  # the dish is named after something the user lacks: no model call
             log.info("dish revision: status=refused source=prescreen")
-            reason = f"요리 이름에 들어간 {named[0]}이(가) 없어서 이 요리로 바꾸기 어려워요."
+            reason = (
+                f"요리 이름에 들어간 {attach(named[0], '이')} 없어서 이 요리로 바꾸기 어려워요."
+            )
             return ReviseResponse(status="refused", refusal_reason=reason, **base)
         if self.llm is None:
             raise DishLLMError(MODEL_NOT_CONFIGURED)

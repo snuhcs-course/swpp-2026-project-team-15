@@ -11,6 +11,7 @@ the caller reports it as a failure and never repairs it silently.
 import re
 
 from app.dishes.answers import strings
+from app.dishes.korean import attach
 from app.dishes.roles import IngredientIndex
 from app.dishes.schemas import Change, RecipeStep, RevisedIngredient, RevisedRecipe, SourceRecipe
 from app.dishes.synonyms import with_synonyms
@@ -25,7 +26,7 @@ class RefusalNeeded(Exception):
     def __init__(self, name: str):
         super().__init__(name)
         self.name = name
-        self.reason = f"{name}이(가) 없으면 이 요리가 되지 않아요."
+        self.reason = f"{attach(name, '이')} 없으면 이 요리가 되지 않아요."
 
 
 class Violation(Exception):
