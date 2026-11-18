@@ -101,3 +101,77 @@ No variant is adopted under the frozen rule. For the next step, S2 is the format
 - The reference is rule-made from the dish list, not by people; recall and precision measure agreement with that rule.
 - The causes of the S5a and S5b differences, of S4's malformed calls and of the repetition loops were not tested. Behaviour on a provider other than Google AI Studio is not known.
 - A `maxItems` limit would stop the loops but is a fixed count, which the service avoids; it was not tried.
+
+## Round 2: per-request enums and mapping of unmatched ingredients (2026-11-19)
+
+Design fixed in `criteria_round2.json` and `mapping_set.json` (commit `812b830`) before any call. Round 2 has **no thresholds and no adoption rule**: every number is reported and the recommendation below is a judgement.
+
+- **Problem from round 1.** With `missing` limited to the whole vocabulary (S2), the model named an ingredient the user owns as missing in 8.3% of dishes.
+- **R0** = S2 again (same day). **R1** = S2 with a per-request `missing` enum: the vocabulary minus the names the server matches to the user's items (exact spelling or a synonym group). **R2** = R1 plus, for user items with no vocabulary match, a numbered list (`X1: 다진마늘`) that the model maps first (`mapping`: a vocabulary name or `none`); the server then removes mapped names from `missing`.
+- **Mapping set.** 40 invented lists (3–6 items) with 43 unmatched items: 27 should map (다진마늘 → 마늘, egg → 계란, 두뷰 → 두부), 16 are traps that should stay `none` (쪽파 is not 대파, 두유 is not 두부), 3 are ambiguous (쌀, 파스타면, 컵라면). One labeller's draft. R2 ran on all 40, R0 and R1 on the first 15 (call cap).
+- **Reproduce:** `cd server && PYTHONPATH=.:../research uv run --locked python -m experiments.dish_output_formats.run_round2 [--allow-live-api]`.
+- 160 attempts (151 calls and 9 retries after HTTP 429), $0.080, all served by Google AI Studio, `google/gemini-2.5-flash-lite`, temperature 0.
+
+### Frozen 27 inputs
+
+| | R0 (whole vocabulary) | R1 (per-request `missing`) | R2 (R1 + mapping) |
+| --- | --- | --- | --- |
+| Dishes with an owned ingredient listed as missing | 8.3% | **0%** | **0%** |
+| Constraint violations (names, `have`, `missing`, mapping) | 0 | 0 | 0 |
+| Repeated dish names in raw answers | 19 | 0 | 0 |
+| Cut-off answers | 2 (S09, S16) | 4 (S01, S08, S09, S16) | 4 (S01, S04, S08, S09) |
+| Nonempty when a dish is possible | 96.2% | 88.5% | 88.5% |
+| Reference recall / precision | 44.6% / 51.6% | 46.5% / 53.7% | 46.3% / 52.0% |
+| Dishes per input (median, max) | 13, 28 | 14, 39 | 14, 39 |
+| Output tokens (mean) | 789 | 1,061 | 1,082 |
+| Cost per call | $0.00041 | $0.00052 | $0.00053 |
+| Latency median / p95 | 1.9 / 9.3 s | 2.1 / 8.9 s | 1.9 / 9.4 s |
+
+Paired per input (mean difference, bootstrap 95% interval, inputs both answered):
+
+| | owned listed as missing (share of dishes) | recall | precision | latency |
+| --- | --- | --- | --- | --- |
+| R1 − R0 (n = 23) | −12.2 points (−23.3 to −3.4) | +2.0 (−2.3 to +7.1) | −2.2 (−6.2 to +1.5) | +1.0 s (+0.1 to +2.2) |
+| R2 − R0 (n = 22) | −12.8 points (−25.5 to −3.7) | +2.1 (−2.5 to +7.6) | −2.2 (−6.3 to +1.9) | +0.6 s (−0.3 to +1.6) |
+| R2 − R1 (n = 22) | 0 | 0 | 0 | −0.4 s (−1.6 to +0.6) |
+
+Most frozen inputs have no unmatched item, so R2 sends exactly R1's request there; at temperature 0 their answers were identical on all 22 inputs both completed.
+
+### Mapping set
+
+| | R0 (first 15) | R1 (first 15) | R2 (all 40) |
+| --- | --- | --- | --- |
+| Dishes with an owned ingredient listed as missing (by the labels) | 25 of 237 (10.6%) | 2 of 200 (1.0%) | 0 of 530 |
+| Repeated dish names | 39 | 0 | 1 |
+| Cut-off answers | 2 | 3 | 4 |
+| Cost per call | $0.00062 | $0.00064 | $0.00054 |
+
+Paired on the first 15 lists: R1 − R0 −13.4 points (−29.5 to −1.5, n = 11); R2 − R1 −2.8 points (−7.9 to 0, n = 9).
+
+R2's mapping of the 40 non-ambiguous unmatched items:
+
+| Outcome | Items | Examples |
+| --- | --- | --- |
+| Right | 21 | 다진마늘 → 마늘, egg → 계란, 두뷰 → 두부, 비비고 만두 → 만두, 청경채 → none |
+| **False merge** (label `none`, model named a vocabulary entry) | **14** | 쪽파 → 대파 (3 lists), 적양배추 → 양배추 (2), 두유 → 두부, 들기름 → 참기름, 미나리 → 미역, 부추 → 부침가루, 브로콜리 → 가지, 올리고당 → 올리브유 |
+| Missed merge | 5 | 4 lost to cut-off answers (깐마늘, 삼겹살, 표고버섯, 스팸), cheese → none |
+| Wrong target | 0 | |
+
+The three ambiguous items were mapped 쌀 → 밥, 파스타면 → 스파게티면, 컵라면 → 라면. Of the 16 traps only 2 stayed `none` (생크림, 청경채).
+
+The removal step made 7 removals: 2 were right (청양고추 → 고추 in two dishes) and **5 were harmful**: after 두유 → 두부, 두부 disappeared from the missing list of 두부김치, 두부부침, 두부조림, 두부국 and 두부덮밥, so the app would say the user has tofu.
+
+### What the numbers show
+
+- **The per-request enum removes the original problem.** On the frozen inputs R1 cut owned-as-missing from 8.3% to 0%; the paired interval excludes zero. On the mapping set the remaining error was 1% of dishes, coming from forms the server cannot match (치즈 for 슬라이스치즈, 고추 for 청양고추). Recall and precision did not change measurably (intervals include zero).
+- **Repeated dish names disappeared with the narrower enum** (19 and 39 for R0, 0 for R1). The cause was not tested.
+- **The cost is a longer answer.** R1 wrote about a third more output tokens, cost $0.0001 more per call, took about 1 s longer in the paired median and was cut off twice more often (4 against 2 of 27). On a single run the cut-off difference may be noise; it lowers "nonempty" from 96% to 89% because cut answers are scored as empty here (the service keeps the complete part).
+- **The model's own mapping is not safe with this model.** It merged 14 of 16 traps into a similar-sounding or similar-looking vocabulary name, including nonsense (부추 → 부침가루, 브로콜리 → 가지) and a harmful one (두유 → 두부) whose removal step then told the user they own tofu. The prompt rule ("only the same ingredient; 쪽파 is not 대파") was ignored for exactly the example it named. The gain of R2 over R1 on the problem it targets was small (−2.8 points, interval reaching zero).
+
+### What they cannot show
+
+One run of one model on one provider; 27 frozen inputs and 40 lists written and labelled by one person; R0 and R1 saw only 15 lists. The traps are my judgement of "only a substitute". Cut-off answers are scored as empty although the service salvages their complete part. Whether a stronger model maps safely was not tested.
+
+### Recommendation (judgement)
+
+Use **R1** in the service: dish names, `have` and `missing` limited to closed lists, with `missing` built per request from the vocabulary minus what the user owns. It removes the owned-as-missing error by construction, keeps the names valid, and costs about $0.0001 more per call. Do **not** use the model mapping of R2 with this model: it cannot be trusted to say "none". Unmatched user items (다진마늘, egg) stay in `have` under the user's wording; the remaining risk is that their vocabulary form can still be listed as missing (1% of dishes here). Watch the cut-off rate on the deployed server.
