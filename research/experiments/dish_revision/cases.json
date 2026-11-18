@@ -1,0 +1,394 @@
+{
+ "schema": 1,
+ "cases": [
+  {
+   "id": "R01a",
+   "dish_id": "kimchi-fried-rice",
+   "ingredients": [
+    "밥",
+    "김치",
+    "계란",
+    "참기름"
+   ],
+   "expect": "revise",
+   "note": "missing 대파"
+  },
+  {
+   "id": "R01b",
+   "dish_id": "kimchi-fried-rice",
+   "ingredients": [
+    "김치",
+    "계란",
+    "대파"
+   ],
+   "expect": "refuse",
+   "note": "missing 밥"
+  },
+  {
+   "id": "R01c",
+   "dish_id": "kimchi-fried-rice",
+   "ingredients": [
+    "밥",
+    "김치",
+    "쪽파"
+   ],
+   "expect": "revise",
+   "note": "missing 대파, 계란; 쪽파 owned"
+  },
+  {
+   "id": "R02a",
+   "dish_id": "egg-roll",
+   "ingredients": [
+    "계란",
+    "대파"
+   ],
+   "expect": "revise",
+   "note": "missing 당근"
+  },
+  {
+   "id": "R02b",
+   "dish_id": "egg-roll",
+   "ingredients": [
+    "대파",
+    "당근"
+   ],
+   "expect": "refuse",
+   "note": "missing 계란"
+  },
+  {
+   "id": "R02c",
+   "dish_id": "egg-roll",
+   "ingredients": [
+    "계란",
+    "양파"
+   ],
+   "expect": "revise",
+   "note": "missing 대파, 당근; 양파 owned"
+  },
+  {
+   "id": "R03a",
+   "dish_id": "tomato-egg-stir",
+   "ingredients": [
+    "토마토",
+    "계란",
+    "설탕"
+   ],
+   "expect": "revise",
+   "note": "missing 대파"
+  },
+  {
+   "id": "R03b",
+   "dish_id": "tomato-egg-stir",
+   "ingredients": [
+    "토마토",
+    "대파"
+   ],
+   "expect": "refuse",
+   "note": "missing 계란"
+  },
+  {
+   "id": "R03c",
+   "dish_id": "tomato-egg-stir",
+   "ingredients": [
+    "토마토",
+    "계란",
+    "양파"
+   ],
+   "expect": "revise",
+   "note": "missing 대파; 양파 owned"
+  },
+  {
+   "id": "R04a",
+   "dish_id": "kimchi-stew",
+   "ingredients": [
+    "김치",
+    "돼지고기",
+    "대파"
+   ],
+   "expect": "revise",
+   "note": "missing 두부"
+  },
+  {
+   "id": "R04b",
+   "dish_id": "kimchi-stew",
+   "ingredients": [
+    "돼지고기",
+    "두부",
+    "대파"
+   ],
+   "expect": "refuse",
+   "note": "missing 김치"
+  },
+  {
+   "id": "R04c",
+   "dish_id": "kimchi-stew",
+   "ingredients": [
+    "김치",
+    "참치캔",
+    "양파"
+   ],
+   "expect": "revise",
+   "note": "missing 돼지고기, 두부, 대파; 참치캔 owned"
+  },
+  {
+   "id": "R05a",
+   "dish_id": "tuna-mayo-bowl",
+   "ingredients": [
+    "밥",
+    "참치캔",
+    "마요네즈"
+   ],
+   "expect": "revise",
+   "note": "missing 김"
+  },
+  {
+   "id": "R05b",
+   "dish_id": "tuna-mayo-bowl",
+   "ingredients": [
+    "밥",
+    "마요네즈",
+    "김"
+   ],
+   "expect": "refuse",
+   "note": "missing 참치캔"
+  },
+  {
+   "id": "R05c",
+   "dish_id": "tuna-mayo-bowl",
+   "ingredients": [
+    "밥",
+    "참치캔",
+    "계란"
+   ],
+   "expect": "revise",
+   "note": "missing 마요네즈, 김; 계란 owned"
+  },
+  {
+   "id": "R06a",
+   "dish_id": "egg-fried-rice",
+   "ingredients": [
+    "밥",
+    "계란"
+   ],
+   "expect": "revise",
+   "note": "missing 대파"
+  },
+  {
+   "id": "R06b",
+   "dish_id": "egg-fried-rice",
+   "ingredients": [
+    "밥",
+    "대파"
+   ],
+   "expect": "refuse",
+   "note": "missing 계란"
+  },
+  {
+   "id": "R06c",
+   "dish_id": "egg-fried-rice",
+   "ingredients": [
+    "밥",
+    "계란",
+    "양파"
+   ],
+   "expect": "revise",
+   "note": "missing 대파; 양파 owned"
+  },
+  {
+   "id": "R07a",
+   "dish_id": "doenjang-stew",
+   "ingredients": [
+    "된장",
+    "두부",
+    "양파",
+    "대파"
+   ],
+   "expect": "revise",
+   "note": "missing 애호박"
+  },
+  {
+   "id": "R07b",
+   "dish_id": "doenjang-stew",
+   "ingredients": [
+    "두부",
+    "애호박",
+    "양파",
+    "대파"
+   ],
+   "expect": "refuse",
+   "note": "missing 된장"
+  },
+  {
+   "id": "R07c",
+   "dish_id": "doenjang-stew",
+   "ingredients": [
+    "된장",
+    "두부",
+    "감자"
+   ],
+   "expect": "revise",
+   "note": "missing 애호박, 양파, 대파; 감자 owned"
+  },
+  {
+   "id": "R08a",
+   "dish_id": "cheese-toast",
+   "ingredients": [
+    "식빵",
+    "치즈",
+    "버터"
+   ],
+   "expect": "revise",
+   "note": "missing 계란"
+  },
+  {
+   "id": "R08b",
+   "dish_id": "cheese-toast",
+   "ingredients": [
+    "식빵",
+    "계란",
+    "버터"
+   ],
+   "expect": "refuse",
+   "note": "missing 치즈"
+  },
+  {
+   "id": "R08c",
+   "dish_id": "cheese-toast",
+   "ingredients": [
+    "식빵",
+    "치즈",
+    "마요네즈"
+   ],
+   "expect": "revise",
+   "note": "missing 계란, 버터; 마요네즈 owned"
+  },
+  {
+   "id": "R09a",
+   "dish_id": "tomato-pasta",
+   "ingredients": [
+    "스파게티면",
+    "토마토",
+    "올리브유"
+   ],
+   "expect": "revise",
+   "note": "missing 양파"
+  },
+  {
+   "id": "R09b",
+   "dish_id": "tomato-pasta",
+   "ingredients": [
+    "스파게티면",
+    "양파",
+    "올리브유"
+   ],
+   "expect": "refuse",
+   "note": "missing 토마토"
+  },
+  {
+   "id": "R09c",
+   "dish_id": "tomato-pasta",
+   "ingredients": [
+    "스파게티면",
+    "토마토",
+    "대파"
+   ],
+   "expect": "revise",
+   "note": "missing 양파, 올리브유; 대파 owned"
+  },
+  {
+   "id": "R10a",
+   "dish_id": "potato-pan",
+   "ingredients": [
+    "감자",
+    "부침가루"
+   ],
+   "expect": "revise",
+   "note": "missing 양파"
+  },
+  {
+   "id": "R10b",
+   "dish_id": "potato-pan",
+   "ingredients": [
+    "양파",
+    "부침가루"
+   ],
+   "expect": "refuse",
+   "note": "missing 감자"
+  },
+  {
+   "id": "R10c",
+   "dish_id": "potato-pan",
+   "ingredients": [
+    "감자",
+    "양파"
+   ],
+   "expect": "revise",
+   "note": "missing 부침가루"
+  },
+  {
+   "id": "R11a",
+   "dish_id": "pork-bowl",
+   "ingredients": [
+    "밥",
+    "돼지고기",
+    "양파",
+    "고추장"
+   ],
+   "expect": "revise",
+   "note": "missing 대파"
+  },
+  {
+   "id": "R11b",
+   "dish_id": "pork-bowl",
+   "ingredients": [
+    "밥",
+    "양파",
+    "대파",
+    "고추장"
+   ],
+   "expect": "refuse",
+   "note": "missing 돼지고기"
+  },
+  {
+   "id": "R11c",
+   "dish_id": "pork-bowl",
+   "ingredients": [
+    "밥",
+    "돼지고기",
+    "대파"
+   ],
+   "expect": "revise",
+   "note": "missing 양파, 고추장; 고춧가루 assumed"
+  },
+  {
+   "id": "R12a",
+   "dish_id": "egg-soup",
+   "ingredients": [
+    "계란",
+    "대파"
+   ],
+   "expect": "revise",
+   "note": "missing 양파"
+  },
+  {
+   "id": "R12b",
+   "dish_id": "egg-soup",
+   "ingredients": [
+    "대파",
+    "양파"
+   ],
+   "expect": "refuse",
+   "note": "missing 계란"
+  },
+  {
+   "id": "R12c",
+   "dish_id": "egg-soup",
+   "ingredients": [
+    "계란",
+    "쪽파"
+   ],
+   "expect": "revise",
+   "note": "missing 대파, 양파; 쪽파 owned"
+  }
+ ]
+}

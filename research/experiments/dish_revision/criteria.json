@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "frozen_on": "2026-11-18",
+  "study": "revision of a stored dish recipe to the ingredients at hand",
+  "model": "google/gemini-2.5-flash-lite",
+  "settings": {"temperature": 0, "max_tokens": 4096, "strict_json_schema": true, "runs": 1},
+  "cases": "cases.json (36 = 12 fixture recipes x 3 fridges)",
+  "labelling": "One AI labeler. expect=refuse when a role=main ingredient of the recipe is unavailable (not owned, not a staple, no listed equivalent); expect=revise otherwise. Every case has at least one unavailable ingredient, so every case needs the model.",
+  "budget": {"model_calls_max": 80, "note": "36 planned; the rest only for retries after HTTP 429 or a transport error (recorded)"},
+  "metrics": [
+    {"id": "json_valid_rate", "what": "answers that are complete and match the schema, among the 36 calls", "threshold": ">= 0.95"},
+    {"id": "post_check_pass_rate", "what": "revised / (revised + failed) among valid answers that are not refusals", "threshold": ">= 0.85"},
+    {"id": "wrongful_refusal_rate", "what": "refused among expect=revise cases", "threshold": "<= 0.10"},
+    {"id": "refusal_recall", "what": "refused among expect=refuse cases (a provider failure counts as not refused)", "threshold": ">= 0.80"},
+    {"id": "refusal_precision", "what": "expect=refuse among refused cases", "threshold": ">= 0.90"},
+    {"id": "ingredient_reason_coverage", "what": "in the raw answers that revise: share of dropped or replaced source ingredients that some change names in ingredient_refs (before the server check)", "threshold": ">= 0.90"},
+    {"id": "step_reason_coverage", "what": "in the raw answers that revise: share of source steps whose exact text is missing from the revised steps and that some change names in step_refs", "threshold": ">= 0.80"},
+    {"id": "median_latency_s", "what": "seconds per call, retries excluded", "threshold": "<= 8"},
+    {"id": "mean_cost_usd", "what": "USD per call at 0.10 / 0.40 per million input / output tokens", "threshold": "<= 0.002"}
+  ],
+  "reported_without_threshold": ["p95 latency", "tokens per call", "post-check failure codes", "failures listed by case"],
+  "decision": "The server check and prompt stay as shipped when every threshold holds. A missed threshold is reported with its cause and is not tuned away in this study; any change of prompt or check is a new round with its own criteria.",
+  "limits": ["synthetic hand-written recipes, not recipes produced from videos", "one AI labeler", "one run at temperature 0", "36 cases: one case moves a rate by about 3 points (refusal metrics rest on 12 cases)"]
+}
