@@ -175,3 +175,29 @@ One run of one model on one provider; 27 frozen inputs and 40 lists written and 
 ### Recommendation (judgement)
 
 Use **R1** in the service: dish names, `have` and `missing` limited to closed lists, with `missing` built per request from the vocabulary minus what the user owns. It removes the owned-as-missing error by construction, keeps the names valid, and costs about $0.0001 more per call. Do **not** use the model mapping of R2 with this model: it cannot be trusted to say "none". Unmatched user items (다진마늘, egg) stay in `have` under the user's wording; the remaining risk is that their vocabulary form can still be listed as missing (1% of dishes here). Watch the cut-off rate on the deployed server.
+
+## Round 3: list length under closed choices (2026-11-19)
+
+Two live requests on the demo server returned 102 and 94 dishes (about 8 s) after the closed choices were deployed. Design fixed before any call in `criteria_round3.json` (commit `9afc16a`): the 27 frozen inputs, the current 128-dish list, the server's request body, five variants, no pass/fail threshold. 140 attempts (135 planned + 5 retries after HTTP 429), $0.10.
+
+| | P0 served (round-2 wording) | PA "only what you can cook now, or after a small purchase" | PB "best first, stop when the rest mostly lacks ingredients" | PC per-dish `fit` field | PD earlier free text |
+|---|---|---|---|---|---|
+| Dishes returned: median / mean / max | 17.5 / 25.7 / 116 | 16 / 24.6 / 96 | 17.5 / 30.8 / 115 | 79 / 63.7 / 126 | 18 / 19.3 / 52 |
+| Cut at 4,096 tokens (salvaged) / failed | 5 / 1 | 4 / 0 | 10 / 1 | 14 / 0 | 3 / 0 |
+| Missing per dish by the rules: 0 / 1 / 2 / 3+ | 9 / 20 / 30 / 42% | 10 / 23 / 33 / 35% | 9 / 21 / 30 / 40% | 4 / 15 / 25 / 56% | 13 / 23 / 32 / 32% |
+| Missing per dish as the model wrote it: 0 / 1 / 2 / 3+ | 24 / 35 / 25 / 17% | 23 / 42 / 22 / 13% | 22 / 40 / 30 / 8% | 12 / 36 / 35 / 17% | 54 / 28 / 8 / 10% |
+| Owned ingredient listed as missing (dishes) | 0 | 0 | 0 | 0 | 34 |
+| Reference recall / precision | 0.48 / 0.25 | 0.53 / 0.28 | 0.60 / 0.26 | 0.74 / 0.15 | 0.52 / 0.35 |
+| Latency p50 / p95, output tokens, cost per call | 2.1 / 8.8 s, 1,293, $0.00061 | 1.9 / 7.9 s, 1,133, $0.00055 | 2.4 / 8.7 s, 1,815, $0.00082 | 8.1 / 9.0 s, 2,699, $0.00115 | 2.2 / 7.6 s, 1,213, $0.00058 |
+
+Paired against P0 per input (mean difference, bootstrap 95% interval, n = 25–26): PA dishes −0.5 (−15.7 to +14.7), rules-missing per dish −0.09 (−0.27 to +0.09), recall +0.08 (−0.02 to +0.19), precision +0.04 (−0.06 to +0.13); PC dishes +36.5 (+17.5 to +56.0), rules-missing +0.60 (+0.30 to +0.92), precision −0.18 (−0.31 to −0.06).
+
+**What the numbers show.**
+- The median list is short in every closed variant (16–18); the long lists are a tail. In each variant a few inputs run away to 90–126 dishes, and not always the same inputs: P0 on 두부 (102), on salt, soy sauce and sugar only (102) and on 밥+계란+an unknown item (116); PA on 김치+밥 (96). The two live requests were such tails.
+- In the runaway answers the model walks the dish list in the order it was given (95–96% of consecutive pairs in list order for P0 on 두부 and on 밥+계란; 100% even for a 28-dish answer). So "best first" is not followed: the order is the list's order, and the dishes the user can cook now are not at the top.
+- Wording PA moves every average in the intended direction (shorter, fewer 3+-missing dishes, higher recall and precision, cheaper, fewer cut answers), but every paired interval includes zero, and it still runs away on one input. PB cuts more answers. The `fit` field (PC) makes lists much longer and its labels do not separate dishes (rules-missing mean 1.5 for "now", 2.9 for "small purchase", 2.9 for "mostly missing"). Free text (PD) brings back owned ingredients listed as missing (34 dishes).
+- Offline, on the stored answers: ordering each list by the model's own `missing` count (ties in the model's order) raises the share of dishes with at most one missing ingredient among the first five from 0.55 to 0.64 (P0) and from 0.53 to 0.62 (PA); the rules-missing mean of the first five falls from 1.3 to 1.1.
+
+**Adopted (judgement, not a rule outcome).** The PA wording, and the server orders the checked list by the model's own `missing` count, keeping the model's order for ties; nothing is dropped and no count is imposed. The list length tail is not solved: wording alone did not stop the runaway answers, and a cap would be a fixed count. Not tried: shuffling or regrouping the dish list sent to the model (the walk follows its order).
+
+**Limits.** One run per variant, one model and provider, 27 inputs; the reference sets and the rules' missing counts come from the catalog's key ingredients, not from people; the offline ordering check reuses the same answers.
