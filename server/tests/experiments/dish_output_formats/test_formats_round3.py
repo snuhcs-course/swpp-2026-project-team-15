@@ -10,7 +10,7 @@ from experiments.dish_tokens.calls import Call
 
 from app.dishes.catalog import Catalog
 from app.dishes.choices import ingredient_vocabulary
-from app.dishes.prompts import SUGGEST_CLOSED_SYSTEM
+from app.dishes.prompts import SUGGEST_CLOSED_SYSTEM_ROUND2
 
 
 def _ctx():
@@ -22,7 +22,7 @@ def test_production_variant_sends_the_server_request():
     catalog, vocab = _ctx()
     choices = round3.choices_for(catalog, vocab, ["두부"])
     body = round3.payload("P0", choices)
-    assert body["messages"][0]["content"] == SUGGEST_CLOSED_SYSTEM
+    assert body["messages"][0]["content"] == SUGGEST_CLOSED_SYSTEM_ROUND2
     assert body["max_tokens"] == 4096 and body["temperature"] == 0
     dish = body["response_format"]["json_schema"]["schema"]["properties"]["dishes"]["items"]
     assert "두부" not in dish["properties"]["missing"]["items"]["enum"]

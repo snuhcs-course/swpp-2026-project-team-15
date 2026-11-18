@@ -15,7 +15,7 @@ from app.dishes.answers import check_suggest
 from app.dishes.catalog import Catalog
 from app.dishes.choices import SuggestChoices, owned_vocabulary, suggest_choices
 from app.dishes.prompts import (
-    SUGGEST_CLOSED_SYSTEM,
+    SUGGEST_CLOSED_SYSTEM_ROUND2,
     SUGGEST_SCHEMA,
     SUGGEST_SYSTEM,
     suggest_schema,
@@ -34,7 +34,7 @@ def criteria() -> dict:
 
 def system_prompt(variant: str) -> str:
     if variant == "P0":
-        return SUGGEST_CLOSED_SYSTEM
+        return SUGGEST_CLOSED_SYSTEM_ROUND2
     if variant == "PD":
         return SUGGEST_SYSTEM
     return criteria()["prompts"][variant]

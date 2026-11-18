@@ -4,7 +4,13 @@ the user's ingredients and answers with dishes plus what the user has and lacks.
 the request (prompts.py), calls the model and has the answer checked (answers.py); it holds no
 wording and no rules of its own. There is no rules fallback."""
 
-from app.dishes.answers import check_adapt, check_suggest, search_url, strings
+from app.dishes.answers import (
+    check_adapt,
+    check_suggest,
+    fewest_missing_first,
+    search_url,
+    strings,
+)
 from app.dishes.choices import ingredient_vocabulary, suggest_choices
 from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError, VideoError
 from app.dishes.prompts import adapt_request, suggest_request
@@ -42,7 +48,7 @@ class DishService:
         choices = suggest_choices(ingredients, names, self._vocabulary)
         request = suggest_request(choices)
         data = self.llm.complete(request.system, request.user, request.name, request.schema)
-        dishes = check_suggest(data, self.catalog, self.recipes, choices)
+        dishes = fewest_missing_first(check_suggest(data, self.catalog, self.recipes, choices))
         return SuggestResponse(source="llm", dishes=dishes)
 
     def videos(self, dish_id: str) -> VideosResponse | None:

@@ -76,6 +76,15 @@ def check_suggest(
     return out
 
 
+def fewest_missing_first(dishes: list[SuggestedDish]) -> list[SuggestedDish]:
+    """Dishes the model says need fewer missing ingredients come first; ties keep its order.
+
+    The model is asked for best-first order but walks the dish list in its given order (round 3 of
+    research/experiments/dish_output_formats), so the server orders by the model's own `missing`.
+    Nothing is dropped and no count is imposed."""
+    return sorted(dishes, key=lambda d: len(d.missing))
+
+
 def check_adapt(data: dict, missing: list[str], owned: list[str]) -> list[Substitution]:
     subs: list[Substitution] = []
     used: set[str] = set()
@@ -102,7 +111,7 @@ _LIST_START = re.compile(r'\s*\{\s*"(\w+)"\s*:\s*\[')
 def salvage_list(text: str) -> dict | None:
     """The complete items of a cut-off ``{"key": [ {...}, {...`` answer, or None if there are none.
 
-    The model lists dishes best first, so a cut only loses the tail of the list."""
+    A cut only loses the dishes after the last complete one; the server orders what is kept."""
     start = _LIST_START.match(text)
     if not start:
         return None

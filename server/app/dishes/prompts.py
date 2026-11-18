@@ -24,7 +24,8 @@ class ModelRequest:
 
 # SUGGEST_SYSTEM and SUGGEST_SCHEMA are the free-text format that the studies under
 # research/experiments measured before round 2 of the answer format study; they stay for
-# reproducing those runs. The service sends SUGGEST_CLOSED_SYSTEM with suggest_schema(choices).
+# reproducing those runs. The service sends SUGGEST_CLOSED_SYSTEM with suggest_schema(choices);
+# SUGGEST_CLOSED_SYSTEM_ROUND2 is the closed-choice wording served before round 3.
 SUGGEST_SYSTEM = (
     "You help a Korean student living alone decide what to cook from the ingredients they have. "
     "Return every dish from the given dish list that can reasonably be cooked with the owned "
@@ -34,10 +35,24 @@ SUGGEST_SYSTEM = (
     "(salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish "
     "fits, return an empty list. Never add dishes just to fill the list."
 )
-SUGGEST_CLOSED_SYSTEM = (
+SUGGEST_CLOSED_SYSTEM_ROUND2 = (
     "You help a Korean student living alone decide what to cook from the ingredients they have. "
     "Return every dish from the given dish list that can reasonably be cooked with the owned "
     "ingredients, best first. For each dish, 'have' lists ONLY ingredients that appear in the "
+    "user's owned list and that this dish uses, and 'missing' lists the main ingredients this "
+    "dish needs that are not in the owned list; both are chosen from the allowed values of the "
+    "answer format. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking "
+    "oil, sesame oil, water) are not listed. If no dish fits, return an empty list. Never add "
+    "dishes just to fill the list."
+)
+# The wording below (round 3 of the answer format study, variant PA) asks for what the user can
+# cook now; measured against SUGGEST_CLOSED_SYSTEM_ROUND2 in research/experiments/dish_output_formats.
+SUGGEST_CLOSED_SYSTEM = (
+    "You help a Korean student living alone decide what to cook from the ingredients they have. "
+    "The user wants to know what they can cook now. From the given dish list, return only "
+    "dishes the user can cook now with what they own, or after buying a small part of what the "
+    "dish needs; leave out dishes that mostly depend on ingredients the user does not own. "
+    "Order them best first. For each dish, 'have' lists ONLY ingredients that appear in the "
     "user's owned list and that this dish uses, and 'missing' lists the main ingredients this "
     "dish needs that are not in the owned list; both are chosen from the allowed values of the "
     "answer format. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking "

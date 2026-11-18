@@ -8,7 +8,9 @@ from experiments.dish_tokens.calls import Call
 
 from app.dishes.catalog import Catalog
 
-FROZEN = Path(__file__).resolve().parents[4] / "research/experiments/dish_eval/catalog_at_freeze.json"
+FROZEN = (
+    Path(__file__).resolve().parents[4] / "research/experiments/dish_eval/catalog_at_freeze.json"
+)
 CATALOG = Catalog.load(FROZEN)  # the catalog of the study (130 dishes)
 NAMES = formats.dish_names(CATALOG)
 VOCAB = formats.ingredient_vocabulary(CATALOG)

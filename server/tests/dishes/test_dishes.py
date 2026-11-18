@@ -88,7 +88,7 @@ def _answer(*dishes):
     return {"dishes": [{"name": n, "have": h, "missing": m} for n, h, m in dishes]}
 
 
-def test_model_answer_is_returned_as_written_after_the_name_check(catalog):
+def test_model_answer_is_checked_and_ordered_by_its_missing_count(catalog):
     llm = FakeLLM(
         _answer(
             ("존재하지 않는 요리", ["김치"], []),
@@ -103,8 +103,9 @@ def test_model_answer_is_returned_as_written_after_the_name_check(catalog):
         .json()
     )
     assert body["source"] == "llm"
-    assert [d["name"] for d in body["dishes"]] == ["김치볶음밥", "김치비빔밥"]  # order kept, no cap
-    first = body["dishes"][0]
+    # fewest missing first, nothing dropped, no cap
+    assert [d["name"] for d in body["dishes"]] == ["김치비빔밥", "김치볶음밥"]
+    first = body["dishes"][1]
     assert first["id"] == "kimchi-fried-rice"
     assert first["have"] == ["밥", "김치"] and first["missing"] == ["대파", "계란"]
     assert first["search_url"].startswith("https://www.youtube.com/results?search_query=")
@@ -592,3 +593,19 @@ def test_videos_endpoint_reports_where_the_list_came_from(catalog):
         .json()
     )
     assert body["source"] == "stored" and len(body["videos"]) == 3
+
+
+def test_ties_keep_the_model_order(catalog):
+    llm = FakeLLM(
+        _answer(
+            ("김치볶음밥", ["김치", "밥"], ["대파"]),
+            ("김치비빔밥", ["김치", "밥"], ["계란"]),
+            ("김치주먹밥", ["김치", "밥"], []),
+        )
+    )
+    body = (
+        client_for(DishService(catalog, llm))
+        .post("/dishes/suggest", json={"ingredients": ["김치", "밥"]})
+        .json()
+    )
+    assert [d["name"] for d in body["dishes"]] == ["김치주먹밥", "김치볶음밥", "김치비빔밥"]
