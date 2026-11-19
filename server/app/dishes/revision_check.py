@@ -12,7 +12,7 @@ import re
 
 from app.dishes.answers import strings
 from app.dishes.korean import attach
-from app.dishes.roles import IngredientIndex
+from app.dishes.roles import Availability
 from app.dishes.schemas import Change, RecipeStep, RevisedIngredient, RevisedRecipe, SourceRecipe
 from app.dishes.synonyms import with_synonyms
 
@@ -118,7 +118,7 @@ def check(
     data: dict,
     recipe: SourceRecipe,
     status: list[str],
-    index: IngredientIndex,
+    index: Availability,
     owned_names: list[str],
 ) -> tuple[RevisedRecipe, list[Change]]:
     """Return the revised recipe and its changes, or raise Violation. No model call."""

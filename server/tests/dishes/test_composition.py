@@ -47,3 +47,12 @@ def test_data_files_are_read_at_startup_and_a_bad_one_stops_it(tmp_path):
 def test_the_built_service_assumes_the_catalog_staples():
     service = build_dish_service({})
     assert service.assumed == service.catalog.staples and "간장" in service.assumed
+
+
+def test_the_reviser_matches_recipe_rows_with_the_name_table():
+    # Phone check 2026-11-19: 꽃소금 in a video recipe was shown missing next to 소금.
+    from app.dishes.recipe_names import RecipeNames
+
+    reviser = build_dish_service({}).reviser
+    assert isinstance(reviser.index, RecipeNames)
+    assert reviser.index.status("꽃소금", reviser.index.owned([])) == "assumed"

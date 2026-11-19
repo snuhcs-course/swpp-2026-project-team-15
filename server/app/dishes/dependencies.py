@@ -15,6 +15,7 @@ from fastapi import Depends, HTTPException, Request
 
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DEFAULT_MODEL, DishLLM
+from app.dishes.recipe_names import RecipeNames
 from app.dishes.recipes import CreditedRecipes, RecipeStore
 from app.dishes.revision import Reviser
 from app.dishes.roles import ChatModel, IngredientIndex, RecipeBook
@@ -56,7 +57,9 @@ def build_dish_service(env: Mapping[str, str] | None = None, model_key: str = ""
     youtube_key = env.get("YOUTUBE_API_KEY", "")
     if youtube_key.strip():
         recipes = CreditedRecipes(recipes, YouTubeVerifier(youtube_key))
-    reviser = Reviser(catalog, catalog, llm, recipes)
+    # Recipe rows are matched with the reviewed name table, not the dish list's stand-ins
+    # (research/experiments/dish_revision, round 3).
+    reviser = Reviser(catalog, RecipeNames.load(), llm, recipes)
     key = env.get("DISH_LLM_API_KEY") or model_key
     return DishService(
         catalog,

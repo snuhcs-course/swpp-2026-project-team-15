@@ -2,6 +2,7 @@
 """Contracts of the dish list, the ingredient index and the recipe book."""
 
 from app.dishes.catalog import Catalog, Dish
+from app.dishes.recipe_names import RecipeNames
 from app.dishes.recipes import CreditedRecipes, RecipeStore
 from app.dishes.schemas import SourceRecipe
 from tests.dishes.contracts.fakes import (
@@ -50,7 +51,7 @@ class TestCatalog(DishCatalogContract):
         return Catalog.load()
 
 
-class IngredientIndexContract:
+class AvailabilityContract:
     def make(self):
         raise NotImplementedError
 
@@ -63,6 +64,13 @@ class IngredientIndexContract:
         index = self.make()
         assert index.status("zzz", index.owned([])) in {"owned", "assumed", "unavailable"}
 
+
+class TestRecipeNamesAsAvailability(AvailabilityContract):
+    def make(self):
+        return RecipeNames.load()
+
+
+class IngredientIndexContract(AvailabilityContract):
     def test_names_are_unique_and_additions_respect_the_limit(self):
         index = self.make()
         names = index.ingredient_names()

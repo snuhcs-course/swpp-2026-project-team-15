@@ -63,14 +63,18 @@ class DishCatalog(Protocol):
     def __len__(self) -> int: ...
 
 
-class IngredientIndex(Protocol):
-    """What the dish list knows about ingredient names."""
+class Availability(Protocol):
+    """Whether the user has an ingredient: what the recipe view and the revision need."""
 
     def owned(self, ingredients: list[str]) -> set[str]: ...
 
     def status(self, name: str, owned: set[str]) -> str:
         """ "owned", "assumed" (a staple at home) or "unavailable"."""
         ...
+
+
+class IngredientIndex(Availability, Protocol):
+    """What the dish list knows about ingredient names."""
 
     def ingredient_names(self) -> list[str]: ...
 

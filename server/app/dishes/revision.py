@@ -21,7 +21,7 @@ from app.dishes.revision_check import (
     check_short_mentions,
     identity_missing,
 )
-from app.dishes.roles import ChatModel, DishCatalog, IngredientIndex, RecipeBook
+from app.dishes.roles import Availability, ChatModel, DishCatalog, RecipeBook
 from app.dishes.schemas import (
     RecipeView,
     RevisedIngredient,
@@ -38,7 +38,7 @@ class Reviser:
     def __init__(
         self,
         catalog: DishCatalog,
-        index: IngredientIndex,
+        index: Availability,
         llm: ChatModel | None,
         recipes: RecipeBook,
     ):

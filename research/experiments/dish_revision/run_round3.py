@@ -190,3 +190,26 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def in_range_refs(data: dict, n_rows: int, n_steps: int) -> dict:
+    """The answer with every out-of-range row or step reference dropped (pure, tested)."""
+    changes = []
+    for c in data.get("changes") or []:
+        if not isinstance(c, dict):
+            changes.append(c)
+            continue
+        refs = c.get("ingredient_refs")
+        steps = c.get("step_refs")
+        changes.append(
+            c
+            | {
+                "ingredient_refs": [i for i in refs if isinstance(i, int) and 1 <= i <= n_rows]
+                if isinstance(refs, list)
+                else refs,
+                "step_refs": [i for i in steps if isinstance(i, int) and 1 <= i <= n_steps]
+                if isinstance(steps, list)
+                else steps,
+            }
+        )
+    return data | {"changes": changes}
