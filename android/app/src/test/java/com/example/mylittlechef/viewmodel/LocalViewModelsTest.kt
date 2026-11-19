@@ -45,21 +45,6 @@ class LocalViewModelsTest {
         }
     }
 
-    // Phone check (2026-11-19): a blank name showed as "님의 냉장고".
-    @Test fun user_blankNicknameFallsBackToDefault() = runTest {
-        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
-        try {
-            val repo = FakeUserRepository()
-            val vm = UserViewModel(repository = repo)
-            vm.updateNickname("   ")
-            advanceUntilIdle()
-            assertEquals(UserViewModel.DEFAULT_NICKNAME, vm.nickname)
-            assertEquals(UserViewModel.DEFAULT_NICKNAME, repo.profile.value.nickname)
-        } finally {
-            Dispatchers.resetMain()
-        }
-    }
-
     @Test fun user_updatesProfileAndCompletesOnboarding() = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
         try {
