@@ -30,7 +30,14 @@ def test_a_bad_reference_names_the_change_the_numbers_and_the_ranges():
     from tests.dishes.test_revision import RECIPE
 
     recipe = SourceRecipe.model_validate(RECIPE)
-    raw = [{"reason": "밥은 가지고 있으므로 추가합니다", "ingredient_refs": [14], "step_refs": [1]}]
+    raw = [
+        {
+            "kind": "omission",
+            "reason": "밥은 가지고 있으므로 추가합니다",
+            "ingredient_refs": [14],
+            "step_refs": [1],
+        }
+    ]
     with pytest.raises(Violation) as caught:
         _checked_changes(raw, recipe)
     message = caught.value.message

@@ -12,6 +12,7 @@ import re
 
 from app.dishes.answers import strings
 from app.dishes.korean import attach
+from app.dishes.prompts import CHANGE_KINDS
 from app.dishes.roles import Availability
 from app.dishes.schemas import Change, RecipeStep, RevisedIngredient, RevisedRecipe, SourceRecipe
 from app.dishes.synonyms import compact, with_synonyms
@@ -196,6 +197,12 @@ def _checked_changes(raw: object, recipe: SourceRecipe) -> list[Change]:
     for item in raw if isinstance(raw, list) else []:
         if not isinstance(item, dict):
             raise Violation("bad_reference", "A change is not an object")
+        kind = item.get("kind")
+        if kind not in CHANGE_KINDS:
+            raise Violation(
+                "bad_kind",
+                f"Change {len(out) + 1} has kind {kind!r}, not one of {', '.join(CHANGE_KINDS)}",
+            )
         reason = item.get("reason")
         ing = item.get("ingredient_refs")
         stp = item.get("step_refs")
@@ -217,5 +224,5 @@ def _checked_changes(raw: object, recipe: SourceRecipe) -> list[Change]:
                 f"are 1..{n_steps}; an added owned ingredient has no source row, so its "
                 "ingredient_refs is empty",
             )
-        out.append(Change(reason=reason.strip(), ingredient_refs=ing, step_refs=stp))
+        out.append(Change(kind=kind, reason=reason.strip(), ingredient_refs=ing, step_refs=stp))
     return out

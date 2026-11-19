@@ -39,7 +39,13 @@ def _recipe(raw):
 
 
 def test_in_range_refs_drops_only_references_outside_the_source():
-    data = {"changes": [{"reason": "r", "ingredient_refs": [0, 2, 9], "step_refs": [1, 4]}]}
+    data = {
+        "changes": [
+            {"kind": "omission", "reason": "r", "ingredient_refs": [0, 2, 9], "step_refs": [1, 4]}
+        ]
+    }
     out = run_round3.in_range_refs(data, n_rows=3, n_steps=3)
-    assert out["changes"] == [{"reason": "r", "ingredient_refs": [2], "step_refs": [1]}]
+    assert out["changes"] == [
+        {"kind": "omission", "reason": "r", "ingredient_refs": [2], "step_refs": [1]}
+    ]
     assert data["changes"][0]["ingredient_refs"] == [0, 2, 9]  # input untouched

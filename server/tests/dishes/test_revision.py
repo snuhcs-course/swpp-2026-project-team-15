@@ -51,8 +51,18 @@ GOOD = {
     "steps": ["기름에 김치를 볶는다.", "밥을 넣어 볶는다."],
     "tips": [],
     "changes": [
-        {"reason": "대파가 없어서 뺐어요.", "ingredient_refs": [3], "step_refs": [1, 2]},
-        {"reason": "계란이 없어서 뺐어요.", "ingredient_refs": [4], "step_refs": [3]},
+        {
+            "kind": "omission",
+            "reason": "대파가 없어서 뺐어요.",
+            "ingredient_refs": [3],
+            "step_refs": [1, 2],
+        },
+        {
+            "kind": "omission",
+            "reason": "계란이 없어서 뺐어요.",
+            "ingredient_refs": [4],
+            "step_refs": [3],
+        },
     ],
 }
 
@@ -153,10 +163,32 @@ def test_refusal_without_reason_fails(catalog):
         ({"steps": ["대파를 송송 썰어 볶는다.", "밥을 넣는다."]}, "mentions_unavailable"),
         ({"tips": ["계란을 올려도 좋다."]}, "mentions_unavailable"),
         ({"changes": [GOOD["changes"][0]]}, "unexplained_change"),
-        ({"changes": [{"reason": "x", "ingredient_refs": [9], "step_refs": []}]}, "bad_reference"),
-        ({"changes": [{"reason": "x", "ingredient_refs": [3], "step_refs": [7]}]}, "bad_reference"),
         (
-            {"changes": [{"reason": " ", "ingredient_refs": [3], "step_refs": []}]},
+            {"changes": [{**GOOD["changes"][0], "kind": "swap"}, GOOD["changes"][1]]},
+            "bad_kind",
+        ),
+        (
+            {
+                "changes": [
+                    {"kind": "omission", "reason": "x", "ingredient_refs": [9], "step_refs": []}
+                ]
+            },
+            "bad_reference",
+        ),
+        (
+            {
+                "changes": [
+                    {"kind": "omission", "reason": "x", "ingredient_refs": [3], "step_refs": [7]}
+                ]
+            },
+            "bad_reference",
+        ),
+        (
+            {
+                "changes": [
+                    {"kind": "omission", "reason": " ", "ingredient_refs": [3], "step_refs": []}
+                ]
+            },
             "unexplained_change",
         ),
         ({"steps": []}, "incomplete"),
@@ -185,7 +217,12 @@ def test_dropping_an_unavailable_main_ingredient_is_a_refusal(catalog):
         "ingredients": [{"name": "김치", "amount": "1컵"}, {"name": "식용유", "amount": ""}],
         "steps": ["기름에 김치를 볶는다."],
         "changes": [
-            {"reason": "밥이 없어서 뺐어요.", "ingredient_refs": [1], "step_refs": [3]},
+            {
+                "kind": "omission",
+                "reason": "밥이 없어서 뺐어요.",
+                "ingredient_refs": [1],
+                "step_refs": [3],
+            },
             *GOOD["changes"],
         ],
     }
@@ -206,7 +243,12 @@ def test_a_main_ingredient_replaced_by_an_owned_one_is_accepted(catalog):
         ],
         "steps": ["기름에 깍두기를 볶는다.", "밥을 넣어 볶는다."],
         "changes": [
-            {"reason": "김치 대신 깍두기를 써요.", "ingredient_refs": [2], "step_refs": [2]},
+            {
+                "kind": "substitution",
+                "reason": "김치 대신 깍두기를 써요.",
+                "ingredient_refs": [2],
+                "step_refs": [2],
+            },
             *GOOD["changes"],
         ],
     }
@@ -217,7 +259,10 @@ def test_a_main_ingredient_replaced_by_an_owned_one_is_accepted(catalog):
 
 def test_dropping_an_owned_main_ingredient_fails(catalog):
     data = {**GOOD, "ingredients": GOOD["ingredients"][1:]}
-    data["changes"] = [{"reason": "x", "ingredient_refs": [1], "step_refs": []}, *GOOD["changes"]]
+    data["changes"] = [
+        {"kind": "omission", "reason": "x", "ingredient_refs": [1], "step_refs": []},
+        *GOOD["changes"],
+    ]
     result = revised(catalog, data)
     assert result.status == "failed" and result.error.code == "main_dropped"
 
@@ -238,7 +283,7 @@ def test_a_removed_one_character_ingredient_in_a_step_fails(catalog):
         "steps": ["기름에 김치를 볶는다.", "밥을 넣어 볶고 김을 뿌린다."],
         "changes": [
             *GOOD["changes"],
-            {"reason": "김이 없어요.", "ingredient_refs": [6], "step_refs": []},
+            {"kind": "omission", "reason": "김이 없어요.", "ingredient_refs": [6], "step_refs": []},
         ],
     }
     reviser = Reviser(catalog, catalog, FakeLLM(data, data), RecipeStore({"omurice": recipe}))
@@ -283,7 +328,12 @@ def test_a_removed_name_inside_a_kept_name_does_not_hide_its_own_mention(catalog
         "steps": ["고추를 썰어 김치와 볶는다.", "고추장과 밥을 넣어 볶는다."],
         "changes": [
             *GOOD["changes"],
-            {"reason": "고추가 없어요.", "ingredient_refs": [6], "step_refs": [1]},
+            {
+                "kind": "omission",
+                "reason": "고추가 없어요.",
+                "ingredient_refs": [6],
+                "step_refs": [1],
+            },
         ],
     }
     fridge = ["밥", "김치", "고추장"]
@@ -321,7 +371,12 @@ def test_a_non_text_name_or_amount_is_a_failure_not_a_crash(catalog, row):
 def test_synonym_names_count_as_owned_and_kept(catalog):
     data = {**GOOD, "ingredients": [{"name": "달걀", "amount": "1개"}] + GOOD["ingredients"]}
     data["changes"] = GOOD["changes"][:1] + [
-        {"reason": "계란 대신 달걀을 써요.", "ingredient_refs": [4], "step_refs": []}
+        {
+            "kind": "substitution",
+            "reason": "계란 대신 달걀을 써요.",
+            "ingredient_refs": [4],
+            "step_refs": [],
+        }
     ]
     assert revised(catalog, data, ("밥", "김치", "달걀")).status == "revised"
 
@@ -447,3 +502,14 @@ def test_a_failed_credit_lookup_is_not_retried_on_every_view():
     now[0] += 601
     book.get("kimchi-fried-rice")
     assert Down.calls == 2
+
+
+def test_changes_carry_their_kind_so_the_app_can_group_them(catalog):
+    # The user's choice (2026-11-19): change kinds as in the team repository's revision.
+    from app.dishes.prompts import CHANGE_KINDS, REVISE_SCHEMA
+
+    change = REVISE_SCHEMA["properties"]["changes"]["items"]
+    assert change["properties"]["kind"]["enum"] == list(CHANGE_KINDS)
+    assert "kind" in change["required"]
+    result = revised(catalog, GOOD)
+    assert [c.kind for c in result.changes] == ["omission", "omission"]

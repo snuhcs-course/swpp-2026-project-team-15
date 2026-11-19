@@ -75,7 +75,14 @@ def test_dropping_an_unavailable_main_ingredient_is_a_refusal_only_in_the_strict
     raw = _answer(
         recipe,
         {"밥"},
-        [{"reason": "밥이 없어 뺐어요", "ingredient_refs": [_row(recipe, "밥")], "step_refs": []}],
+        [
+            {
+                "kind": "omission",
+                "reason": "밥이 없어 뺐어요",
+                "ingredient_refs": [_row(recipe, "밥")],
+                "step_refs": [],
+            }
+        ],
     )
     args = (raw, recipe, "김치볶음밥", status, CATALOG, owned)
     assert round2.decide("current", *args)["status"] == "revised"
@@ -96,7 +103,12 @@ def test_a_main_ingredient_replaced_by_an_owned_one_in_a_named_change_is_accepte
     owned = ["밥", "계란", "대파", "깍두기"]
     status = _status("kimchi-fried-rice", owned)
     change = [
-        {"reason": "김치 대신 깍두기", "ingredient_refs": [_row(recipe, "김치")], "step_refs": []}
+        {
+            "kind": "substitution",
+            "reason": "김치 대신 깍두기",
+            "ingredient_refs": [_row(recipe, "김치")],
+            "step_refs": [],
+        }
     ]
     raw = _answer(recipe, {"김치"}, change, add=("깍두기",))
     assert (

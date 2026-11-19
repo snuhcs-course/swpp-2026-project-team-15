@@ -114,7 +114,10 @@ REVISE_SYSTEM = """You adapt a Korean source recipe to the ingredients the user 
 2. The revised recipe uses ONLY owned or assumed ingredients, in the ingredient list, steps and tips. Keep every owned or assumed source ingredient that the revised recipe still uses in the ingredient list, with its source amount; only omitted or replaced ingredients leave the list. Copy ingredient names exactly as they appear in the source or in the owned list. Never mention an omitted or unavailable ingredient in a step or tip. Amounts of the owned ingredients are unknown, so never claim there is enough.
 3. You may omit an ingredient, substitute an owned ingredient, adjust amounts or servings (the source servings are the baseline) and rewrite the affected steps. The ingredient list and the steps must agree.
 4. Keep or adapt the steps needed to cook meat, poultry, eggs and seafood safely. No unsafe shortcuts, and never claim the result is safety-verified. Allergies are out of scope.
-5. Write reasons in Korean. Every change has a reason and the numbers of the source ingredient rows and source steps it touches (empty lists if none). Every source ingredient that is omitted or replaced must appear in some change. A refusal has one specific reason in refusal_reason, no changes and empty lists; when you revise, refusal_reason is an empty string. Use "" for an unknown amount and 0 for unknown servings."""
+5. Every change has a kind: omission (a source ingredient left out), substitution (an owned ingredient used instead of a source ingredient), quantity (an amount changed), servings (the servings changed) or step (only steps rewritten). Write reasons in Korean. Every change has a reason and the numbers of the source ingredient rows and source steps it touches (empty lists if none). Every source ingredient that is omitted or replaced must appear in some change. A refusal has one specific reason in refusal_reason, no changes and empty lists; when you revise, refusal_reason is an empty string. Use "" for an unknown amount and 0 for unknown servings."""
+
+# The kinds of a change, as in the team repository's recipe revision (server/recipe_revision).
+CHANGE_KINDS = ("omission", "substitution", "quantity", "servings", "step")
 
 REVISE_SCHEMA = {
     "type": "object",
@@ -138,11 +141,12 @@ REVISE_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
+                    "kind": {"type": "string", "enum": list(CHANGE_KINDS)},
                     "reason": {"type": "string"},
                     "ingredient_refs": {"type": "array", "items": {"type": "integer"}},
                     "step_refs": {"type": "array", "items": {"type": "integer"}},
                 },
-                "required": ["reason", "ingredient_refs", "step_refs"],
+                "required": ["kind", "reason", "ingredient_refs", "step_refs"],
                 "additionalProperties": False,
             },
         },

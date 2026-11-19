@@ -45,7 +45,7 @@ def test_ingredient_and_step_coverage():
     data = {
         "ingredients": [{"name": "달걀", "amount": ""}, {"name": "대파", "amount": ""}],
         "steps": [recipe.steps[0].text, "새로 쓴 문장"],
-        "changes": [{"reason": "x", "ingredient_refs": [3], "step_refs": [2]}],
+        "changes": [{"kind": "omission", "reason": "x", "ingredient_refs": [3], "step_refs": [2]}],
     }
     assert scoring.dropped_ingredients(recipe, data) == [3, 4, 5]  # 달걀 is kept as a synonym
     assert scoring.ingredient_coverage(recipe, data) == (1, 3)

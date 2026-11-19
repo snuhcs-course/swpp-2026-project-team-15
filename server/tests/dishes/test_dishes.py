@@ -188,7 +188,9 @@ def test_adapt_keeps_substitutes_that_come_from_the_owned_list(catalog):
         }
     )
     body = _adapt(catalog, llm, ["양파", "밥"], ["대파", "계란"]).json()
-    assert body["source"] == "llm" and body["note"] == "" and body["skip_ok"] == []
+    assert body["source"] == "llm" and body["note"] == ""
+    # skip_ok was always empty and the app reads it as optional (2026-11-19).
+    assert "skip_ok" not in body
     assert body["substitutions"] == [
         {"missing": "대파", "suggestion": "양파로 대신해요", "uses": ["양파"]}
     ]

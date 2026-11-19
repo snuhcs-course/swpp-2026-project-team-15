@@ -89,7 +89,6 @@ class DishService:
             return AdaptResponse(
                 dish_id=dish_id,
                 substitutions=[],
-                skip_ok=[],
                 source="llm",
                 note="부족한 재료가 없어요.",
             )
@@ -102,7 +101,6 @@ class DishService:
         return AdaptResponse(
             dish_id=dish_id,
             substitutions=subs,
-            skip_ok=[],
             note="" if subs else NO_SUBSTITUTE,
             source="llm",
         )

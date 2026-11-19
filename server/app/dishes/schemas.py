@@ -80,7 +80,6 @@ class Substitution(BaseModel):
 class AdaptResponse(BaseModel):
     dish_id: str
     substitutions: list[Substitution]
-    skip_ok: list[str]
     note: str
     source: str
 
@@ -170,6 +169,9 @@ class RevisedRecipe(BaseModel):
 
 
 class Change(BaseModel):
+    kind: Literal["omission", "substitution", "quantity", "servings", "step"] = Field(
+        description="What the change does; the app groups changes by it"
+    )
     reason: str
     ingredient_refs: list[int] = Field(description="1-based rows of the original ingredients")
     step_refs: list[int] = Field(description="1-based numbers of the original steps")
