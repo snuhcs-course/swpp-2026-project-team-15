@@ -47,7 +47,7 @@ One run per variant at temperature 0, one model, 27 inputs (12 and 6 for the lib
 
 ## Results (2026-11-18)
 
-Run on commit `c3fd8d9` (criteria and runner frozen in it), `google/gemini-2.5-flash-lite`, temperature 0, `max_tokens` 4096, the 27 inputs. 171 planned calls, every one answered at the first attempt (no HTTP 429), plus two diagnostic calls (recorded as an amendment before they were made, excluded from the tables): 173 of 200. Cost of the run about $0.07. Raw answers are in the ignored `data/dish-formats/`. All requests were served by one provider (Google AI Studio).
+Run on commit `e084305` (criteria and runner frozen in it; recorded as `c3fd8d9` before the branch history was rewritten on 2026-11-19, same content; the rewritten commit carries a later commit time than the results, so the order "criteria before results" rests on the original commit, which is no longer on this branch), `google/gemini-2.5-flash-lite`, temperature 0, `max_tokens` 4096, the 27 inputs. 171 planned calls, every one answered at the first attempt (no HTTP 429), plus two diagnostic calls (recorded as an amendment before they were made, excluded from the tables): 173 of 200. Cost of the run about $0.07. Raw answers are in the ignored `data/dish-formats/`. All requests were served by one provider (Google AI Studio).
 
 **Rule outcome: no candidate qualifies.** S1, S2 and S3 each fail the zero-truncation condition (1, 2 and 1 inputs ran to the 4,096-token limit); S3 also fails precision (0.290 against S0's 0.347 − 0.02); S4 fails the zero-failed-calls condition (5 failed calls) and both recall and precision. No candidate is chosen.
 
@@ -104,7 +104,7 @@ No variant is adopted under the frozen rule. For the next step, S2 is the format
 
 ## Round 2: per-request enums and mapping of unmatched ingredients (2026-11-19)
 
-Design fixed in `criteria_round2.json` and `mapping_set.json` (commit `812b830`) before any call. Round 2 has **no thresholds and no adoption rule**: every number is reported and the recommendation below is a judgement.
+Design fixed in `criteria_round2.json` and `mapping_set.json` (commit `41dd226`, recorded as `812b830` before the history rewrite of 2026-11-19; same content, later commit time) before any call. Round 2 has **no thresholds and no adoption rule**: every number is reported and the recommendation below is a judgement.
 
 - **Problem from round 1.** With `missing` limited to the whole vocabulary (S2), the model named an ingredient the user owns as missing in 8.3% of dishes.
 - **R0** = S2 again (same day). **R1** = S2 with a per-request `missing` enum: the vocabulary minus the names the server matches to the user's items (exact spelling or a synonym group). **R2** = R1 plus, for user items with no vocabulary match, a numbered list (`X1: 다진마늘`) that the model maps first (`mapping`: a vocabulary name or `none`); the server then removes mapped names from `missing`.
@@ -229,7 +229,7 @@ Paired against S_now per input (mean difference, bootstrap 95% interval): S_nose
 
 **What the numbers show.**
 - Taking the staples out of the `missing` choices shortens every answer (output tokens −26%, cost −23%) and cut answers drop from 6 to 2 of 29; both demo inputs are answered in full and fast. It does not stop every runaway: 밥 + 계란 + an unknown item still returned 114 dishes (cut). Recall falls a little (the interval just excludes zero) while precision and the first-five share do not move.
-- Splitting by the catalog's categories removes the cut answers and the slow tail (p95 2.8–5.0 s, no 429 with 18 concurrent calls), but each category answer lists most of its own dishes: 62–90 dishes per input, half of them missing three or more ingredients, three times the cost. That is the opposite of the promise "what you can cook now", and the server's ordering keeps the first five about as good as before, not better.
+- Splitting by the catalog's categories removes the cut answers and the slow tail (p95 2.8–5.0 s, no 429 with 18 concurrent calls), but each category answer lists most of its own dishes: 47–90 dishes per input (47–86 split, 50–90 split without staples; corrected 2026-11-19 from 62–90, which mixed the demo-input range into the summary), half of them missing three or more ingredients, three times the cost. That is the opposite of the promise "what you can cook now", and the server's ordering keeps the first five about as good as before, not better.
 - Shuffling the dish list makes lists longer and less precise; the walk in list order is not what decides which dishes appear, so changing the order does not help.
 - Names only is the cost floor (about a fifth of S_now, under a second) but the cards would have no missing list.
 
@@ -274,4 +274,16 @@ Paired against the served lists (bootstrap 95% interval): the server cut at 15 r
 
 **Adopted (judgement).** The server keeps at most 36 dishes after its ordering (`SUGGEST_LIMIT` in `server/app/dishes/answers.py`) and asks for at most 1,880 output tokens (`SUGGEST_MAX_TOKENS` in `server/app/dishes/prompts.py`). 36 rather than 15 because the complaint was the endless list and its wait, and 36 leaves every ordinary answer as it was; 15 would also remove dishes from ordinary lists with no gain in speed. No prompt sentence is added.
 
-**Limits.** Two runs per input (five for part A), one model and provider on one day; the limits and the rules-based missing counts come from the catalog, not from people; a runaway answer is cut where the model's walk through the dish list stopped, so the 36 dishes kept are the best of the first ~50 it listed, not of all 128.
+**Limits.** The limits (36 dishes, 1,880 tokens) were derived from the same 29 inputs on which "every ordinary answer unchanged" was then checked, so that check is in-sample, not a test on new inputs. Two runs per input (five for part A), one model and provider on one day; the limits and the rules-based missing counts come from the catalog, not from people; a runaway answer is cut where the model's walk through the dish list stopped, so the 36 dishes kept are the best of the first ~50 it listed, not of all 128.
+
+## Result files
+
+Not committed (raw model answers). sha256, first 12 hex digits; the folder is the one the run wrote to.
+
+| Round | File | Folder | sha256 |
+|---|---|---|---|
+| 1 | `formats-20261118T145337Z.json` | `artifacts/dish-recipes/run-data/ytdemo-enum/data/dish-formats/` (a former working copy; the text above said `data/dish-formats/`) | `f3a47da3bcb2` |
+| 2 | `round2-20261118T151816Z.json` | same | `431e5b6f2c83` |
+| 3 | `round3.json` | `data/dish-formats/` of this working copy | `009237a48104` |
+| 4 | `round4.json` | same | `8547e8f3c5e6` |
+| 5 | `round5.json`, `round5b.json`, `round5c.json` | same | `a240acbf9ceb`, `b7ffa746343c`, `3fb95857c701` |
