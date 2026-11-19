@@ -344,15 +344,18 @@ NOW = datetime(2026, 11, 19, 12, 0, tzinfo=UTC)
 IDS = ["a" * 11, "b" * 11, "c" * 11, "d" * 11]
 
 
-def _item(vid, *, embeddable=True, privacy="public", thumb=True):
+def _item(vid, *, embeddable=True, privacy="public", thumb=True, size=("1000", "563")):
     snippet = {"title": f"title {vid[0]}", "channelTitle": "C"}
     if thumb:
         snippet["thumbnails"] = {"medium": {"url": f"https://i.ytimg.com/vi/{vid}/mq.jpg"}}
-    return {
+    item = {
         "id": vid,
         "snippet": snippet,
         "status": {"embeddable": embeddable, "privacyStatus": privacy},
     }
+    if size is not None:
+        item["player"] = {"embedWidth": size[0], "embedHeight": size[1]}
+    return item
 
 
 def _finder(
@@ -430,6 +433,21 @@ def test_finder_keeps_embeddable_public_videos_in_the_models_order():
     assert "김치볶음밥" in model_call["messages"][0]["content"]
     youtube_calls = [p for k, p in calls if k == "youtube"]
     assert len(youtube_calls) == 1 and youtube_calls[0]["id"] == ",".join(IDS)  # one batch
+
+
+def test_portrait_videos_are_dropped_and_sizes_compare_as_numbers():
+    calls = []
+    items = [
+        _item(IDS[0], size=("563", "1000")),  # portrait (a Short)
+        _item(IDS[1], size=("1000", "563")),  # landscape; as strings "563" > "1000"
+        _item(IDS[2], size=("1000", "1000")),  # square stays
+        _item(IDS[3], size=None),  # no size: kept, since it cannot be judged
+    ]
+    videos = _finder(calls, items=items).lookup("egg-roll", "계란말이")[0]
+    assert [v.video_id for v in videos] == [IDS[1], IDS[2], IDS[3]]
+    youtube_call = next(p for k, p in calls if k == "youtube")
+    assert youtube_call["part"] == "snippet,status,player"
+    assert youtube_call["maxWidth"] == "1000"
 
 
 def test_finder_caches_a_dish_for_a_day():

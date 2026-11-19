@@ -3,6 +3,8 @@
 
 One batched ``videos.list`` call (about 1 quota unit) answers for up to 50 ids. The titles and
 thumbnails come from that response, so a video that was renamed shows its current title.
+Portrait videos (Shorts) are dropped: the API has no "is a Short" field, but ``part=player`` with
+``maxWidth`` returns the embed size scaled with the video's aspect ratio.
 """
 
 import httpx
@@ -11,12 +13,24 @@ from app.dishes.errors import VideoError
 from app.dishes.schemas import Video
 
 YOUTUBE_VIDEOS = "https://www.googleapis.com/youtube/v3/videos"
+EMBED_MAX_WIDTH = 1000  # any width works; only the ratio is read
+
+
+def is_portrait(player: dict) -> bool:
+    """Taller than wide. The API sends the sizes as strings ("563"), so compare numbers."""
+    try:
+        width, height = int(player.get("embedWidth") or 0), int(player.get("embedHeight") or 0)
+    except (TypeError, ValueError):
+        return False
+    return width > 0 and height > width
 
 
 def to_video(item: dict) -> Video | None:
-    """None unless the video is public and can be embedded."""
+    """None unless the video is public, can be embedded and is not portrait."""
     status = item.get("status", {})
     if not status.get("embeddable") or status.get("privacyStatus", "public") != "public":
+        return None
+    if is_portrait(item.get("player", {})):
         return None
     snippet = item.get("snippet", {})
     thumbs = snippet.get("thumbnails", {})
@@ -38,7 +52,11 @@ class YouTubeVerifier:
 
     def check(self, ids: list[str]) -> list[Video]:
         """The usable videos among ``ids``, in the order of ``ids``."""
-        params = {"part": "snippet,status", "id": ",".join(ids)}
+        params = {
+            "part": "snippet,status,player",
+            "maxWidth": EMBED_MAX_WIDTH,
+            "id": ",".join(ids),
+        }
         headers = {"X-Goog-Api-Key": self._api_key}  # a header keeps the key out of URL logs
         try:
             with httpx.Client(timeout=20, transport=self._transport) as client:
