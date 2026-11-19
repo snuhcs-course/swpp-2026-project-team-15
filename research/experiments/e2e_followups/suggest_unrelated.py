@@ -21,7 +21,14 @@ from pathlib import Path
 CONFIG = Path.home() / ".config" / "mylittlechef" / "openrouter.env"
 
 UNRELATED = [["초콜릿"], ["우유"], ["사과"], ["콜라"], ["과자"], ["바나나"]]
-ORDINARY = [["계란", "밥"], ["김치", "밥"], ["두부"], ["양파", "대파", "감자"], ["햇반", "계란"], ["참치캔", "김"]]
+ORDINARY = [
+    ["계란", "밥"],
+    ["김치", "밥"],
+    ["두부"],
+    ["양파", "대파", "감자"],
+    ["햇반", "계란"],
+    ["참치캔", "김"],
+]
 
 
 def read_key() -> str:
@@ -92,14 +99,30 @@ def main() -> None:
                         "run": run,
                         "seconds": round(time.monotonic() - started, 2),
                         "dishes": len(dishes),
-                        "unsupported": sum(unsupported(catalog, d["id"], d["have"]) for d in dishes),
+                        "unsupported": sum(
+                            unsupported(catalog, d["id"], d["have"]) for d in dishes
+                        ),
                         "answer": dishes,
                         "error": error,
                     }
                 )
-                print(group, fridge, run, rows[-1]["dishes"], rows[-1]["unsupported"], rows[-1]["seconds"])
-    out = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "server_dir": args.server_dir, "model": llm_model, "rows": rows}
-    Path(args.out).write_text(json.dumps(out, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+                print(
+                    group,
+                    fridge,
+                    run,
+                    rows[-1]["dishes"],
+                    rows[-1]["unsupported"],
+                    rows[-1]["seconds"],
+                )
+    out = {
+        "at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "server_dir": args.server_dir,
+        "model": llm_model,
+        "rows": rows,
+    }
+    Path(args.out).write_text(
+        json.dumps(out, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+    )
 
 
 if __name__ == "__main__":

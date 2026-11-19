@@ -109,3 +109,30 @@ is noted, not fixed.
 | "대체" with no result shows two sentences saying the same | the app's own sentence and the server's note | the app's sentence only when the server sends no note (the server text is kept: the frozen dish evaluation scores it) |
 | The ⓘ dialog does not mention recipes or "내 재료로 바꾸기" | written before those features | two sentences added |
 | A seasoning the user put in the fridge shows 기본 양념 | the server checked "staple at home" before "owned" | owned first (server; the current app reads it). A staple still never makes a dish count as using the fridge, so pantry seasonings do not bring back item 1 |
+
+## 4 and 6. Wrong first videos and the four dishes without a recipe
+
+**Judged by the AI agent (Claude Code), not by a person.**
+
+**Scan.** Each dish's first stored video title was compared with the other dish names (no calls).
+4 of 128 titles name another dish without their own: 두부국 (a 순두부찌개 video, wrong), 햄볶음밥
+(햄야채볶음밥, the same dish), 참치샐러드 (참치 마요 샐러드, the same dish), 김치말이국수
+(비빔국수 & 김치물국수 in one video; its recipe comes from it; left as is and noted). The title
+scan cannot see a video whose title names the right dish but cooks another.
+
+**Recipes for 두부국, 감자국, 짜장라면, 마늘새우볶음.** Their earlier recipes were removed because the
+first video cooked another dish. The stored landscape videos were tried in order with the same
+video-input build (google/gemini-2.5-flash) and checks; a recipe was accepted only when the model
+said the video cooks the requested dish and no main row was unavailable with the fridge = the
+dish's key ingredients (server name table). 10 build calls, about $0.36.
+
+| Dish | Tried (model's cooked dish) | Accepted |
+|---|---|---|
+| 두부국 | 뚝배기 순두부찌개 (not the dish), 두부새우젓국 | 두부새우젓국 |
+| 감자국 | 감자옹심이국 (the model said "requested dish"; the agent rejected it: a potato dumpling soup), 감자국 | 감자국 |
+| 짜장라면 | 쟁반 간짜장 (main row 팔도 짜장면 not covered), 짜파게티 짜장면 | 짜파게티 짜장면 |
+| 마늘새우볶음 | 마늘쫑 건새우 볶음, 버터 갈릭 쉬림프 (냉동새우), 건새우 마늘 볶음 (건새우), 버터갈릭새우 | 버터갈릭새우 |
+
+The three videos that cook another dish (순두부찌개, 감자옹심이국, 마늘쫑 건새우 볶음) left the stored
+lists; each accepted recipe's video is listed first. All 128 dishes now have a recipe; with the
+fridge = key ingredients no recipe has an unavailable main row (0 of 128).
