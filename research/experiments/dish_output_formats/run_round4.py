@@ -20,9 +20,10 @@ from experiments.dish_naive import scoring
 from experiments.dish_naive.run_naive import reference
 from experiments.dish_tokens.calls import read_key
 
-from app.dishes.answers import check_suggest, fewest_missing_first, salvage_list
+from app.dishes.answers import check_suggest, fewest_missing_first
 from app.dishes.catalog import Catalog
 from app.dishes.choices import ingredient_vocabulary, owned_vocabulary
+from app.json_lists import salvage_list
 
 from . import formats, round4
 from .run_formats import Budget, CapReached, percentile, with_retry

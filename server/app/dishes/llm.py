@@ -7,10 +7,10 @@ import time
 
 import httpx
 
-from app.dishes.answers import salvage_list
 from app.dishes.errors import DishLLMError
 from app.dishes.http import APP_READ_SECONDS, RETRY_WAITS, post_with_retry
 from app.dishes.youtube import YOUTUBE_TIMEOUT
+from app.json_lists import salvage_list
 
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "google/gemini-2.5-flash-lite"

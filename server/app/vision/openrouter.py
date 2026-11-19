@@ -7,6 +7,7 @@ from collections.abc import Sequence
 import httpx
 from pydantic import ValidationError
 
+from app.json_lists import salvage_list
 from app.vision.exceptions import VisionError, VisionUnavailableError
 from app.vision.gemini import PROMPT, multi_view_prompt
 from app.vision.providers import DETECTED_ITEMS, ImageInput
@@ -89,9 +90,19 @@ class OpenRouterVisionProvider:
             if response.status_code != 200:
                 raise VisionError("OpenRouter rejected the request")
             choice = response.json()["choices"][0]
-            if choice.get("finish_reason") != "stop" or choice["message"].get("refusal"):
+            message = choice["message"]
+            if message.get("refusal"):
                 raise VisionError("OpenRouter returned incomplete recognition")
-            data = json.loads(choice["message"]["content"])
+            if choice.get("finish_reason") == "length":
+                # The model can loop on package text until the token limit; the items it finished
+                # are still real (research/experiments/recheck_leftovers, item 2).
+                data = salvage_list(message.get("content") or "")
+                if not data or "items" not in data:
+                    raise VisionError("OpenRouter returned incomplete recognition")
+                return DETECTED_ITEMS.validate_python(data["items"])
+            if choice.get("finish_reason") != "stop":
+                raise VisionError("OpenRouter returned incomplete recognition")
+            data = json.loads(message["content"])
             return DETECTED_ITEMS.validate_python(data["items"])
         except (httpx.TimeoutException, httpx.TransportError):
             raise VisionUnavailableError("OpenRouter connection failed") from None

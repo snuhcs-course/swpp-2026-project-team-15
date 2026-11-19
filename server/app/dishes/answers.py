@@ -7,8 +7,6 @@ and a substitute must be something the user owns. The re-check matters when a pr
 enforce the answer format.
 """
 
-import json
-import re
 from urllib.parse import quote_plus
 
 from app.dishes.choices import SuggestChoices
@@ -118,25 +116,3 @@ def check_adapt(data: dict, missing: list[str], owned: list[str]) -> list[Substi
             Substitution(missing=gap, suggestion=f"{attach(sub, '으로')} 대신해요", uses=[sub])
         )
     return subs
-
-
-_LIST_START = re.compile(r'\s*\{\s*"(\w+)"\s*:\s*\[')
-
-
-def salvage_list(text: str) -> dict | None:
-    """The complete items of a cut-off ``{"key": [ {...}, {...`` answer, or None if there are none.
-
-    A cut only loses the dishes after the last complete one; the server orders what is kept."""
-    start = _LIST_START.match(text)
-    if not start:
-        return None
-    decoder, pos, items = json.JSONDecoder(), start.end(), []
-    while True:
-        while pos < len(text) and text[pos] in " \n\r\t,":
-            pos += 1
-        try:
-            item, pos = decoder.raw_decode(text, pos)
-        except ValueError:
-            break
-        items.append(item)
-    return {start.group(1): items} if items else None
