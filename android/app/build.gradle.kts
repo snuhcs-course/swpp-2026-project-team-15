@@ -114,3 +114,11 @@ dependencies {
     implementation(libs.retrofit.converter.gson)
     implementation(libs.androidx.datastore.preferences)
 }
+
+// The store build gets its own identity: com.example.* is a placeholder stores may refuse. Debug and
+// cloud-test builds keep com.example.mylittlechef, which a protected contributor test asserts.
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.applicationId.set("kr.ac.snu.swpp15.mylittlechef")
+    }
+}
