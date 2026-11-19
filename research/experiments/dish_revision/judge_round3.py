@@ -73,13 +73,32 @@ def label_sample(rows: list[dict], n: int = 24) -> list[str]:
     return sorted(random.Random(SEED).sample(ids, min(n, len(ids))))
 
 
+def agreement(verdicts: list[dict], labels: dict[str, list[str]]) -> dict:
+    """Per recipe, problem or not: judge against the hand labels (pure, tested)."""
+    pairs = [(bool(labels[v["dish_id"]]), bool(v["problems"])) for v in verdicts]
+    return {
+        "n": len(pairs),
+        "both_problem": sum(h and j for h, j in pairs),
+        "both_clean": sum(not h and not j for h, j in pairs),
+        "judge_only": sum(j and not h for h, j in pairs),
+        "hand_only": sum(h and not j for h, j in pairs),
+        "disagreeing": [v["dish_id"] for v, (h, j) in zip(verdicts, pairs, strict=True) if h != j],
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("results", type=Path, help="round3-*.json")
     p.add_argument("--sample", action="store_true", help="print the hand-label sample and stop")
     p.add_argument("--allow-live-api", action="store_true")
+    p.add_argument("--validate", action="store_true", help="judge only the hand-labelled sample")
+    p.add_argument("--extra", type=Path, nargs="*", default=[], help="more round3 result files")
     a = p.parse_args(argv)
     result = json.loads(a.results.read_text(encoding="utf-8"))
+    for extra in a.extra:
+        result |= {
+            k: v for k, v in json.loads(extra.read_text("utf-8")).items() if k.startswith("N")
+        }
     if a.sample:
         for dish_id in label_sample(result["N1"]):
             row = next(r for r in result["N1"] if r["dish_id"] == dish_id)
@@ -87,10 +106,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     targets = [
         (v, r)
-        for v in ("N0", "N1", "N2", "N3")
+        for v in ("N0", "N1", "N2", "N3", "N3a")
         for r in result.get(v, [])
         if r["status"] == "revised" and r.get("changes")
     ]
+    if a.validate:
+        labels = json.loads((HERE / "labels_round3.json").read_text("utf-8"))["labels"]
+        targets = [(v, r) for v, r in targets if v == "N1" and r["dish_id"] in labels]
     print(f"{len(targets)} revised answers with changes to judge")
     if not a.allow_live_api:
         return 0
@@ -105,8 +127,12 @@ def main(argv: list[str] | None = None) -> int:
             {"variant": variant, "dish_id": row["dish_id"], "problems": data.get("problems", [])}
         )
         print(variant, row["dish_id"], len(verdicts[-1]["problems"]), flush=True)
-    out = a.results.with_name(a.results.stem + "-judge.json")
+    suffix = "-judge-validate.json" if a.validate else "-judge.json"
+    out = a.results.with_name(a.results.stem + suffix)
     body = {"verdicts": verdicts, "calls": tokens.calls}
+    if a.validate:
+        body["agreement"] = agreement(verdicts, labels)
+        print(json.dumps(body["agreement"]))
     out.write_text(json.dumps(body, ensure_ascii=False, indent=1), encoding="utf-8")
     print(out)
     return 0

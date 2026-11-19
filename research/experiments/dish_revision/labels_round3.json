@@ -1,0 +1,30 @@
+{
+  "note": "Hand labels for the round 3 content judge, written by reading each N1 revised recipe before the judge ran (2026-11-19). A problem is a step, or a tip that is part of the recipe (not an optional suggestion such as 'you may add 양파'), that uses an ingredient missing from the revised list (water excluded) or something no earlier step makes. The recipes themselves are third-party derived and stay in the ignored data folder.",
+  "sample_seed": 20261119,
+  "labels": {
+    "bacon-fried-rice": [],
+    "bean-sprout-soup": [],
+    "beef-stir": [],
+    "chicken-stir": [],
+    "egg-braise": ["step 16 serves on 밥, not in the list"],
+    "egg-fried-rice": [],
+    "egg-roll": [],
+    "egg-soup": [],
+    "egg-toast": ["steps 4 and 9 use 식용유, not in the list"],
+    "garlic-bread": [],
+    "ham-fried-rice": [],
+    "janchi-noodle": ["step 12 pours 육수 that no step makes"],
+    "kimchi-fried-rice": [],
+    "kimchi-pasta": [],
+    "kimchi-tuna-fried-rice": [],
+    "oil-pasta": [],
+    "pork-kimchi-fried-rice": [],
+    "sweet-potato-bake": [],
+    "tofu-bowl": ["step 6 uses 기름, not in the list", "step 13 serves braised tofu with its broth, but no step braises it"],
+    "tofu-pan": [],
+    "tomato-egg-stir": ["step 10 checks the tomato in the pan, but no step puts it in"],
+    "tomato-pasta": [],
+    "tuna-porridge": [],
+    "udon-stir": []
+  }
+}
