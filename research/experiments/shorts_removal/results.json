@@ -1,0 +1,146 @@
+{
+ "date": "2026-11-19",
+ "links": {
+  "before": {
+   "links": 365,
+   "by_orientation": {
+    "horizontal": 270,
+    "vertical": 94,
+    "square": 1
+   },
+   "dishes_by_link_count": {
+    "1": 26,
+    "2": 36,
+    "3": 24,
+    "4": 15,
+    "5": 27
+   }
+  },
+  "landscape_only_before_refill": {
+   "links": 271,
+   "dishes_by_link_count": {
+    "0": 12,
+    "1": 35,
+    "2": 38,
+    "3": 22,
+    "4": 11,
+    "5": 10
+   }
+  },
+  "after": {
+   "links": 439,
+   "by_orientation": {
+    "horizontal": 430,
+    "square": 9
+   },
+   "dishes_by_link_count": {
+    "1": 4,
+    "2": 39,
+    "3": 26,
+    "4": 16,
+    "5": 43
+   },
+   "dishes_first_link_vertical": 0
+  }
+ },
+ "refill": {
+  "target_dishes": {
+   "no_link": 12,
+   "one_link": 35
+  },
+  "new_ids": 1064,
+  "dropped": {
+   "not_playable": 14,
+   "vertical": 634,
+   "gone": 37
+  },
+  "landscape_playable_candidates": 379,
+  "discovery_model_proposals": 179,
+  "reviewed": 227,
+  "review_decisions": {
+   "irrelevant": 30,
+   "relevant": 168,
+   "unsure": 9,
+   "not": 20
+  },
+  "judges_vs_review": {
+   "NN:irrelevant": 17,
+   "NN:not": 4,
+   "NN:relevant": 1,
+   "NY:irrelevant": 5,
+   "NY:not": 1,
+   "NY:relevant": 1,
+   "NY:unsure": 1,
+   "YN:irrelevant": 3,
+   "YN:relevant": 10,
+   "YN:unsure": 2,
+   "YY:irrelevant": 5,
+   "YY:not": 15,
+   "YY:relevant": 156,
+   "YY:unsure": 6
+  },
+  "kept_from_discovery_model": 7,
+  "added_links": 168
+ },
+ "recipes": {
+  "vertical_source": 24,
+  "main_mismatch_before": 32,
+  "union": 47,
+  "outcome": {
+   "kept_old_no_suitable_video": 14,
+   "matched": 31,
+   "landscape_main_gap_remains": 2
+  },
+  "build_calls": 92,
+  "offline_main_unavailable_recipes": {
+   "before": 32,
+   "after": 16
+  },
+  "revise_key_ingredients_only_33_changed": {
+   "before": {
+    "revised": 19,
+    "refused": 5,
+    "failed": 7,
+    "provider_error": 2
+   },
+   "after": {
+    "revised": 22,
+    "refused": 3,
+    "failed": 6,
+    "provider_error": 2
+   },
+   "paired": {
+    "revised_to_revised": 12,
+    "to_revised_from_other": 10,
+    "revised_to_other": 7,
+    "other_to_other": 4
+   }
+  },
+  "recipes_from_vertical_after": 0
+ },
+ "cost": {
+  "youtube_units": 4061,
+  "openrouter": {
+   "discovery_and_judges": {
+    "calls": 201,
+    "usd": 3.189
+   },
+   "recipe_build_first": {
+    "calls": 24,
+    "usd": 0.985
+   },
+   "recipe_build_second": {
+    "calls": 68,
+    "usd": 3.187
+   },
+   "revise_measure": {
+    "calls": 87,
+    "usd_estimated_from_tokens": 0.044
+   }
+  },
+  "local_agy": {
+   "calls": 1,
+   "note": "capability check only; cannot take video input"
+  }
+ }
+}
