@@ -465,5 +465,11 @@
   },
   "fix": "the three old wordings moved, text unchanged (checked equal), to research/experiments/legacy_prompts.py and the research imports updated; Catalog.rank kept",
   "proposal_not_done": "drop skip_ok from the substitution answer in a later app version: removing it now would change a response the submitted app reads"
+ },
+ "finding_12": {
+  "reproduced": true,
+  "before": "a verifier that always returns [] passed all 3 verifier contract tests",
+  "after": "it fails the order test (expects both known usable ids, in the order asked); the fake and the real YouTube verifier pass",
+  "also_seen": "the chat model contract only checks that an answer is a dict; an always-{} model passes it, but the services check every answer's shape themselves, so it was left as is"
  }
 }

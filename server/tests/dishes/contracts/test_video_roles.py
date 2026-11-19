@@ -55,11 +55,10 @@ class VideoVerifierContract:
     def make(self, *, fail: bool):
         raise NotImplementedError
 
-    def test_keeps_a_subset_in_the_order_asked(self):
+    def test_keeps_the_usable_videos_in_the_order_asked(self):
+        # Server review (2026-11-19): the old form passed a verifier that always returned [].
         videos = self.make(fail=False).check([ID_B, "x" * 11, ID_A])
-        ids = [v.video_id for v in videos]
-        assert ids == [i for i in [ID_B, ID_A] if i in ids]
-        assert set(ids) <= {ID_A, ID_B}
+        assert [v.video_id for v in videos] == [ID_B, ID_A]
 
     def test_an_unknown_video_is_dropped_not_an_error(self):
         assert self.make(fail=False).check(["x" * 11]) == []
