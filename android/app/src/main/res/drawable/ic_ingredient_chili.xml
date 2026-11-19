@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AI-generated with Claude Code (Opus 5.5), 2026-11-19, in the style of the other ingredient icons; reviewed by Jaehyuk Choi. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="45dp" android:height="45dp" android:viewportWidth="100" android:viewportHeight="100">
+    <group android:translateX="12" android:translateY="9" android:scaleX="0.76" android:scaleY="0.76">
+        <path android:pathData="M 30 30 C 26 52 34 76 62 90 C 70 93 74 88 68 82 C 50 68 44 50 46 32 C 47 24 32 22 30 30 Z" android:fillColor="#00000000" android:strokeColor="#172C25" android:strokeWidth="5" android:strokeLineCap="round" android:strokeLineJoin="round" />
+        <path android:pathData="M 32 26 C 34 18 42 16 46 22 M 38 20 C 40 12 46 8 54 8" android:fillColor="#00000000" android:strokeColor="#172C25" android:strokeWidth="5" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    </group>
+</vector>
