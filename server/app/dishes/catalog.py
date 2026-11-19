@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from app.dishes.synonyms import with_synonyms
+from app.dishes.synonyms import compact, with_synonyms
 
 if TYPE_CHECKING:
     from app.dishes.roles import Availability
@@ -95,7 +95,7 @@ class Catalog:
         """Names the user has, widened by synonyms and by what an item can stand in for."""
         if self._names is not None:
             return self._names.owned(ingredients)
-        names = {n.strip().replace(" ", "") for n in ingredients if n and n.strip()}
+        names = {compact(n) for n in ingredients if n and n.strip()}
         owned = with_synonyms(sorted(names))
         for key, alts in self.equivalents.items():
             if key in owned or owned & set(alts):
@@ -118,7 +118,7 @@ class Catalog:
 
     def status(self, name: str, owned: set[str]) -> str:
         """'assumed' for a staple at home, 'owned' when the user has it, else 'unavailable'."""
-        key = name.strip().replace(" ", "")
+        key = compact(name)
         if key in self.staples or set(self.equivalents.get(key, ())) & self.staples:
             return "assumed"
         return "owned" if self._covered(key, owned) else "unavailable"

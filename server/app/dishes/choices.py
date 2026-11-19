@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from app.dishes.catalog import Dish
-from app.dishes.synonyms import SYNONYM_GROUPS
+from app.dishes.synonyms import SYNONYM_GROUPS, compact, with_synonyms
 
 if TYPE_CHECKING:
     from app.dishes.roles import Availability
@@ -27,10 +27,6 @@ class SuggestChoices:
     names: list[str]
     have: list[str]
     missing: list[str]
-
-
-def _norm(text: str) -> str:
-    return text.strip().replace(" ", "")
 
 
 def ingredient_vocabulary(dishes: Iterable[Dish]) -> list[str]:
@@ -62,17 +58,8 @@ def owned_vocabulary(
     if names is not None:
         owned = names.owned(items)
         return {v for v in vocabulary if names.status(v, owned) == "owned"}
-    forms = with_synonyms(_norm(i) for i in items)
+    forms = with_synonyms((compact(i) for i in items), prepared=False)
     return {v for v in vocabulary if v in forms}
-
-
-def with_synonyms(names: Iterable[str]) -> set[str]:
-    """The names plus every spelling of their synonym groups."""
-    forms = set(names)
-    for group in SYNONYM_GROUPS:
-        if forms & group:
-            forms |= group
-    return forms
 
 
 def suggest_choices(
@@ -84,7 +71,7 @@ def suggest_choices(
 ) -> SuggestChoices:
     """``assumed`` are the staples taken to be at home; they are never a ``missing`` choice."""
     items = user_items(ingredients)
-    excluded = owned_vocabulary(items, vocabulary, names) | with_synonyms(assumed)
+    excluded = owned_vocabulary(items, vocabulary, names) | with_synonyms(assumed, prepared=False)
     return SuggestChoices(
         names=list(dish_names), have=items, missing=[v for v in vocabulary if v not in excluded]
     )

@@ -441,5 +441,19 @@
   "before": "'DISH_LLM_API_KEY, else the general key' written in build_chat_model and again in the composition root for the video search",
   "fix": "one function dish_model_key used by both",
   "after": "a composition test checks the model and the search get the same key in both cases"
+ },
+ "finding_8": {
+  "reproduced": true,
+  "names_compared": 123,
+  "copies_before": {
+   "synonym_expansion": 3,
+   "spelling_normalisation": 4
+  },
+  "disagreements_before": {
+   "synonym_expansion": "대파 (only synonyms.py adds the prepared form 다진파)",
+   "spelling_normalisation": "names with a note in parentheses (only the recipe name table drops it; intended)"
+  },
+  "fix": "one compact() and one with_synonyms(prepared=...) in synonyms.py; the cards and the recipe name table call it with prepared=False, which keeps their behaviour; the parentheses rule stays in the recipe name table on top of compact()",
+  "after": "1 copy of each; finding 1 and finding 4 measures give the same numbers as before the merge; all tests pass"
  }
 }

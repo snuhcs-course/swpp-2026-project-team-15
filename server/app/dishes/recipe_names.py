@@ -14,22 +14,19 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from app.dishes.catalog import load_staples
-from app.dishes.synonyms import SYNONYM_GROUPS
+from app.dishes.synonyms import compact, with_synonyms
 
 NAMES_FILE = Path(__file__).with_name("recipe_names.json")
 _PAREN = re.compile(r"\([^)]*\)")
 
 
 def _plain(name: str) -> str:
-    return _PAREN.sub("", name).replace(" ", "").strip()
+    """A recipe row's name without its note in parentheses, compacted."""
+    return compact(_PAREN.sub("", name))
 
 
 def _synonyms(names: Iterable[str]) -> set[str]:
-    forms = set(names)
-    for group in SYNONYM_GROUPS:
-        if forms & group:
-            forms |= group
-    return forms
+    return with_synonyms(names, prepared=False)
 
 
 class RecipeNames:

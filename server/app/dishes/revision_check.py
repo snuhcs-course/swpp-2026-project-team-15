@@ -14,7 +14,7 @@ from app.dishes.answers import strings
 from app.dishes.korean import attach
 from app.dishes.roles import Availability
 from app.dishes.schemas import Change, RecipeStep, RevisedIngredient, RevisedRecipe, SourceRecipe
-from app.dishes.synonyms import with_synonyms
+from app.dishes.synonyms import compact, with_synonyms
 
 # Particles that may follow a one-character ingredient name in a step ("밥을 넣고", "밥으로").
 # The two-syllable ones were missing until the server review (2026-11-19).
@@ -42,8 +42,7 @@ class Violation(Exception):
         self.code, self.message = code, message
 
 
-def _key(text: str) -> str:
-    return text.strip().replace(" ", "")
+_key = compact
 
 
 def mentions(text: str, name: str, kept: set[str] | frozenset[str] = frozenset()) -> bool:
