@@ -44,7 +44,7 @@ No new call: the stored outputs of the second YouTube discovery study are analys
 
 ### Round 2 results (2026-11-16, offline, no call)
 
-Question: if the server only checks that a link exists and can be embedded, how many of the links a model with web search provides are recipe videos of the dish? Data: method B of the second YouTube discovery study (`../youtube_discovery_v2/` in the branch `yt-discovery`), 27 dishes with both judgements. Relevance is the gemini-2.5-pro judgement (E); claude-haiku-4.5 (J1) is shown for comparison. Run: `PYTHONPATH=.:../research uv run python -m experiments.dish_pipeline.analyze_links` (from `server/`, after copying `candidates.json` and `judgements.json` to `data/youtube-discovery-v2/`).
+Question: if the server only checks that a link exists and can be embedded, how many of the links a model with web search provides are recipe videos of the dish? Data: method B of the second YouTube discovery study (`../youtube_discovery_v2/`, now in this branch; it was first written in a separate `yt-discovery` branch), 27 dishes with both judgements. Relevance is the gemini-2.5-pro judgement (E); claude-haiku-4.5 (J1) is shown for comparison. Run: `PYTHONPATH=.:../research uv run python -m experiments.dish_pipeline.analyze_links` (from `server/`, after copying `candidates.json` and `judgements.json` to `data/youtube-discovery-v2/`).
 
 | Per dish (mean over 27) / total | E | J1 |
 | --- | --- | --- |
@@ -93,7 +93,7 @@ Same 27 dishes and the same two validated judges as the second YouTube discovery
 
 ### Round 3 results (2026-11-16)
 
-Setup as frozen in `criteria_round3.json` (commit `9c8e63e`; one amendment, below). 27 dishes x 4 variants, one run, temperature 0. The usable links of a variant are the model's links that exist, are public and embeddable, in the model's order; relevance is the judgement of gemini-2.5-pro (E, primary) and claude-haiku-4.5 (J1). Calls: 118 discovery calls plus 3 attempts of one failed call (121 of 140), 52 judge calls, 27 `videos.list` requests, $0.81 for discovery and $0.47 for judging ($1.28 of 1.80).
+Setup as frozen in `criteria_round3.json` (commit `3aec6a1`, recorded as `9c8e63e` before the branch history was rewritten on 2026-11-19; same content, but the rewritten commit carries a later commit time than the results; one amendment, below). 27 dishes x 4 variants, one run, temperature 0. The usable links of a variant are the model's links that exist, are public and embeddable, in the model's order; relevance is the judgement of gemini-2.5-pro (E, primary) and claude-haiku-4.5 (J1). Calls: 118 discovery calls plus 3 attempts of one failed call (121 of 140), 52 judge calls, 27 `videos.list` requests, $0.81 for discovery and $0.47 for judging ($1.28 of 1.80).
 
 | | OLD (stored) | D0 follow along | D1 + 자취생 | D2 + observable conditions | D3 + exact dish, excludes |
 | --- | --- | --- | --- | --- | --- |
@@ -127,3 +127,7 @@ Failure types of the usable links E calls irrelevant (pre-set rule on title, tag
 ### Round 3 limits
 
 One run per variant; the web search of the model changes from day to day, so a repeat could rank the variants differently. 27 dishes, many of them fried-rice dishes. Relevance comes from two language models (kappa 0.61 against one labeller's 60 labels in their validation) that read title, channel, description and tags, not the video. The judgements of videos judged in the earlier study were reused, the others were judged in one batch per dish and judge with the order shuffled, so the judge saw batches of different composition. OLD and D0 differ in two ways. The wording of each variant is a single sentence; other sentences could behave differently. "Easy to follow for a person living alone" and the quality of the videos for that audience were not measured.
+
+## Result files
+
+Not committed. Round 3: `analysis.json`, `collected.json`, `judgements.json` in `artifacts/dish-recipes/run-data/ytdemo-prompt/data/dish-pipeline-round3/` (a former working copy), sha256 first 12 hex digits `124f438d911e`, `3c137e090a60`, `969c71941da7`.
