@@ -348,5 +348,95 @@
     "seconds": 4.25
    }
   }
+ },
+ "item5_revise_refs": {
+  "sha256": "d3cb8c185a643c707fed972161cc2cf9a740737c73d05dfb2524651b1d4602a7",
+  "recipes_sha256": "0670822b63bddc4b1e1fb33c76900eef0c778ab906ec5500a2e11d3b43438eda",
+  "summary": {
+   "V0": {
+    "recipes": 124,
+    "status": {
+     "revised": 96,
+     "refused": 1,
+     "failed": 24,
+     "error": 3
+    },
+    "failed_codes": {
+     "mentions_unavailable": 12,
+     "bad_reference": 5,
+     "unavailable_ingredient": 2,
+     "unexplained_change": 4,
+     "main_dropped": 1,
+     "DishLLMError": 3
+    },
+    "first_out_of_range": 18,
+    "final_out_of_range": 8,
+    "revised_with_mirrored_change": 24,
+    "calls": 157,
+    "median_seconds": 2.77
+   },
+   "V1": {
+    "recipes": 124,
+    "status": {
+     "revised": 97,
+     "error": 5,
+     "failed": 22
+    },
+    "failed_codes": {
+     "DishLLMError": 5,
+     "mentions_unavailable": 13,
+     "unavailable_ingredient": 3,
+     "unexplained_change": 4,
+     "main_dropped": 2
+    },
+    "first_out_of_range": 0,
+    "final_out_of_range": 0,
+    "revised_with_mirrored_change": 27,
+    "calls": 140,
+    "median_seconds": 2.59
+   },
+   "V2": {
+    "recipes": 124,
+    "status": {
+     "revised": 99,
+     "refused": 1,
+     "failed": 23,
+     "error": 1
+    },
+    "failed_codes": {
+     "mentions_unavailable": 12,
+     "unavailable_ingredient": 3,
+     "unexplained_change": 4,
+     "bad_reference": 3,
+     "main_dropped": 1,
+     "DishLLMError": 1
+    },
+    "first_out_of_range": 18,
+    "final_out_of_range": 4,
+    "revised_with_mirrored_change": 24,
+    "calls": 159,
+    "median_seconds": 2.58
+   },
+   "V3": {
+    "recipes": 124,
+    "status": {
+     "revised": 97,
+     "error": 5,
+     "failed": 22
+    },
+    "failed_codes": {
+     "DishLLMError": 5,
+     "mentions_unavailable": 13,
+     "unavailable_ingredient": 3,
+     "unexplained_change": 4,
+     "main_dropped": 2
+    },
+    "first_out_of_range": 0,
+    "final_out_of_range": 0,
+    "revised_with_mirrored_change": 27,
+    "calls": 140,
+    "median_seconds": 2.37
+   }
+  }
  }
 }

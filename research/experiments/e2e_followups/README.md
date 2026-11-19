@@ -136,3 +136,33 @@ dish's key ingredients (server name table). 10 build calls, about $0.36.
 The three videos that cook another dish (순두부찌개, 감자옹심이국, 마늘쫑 건새우 볶음) left the stored
 lists; each accepted recipe's video is listed first. All 128 dishes now have a recipe; with the
 fridge = key ingredients no recipe has an unavailable main row (0 of 128).
+
+**Results** (served model and reviser, fridge = key ingredients, one run per recipe and variant,
+`results.json` → `item5_revise_refs`; 596 revision calls, about $0.25 from the logged tokens).
+
+| | V0 served | V1 closed refs | V2 named re-ask | V3 both |
+|---|---|---|---|---|
+| Revised / refused / failed / model error | 96 / 1 / 24 / 3 | 97 / 0 / 22 / 5 | 99 / 1 / 23 / 1 | 97 / 0 / 22 / 5 |
+| First answer with an out-of-range reference | 18 | 0 | 18 | 0 |
+| Final answer with an out-of-range reference | 8 | 0 | 4 | 0 |
+| Failed as bad_reference | 5 | 0 | 3 | 0 |
+| Revised answers with a mirrored change (ingredient refs = step refs) | 24 | 27 | 24 | 27 |
+| Model calls | 157 | 140 | 159 | 140 |
+| 카레라이스 | failed (bad_reference) | revised | revised | revised |
+
+**Reading.** Closed references remove out-of-range numbers, but on 5 recipes the answer then ran
+to the token limit (a direct call showed `finish_reason: length` after 4,027 tokens) and became a
+model error; failed + error stays 27 of 124. The named re-ask changes only answers that were
+rejected (the first answer is the same request as V0): failed + error 27 → 24; 5 failed and 1 error
+became revised, 3 revised became failed. Mirrored references are not touched by any variant; they
+are in range, so no check sees them. One run each, so a difference of 2 or 3 recipes is within what
+another run could move.
+
+**Decision (judgement).** V2: the re-ask message names the change, the bad numbers and the valid
+ranges. It has the fewest unusable answers, no runaway answers, and changes only the second call.
+Not now: closed references (runaway answers), a check for mirrored references (needs a rule for
+when a change really touches the same-numbered row and step).
+
+**Noted, not fixed.** The 카레라이스 recipe build left 밥 out of the ingredient rows although step 14
+serves the curry on rice; the model's change "밥은 가지고 있으므로 추가합니다" had no source row to
+point at.
