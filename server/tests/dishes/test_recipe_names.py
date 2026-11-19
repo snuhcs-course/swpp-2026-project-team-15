@@ -46,14 +46,32 @@ def test_same_ingredient_or_general_name_is_owned(names, row, fridge):
         ("쪽파", ["대파"]),  # a stand-in, not the same thing: the revision replaces it
         ("대파", ["쪽파"]),
         ("청양고추", ["고추"]),  # a general name does not cover a specific kind
-        ("스팸", ["햄"]),
-        ("쌀", ["밥"]),
         ("국간장", []),  # another kind of soy sauce
         ("맛소금", []),
     ],
 )
 def test_stand_ins_and_other_kinds_are_unavailable(names, row, fridge):
     assert status(names, row, fridge) == "unavailable"
+
+
+@pytest.mark.parametrize(
+    ("row", "fridge"),
+    [
+        ("스팸", ["햄"]),
+        ("쌀", ["밥"]),
+        ("열무김치", ["김치"]),
+        ("불고기", ["소고기"]),
+        ("파마산 치즈", ["치즈"]),
+        ("고다치즈 슬라이스", ["치즈"]),
+        ("모짜렐라 치즈 가래떡", ["떡"]),
+        ("모닝빵", ["식빵"]),
+        ("비엔나 살라미", ["햄"]),
+    ],
+)
+def test_related_kinds_chosen_by_the_user_are_owned(names, row, fridge):
+    # The user's choice (2026-11-19): a related kind used as a dish's main counts as the
+    # general name typed in the fridge, so these recipes are not refused for it.
+    assert status(names, row, fridge) == "owned"
 
 
 def test_table_maps_to_plain_names_only():

@@ -1,6 +1,6 @@
 {
   "note": "How recipe ingredient names (written from the videos) map to the names a user types. Self-authored and reviewed by hand against every name in the stored recipes (2026-11-19, research/experiments/dish_revision round 3). Keys and values have spaces removed; text in parentheses is ignored before lookup.",
-  "same_note": "The same ingredient under another name, grade, brand, cut or a form made from it alone at home. Owning the right side means having the left side. Applied to the user's names too.",
+  "same_note": "The same ingredient under another name, grade, brand, cut or a form made from it alone at home. Owning the right side means having the left side. Applied to the user's names too. Also, by the user's choice (2026-11-19), a related kind used as the dish's main stands for the general name a user types (스팸 for 햄, 열무김치 for 김치, a named cheese for 치즈, a bread roll for 식빵, 쌀 for 밥).",
   "same": {
     "꽃소금": "소금",
     "고운소금": "소금",
@@ -58,8 +58,8 @@
     "빨간양파": "양파",
     "로마토마토": "토마토",
     "체다슬라이스치즈": "체다치즈",
-    "파마산치즈가루": "파마산치즈",
-    "파르미지아노치즈": "파마산치즈",
+    "파마산치즈가루": "치즈",
+    "파르미지아노치즈": "치즈",
     "슈레드모짜렐라치즈": "모짜렐라치즈",
     "소고기다짐육": "소고기",
     "소고기불고기용": "소고기",
@@ -122,7 +122,17 @@
     "물만두": "만두",
     "불린절단미역": "미역",
     "지리멸치": "멸치",
-    "다시멸치": "멸치"
+    "다시멸치": "멸치",
+    "스팸": "햄",
+    "비엔나살라미": "햄",
+    "불고기": "소고기",
+    "열무김치": "김치",
+    "파마산치즈": "치즈",
+    "고다치즈슬라이스": "치즈",
+    "모짜렐라치즈가래떡": "떡",
+    "호기빵": "식빵",
+    "모닝빵": "식빵",
+    "쌀": "밥"
   },
   "kinds_note": "A general name in a recipe is covered by owning any one kind of it; owning the general name does not cover a specific kind.",
   "kinds": {
