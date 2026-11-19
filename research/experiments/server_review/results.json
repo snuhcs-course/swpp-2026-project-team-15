@@ -404,5 +404,29 @@
   "before": "two tests replaced app.dishes.http.RETRY_WAITS with monkeypatch (one autouse fixture for the whole test module)",
   "fix": "post_with_retry takes waits and sleep; the model client and the video search take retry_waits; tests pass (0, 0) and no test patches a module",
   "after": "0 tests patch the module; a new test checks the default waits are used in order"
+ },
+ "finding_6": {
+  "reproduced": "by arithmetic from the code (a 429 answer is fast, so the realistic worst case is lower than the reviewer's figure, but a slow provider can still make every attempt take its full read timeout)",
+  "app_wait_seconds": 90,
+  "nginx_proxy_read_timeout_seconds": 210,
+  "before_worst_seconds": {
+   "one_model_call": "3 attempts x 30 s + 3 s + 8 s waits = 101",
+   "revise": "credit lookup 20 + two calls 2 x 101 = 222",
+   "videos": "stored check 20 + search 3 x 60 + 11 + check 20 = 231",
+   "recipe_view": "20 per view during a YouTube outage, every view"
+  },
+  "measured_durations_used": {
+   "slowest_recorded_video_search_s": 22.7,
+   "median_video_search_s": 3.5,
+   "source": "data/youtube-discovery-v2 (136 timed calls)"
+  },
+  "fix": "budget = the app's 90 s wait; a model call (retries and waits included) gets (90 - 20 s YouTube timeout) / 2 = 35 s; a revision asks again only if 35 s still fit; a video search gets 90 - 2 x 20 = 50 s (over twice the slowest recorded search); each attempt may take only the time left; a failed YouTube credit lookup is not retried for the quota-derived check period (about 19 min)",
+  "after_worst_seconds": {
+   "one_model_call": 35,
+   "revise": 90,
+   "videos": 90,
+   "recipe_view": "20 once per check period during an outage"
+  },
+  "limit": "httpx timeouts bound the gap between bytes, not the whole transfer, so a provider that trickles bytes can still exceed an attempt's timeout"
  }
 }

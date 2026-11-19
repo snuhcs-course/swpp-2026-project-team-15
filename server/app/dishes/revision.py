@@ -9,9 +9,13 @@ without an owned replacement is returned as a refusal; any other broken answer i
 never repaired silently. Measured in research/experiments/dish_revision (rounds 2 and 3)."""
 
 import logging
+import time
+from collections.abc import Callable
 
 from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError
+from app.dishes.http import APP_READ_SECONDS
 from app.dishes.korean import attach
+from app.dishes.llm import CALL_BUDGET
 from app.dishes.prompts import ModelRequest, reask_request, revise_request
 from app.dishes.revision_check import (
     RefusalNeeded,
@@ -41,8 +45,11 @@ class Reviser:
         index: Availability,
         llm: ChatModel | None,
         recipes: RecipeBook,
+        *,
+        clock: Callable[[], float] = time.monotonic,
     ):
         self.catalog, self.index, self.llm, self.recipes = catalog, index, llm, recipes
+        self._clock = clock
 
     def availability(self, recipe: SourceRecipe, ingredients: list[str]) -> list[str]:
         """owned / assumed / unavailable for each ingredient row of the recipe."""
@@ -62,6 +69,7 @@ class Reviser:
 
     def revise(self, dish_id: str, ingredients: list[str]) -> ReviseResponse | None:
         """None when the dish or its recipe is unknown. Raises DishLLMError when the call fails."""
+        started = self._clock()
         view = self.view(dish_id, ingredients)
         if view is None:
             return None
@@ -87,7 +95,7 @@ class Reviser:
         if self.llm is None:
             raise DishLLMError(MODEL_NOT_CONFIGURED)
         request = revise_request(recipe, view.name, status, ingredients)
-        return self._answer(request, recipe, status, ingredients, base)
+        return self._answer(request, recipe, status, ingredients, base, started)
 
     def _answer(
         self,
@@ -96,12 +104,17 @@ class Reviser:
         status: list[str],
         ingredients: list[str],
         base: dict,
+        started: float,
     ) -> ReviseResponse:
         """A checked answer. When the check rejects it, the model is asked once more with the
-        check's message; the second answer is checked the same way and is never repaired."""
+        check's message, if one more call still fits in the app's wait; the second answer is
+        checked the same way and is never repaired."""
         data = self.llm.complete(request.system, request.user, request.name, request.schema)
         response, violation = self._judge(data, recipe, status, ingredients, base)
         if violation is None:
+            return response
+        if self._clock() - started + CALL_BUDGET > APP_READ_SECONDS:
+            log.info("dish revision: no second call, the app's wait would run out")
             return response
         log.info("dish revision: asking again after code=%s", violation.code)
         again = reask_request(request, violation.message)

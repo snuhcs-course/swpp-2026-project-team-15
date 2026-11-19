@@ -404,3 +404,40 @@ def test_a_second_rejected_answer_is_a_failure_and_no_third_call_is_made(catalog
     result = svc.reviser.revise("kimchi-fried-rice", ["밥", "김치"])
     assert result.status == "failed" and result.error.code == "mentions_unavailable"
     assert len(llm.calls) == 2
+
+
+def test_no_second_call_when_it_would_not_fit_in_the_apps_wait(catalog):
+    # Server review (2026-11-19): a rejected answer is asked again only while time is left.
+    now = [0.0]
+
+    class SlowLLM(FakeLLM):
+        def complete(self, *args, **kwargs):
+            now[0] += 60
+            return super().complete(*args, **kwargs)
+
+    bad = {**GOOD, "changes": []}
+    llm = SlowLLM(bad, GOOD)
+    reviser = Reviser(catalog, catalog, llm, store(), clock=lambda: now[0])
+    result = reviser.revise("kimchi-fried-rice", ["밥", "김치"])
+    assert result.status == "failed" and len(llm.calls) == 1
+
+
+def test_a_failed_credit_lookup_is_not_retried_on_every_view():
+    from app.dishes.errors import VideoError
+    from app.dishes.recipes import CreditedRecipes
+
+    class Down:
+        calls = 0
+
+        def check(self, ids):
+            Down.calls += 1
+            raise VideoError("YouTube could not be reached")
+
+    now = [0.0]
+    book = CreditedRecipes(store(), Down(), clock=lambda: now[0], retry_seconds=600)
+    for _ in range(5):
+        assert book.get("kimchi-fried-rice").video.title == ""
+    assert Down.calls == 1
+    now[0] += 601
+    book.get("kimchi-fried-rice")
+    assert Down.calls == 2

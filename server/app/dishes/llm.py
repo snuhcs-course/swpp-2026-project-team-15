@@ -9,11 +9,16 @@ import httpx
 
 from app.dishes.answers import salvage_list
 from app.dishes.errors import DishLLMError
-from app.dishes.http import RETRY_WAITS, post_with_retry
+from app.dishes.http import APP_READ_SECONDS, RETRY_WAITS, post_with_retry
+from app.dishes.youtube import YOUTUBE_TIMEOUT
 
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "google/gemini-2.5-flash-lite"
 MAX_TOKENS = 4096
+CALL_TIMEOUT = 30.0  # seconds for one attempt
+# The longest route is a revision: a YouTube credit lookup, then up to two model calls. Each
+# call, retries included, therefore fits in half of what is left of the app's wait.
+CALL_BUDGET = (APP_READ_SECONDS - YOUTUBE_TIMEOUT) / 2
 log = logging.getLogger(__name__)
 
 
@@ -53,11 +58,16 @@ class DishLLM:
         started = time.monotonic()
         try:
             with httpx.Client(
-                timeout=30, transport=self._transport, follow_redirects=False
+                timeout=CALL_TIMEOUT, transport=self._transport, follow_redirects=False
             ) as client:
                 headers = {"Authorization": f"Bearer {self._api_key}"}
                 response = post_with_retry(
-                    client, ENDPOINT, payload, headers, waits=self._retry_waits
+                    client,
+                    ENDPOINT,
+                    payload,
+                    headers,
+                    waits=self._retry_waits,
+                    budget=CALL_BUDGET,
                 )
             if response.status_code == 429 or response.status_code >= 500:
                 raise DishLLMError("The model service is temporarily unavailable")

@@ -13,6 +13,7 @@ from app.dishes.errors import VideoError
 from app.dishes.schemas import Video
 
 YOUTUBE_VIDEOS = "https://www.googleapis.com/youtube/v3/videos"
+YOUTUBE_TIMEOUT = 20.0  # seconds for one videos.list call
 EMBED_MAX_WIDTH = 1000  # any width works; only the ratio is read
 
 
@@ -64,7 +65,7 @@ class YouTubeVerifier:
         }
         headers = {"X-Goog-Api-Key": self._api_key}  # a header keeps the key out of URL logs
         try:
-            with httpx.Client(timeout=20, transport=self._transport) as client:
+            with httpx.Client(timeout=YOUTUBE_TIMEOUT, transport=self._transport) as client:
                 response = client.get(YOUTUBE_VIDEOS, params=params, headers=headers)
             if response.status_code != 200:
                 raise VideoError(f"YouTube returned HTTP {response.status_code}")

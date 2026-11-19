@@ -64,7 +64,8 @@ def build_dish_service(env: Mapping[str, str] | None = None, model_key: str = ""
     recipes: RecipeBook = stored_recipes
     youtube_key = env.get("YOUTUBE_API_KEY", "")
     if youtube_key.strip():
-        recipes = CreditedRecipes(recipes, YouTubeVerifier(youtube_key))
+        retry = check_seconds(len(catalog), len(stored_recipes))
+        recipes = CreditedRecipes(recipes, YouTubeVerifier(youtube_key), retry_seconds=retry)
     reviser = Reviser(catalog, names, llm, recipes)
     key = env.get("DISH_LLM_API_KEY") or model_key
     return DishService(

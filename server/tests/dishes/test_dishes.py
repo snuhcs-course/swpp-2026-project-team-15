@@ -736,3 +736,35 @@ def test_retry_waits_are_handed_in_not_patched():
     with httpx.Client(transport=httpx.MockTransport(handler)) as client:
         response = post_with_retry(client, "https://x.test", {}, {}, sleep=slept.append)
     assert response.status_code == 200 and slept == list(RETRY_WAITS)
+
+
+def test_a_retry_is_skipped_when_the_budget_has_no_time_left():
+    # Server review (2026-11-19): worst case a revision took about 220 s, the app waits 90 s.
+    from app.dishes.http import post_with_retry
+
+    now, answers, timeouts = [0.0], [429, 429, 200], []
+
+    def handler(request):
+        timeouts.append(request.extensions["timeout"]["read"])
+        now[0] += 10  # each attempt takes 10 s
+        return httpx.Response(answers.pop(0))
+
+    def sleep(seconds):
+        now[0] += seconds
+
+    with httpx.Client(transport=httpx.MockTransport(handler), timeout=30) as client:
+        response = post_with_retry(
+            client, "https://x.test", {}, {}, sleep=sleep, budget=20, clock=lambda: now[0]
+        )
+    assert response.status_code == 429  # 10 s used, 3 s wait, 7 s left: one retry, then none
+    assert len(timeouts) == 2 and timeouts[0] == 20 and timeouts[1] == 7
+
+
+def test_every_route_fits_in_the_apps_wait():
+    from app.dishes.http import APP_READ_SECONDS
+    from app.dishes.llm import CALL_BUDGET
+    from app.dishes.video_search import SEARCH_BUDGET
+    from app.dishes.youtube import YOUTUBE_TIMEOUT
+
+    assert YOUTUBE_TIMEOUT + 2 * CALL_BUDGET <= APP_READ_SECONDS  # revision
+    assert 2 * YOUTUBE_TIMEOUT + SEARCH_BUDGET <= APP_READ_SECONDS  # videos

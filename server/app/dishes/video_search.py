@@ -10,7 +10,13 @@ import re
 import httpx
 
 from app.dishes.errors import VideoError
-from app.dishes.http import RETRY_WAITS, post_with_retry
+from app.dishes.http import APP_READ_SECONDS, RETRY_WAITS, post_with_retry
+from app.dishes.youtube import YOUTUBE_TIMEOUT
+
+# A video request may check stored videos, search, then check what was found: the search gets
+# what is left of the app's wait after two YouTube checks. The slowest search recorded in the
+# discovery study took 22.7 s (median 3.5 s).
+SEARCH_BUDGET = APP_READ_SECONDS - 2 * YOUTUBE_TIMEOUT
 
 OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
 WEB_MODEL = "google/gemini-2.5-flash-lite:online"
@@ -63,13 +69,14 @@ class WebSearchVideoSource:
     def propose(self, dish_name: str) -> list[str]:
         headers = {"Authorization": f"Bearer {self._api_key}"}
         try:
-            with httpx.Client(timeout=60, transport=self._transport) as client:
+            with httpx.Client(timeout=SEARCH_BUDGET, transport=self._transport) as client:
                 response = post_with_retry(
                     client,
                     OPENROUTER,
                     video_request(self._model, dish_name),
                     headers,
                     waits=self._retry_waits,
+                    budget=SEARCH_BUDGET,
                 )
             if response.status_code != 200:
                 raise VideoError("The model service is temporarily unavailable")

@@ -71,8 +71,13 @@ class CreditedRecipes:
         recipes: RecipeBook,
         verifier: VideoVerifier,
         clock: Callable[[], float] = time.monotonic,
+        retry_seconds: float = 0.0,
     ):
+        """``retry_seconds``: how long a failed lookup is not tried again, so a YouTube outage
+        does not add a timeout to every recipe view."""
         self._recipes, self._verifier, self._clock = recipes, verifier, clock
+        self._retry_seconds = retry_seconds
+        self._failed: dict[str, float] = {}
         self._credits: dict[str, tuple[float, str, str]] = {}
 
     def get(self, dish_id: str) -> SourceRecipe | None:
@@ -93,10 +98,14 @@ class CreditedRecipes:
         cached = self._credits.get(video_id)
         if cached and self._clock() - cached[0] < CREDIT_SECONDS:
             return cached[1], cached[2]
+        failed = self._failed.get(video_id)
+        if failed is not None and self._clock() - failed < self._retry_seconds:
+            return "", ""
         try:
             found = self._verifier.check([video_id])
         except VideoError:
-            return "", ""  # not cached: the next request tries again
+            self._failed[video_id] = self._clock()
+            return "", ""
         title, channel = (found[0].title, found[0].channel) if found else ("", "")
         self._credits[video_id] = (self._clock(), title, channel)
         return title, channel
