@@ -13,6 +13,7 @@ Finding videos with a web-search model costs about $0.0075 and 3 to 13 s per dis
 - If the entry is missing, 30 days old or older, or nothing is left after the check, the web-search model proposes videos (request wording D0) and the same check keeps the usable ones; the result is kept in memory for 24 hours.
 - A YouTube failure while checking is an error (502); the server does not serve unchecked ids as a fallback.
 - The response carries `source` (`stored` or `discovered`).
+- Amended 2026-11-19: the same `videos.list` call asks for the player size (`part=player`, `maxWidth`); a video taller than wide (a Short) is dropped, for stored and discovered lists alike, at no extra quota. The stored lists were rebuilt with landscape videos only (`research/experiments/shorts_removal`). Reason: on the phone a vertical video filled 31.6% of the 16:9 player area.
 
 ## Consequences
 
