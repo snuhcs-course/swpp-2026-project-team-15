@@ -55,7 +55,13 @@ def limit_values(catalog: Catalog, cases: list[dict]) -> dict[str, int]:
     return {"K_mid": mid, "K_high": high, "counts": counts}
 
 
-def body(catalog: Catalog, vocab: list[str], ingredients: list[str], k: int | None):
+def body(
+    catalog: Catalog,
+    vocab: list[str],
+    ingredients: list[str],
+    k: int | None,
+    in_schema: bool = True,
+):
     """The server's request body (app.dishes.llm.DishLLM), optionally limited to k dishes."""
     names = [d.name for d in catalog.all()]
     choices = suggest_choices(ingredients, names, vocab, catalog.staples)
@@ -63,7 +69,8 @@ def body(catalog: Catalog, vocab: list[str], ingredients: list[str], k: int | No
     system, schema = req.system, json.loads(json.dumps(req.schema))
     if k is not None:
         system += CAP_SENTENCE.format(k=k)
-        schema["properties"]["dishes"]["maxItems"] = k
+        if in_schema:  # rejected with HTTP 400 on this route (amendment of criteria_round5.json)
+            schema["properties"]["dishes"]["maxItems"] = k
     payload = {
         "model": formats.MODEL,
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": req.user}],

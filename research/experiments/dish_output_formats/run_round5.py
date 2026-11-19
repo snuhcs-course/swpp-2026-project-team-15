@@ -30,9 +30,19 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 PACING_S = 1.0
 
 
-def one_call(case_id, ingredients, k, ctx, key, budget, send=formats.post_chat, sleep=time.sleep):
+def one_call(
+    case_id,
+    ingredients,
+    k,
+    ctx,
+    key,
+    budget,
+    send=formats.post_chat,
+    sleep=time.sleep,
+    in_schema=True,
+):
     catalog, vocab = ctx
-    choices, payload = round5.body(catalog, vocab, ingredients, k)
+    choices, payload = round5.body(catalog, vocab, ingredients, k, in_schema)
     answer = with_retry(lambda: send(payload, key), budget, sleep)
     call = answer.call
     data = call.data

@@ -4,10 +4,50 @@
  "question": "On the phone, 계란 + 밥 returned 118 dishes in 9.7 s while 달걀 + 밥 (the same ingredients, other spelling) returned 16 dishes in 2.2 s. (A) Is that the spelling or run-to-run variation of the same request? (B) The user now allows an upper limit on the number of dishes (2026-11-19, list length only). Which limit value, and is it better sent in the request (so the answer is short and fast) or applied by the server after ordering?",
  "part_a": {
   "pairs": [
-   {"id": "P1", "a": ["계란", "밥"], "b": ["달걀", "밥"]},
-   {"id": "P2", "a": ["계란"], "b": ["달걀"]},
-   {"id": "P3", "a": ["밥", "계란", "외계인고기"], "b": ["밥", "달걀", "외계인고기"]},
-   {"id": "P4", "a": ["계란", "대파"], "b": ["달걀", "대파"]}
+   {
+    "id": "P1",
+    "a": [
+     "계란",
+     "밥"
+    ],
+    "b": [
+     "달걀",
+     "밥"
+    ]
+   },
+   {
+    "id": "P2",
+    "a": [
+     "계란"
+    ],
+    "b": [
+     "달걀"
+    ]
+   },
+   {
+    "id": "P3",
+    "a": [
+     "밥",
+     "계란",
+     "외계인고기"
+    ],
+    "b": [
+     "밥",
+     "달걀",
+     "외계인고기"
+    ]
+   },
+   {
+    "id": "P4",
+    "a": [
+     "계란",
+     "대파"
+    ],
+    "b": [
+     "달걀",
+     "대파"
+    ]
+   }
   ],
   "repeats": 5,
   "variant": "B_served",
@@ -27,7 +67,9 @@
   "id": "google/gemini-2.5-flash-lite",
   "temperature": 0,
   "max_tokens": 4096,
-  "provider": {"require_parameters": true},
+  "provider": {
+   "require_parameters": true
+  },
   "route": "same body as app.dishes.llm.DishLLM"
  },
  "metrics": [
@@ -38,8 +80,8 @@
  ],
  "analysis": "Descriptive; no pass/fail threshold decides anything (user rule 2026-11-19). Part A: report every run; the spelling effect is read from the a-b difference against the spread among repeats of one spelling. Part B: full tables per variant; paired per-input differences against B_served (run means) with a percentile bootstrap 95% interval (2,000 resamples, seed 20261119). The served limit is chosen by judgement from these numbers (latency and cut answers versus how many 'cook now' dishes are lost) and the reason is written in the README.",
  "budget": {
-  "model_calls": 260,
-  "usd": 0.3,
+  "model_calls": 340,
+  "usd": 0.4,
   "planned_calls": 214,
   "plan": "part A 4 pairs x 2 spellings x 5 repeats = 40; part B 29 inputs x 2 repeats x 3 variants = 174",
   "retry": "HTTP 429 repeated after 5 s and 15 s; every attempt counts toward the cap"
@@ -49,5 +91,12 @@
   "one model and provider",
   "the 'cook now' counts and the rules-missing numbers come from the catalog's key ingredients, not from people",
   "whether maxItems is honoured is a property of this provider route on this day"
+ ],
+ "amendments": [
+  {
+   "date": "2026-11-19",
+   "after_calls": "yes, after the 214 planned calls",
+   "text": "Every B_cap_K call (116) was rejected by the provider with HTTP 400. Two diagnostic calls on D1 showed the cause: the answer format with maxItems is rejected on this route, the sentence alone is accepted. Added variants B_say_mid and B_say_high: the B_cap sentence in the system text without maxItems, same 29 inputs x 2 repeats (116 calls), plus the part A runaway inputs P1a (계란, 밥) and P3a/P3b x 2 repeats (6 calls). Because the sentence cannot guarantee the length, the server-side cut (B_after_K) stays the reference. Budget raised to 340 calls, $0.4."
+  }
  ]
 }
