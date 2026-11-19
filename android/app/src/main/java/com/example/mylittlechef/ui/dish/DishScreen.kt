@@ -148,28 +148,21 @@ fun DishScreen(
     val selected = (dishes.state as? DishUiState.Success)?.dishes?.firstOrNull { it.id == dishes.selectedDishId }
     if (selected != null) {
         LaunchedEffect(selected.id) { dishes.requestVideos(selected) }
+        if (selected.hasRecipe) LaunchedEffect(selected.id, names) { dishes.recipes.requestRecipe(selected.id) }
         DishDetailSheet(
             dish = selected,
             mode = dishes.selectedMode,
             fridgeNames = names,
             videos = dishes.videoState(selected.id),
             onLoadVideos = { dishes.requestVideos(selected) },
+            recipe = dishes.recipes.recipeState(selected.id),
+            revision = dishes.recipes.reviseState(selected.id),
+            onRetryRecipe = { dishes.recipes.requestRecipe(selected.id) },
+            onRevise = { dishes.recipes.requestRevision(selected.id) },
             adapt = dishes.adaptState(selected.id),
             onAdapt = { dishes.requestAdapt(selected) },
             onDismissAdapt = { dishes.dismissAdapt(selected.id) },
             onDismiss = { dishes.selectDish(null) }
-        )
-    }
-    val recipeDish = (dishes.state as? DishUiState.Success)?.dishes?.firstOrNull { it.id == dishes.recipes.openDishId }
-    if (recipeDish != null) {
-        LaunchedEffect(recipeDish.id, names) { dishes.recipes.requestRecipe(recipeDish.id) }
-        DishRecipeSheet(
-            dish = recipeDish,
-            recipe = dishes.recipes.recipeState(recipeDish.id),
-            revision = dishes.recipes.reviseState(recipeDish.id),
-            onRetryRecipe = { dishes.recipes.requestRecipe(recipeDish.id) },
-            onRevise = { dishes.recipes.requestRevision(recipeDish.id) },
-            onDismiss = dishes.recipes::close
         )
     }
     if (showInfo) {
@@ -201,7 +194,6 @@ private fun DishList(state: DishUiState.Success, dishes: DishViewModel) {
                 thumbnail = (dishes.videoState(dish.id) as? VideoUiState.Success)
                     ?.videos?.firstNotNullOfOrNull { it.thumbnailUrl },
                 onOpen = { dishes.selectDish(dish.id, DishSheetMode.VIDEOS) },
-                onRecipe = { dishes.recipes.open(dish.id) },
                 onAdapt = {
                     dishes.selectDish(dish.id, DishSheetMode.ADAPT)
                     if (dishes.adaptState(dish.id) == null) dishes.requestAdapt(dish)
@@ -213,7 +205,7 @@ private fun DishList(state: DishUiState.Success, dishes: DishViewModel) {
 }
 
 @Composable
-private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onRecipe: () -> Unit, onAdapt: () -> Unit) {
+private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onAdapt: () -> Unit) {
     // With very large text the card keeps its shape: the category and the action labels give way, long lines wrap.
     val large = LocalDensity.current.fontScale >= 1.3f
     val ingredients = remember(dish) { dish.have.map { it to true } + dish.missing.map { it to false } }
@@ -223,7 +215,7 @@ private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onRecip
             .clip(RoundedCornerShape(24.dp))
             .background(Gray)
             .testTag("dish-${dish.id}")
-            .clickable(role = Role.Button, onClickLabel = "요리 상세 보기", onClick = onOpen)
+            .clickable(role = Role.Button, onClickLabel = "영상과 레시피 보기", onClick = onOpen)
     ) {
         Row(Modifier.fillMaxWidth().heightIn(min = CardImageSize), verticalAlignment = Alignment.CenterVertically) {
             DishThumbnail(dish, thumbnail, Modifier.size(CardImageSize).clip(RoundedCornerShape(24.dp)))
@@ -269,34 +261,15 @@ private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onRecip
                 Spacer(Modifier.height(6.dp))
                 BadgeRow(ingredients, dish)
             }
-            Spacer(Modifier.weight(0.05f))
-            VerticalDivider(thickness = 1.dp, color = GreenGray, modifier = Modifier.heightIn(min = CardImageSize))
-            Column(
-                Modifier.width(108.dp).heightIn(min = CardImageSize),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row {
-                    CardAction(
-                        R.drawable.ic_play,
-                        "영상",
-                        large,
-                        "영상 보기",
-                        Modifier.testTag("dish-videos-${dish.id}"),
-                        onOpen
-                    )
-                    if (dish.hasRecipe) {
-                        CardAction(
-                            R.drawable.ic_recipe,
-                            "레시피",
-                            large,
-                            "레시피 보기",
-                            Modifier.testTag("dish-recipe-${dish.id}"),
-                            onRecipe
-                        )
-                    }
-                }
-                if (dish.missing.isNotEmpty()) {
+            if (dish.missing.isNotEmpty()) {
+                // The card itself opens the video and the recipe; only the substitution keeps a button.
+                Spacer(Modifier.weight(0.05f))
+                VerticalDivider(thickness = 1.dp, color = GreenGray, modifier = Modifier.heightIn(min = CardImageSize))
+                Column(
+                    Modifier.width(72.dp).heightIn(min = CardImageSize),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     CardAction(
                         R.drawable.ic_swap,
                         "대체",
@@ -306,6 +279,8 @@ private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onRecip
                         onAdapt
                     )
                 }
+            } else {
+                Spacer(Modifier.width(12.dp))
             }
         }
     }

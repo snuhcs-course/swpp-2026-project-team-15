@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -58,10 +59,16 @@ import com.example.mylittlechef.domain.DishVideo
 import com.example.mylittlechef.ui.components.IngredientBadge
 import com.example.mylittlechef.viewmodel.AdaptUiState
 import com.example.mylittlechef.viewmodel.DishSheetMode
+import com.example.mylittlechef.viewmodel.RecipeUiState
+import com.example.mylittlechef.viewmodel.ReviseUiState
 import com.example.mylittlechef.viewmodel.VideoUiState
 
-/** One dish in detail: the one-line reason, then the videos (searched when the sheet opens) and the AI substitution answer (the tapped one first). */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+/**
+ * One dish on one screen. With a stored recipe: the video the recipe was written from plays first,
+ * the recipe follows, then the other videos (picking one only swaps the player). Without a recipe:
+ * the videos. The AI substitution answer comes first when the card's substitution button opened it.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DishDetailSheet(
     dish: Dish,
@@ -69,18 +76,29 @@ fun DishDetailSheet(
     fridgeNames: List<String>,
     videos: VideoUiState?,
     onLoadVideos: () -> Unit,
+    recipe: RecipeUiState?,
+    revision: ReviseUiState?,
+    onRetryRecipe: () -> Unit,
+    onRevise: () -> Unit,
     adapt: AdaptUiState?,
     onAdapt: () -> Unit,
     onDismissAdapt: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    var playingId by rememberSaveable(dish.id) { mutableStateOf<String?>(null) }
-    val playing = (videos as? VideoUiState.Success)?.videos?.firstOrNull { it.videoId == playingId }
+    val stored = (recipe as? RecipeUiState.Success)?.recipe
+    val listed = (videos as? VideoUiState.Success)?.videos.orEmpty()
+    var picked by rememberSaveable(dish.id) { mutableStateOf<String?>(null) }
+    val playingId = picked ?: stored?.videoId
+    val playing = listed.firstOrNull { it.videoId == playingId }
+        ?: playingId?.let { DishVideo(it, stored?.videoTitle.orEmpty(), stored?.videoChannel.orEmpty(), null) }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ) {
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 16.dp)) {
+        Column(
+            Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 16.dp)
+                .testTag("dish-sheet")
+        ) {
             Text(dish.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
             if (dish.reason.isNotBlank()) {
                 Spacer(Modifier.height(4.dp))
@@ -91,13 +109,35 @@ fun DishDetailSheet(
             if (mode == DishSheetMode.ADAPT && showAdapt) {
                 AdaptSection(dish, fridgeNames, adapt, onAdapt, onDismissAdapt)
                 Spacer(Modifier.height(16.dp))
-                VideoSection(dish, videos, onLoadVideos, playing, playingId, onPlay = { playingId = it }, onClose = { playingId = null })
-            } else {
-                VideoSection(dish, videos, onLoadVideos, playing, playingId, onPlay = { playingId = it }, onClose = { playingId = null })
-                if (showAdapt) {
-                    Spacer(Modifier.height(16.dp))
-                    AdaptSection(dish, fridgeNames, adapt, onAdapt, onDismissAdapt)
+            }
+            if (playing != null) {
+                Player(playing, onClose = if (dish.hasRecipe) null else ({ picked = null }))
+                if (stored != null && playing.videoId != stored.videoId) {
+                    val title = stored.videoTitle ?: "다른 영상"
+                    Text(
+                        "아래 레시피는 ‘$title’ 영상 기준이에요.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    TextButton(onClick = { picked = null }) { Text("레시피 영상으로 돌아가기") }
                 }
+                Spacer(Modifier.height(12.dp))
+            }
+            if (dish.hasRecipe) {
+                RecipeSection(recipe, revision, onRetryRecipe, onRevise)
+                Spacer(Modifier.height(20.dp))
+            }
+            VideoSection(
+                dish,
+                videos,
+                onLoadVideos,
+                title = if (dish.hasRecipe) "다른 영상" else "영상",
+                playingId = playing?.videoId,
+                onPlay = { picked = it }
+            )
+            if (mode != DishSheetMode.ADAPT && showAdapt) {
+                Spacer(Modifier.height(16.dp))
+                AdaptSection(dish, fridgeNames, adapt, onAdapt, onDismissAdapt)
             }
             Spacer(Modifier.height(4.dp))
             Attribution()
@@ -105,41 +145,43 @@ fun DishDetailSheet(
     }
 }
 
+/** The in-app player with its fallback notice and a link to YouTube; [onClose] is null when the player stays. */
 @OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Player(video: DishVideo, onClose: (() -> Unit)?) {
+    val context = LocalContext.current
+    var failed by remember(video.videoId) { mutableStateOf(false) }
+    if (failed) {
+        Text(
+            "이 영상은 앱에서 재생할 수 없어요. YouTube에서 열어 보세요.",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+        )
+    } else {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            YouTubePlayer(video.videoId, Modifier.widthIn(max = 480.dp), onError = { failed = true })
+        }
+    }
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        if (onClose != null) TextButton(onClick = onClose) { Text("재생 닫기") }
+        OutlinedButton(onClick = { openLink(context, DishLinks.watchUrl(video.videoId)) }) {
+            Text("YouTube에서 열기")
+        }
+    }
+}
+
 @Composable
 private fun VideoSection(
     dish: Dish,
     videos: VideoUiState?,
     onRetry: () -> Unit,
-    playing: DishVideo?,
+    title: String,
     playingId: String?,
-    onPlay: (String) -> Unit,
-    onClose: () -> Unit
+    onPlay: (String) -> Unit
 ) {
     val context = LocalContext.current
-    Text("영상", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+    Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
     Spacer(Modifier.height(8.dp))
-    if (playing != null) {
-        var failed by remember(playing.videoId) { mutableStateOf(false) }
-        if (failed) {
-            Text(
-                "이 영상은 앱에서 재생할 수 없어요. YouTube에서 열어 보세요.",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-            )
-        } else {
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                YouTubePlayer(playing.videoId, Modifier.widthIn(max = 480.dp), onError = { failed = true })
-            }
-        }
-        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            TextButton(onClick = onClose) { Text("재생 닫기") }
-            OutlinedButton(onClick = { openLink(context, DishLinks.watchUrl(playing.videoId)) }) {
-                Text("YouTube에서 열기")
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-    }
     when (videos) {
         null, VideoUiState.Loading -> Row(
             Modifier.semantics { liveRegion = LiveRegionMode.Polite },

@@ -13,20 +13,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,7 +41,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mylittlechef.R
 import com.example.mylittlechef.domain.Availability
-import com.example.mylittlechef.domain.Dish
 import com.example.mylittlechef.domain.DishRecipe
 import com.example.mylittlechef.domain.RecipeChange
 import com.example.mylittlechef.domain.RecipeStep
@@ -72,34 +66,17 @@ internal fun availabilityLabel(availability: Availability): String = when (avail
     Availability.UNAVAILABLE -> "없음"
 }
 
-/** The recipe of one dish, then the same recipe revised to the fridge (original and revised side by side as two tabs). */
-@OptIn(ExperimentalMaterial3Api::class)
+/** The recipe part of the dish screen: loading, error or the stored recipe with its revision. */
 @Composable
-fun DishRecipeSheet(
-    dish: Dish,
-    recipe: RecipeUiState?,
-    revision: ReviseUiState?,
-    onRetryRecipe: () -> Unit,
-    onRevise: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ) {
-        Column(
-            Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 16.dp)
-                .testTag("recipe-sheet"),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(dish.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
-            when (recipe) {
-                null, RecipeUiState.Loading -> Loading("레시피를 불러오고 있어요...")
-                is RecipeUiState.Error -> ErrorBox(recipe.message, "다시 시도", onRetryRecipe, "recipe-retry")
-                is RecipeUiState.Success -> RecipeContent(recipe.recipe, revision, onRevise)
-            }
-            Text(NOTICE, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+fun RecipeSection(recipe: RecipeUiState?, revision: ReviseUiState?, onRetryRecipe: () -> Unit, onRevise: () -> Unit) {
+    Column(Modifier.fillMaxWidth().testTag("recipe-section"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("레시피", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        when (recipe) {
+            null, RecipeUiState.Loading -> Loading("레시피를 불러오고 있어요...")
+            is RecipeUiState.Error -> ErrorBox(recipe.message, "다시 시도", onRetryRecipe, "recipe-retry")
+            is RecipeUiState.Success -> RecipeContent(recipe.recipe, revision, onRevise)
         }
+        Text(NOTICE, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

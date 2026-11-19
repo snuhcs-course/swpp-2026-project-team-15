@@ -14,6 +14,8 @@ data class RecipeStep(val n: Int, val text: String)
 data class DishRecipe(
     val dishId: String,
     val name: String,
+    /** The video the recipe was written from; the dish screen plays it first. */
+    val videoId: String? = null,
     val videoTitle: String?,
     val videoChannel: String?,
     val servings: Int?,
@@ -69,6 +71,7 @@ fun RecipeViewResponse.toDishRecipe(): DishRecipe? {
     return DishRecipe(
         dishId = id,
         name = name.orEmpty(),
+        videoId = source.video?.id?.takeIf { it.isNotBlank() },
         videoTitle = source.video?.title?.takeIf { it.isNotBlank() },
         videoChannel = source.video?.channel?.takeIf { it.isNotBlank() },
         servings = source.servings,
