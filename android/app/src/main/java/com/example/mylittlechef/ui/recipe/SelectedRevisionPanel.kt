@@ -2,6 +2,9 @@
 package com.example.mylittlechef.ui.recipe
 
 import androidx.compose.foundation.background
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -22,7 +25,7 @@ fun SelectedRevisionPanel(state: SelectedRevisionState, showingSuggestion: Boole
     onOriginal: () -> Unit, onReview: () -> Unit, onIgnore: () -> Unit, onReload: () -> Unit) {
     var confirmOmission by remember { mutableStateOf(false) }
     var changesExpanded by rememberSaveable(state.original?.id) { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.animateContentSize(tween(160)), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(if(showingSuggestion && state.status == RevisionStatus.REVISED) "AI 수정 제안" else "원본 레시피",
             style=MaterialTheme.typography.titleMedium)
         Text("보유 재료를 고려해 이 요리의 재료와 조리법을 조정해요.",style=MaterialTheme.typography.bodyMedium)
@@ -65,7 +68,7 @@ fun SelectedRevisionPanel(state: SelectedRevisionState, showingSuggestion: Boole
                     Text("조리 시간은 원본 기준이에요.",style=MaterialTheme.typography.bodySmall)
                 }
             }
-            RevisionStatus.IDLE -> Button(onClick=onRequest,modifier=Modifier.heightIn(min=48.dp)) { Text("AI 제안 보기") }
+            RevisionStatus.IDLE -> Button(onClick=onRequest,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp),shape=RoundedCornerShape(13.dp)) { Text("내 재료로 바꾸기") }
             else -> {
                 val message=if(state.mode == "mock" && state.message.orEmpty().startsWith("MOCK ONLY"))
                     "샘플 응답이므로 수정 제안을 만들지 않았어요." else state.message.orEmpty()

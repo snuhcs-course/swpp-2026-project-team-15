@@ -1,3 +1,4 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.ui.profile
 
@@ -20,7 +21,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.IconButton
+import com.example.mylittlechef.ui.onboarding.OnboardingChoiceGrid
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,7 +54,7 @@ fun EditNicknameScreen(
     onSaveClick: () -> Unit
 )
 {
-    var nickname by remember { mutableStateOf(user.nickname) }
+    var nickname by rememberSaveable { mutableStateOf(user.nickname) }
 
     EditProfileScaffold(
         onBackClick = onBackClick,
@@ -65,7 +71,7 @@ fun EditNicknameScreen(
                 .padding(
                     start = 30.dp,
                     end = 30.dp,
-                    top = 50.dp
+                    top = 24.dp
                 ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         )
@@ -87,11 +93,9 @@ fun EditNicknameScreen(
                 modifier = Modifier
                     .fillMaxWidth(),
                 trailingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_xcircle),
-                        contentDescription = "clear nickname",
-                        tint = Color.Unspecified
-                    )
+                    if(nickname.isNotEmpty()) IconButton(onClick = { nickname = "" }) {
+                        Icon(painterResource(R.drawable.ic_ui_close), "별명 지우기")
+                    }
                 }
             )
         }
@@ -106,7 +110,7 @@ fun EditUtensilScreen(
     onSaveClick: () -> Unit
 )
 {
-    var utensils by remember { mutableStateOf(user.utensils) }
+    var utensils by rememberSaveable { mutableStateOf(user.utensils) }
 
     EditProfileScaffold(
         onBackClick = onBackClick,
@@ -117,36 +121,8 @@ fun EditUtensilScreen(
         title = "조리 도구 설정"
     )
     {
-        FlowRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = 30.dp,
-                    end = 30.dp,
-                    top = 50.dp
-                ),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        )
-        {
-            Preset.utensils.forEach { utensil ->
-                ToggleButton(
-                    text = utensil,
-                    selected = utensil in utensils,
-                    buttonColorOn = DeepGreen,
-                    buttonColorOff = Gray,
-                    textColorOn = MaterialTheme.colorScheme.onPrimary,
-                    textColorOff = MaterialTheme.colorScheme.onSurface,
-                    onClick = {
-                        if (utensil in utensils) {
-                            utensils -= utensil
-                        }
-                        else {
-                            utensils += utensil
-                        }
-                    }
-                )
-            }
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp)) {
+            OnboardingChoiceGrid(Preset.utensils, utensils, { utensils = it })
         }
     }
 }
@@ -158,7 +134,7 @@ fun EditAllergyScreen(
     onSaveClick: () -> Unit
 )
 {
-    var allergies by remember { mutableStateOf(user.allergies) }
+    var allergies by rememberSaveable { mutableStateOf(user.allergies) }
 
     EditProfileScaffold(
         onBackClick = onBackClick,
@@ -169,36 +145,8 @@ fun EditAllergyScreen(
         title = "알레르기 설정"
     )
     {
-        FlowRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = 30.dp,
-                    end = 30.dp,
-                    top = 50.dp
-                ),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        )
-        {
-            Preset.allergies.forEach { allergy ->
-                ToggleButton(
-                    text = allergy,
-                    selected = allergy in allergies,
-                    buttonColorOn = DeepGreen,
-                    buttonColorOff = Gray,
-                    textColorOn = MaterialTheme.colorScheme.onPrimary,
-                    textColorOff = MaterialTheme.colorScheme.onSurface,
-                    onClick = {
-                        if (allergy in allergies) {
-                            allergies -= allergy
-                        }
-                        else {
-                            allergies += allergy
-                        }
-                    }
-                )
-            }
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp)) {
+            OnboardingChoiceGrid(Preset.allergies, allergies, { allergies = it })
         }
     }
 }
@@ -250,7 +198,7 @@ fun EditProfileScaffold(
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .padding(
-                        bottom = 36.dp
+                        bottom = 12.dp
                     ),
                 horizontalAlignment = Alignment.CenterHorizontally
             )

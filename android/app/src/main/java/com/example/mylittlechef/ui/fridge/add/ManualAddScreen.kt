@@ -1,3 +1,4 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // AI-generated initial manual-entry scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Ingredient name completion added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
@@ -13,6 +14,7 @@ import androidx.activity.compose.BackHandler
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
@@ -58,6 +60,11 @@ private fun ManualAddContent(
 )
 {
     val save = rememberIngredientSave(fridge, onSaveClick)
+    val sheet = LocalEntrySheet.current
+    // Read snapshots in this composition, not inside SideEffect, so typing updates the guard.
+    val hasDraft = editor.ingredients.any { it.name.isNotBlank() }
+    val saveBusy = save.busy
+    SideEffect { sheet?.busy = saveBusy; sheet?.draft = hasDraft }
     BackHandler(enabled = save.busy) { }
     AddFlowScaffold(
         onBackClick = { if (!save.busy) onBackClick() },

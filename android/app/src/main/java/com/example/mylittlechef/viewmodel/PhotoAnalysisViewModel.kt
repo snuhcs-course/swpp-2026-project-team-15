@@ -1,3 +1,4 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // AI-assisted HE photo review, 2026-11-09; manual review pending.
 package com.example.mylittlechef.viewmodel
 
@@ -29,6 +30,13 @@ class PhotoAnalysisViewModel(private val load: suspend (String) -> PhotoAnalysis
     fun confirm(value: Boolean) {
         if (value) editor.finishEdit()
         confirmedRows = if (value) editor.ingredients.toList() else null
+    }
+
+    private var entryToken: String? = null
+    /** Rotation retains the token; deliberately reopening the same photo uses a new token. */
+    fun startEntry(value: String?, token: String) {
+        if (entryToken != token) { entryToken = token; started = false }
+        start(value)
     }
 
     fun start(value: String?) {

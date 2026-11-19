@@ -1,7 +1,10 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // Onboarding scaffold adapted and reviewed by Ahyoon Choi from an earlier Claude draft.
 // Responsive controls updated with Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.ui.onboarding
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -24,7 +27,8 @@ fun OnboardingScreen(user: UserViewModel, fridge: FridgeViewModel, onFinish: () 
     var selectedPantryItems by rememberSaveable { mutableStateOf(emptyList<String>()) }
     val onNext = { stepIndex += 1 }
     val onBack = { stepIndex -= 1 }
-    when (stepIndex) {
+    Crossfade(targetState=stepIndex, animationSpec=tween(160), label="onboarding-step") { step ->
+    when (step) {
         1 -> OnboardingNickname(user, onNext)
         2 -> OnboardingUtensil(user, onNext, onBack)
         3 -> OnboardingAllergy(user, onNext, onBack)
@@ -32,6 +36,7 @@ fun OnboardingScreen(user: UserViewModel, fridge: FridgeViewModel, onFinish: () 
         5 -> OnboardingDone(user, {
             fridge.updatePantryItems(selectedPantryItems, onSaved = onFinish)
         }, fridge.pantryError)
+    }
     }
 }
 
@@ -41,7 +46,7 @@ fun OnboardingNickname(user: UserViewModel, onNext: () -> Unit) {
     OnboardingScaffold(
         backActive = false, jumpActive = false, onBackClick = {},
         onClick = { user.updateNickname(nickname); onNext() }, onJumpClick = {},
-        title = "환영해요!\n어떻게 불러드릴까요?", buttonText = "다음",
+        centerForm = true, title = "반가워요!\n어떻게 불러드릴까요?", buttonText = "다음",
         buttonColor = MaterialTheme.colorScheme.primary,
         buttonTextColor = MaterialTheme.colorScheme.onPrimary
     ) {
@@ -49,8 +54,8 @@ fun OnboardingNickname(user: UserViewModel, onNext: () -> Unit) {
             value = nickname, onValueChange = { nickname = it },
             modifier = Modifier.fillMaxWidth(), label = { Text("별명") }, singleLine = true,
             trailingIcon = {
-                IconButton(onClick = { nickname = "" }) {
-                    Icon(painterResource(R.drawable.ic_xcircle), "별명 지우기")
+                if(nickname.isNotEmpty()) IconButton(onClick = { nickname = "" }) {
+                    Icon(painterResource(R.drawable.ic_ui_close), "별명 지우기")
                 }
             }
         )
@@ -123,6 +128,7 @@ fun OnboardingScaffold(
     buttonText: String,
     buttonColor: Color,
     buttonTextColor: Color,
+    centerForm: Boolean = false,
     content: @Composable BoxScope.() -> Unit
 ) {
     Scaffold(
@@ -138,7 +144,7 @@ fun OnboardingScaffold(
         },
         bottomBar = {
             Column(
-                Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
+                Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Button(
@@ -153,18 +159,21 @@ fun OnboardingScaffold(
         }
     ) { insets ->
         BoxWithConstraints(Modifier.padding(insets).fillMaxSize()) {
+            val availableHeight=maxHeight
             // Bottom alignment brings short forms into thumb reach; overflow remains scrollable.
             Column(
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-                    .heightIn(min = maxHeight).padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.Bottom
+                    .heightIn(min = maxHeight).padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalArrangement = if (centerForm) Arrangement.Center else Arrangement.Bottom
             ) {
+                if (centerForm) Spacer(Modifier.height(availableHeight * .22f))
                 if (!title.isNullOrBlank()) {
                     Text(title, style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onBackground)
                     Spacer(Modifier.height(12.dp))
                 }
                 Box(Modifier.fillMaxWidth(), content = content)
+                Spacer(Modifier.height(if (centerForm) 0.dp else 12.dp))
             }
         }
     }

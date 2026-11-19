@@ -17,24 +17,24 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFA5D89A), onPrimary = Color(0xFF12320F), tertiary=Color(0xFFD7B9EA),
+    primary = Color(0xFFB6D6A5), onPrimary = Color(0xFF12320F), tertiary=Color(0xFFD7B9EA),
     primaryContainer = Color(0xFF284A24), onPrimaryContainer = Color(0xFFD0EDC7),
     secondary = Color(0xFFB7CEAC), onSecondary = Color(0xFF253420),
-    background = Color(0xFF121710), onBackground = Color(0xFFE3E9DE),
-    surface = Color(0xFF121710), onSurface = Color(0xFFE3E9DE),
-    surfaceVariant = Color(0xFF283025), onSurfaceVariant = Color(0xFFC1CAB9),
-    outline = Color(0xFF899580), outlineVariant = Color(0xFF424D3D),
+    background = Color(0xFF18231F), onBackground = Color(0xFFE3E9DE),
+    surface = Color(0xFF18231F), onSurface = Color(0xFFE3E9DE),
+    surfaceVariant = Color(0xFF223129), onSurfaceVariant = Color(0xFFC1CAB9),
+    outline = Color(0xFF899580), outlineVariant = Color(0xFF304137),
     errorContainer = Color(0xFF5B2B25), onErrorContainer = Color(0xFFFFDAD4)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF105E0F), onPrimary = Color.White, tertiary=Color(0xFF70528C),
+    primary = Color(0xFF205A3F), onPrimary = Color.White, tertiary=Color(0xFF70528C),
     primaryContainer = Color(0xFFD8EED1), onPrimaryContainer = Color(0xFF163412),
     secondary = Color(0xFF52634A), onSecondary = Color.White,
-    background = Color(0xFFFCFDF8), onBackground = Color(0xFF192017),
-    surface = Color(0xFFFCFDF8), onSurface = Color(0xFF192017),
-    surfaceVariant = Color(0xFFF0F2EB), onSurfaceVariant = Color(0xFF485342),
-    outline = Color(0xFF737F6B), outlineVariant = Color(0xFFC5CDBD),
+    background = Color(0xFFFFFFFF), onBackground = Color(0xFF1A3028),
+    surface = Color(0xFFFFFFFF), onSurface = Color(0xFF1A3028),
+    surfaceVariant = Color(0xFFF5F7F2), onSurfaceVariant = Color(0xFF485342),
+    outline = Color(0xFF737F6B), outlineVariant = Color(0xFFE3E9E1),
     errorContainer = Color(0xFFF9E7E2), onErrorContainer = Color(0xFF8A3D32)
 
     /* Other default colors to override

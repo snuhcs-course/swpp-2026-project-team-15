@@ -1,7 +1,11 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // HE photo review assisted by Codex, 2026-11-09; manual review pending.
 package com.example.mylittlechef.ui.fridge.add
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -40,7 +44,8 @@ fun AnalyzeScreen(
     onSaveClick: () -> Unit,
     imageUri: String? = null,
     ingredientCatalog: IngredientCatalogViewModel = viewModel(),
-    reviewModel: PhotoAnalysisViewModel? = null
+    reviewModel: PhotoAnalysisViewModel? = null,
+    entryToken: String? = null
 ) {
     val context = LocalContext.current.applicationContext
     val factory = remember(context) {
@@ -53,9 +58,14 @@ fun AnalyzeScreen(
         }
     }
     val review = reviewModel ?: viewModel<PhotoAnalysisViewModel>(factory = factory)
-    LaunchedEffect(review, imageUri) { review.start(imageUri) }
+    LaunchedEffect(review, imageUri, entryToken) { if(entryToken==null) review.start(imageUri) else review.startEntry(imageUri, entryToken) }
     LaunchedEffect(ingredientCatalog) { ingredientCatalog.load() }
     val save = rememberIngredientSave(fridge, onSaveClick)
+    val sheet = LocalEntrySheet.current
+    // Read snapshots in this composition, not inside SideEffect, so typing updates the guard.
+    val hasDraft = review.editor.ingredients.any { it.name.isNotBlank() }
+    val saveBusy = save.busy
+    SideEffect { sheet?.busy = saveBusy; sheet?.draft = hasDraft }
     BackHandler(enabled = save.busy) { }
     val state = review.state
     val ready = (state as? PhotoAnalysisState.Ready)?.result
@@ -66,7 +76,7 @@ fun AnalyzeScreen(
 
     AddFlowScaffold(
         modifier = modifier,
-        onBackClick = { leave(onBackClick) },
+        onBackClick = { if(sheet!=null) { if(!save.busy) onBackClick() } else leave(onBackClick) },
         title = "인식 결과 확인",
         bottomContent = {
             if (ready != null) {
@@ -143,10 +153,18 @@ private fun RecoveryMessage(title: String, message: String) {
 @Composable
 private fun PhotoPreview(uris: List<String>, height: androidx.compose.ui.unit.Dp) {
     var selected by remember(uris) { mutableStateOf(0) }
+    var enlarged by remember { mutableStateOf(false) }
     val uri = uris.getOrNull(selected)
     var failed by remember(uri) { mutableStateOf(uri == null) }
+    if(enlarged && uri!=null) Dialog(onDismissRequest={enlarged=false}, properties=DialogProperties(usePlatformDefaultWidth=false)) {
+        Surface { Column(Modifier.fillMaxSize()) {
+            TextButton(onClick={enlarged=false}) { Text("사진 닫기") }
+            AsyncImage(model=uri.toUri(),contentDescription="확대 원본 사진",modifier=Modifier.fillMaxWidth().weight(1f),contentScale=ContentScale.Fit)
+        } }
+    }
+
     Box(Modifier.fillMaxWidth().height(height).background(MaterialTheme.colorScheme.surfaceVariant)
-        .testTag("review-photo"), contentAlignment = Alignment.Center) {
+        .testTag("review-photo").clickable(enabled=uri!=null) { enlarged=true }, contentAlignment = Alignment.Center) {
         if (uri != null) AsyncImage(model = uri.toUri(), contentDescription = "원본 사진",
             modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit,
             onError = { failed = true })
