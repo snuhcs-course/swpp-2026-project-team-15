@@ -73,7 +73,8 @@ def service(catalog, *answers) -> tuple[DishService, FakeLLM]:
 
 
 def revised(catalog, data, ingredients=("밥", "김치")):
-    svc, _ = service(catalog, data)
+    """The same answer is given again if the reviser asks once more after a rejection."""
+    svc, _ = service(catalog, data, data)
     return svc.reviser.revise("kimchi-fried-rice", list(ingredients))
 
 
@@ -209,7 +210,7 @@ def test_a_main_ingredient_replaced_by_an_owned_one_is_accepted(catalog):
         ],
     }
     recipe = SourceRecipe.model_validate({**RECIPE, "dish_id": "omurice"})
-    reviser = Reviser(catalog, catalog, FakeLLM(data), RecipeStore({"omurice": recipe}))
+    reviser = Reviser(catalog, catalog, FakeLLM(data, data), RecipeStore({"omurice": recipe}))
     assert reviser.revise("omurice", ["밥", "깍두기"]).status == "revised"
 
 
@@ -239,7 +240,7 @@ def test_a_removed_one_character_ingredient_in_a_step_fails(catalog):
             {"reason": "김이 없어요.", "ingredient_refs": [6], "step_refs": []},
         ],
     }
-    reviser = Reviser(catalog, catalog, FakeLLM(data), RecipeStore({"omurice": recipe}))
+    reviser = Reviser(catalog, catalog, FakeLLM(data, data), RecipeStore({"omurice": recipe}))
     result = reviser.revise("omurice", ["밥", "김치"])
     assert result.status == "failed" and result.error.code == "mentions_unavailable"
 
@@ -315,3 +316,19 @@ def test_revise_prompt_tells_the_model_to_keep_owned_and_assumed_rows():
     from app.dishes.prompts import REVISE_SYSTEM
 
     assert "Keep every owned or assumed source ingredient" in REVISE_SYSTEM
+
+
+def test_a_rejected_answer_gets_one_more_call_with_the_check_message(catalog):
+    bad = {**GOOD, "steps": ["대파를 송송 썰어 볶는다.", "밥을 넣는다."]}
+    svc, llm = service(catalog, bad, GOOD)
+    result = svc.reviser.revise("kimchi-fried-rice", ["밥", "김치"])
+    assert result.status == "revised" and len(llm.calls) == 2
+    assert "rejected by a check" in llm.users[1]
+
+
+def test_a_second_rejected_answer_is_a_failure_and_no_third_call_is_made(catalog):
+    bad = {**GOOD, "steps": ["대파를 송송 썰어 볶는다.", "밥을 넣는다."]}
+    svc, llm = service(catalog, bad, bad, GOOD)
+    result = svc.reviser.revise("kimchi-fried-rice", ["밥", "김치"])
+    assert result.status == "failed" and result.error.code == "mentions_unavailable"
+    assert len(llm.calls) == 2

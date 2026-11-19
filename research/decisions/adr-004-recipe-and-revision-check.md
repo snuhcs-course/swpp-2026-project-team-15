@@ -21,10 +21,12 @@ The earlier version revised a recipe-database recipe to the user's fridge. This 
 - The main-ingredient rule trusts the `role` field, which an AI wrote when it structured the captions. A wrong role (potato as the main ingredient of curry) makes the server refuse a recipe a person might accept.
 - One-character names inside compounds in a step (볶음밥, 흰밥) are not seen; answers that mention an omitted ingredient only to say it is left out are still rejected.
 - Accuracy of the stored recipes themselves is not measured.
+- Round 3 (2026-11-19, 124 recipes built from the videos, fridge = the dish's key ingredients): recipe rows are matched with a reviewed name table (`server/app/dishes/recipe_names.json`) instead of the dish list's stand-ins, and a rejected answer gets ONE more call that carries the check's message; the second answer is checked the same way. Answers the user could not use (rejected by the check, or cut by the provider) fell from 49 to 28 of 124 (names 49 to 41, the second call 41 to 28; cut answers rose from 2 to 6 because a second answer can be cut too). Of the 9 answers the second call turned into a revised recipe, a hand reading found no step that uses a missing ingredient, three optional garnish mentions aside. The median wait rose from 2.3 to 2.8 s and the slowest from 8.7 to 13.5 s.
+- About one revised recipe in five still has a step that refers to something the revised recipe does not have (5 of 24 read by hand), which the check cannot see.
 
 ## Not now
 
-- No second model call to verify the first.
-- No automatic repair of a rejected answer.
+- No second model call to verify the first (the extra call in round 3 only answers again after the rule-based check rejected an answer).
+- No automatic repair of a rejected answer by the server.
 - No use of recipe text outside the app (no export, no search index).
 - The legal status of building recipes from captions is open and is not decided by this ADR.

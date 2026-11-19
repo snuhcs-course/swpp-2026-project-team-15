@@ -30,9 +30,11 @@ class FakeLLM:
     def __init__(self, *answers):
         self.answers = list(answers)
         self.calls = []
+        self.users: list[str] = []
 
     def complete(self, system, user, name, schema, max_tokens=None):
-        self.calls.append((name, json.loads(user)))
+        self.users.append(user)
+        self.calls.append((name, json.JSONDecoder().raw_decode(user)[0]))
         answer = self.answers.pop(0)
         if isinstance(answer, Exception):
             raise answer

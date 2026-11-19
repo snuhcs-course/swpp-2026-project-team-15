@@ -22,7 +22,8 @@
   "budget": {
     "model_calls": 700,
     "usd": 1.0,
-    "plan": "N0..N2 at most 124 calls each; N3 at most 124 plus 124 re-asks; judge 24 + up to 4 x 124"
+    "plan": "N0..N2 at most 124 calls each; N3 at most 124 plus 124 re-asks; judge 24 + up to 4 x 124",
+    "model_calls_amended": 1200
   },
   "limits": [
     "one run per variant at temperature 0",
@@ -35,6 +36,11 @@
       "date": "2026-11-19",
       "before_calls": "yes, before the N3 calls",
       "text": "N2's rule changed no outcome count (N1 vs N2: 9 failed->revised, 10 revised->failed). Because N2 may not be adopted, N3 is run both as registered (N2 + re-ask) and as N3a (N1 + re-ask). The re-ask adds to the user message: 'Your previous answer was rejected by a check: <violation message>. Answer again and follow every rule.' Every attempt's raw answer is stored. 32 diagnostic calls (the 16 bad_reference and 16 mentions_unavailable cases of N1 re-run with raw answers kept, data/dish-revision/round3-diagnosis.json) showed that bad_reference answers cite rows or steps beyond the source (numbers of new rows or of the revised steps, or 0). Added an offline metric on the stored N3/N3a answers: answers rejected only for out-of-range references that pass every other rule once those references are dropped. Budget unchanged."
+    },
+    {
+      "date": "2026-11-19",
+      "before_calls": "no: written after the call count had passed the registered 700 (N0-N2 about 350, 32 diagnostic, the N3/N3a runs, 24 + 188 judge calls)",
+      "text": "The registered call cap (700) did not count the diagnostic calls, the second re-ask variant or the judge on five variants; it was passed before this note. Spending stayed far below the dollar cap (about $0.25 of $1.0 by then). Cap raised to 1,200 calls for the remaining judge calls on N3/N3a; the overrun is reported in the README."
     }
   ]
 }

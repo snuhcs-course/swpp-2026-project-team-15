@@ -3,16 +3,16 @@
 
 The server decides what is available (owned, a staple assumed at home, or unavailable) and refuses
 without a model call when an ingredient the dish is named after is unavailable; otherwise the model
-rewrites the recipe in ONE call and the checks in revision_check.py reject any result that breaks a
-rule. An answer that drops a main ingredient without an owned replacement is returned as a refusal;
-any other broken answer is a failure and is never repaired silently. Measured in
-research/experiments/dish_revision (round 2)."""
+rewrites the recipe and the checks in revision_check.py reject any result that breaks a rule; a
+rejected answer gets one more call with the check's message. An answer that drops a main ingredient
+without an owned replacement is returned as a refusal; any other broken answer is a failure and is
+never repaired silently. Measured in research/experiments/dish_revision (rounds 2 and 3)."""
 
 import logging
 
 from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError
 from app.dishes.korean import attach
-from app.dishes.prompts import ModelRequest, revise_request
+from app.dishes.prompts import ModelRequest, reask_request, revise_request
 from app.dishes.revision_check import (
     RefusalNeeded,
     Violation,
@@ -97,8 +97,15 @@ class Reviser:
         ingredients: list[str],
         base: dict,
     ) -> ReviseResponse:
-        """One model call, checked."""
+        """A checked answer. When the check rejects it, the model is asked once more with the
+        check's message; the second answer is checked the same way and is never repaired."""
         data = self.llm.complete(request.system, request.user, request.name, request.schema)
+        response, violation = self._judge(data, recipe, status, ingredients, base)
+        if violation is None:
+            return response
+        log.info("dish revision: asking again after code=%s", violation.code)
+        again = reask_request(request, violation.message)
+        data = self.llm.complete(again.system, again.user, again.name, again.schema)
         return self._judge(data, recipe, status, ingredients, base)[0]
 
     def _judge(

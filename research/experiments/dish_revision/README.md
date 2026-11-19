@@ -109,3 +109,41 @@ Model calls: about 150 (two runs of the 36 synthetic + 1 demo case, then 20 serv
 | | keep | 12 | 3 | 4 (mentions_unavailable 3, unavailable_ingredient 1) | 1 provider error (cut-off answer) |
 
 Interpretation: the sentence removes the failure seen on the phone, and neither set shows a cost of it; the case-by-case outcomes flip in both directions between the two runs (7 of 36 synthetic, 8 of 20 served), so run-to-run variation is larger than any difference between the variants and the sets cannot rank them. The synthetic fixtures have no assumed rows, and in the served sample the targeted failure (unexplained_change) did not occur in either variant, so this failure is rarer than the phone case suggested. Adopted: `keep` (judgement: removes an observed failure, no measured harm). Bigger finding: with only the main ingredients owned, about a quarter of served recipes end in a failed answer, mostly a step that still mentions an omitted ingredient (`mentions_unavailable`); this is not addressed here.
+
+## Round 3: recipe names, card versus recipe, references to removed steps (2026-11-19)
+
+Trigger (phone check): (1) rows written from the videos (꽃소금, 진간장) did not match fridge names (소금, 간장), so the recipe showed them as missing and adapting 고추장찌개 failed every time, and 쪽파 showed as owned when only 대파 was in the fridge; (2) a card said nothing was missing while its recipe showed several missing rows; (3) an adapted recipe still said to add a sauce whose step it had removed. Design before any call: [criteria_round3.json](criteria_round3.json) (commit `29afd26`), amendments recorded there. Inputs: all 124 served recipes; the fridge is the dish's key ingredients, the situation in which the card says nothing is missing. Model `google/gemini-2.5-flash-lite`, temperature 0, one run per variant; judge `google/gemini-2.5-flash`.
+
+**Names, without any call.** A reviewed table (`server/app/dishes/recipe_names.json`, 121 same-ingredient names and 7 general names covered by one kind; every name in the stored recipes was read) replaces the dish list's stand-ins for recipe rows. A stand-in is no longer ownership: 쪽파 with only 대파 is now missing, so the revision replaces it and says so.
+
+| | dish list (served) | name table |
+|---|---|---|
+| Recipe rows shown missing (all 124 recipes) | 621 | 480 |
+| by role: main / secondary / seasoning | 58 / 246 / 317 | 35 / 243 / 202 |
+| Recipes with no row missing | 2 | 7 |
+| Recipes with a main row missing although the card counts nothing missing | 52 | 32 |
+
+The remaining gap between card and recipe is real: the card counts the dish's key ingredients, the recipe lists every row of one video, which uses 3-4 more items than the key ingredients for a typical dish (onion, chili, mirin, oyster sauce). In 32 recipes the video's version has a main ingredient the dish list does not count (pork in 고추장찌개, 불닭볶음면 in 치즈라면, rigatoni in 크림파스타, 곤약밥 in 계란주먹밥, sausage in 햄볶음밥).
+
+**Adapting, one call per recipe** (N0 served, N1 name table, N2 N1 + a rule about references to removed steps, N3a N1 + one more call with the check's message after a rejected answer, N3 N2 + that call):
+
+| | N0 | N1 | N2 | N3a | N3 |
+|---|---|---|---|---|---|
+| Revised | 56 | 76 | 72 | 85 | 84 |
+| Refused | 19 | 7 | 8 | 11 | 14 |
+| Rejected by the check (codes) | 45 (mentions 22, references 11, unavailable 8, main 2, unexplained 2) | 39 (references 16, mentions 16, unexplained 4, unavailable 3) | 42 | 22 (mentions 14, references 4, unexplained 2, unavailable 2) | 21 |
+| Cut by the provider | 4 | 2 | 2 | 6 | 5 |
+| Model calls / median, 95th pct, max seconds | 120 / 2.3, 4.5, 9.0 | 115 / 2.3, 3.9, 8.7 | 115 / 2.4, 4.5, 8.6 | 154 / 2.8, 8.6, 13.5 | 157 / 2.9, 9.1, 13.5 |
+| Cost | $0.057 | $0.054 | $0.057 | $0.078 | $0.081 |
+
+Paired per recipe: N0 to N1, 18 rejected became revised and 3 went the other way, 8 refusals became rejections and 6 became revisions; N1 to N2, 9 and 10 in the two directions (no difference); N1 to N3a, the first answers were the same, and of the 39 rejected ones the second call revised 9, refused 4 and 4 were cut.
+
+32 diagnostic calls (the rejected N1 answers re-run with the raw answer kept) showed what the check rejects: "references" are change notes that point at a row or step that does not exist in the source (new rows numbered after the source, or 0), and "mentions" are steps that still use an ingredient the user lacks (감자, 버터, 계란 kept in a step after the row was dropped). Dropping only the out-of-range references would have let 3 of the 4 remaining N3a "references" answers through; not adopted, because the second call already handles most of them and the rule stays simple.
+
+**Content the check cannot see.** The judge was compared with my reading of 24 N1 recipes first (labels in `labels_round3.json`): agreement 19 of 24, the judge also flags optional tips and things made in an earlier step (면수, 계란 혼합물). Read on steps only, it found a problem in 17 of 54 (N0), 20 of 69 (N1), 18 of 65 (N2), 26 of 78 (N3a) revised recipes; on the 9 recipes the second call rescued it flagged 7, but reading them by hand found no step that uses a missing ingredient (three optional garnish mentions such as 기호에 따라 실파). The hand labels put the rate at 5 of 24 (about one in five: 밥 or 식용유 used but not listed, 육수 never made, a tomato checked in the pan that no step put there). The judge's count overstates it and cannot rank N1 against N2.
+
+**Adopted (judgement).** The name table (rows and refusals that were artefacts of spelling disappear, 20 more recipes adapted), and the one extra call after a rejected answer (answers the user could not use fell from 41 to 28 of 124 with the same check, at about 0.5 s more in the median and a slower worst case). Not adopted: the reference rule (N2), which changed no outcome. The app's card now says it counts key ingredients and the recipe sheet says it lists every row of the video (app change; needs a new build).
+
+**Open.** About one revised recipe in five still refers to something it does not have, and the check cannot see it; a model judge is not precise enough to act as a check. In 32 recipes the video's main ingredient differs from the dish list, and the main-ingredient rule then refuses with a reason that names it (e.g. 오이 for 참치샐러드, 새우 for 애호박볶음); replacing those recipes with another stored video, or relabelling those rows, is a data decision. Calls: about 1,100 in all (more than the 700 registered: the diagnostic calls, the second re-ask variant and the judge were not counted; recorded as an amendment), about $0.40.
+
+**Limits.** One run per variant; the fridge is exactly the key ingredients; the name table was reviewed by one person and the row roles were written by an AI; the judge was checked on 24 recipes.

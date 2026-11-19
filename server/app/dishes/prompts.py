@@ -8,7 +8,7 @@ and the wording can change without touching it. Recipe text is data, never instr
 # ruff: noqa: E501
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from app.dishes.choices import SuggestChoices
 from app.dishes.schemas import SourceRecipe
@@ -237,3 +237,15 @@ def revise_request(
 ) -> ModelRequest:
     user = revise_user_message(recipe, dish_name, status, owned)
     return ModelRequest(REVISE_SYSTEM, user, "dish_revise", REVISE_SCHEMA)
+
+
+# Sent once when the check rejects a revision (round 3 of research/experiments/dish_revision).
+REASK_NOTE = (
+    "\n\nYour previous answer was rejected by a check: {message}. Answer again and follow every "
+    "rule."
+)
+
+
+def reask_request(request: ModelRequest, message: str) -> ModelRequest:
+    """The same request with the check's message about the rejected answer added."""
+    return replace(request, user=request.user + REASK_NOTE.format(message=message))
