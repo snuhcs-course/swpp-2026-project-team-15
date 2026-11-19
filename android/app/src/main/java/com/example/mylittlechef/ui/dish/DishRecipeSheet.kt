@@ -113,6 +113,7 @@ private fun RecipeContent(recipe: DishRecipe, revision: ReviseUiState?, onRevise
         )
         Changes(done.changes)
     } else {
+        Caption("요리 카드는 핵심 재료만 봐요. 아래는 이 영상 레시피에 쓰인 재료 전부예요.")
         Body(
             lines = recipe.ingredients.map { Line(it.name, it.amount, it.availability == Availability.UNAVAILABLE) },
             servings = recipe.servings,

@@ -251,7 +251,7 @@ private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onRecip
                 Spacer(Modifier.height(10.dp))
                 if (dish.missing.isEmpty()) {
                     Text(
-                        "지금 바로 만들 수 있어요",
+                        "핵심 재료가 다 있어요",
                         style = MaterialTheme.typography.labelMedium,
                         color = DeepGreen,
                         maxLines = 1,
@@ -259,7 +259,7 @@ private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onRecip
                     )
                 } else {
                     Text(
-                        "${dish.missing.size}개 부족 · ${dish.missing.joinToString(", ")}",
+                        "핵심 재료 ${dish.missing.size}개 부족 · ${dish.missing.joinToString(", ")}",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = if (large) 2 else 1,
@@ -318,7 +318,7 @@ private fun BadgeRow(ingredients: List<Pair<String, Boolean>>, dish: Dish) {
     val more = ingredients.size - shown.size
     val description = buildString {
         if (dish.have.isNotEmpty()) append("가진 재료: ${dish.have.joinToString(", ")}. ")
-        if (dish.missing.isNotEmpty()) append("부족한 재료: ${dish.missing.joinToString(", ")}")
+        if (dish.missing.isNotEmpty()) append("부족한 핵심 재료: ${dish.missing.joinToString(", ")}")
     }
     Row(
         Modifier.semantics(mergeDescendants = true) { contentDescription = description },
