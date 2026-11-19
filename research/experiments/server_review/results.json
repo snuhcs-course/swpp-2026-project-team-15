@@ -84,5 +84,41 @@
   },
   "fix": "each ingredient name at most 20 characters (the longest name in any of our tables); the addition-suggestion list at most 60 like the others; refused with 422 before any model call",
   "after": "21-character name -> 422 on suggest, adapt, recipe, revise and ingredient-suggestions; 61 names -> 422; the 20-character real name -> 200"
+ },
+ "finding_3": {
+  "reproduced": true,
+  "repeats": 10,
+  "before": {
+   "stored_and_playable": {
+    "youtube_calls": 10,
+    "model_calls": 0
+   },
+   "nothing_stored_model_finds_nothing_playable": {
+    "youtube_calls": 10,
+    "model_calls": 10
+   },
+   "nothing_stored_model_finds_one": {
+    "youtube_calls": 1,
+    "model_calls": 1
+   }
+  },
+  "after": {
+   "stored_and_playable": {
+    "youtube_calls": 1,
+    "model_calls": 0
+   },
+   "nothing_stored_model_finds_nothing_playable": {
+    "youtube_calls": 1,
+    "model_calls": 1
+   },
+   "nothing_stored_model_finds_one": {
+    "youtube_calls": 1,
+    "model_calls": 1
+   }
+  },
+  "check_reuse_seconds": 1119.8,
+  "derivation": "reuse a check of stored videos for dishes*86400/(10000 - recipe videos) seconds: checking all 128 dishes once per period plus one credit lookup per recipe video a day stays within the default 10,000 daily units",
+  "cost_of_the_fix": "a video removed or made private can still be listed for up to about 19 minutes after the last check (the player then shows its own error notice); before, every tap re-checked",
+  "not_done": "a per-minute cap on paid searches: with the empty finding cached, paid searches are at most one per dish per day (128)"
  }
 }

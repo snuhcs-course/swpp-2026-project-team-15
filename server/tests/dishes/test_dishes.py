@@ -369,6 +369,7 @@ def _finder(
     cache=None,
     model=True,
     handler_wrap=None,
+    checked=None,
 ):
     """A VideoFinder whose two services are faked; ``calls`` records (host, payload/params)."""
     text = answer or " ".join(f"https://www.youtube.com/watch?v={v}" for v in IDS)
@@ -394,6 +395,7 @@ def _finder(
         stored or VideoStore(),
         cache or VideoCache(),
         WebSearchVideoSource("or-key", transport=transport) if model else None,
+        checked=checked,
         now=lambda: NOW,
     )
 
@@ -448,6 +450,39 @@ def test_portrait_videos_are_dropped_and_sizes_compare_as_numbers():
     youtube_call = next(p for k, p in calls if k == "youtube")
     assert youtube_call["part"] == "snippet,status,player"
     assert youtube_call["maxWidth"] == "1000"
+
+
+def test_repeated_taps_reuse_the_check_and_an_empty_finding():
+    # Server review (2026-11-19): ten taps made ten YouTube checks, or ten paid searches
+    # when nothing playable was found.
+    from app.dishes.videos import check_seconds
+
+    now = [1000.0]
+    clock = lambda: now[0]  # noqa: E731
+    calls = []
+    stored = VideoStore({"egg-roll": (NOW, [IDS[0]])})
+    checked = VideoCache(clock=clock, ttl=check_seconds(128, 124))
+    finder = _finder(calls, stored=stored, items=[_item(IDS[0])], checked=checked)
+    for _ in range(10):
+        finder.lookup("egg-roll", "계란말이")
+    assert [k for k, _ in calls] == ["youtube"]
+    now[0] += check_seconds(128, 124) + 1
+    finder.lookup("egg-roll", "계란말이")
+    assert [k for k, _ in calls] == ["youtube", "youtube"]  # a removed video shows up again
+
+    calls.clear()
+    empty = _finder(calls, items=[])
+    for _ in range(10):
+        assert empty.lookup("egg-soup", "계란국")[0] == []
+    assert [k for k, _ in calls] == ["model", "youtube"]
+
+
+def test_check_seconds_keeps_every_dish_within_the_daily_quota():
+    from app.dishes.videos import DAY_SECONDS, YOUTUBE_DAILY_UNITS, check_seconds
+
+    seconds = check_seconds(128, 124)
+    assert 128 * DAY_SECONDS / seconds + 124 <= YOUTUBE_DAILY_UNITS + 1e-6
+    assert check_seconds(0, 0) == 0 and check_seconds(10, 20_000) == DAY_SECONDS
 
 
 def test_finder_caches_a_dish_for_a_day():

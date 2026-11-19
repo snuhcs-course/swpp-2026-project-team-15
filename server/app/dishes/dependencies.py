@@ -22,7 +22,7 @@ from app.dishes.roles import ChatModel, IngredientIndex, RecipeBook
 from app.dishes.service import DishService
 from app.dishes.video_search import WebSearchVideoSource
 from app.dishes.video_store import VideoStore
-from app.dishes.videos import VideoCache, VideoFinder
+from app.dishes.videos import VideoCache, VideoFinder, check_seconds
 from app.dishes.youtube import YouTubeVerifier
 
 
@@ -34,8 +34,11 @@ def build_chat_model(env: Mapping[str, str], fallback_key: str = "") -> ChatMode
     return DishLLM(key, env.get("DISH_LLM_MODEL") or DEFAULT_MODEL)
 
 
-def build_video_finder(env: Mapping[str, str], model_key: str = "") -> VideoFinder | None:
-    """None without a YouTube key. Without a model key only stored videos can be served."""
+def build_video_finder(
+    env: Mapping[str, str], model_key: str = "", *, dishes: int = 0, recipe_videos: int = 0
+) -> VideoFinder | None:
+    """None without a YouTube key. Without a model key only stored videos can be served.
+    ``dishes`` and ``recipe_videos`` size how long a check of stored videos is reused."""
     youtube_key = env.get("YOUTUBE_API_KEY", "")
     if not youtube_key.strip():
         return None
@@ -45,6 +48,7 @@ def build_video_finder(env: Mapping[str, str], model_key: str = "") -> VideoFind
         VideoStore.load(env.get("DISH_VIDEOS")),
         VideoCache(),
         source,
+        checked=VideoCache(ttl=check_seconds(dishes, recipe_videos)),
     )
 
 
@@ -53,7 +57,8 @@ def build_dish_service(env: Mapping[str, str] | None = None, model_key: str = ""
     env = os.environ if env is None else env
     catalog = Catalog.load()
     llm = build_chat_model(env, model_key)
-    recipes: RecipeBook = RecipeStore.load(env.get("DISH_RECIPES"))
+    stored_recipes = RecipeStore.load(env.get("DISH_RECIPES"))
+    recipes: RecipeBook = stored_recipes
     youtube_key = env.get("YOUTUBE_API_KEY", "")
     if youtube_key.strip():
         recipes = CreditedRecipes(recipes, YouTubeVerifier(youtube_key))
@@ -64,7 +69,7 @@ def build_dish_service(env: Mapping[str, str] | None = None, model_key: str = ""
     return DishService(
         catalog,
         llm,
-        build_video_finder(env, key),
+        build_video_finder(env, key, dishes=len(catalog), recipe_videos=len(stored_recipes)),
         recipes,
         reviser=reviser,
         index=catalog,
