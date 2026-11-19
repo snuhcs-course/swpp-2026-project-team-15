@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 
 from app.dishes.answers import search_url
 from app.dishes.catalog import Catalog
+from app.dishes.dependencies import DishParts
 from app.dishes.errors import DishLLMError, VideoError
 from app.dishes.llm import DishLLM
 from app.dishes.service import DishService
@@ -46,8 +47,8 @@ def catalog() -> Catalog:
     return Catalog.load(staples=STAPLES)
 
 
-def client_for(service: DishService) -> TestClient:
-    return TestClient(create_app(StubVision(), dishes=service))
+def client_for(service: DishService, reviser=None, index=None) -> TestClient:
+    return TestClient(create_app(StubVision(), dishes=DishParts(service, reviser, index)))
 
 
 # --- data and matching -----------------------------------------------------------------------
@@ -220,7 +221,7 @@ def test_adapt_nothing_missing_needs_no_model_and_errors_are_clear(catalog):
 
 
 def test_ingredient_names_come_from_the_dish_data(catalog):
-    client = client_for(DishService(catalog, index=catalog))
+    client = client_for(DishService(catalog), index=catalog)
     names = client.get("/recipes/ingredients").json()["names"]
     assert names == sorted(set(names))
     for expected in ("김치", "쌀", "달걀", "대파", "소금", "양파", "참치캔"):
@@ -230,7 +231,7 @@ def test_ingredient_names_come_from_the_dish_data(catalog):
 
 
 def test_ingredient_suggestions_complete_the_most_dishes(catalog):
-    client = client_for(DishService(catalog, index=catalog))
+    client = client_for(DishService(catalog), index=catalog)
     body = client.post("/recipes/ingredient-suggestions", json={"ingredients": ["밥", "김치"]})
     suggestions = body.json()["suggestions"]
     assert suggestions and len(suggestions) <= 5
@@ -603,10 +604,9 @@ def test_an_overlong_name_or_list_is_refused_before_any_model_call(catalog, path
     from app.dishes.revision import Reviser
 
     llm, recipes = FakeLLM(), RecipeStore()
-    service = DishService(
-        catalog, llm, None, recipes, Reviser(catalog, catalog, llm, recipes), catalog
-    )
-    assert client_for(service).post(path, json=body).status_code == 422
+    reviser = Reviser(catalog, catalog, llm, recipes)
+    client = client_for(DishService(catalog, llm, None, recipes), reviser, catalog)
+    assert client.post(path, json=body).status_code == 422
     assert llm.calls == []
 
 

@@ -11,6 +11,7 @@ from app.dishes.choices import (
     suggest_choices,
     user_items,
 )
+from app.dishes.dependencies import DishParts
 from app.dishes.prompts import SUGGEST_CLOSED_SYSTEM, suggest_request, suggest_schema
 from app.dishes.service import DishService
 from app.main import create_app
@@ -36,7 +37,7 @@ class RecordingModel:
 
 
 def _post(model: RecordingModel, ingredients: list[str]):
-    client = TestClient(create_app(StubVision(), dishes=DishService(CATALOG, model)))
+    client = TestClient(create_app(StubVision(), dishes=DishParts(DishService(CATALOG, model))))
     return client.post("/dishes/suggest", json={"ingredients": ingredients})
 
 
@@ -106,7 +107,9 @@ def test_assumed_staples_are_not_missing_choices():
 def test_the_running_service_leaves_staples_out_of_the_missing_choices():
     model = RecordingModel({"dishes": []})
     client = TestClient(
-        create_app(StubVision(), dishes=DishService(CATALOG, model, assumed=CATALOG.staples))
+        create_app(
+            StubVision(), dishes=DishParts(DishService(CATALOG, model, assumed=CATALOG.staples))
+        )
     )
     assert client.post("/dishes/suggest", json={"ingredients": ["두부"]}).status_code == 200
     schema = model.sent[0][3]
@@ -136,12 +139,13 @@ def test_a_runaway_answer_is_ordered_and_cut_to_the_list_limit():
 def test_the_running_server_uses_one_owned_rule_for_cards_additions_and_recipes():
     # Server review (2026-11-19): with 햇반 the card could still list 밥 as missing while the
     # addition suggestions and the recipe view counted it as owned (23 of 50 Korean names).
-    from app.dishes.dependencies import build_dish_service
+    from app.dishes.dependencies import build_dish_parts
 
-    service = build_dish_service({})
+    parts = build_dish_parts({})
+    service = parts.service
     model = RecordingModel({"dishes": []})
     service.llm = model
-    client = TestClient(create_app(StubVision(), dishes=service))
+    client = TestClient(create_app(StubVision(), dishes=parts))
     assert (
         client.post("/dishes/suggest", json={"ingredients": ["햇반", "삼겹살"]}).status_code == 200
     )

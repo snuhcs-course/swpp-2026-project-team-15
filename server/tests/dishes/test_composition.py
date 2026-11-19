@@ -5,21 +5,24 @@ import json
 
 import pytest
 
-from app.dishes.dependencies import build_chat_model, build_dish_service, build_video_finder
+from app.dishes.dependencies import build_chat_model, build_dish_parts, build_video_finder
 from app.dishes.llm import DishLLM
 from app.dishes.video_search import WebSearchVideoSource
 from app.dishes.youtube import YouTubeVerifier
 
 
 def test_no_keys_means_no_model_and_no_video_finder():
-    service = build_dish_service({})
-    assert service.llm is None and service.finder is None
-    assert service.reviser is not None and service.index is not None and len(service.catalog) > 100
+    parts = build_dish_parts({})
+    assert parts.service.llm is None and parts.service.finder is None
+    assert parts.reviser is not None and parts.index is not None
+    assert len(parts.service.catalog) > 100
+    # Server review (2026-11-19): the service no longer carries the router's reviser and index.
+    assert not hasattr(parts.service, "reviser") and not hasattr(parts.service, "index")
 
 
 def test_a_model_key_builds_the_model_client_and_the_model_is_shared_with_the_reviser():
-    service = build_dish_service({"DISH_LLM_API_KEY": "k"})
-    assert isinstance(service.llm, DishLLM) and service.reviser.llm is service.llm
+    parts = build_dish_parts({"DISH_LLM_API_KEY": "k"})
+    assert isinstance(parts.service.llm, DishLLM) and parts.reviser.llm is parts.service.llm
 
 
 def test_general_model_key_is_the_fallback():
@@ -39,13 +42,13 @@ def test_data_files_are_read_at_startup_and_a_bad_one_stops_it(tmp_path):
     bad = tmp_path / "videos.json"
     bad.write_text(json.dumps({"schema": 9}), encoding="utf-8")
     with pytest.raises(ValueError):
-        build_dish_service({"YOUTUBE_API_KEY": "y", "DISH_VIDEOS": str(bad)})
+        build_dish_parts({"YOUTUBE_API_KEY": "y", "DISH_VIDEOS": str(bad)})
     with pytest.raises(OSError):
-        build_dish_service({"DISH_RECIPES": str(tmp_path / "missing.json")})
+        build_dish_parts({"DISH_RECIPES": str(tmp_path / "missing.json")})
 
 
 def test_the_built_service_assumes_the_catalog_staples():
-    service = build_dish_service({})
+    service = build_dish_parts({}).service
     assert service.assumed == service.catalog.staples and "간장" in service.assumed
 
 
@@ -53,6 +56,6 @@ def test_the_reviser_matches_recipe_rows_with_the_name_table():
     # Phone check 2026-11-19: 꽃소금 in a video recipe was shown missing next to 소금.
     from app.dishes.recipe_names import RecipeNames
 
-    reviser = build_dish_service({}).reviser
+    reviser = build_dish_parts({}).reviser
     assert isinstance(reviser.index, RecipeNames)
     assert reviser.index.status("꽃소금", reviser.index.owned([])) == "assumed"

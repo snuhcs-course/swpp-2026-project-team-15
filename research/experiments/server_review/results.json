@@ -428,5 +428,12 @@
    "recipe_view": "20 once per check period during an outage"
   },
   "limit": "httpx timeouts bound the gap between bytes, not the whole transfer, so a provider that trickles bytes can still exceed an attempt's timeout"
+ },
+ "finding_7": {
+  "reproduced": true,
+  "before": "DishService stored reviser and index without using them; the router took them from it",
+  "fix": "a DishParts bundle (service, reviser, index) built by the composition root; each route depends on its own part; DishService no longer has reviser or index",
+  "after": "DishService constructor has no reviser or index; a composition test checks it",
+  "not_changed": "the 404 'No recipe for this dish' when no reviser is built is kept (the app shows it as 'not prepared yet'); in production a reviser is always built"
  }
 }

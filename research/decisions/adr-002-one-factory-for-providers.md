@@ -8,7 +8,7 @@ The dish model and the video lookup are configured from the environment (`DISH_L
 
 ## Decision
 
-`dependencies.py` has one function per role family (`build_chat_model`, `build_video_finder`) and `build_dish_service`, which calls them. They read the settings once and return the concrete classes or `None`. Callers (the app factory, tests, the research runners) never write their own `if provider == ...` chain. A new provider is one class that satisfies the role plus one line in the matching `build_*` function (OCP).
+`dependencies.py` has one function per role family (`build_chat_model`, `build_video_finder`) and `build_dish_parts`, which calls them. They read the settings once and return the concrete classes or `None`. Callers (the app factory, tests, the research runners) never write their own `if provider == ...` chain. A new provider is one class that satisfies the role plus one line in the matching `build_*` function (OCP).
 
 ## Consequences
 

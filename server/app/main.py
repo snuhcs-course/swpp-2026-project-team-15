@@ -16,24 +16,23 @@ from google import genai
 from google.genai import types
 
 from app.config import Settings
-from app.dishes.dependencies import build_dish_service
+from app.dishes.dependencies import DishParts, build_dish_parts
 from app.dishes.router import ingredients_router
 from app.dishes.router import router as dishes_router
-from app.dishes.service import DishService
 from app.vision.gemini import REQUEST_TIMEOUT_MS, GeminiVisionProvider
 from app.vision.openrouter import OpenRouterVisionProvider
 from app.vision.providers import FixtureVisionProvider, VisionProvider
 from app.vision.router import router as vision_router
 
 
-def create_app(vision: VisionProvider, dishes: DishService | None = None) -> FastAPI:
+def create_app(vision: VisionProvider, dishes: DishParts | None = None) -> FastAPI:
     app = FastAPI(
         title="My Little Chef API",
         version="0.2.0",
         description="Ingredient recognition and dish suggestions for one-person households.",
     )
     app.state.vision_provider = vision
-    app.state.dish_service = dishes if dishes is not None else build_dish_service({})
+    app.state.dishes = dishes if dishes is not None else build_dish_parts({})
     app.include_router(vision_router)
     app.include_router(dishes_router)
     app.include_router(ingredients_router)
@@ -44,7 +43,7 @@ def create_app(vision: VisionProvider, dishes: DishService | None = None) -> Fas
 
     @app.get("/ready", tags=["health"], summary="Dish list readiness")
     def ready() -> dict[str, str]:
-        if not len(app.state.dish_service.catalog):
+        if not len(app.state.dishes.service.catalog):
             raise HTTPException(503, "Dish list is empty")
         return {"status": "ready"}
 
@@ -56,7 +55,7 @@ def create_app_from_env() -> FastAPI:
     logging.getLogger("httpx").setLevel(logging.WARNING)  # its INFO lines print full request URLs
     settings = Settings.from_env()
     return create_app(
-        _build_vision(settings), build_dish_service(os.environ, settings.openrouter_api_key)
+        _build_vision(settings), build_dish_parts(os.environ, settings.openrouter_api_key)
     )
 
 

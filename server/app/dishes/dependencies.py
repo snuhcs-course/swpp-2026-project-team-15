@@ -1,7 +1,7 @@
 # AI-generated with Claude Code (Sonnet 5.5), 2026-11-19; reviewed by Jaehyuk Choi.
 """The composition root of the dish services: the one place that creates the concrete classes.
 
-``build_dish_service`` reads the settings once and wires the roles (roles.py) together. Services
+``build_dish_parts`` reads the settings once and wires the roles (roles.py) together. Services
 receive what they need through their constructors and never create a model client, a video client
 or a store themselves, so a test hands in fakes. There is one model provider today; a second one
 is one more class and one more line in ``build_chat_model``.
@@ -9,6 +9,7 @@ is one more class and one more line in ``build_chat_model``.
 
 import os
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request
@@ -52,8 +53,18 @@ def build_video_finder(
     )
 
 
-def build_dish_service(env: Mapping[str, str] | None = None, model_key: str = "") -> DishService:
-    """The service of the running app. ``model_key`` is the key of the general model settings."""
+@dataclass(frozen=True)
+class DishParts:
+    """What the dish routes need, built once at app start. Each route asks for its own part, so
+    the dish service does not carry the reviser and the ingredient index for the router."""
+
+    service: DishService
+    reviser: Reviser | None = None
+    index: IngredientIndex | None = None
+
+
+def build_dish_parts(env: Mapping[str, str] | None = None, model_key: str = "") -> DishParts:
+    """The parts of the running app. ``model_key`` is the key of the general model settings."""
     env = os.environ if env is None else env
     # One rule for who owns what: the reviewed name table decides on the cards, in the addition
     # suggestions and in the recipe view (research/experiments/server_review, finding 4).
@@ -68,35 +79,41 @@ def build_dish_service(env: Mapping[str, str] | None = None, model_key: str = ""
         recipes = CreditedRecipes(recipes, YouTubeVerifier(youtube_key), retry_seconds=retry)
     reviser = Reviser(catalog, names, llm, recipes)
     key = env.get("DISH_LLM_API_KEY") or model_key
-    return DishService(
+    service = DishService(
         catalog,
         llm,
         build_video_finder(env, key, dishes=len(catalog), recipe_videos=len(stored_recipes)),
         recipes,
-        reviser=reviser,
-        index=catalog,
         assumed=catalog.staples,
         names=names,
     )
+    return DishParts(service, reviser, catalog)
 
 
-def get_dish_service(request: Request) -> DishService:
-    return request.app.state.dish_service
+def get_dish_parts(request: Request) -> DishParts:
+    return request.app.state.dishes
+
+
+DishPartsDep = Annotated[DishParts, Depends(get_dish_parts)]
+
+
+def get_dish_service(parts: DishPartsDep) -> DishService:
+    return parts.service
 
 
 DishServiceDep = Annotated[DishService, Depends(get_dish_service)]
 
 
-def get_reviser(service: DishServiceDep) -> Reviser:
-    if service.reviser is None:
+def get_reviser(parts: DishPartsDep) -> Reviser:
+    if parts.reviser is None:
         raise HTTPException(404, "No recipe for this dish")
-    return service.reviser
+    return parts.reviser
 
 
-def get_index(service: DishServiceDep) -> IngredientIndex:
-    if service.index is None:
+def get_index(parts: DishPartsDep) -> IngredientIndex:
+    if parts.index is None:
         raise HTTPException(404, "Ingredient list is not available")
-    return service.index
+    return parts.index
 
 
 ReviserDep = Annotated[Reviser, Depends(get_reviser)]

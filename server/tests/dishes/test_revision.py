@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.dishes.catalog import Catalog
+from app.dishes.dependencies import DishParts
 from app.dishes.llm import DishLLMError
 from app.dishes.recipes import RecipeStore
 from app.dishes.revision import Reviser
@@ -65,11 +66,11 @@ def store() -> RecipeStore:
     return RecipeStore({"kimchi-fried-rice": SourceRecipe.model_validate(RECIPE)})
 
 
-def service(catalog, *answers) -> tuple[DishService, FakeLLM]:
+def service(catalog, *answers) -> tuple[DishParts, FakeLLM]:
     llm = FakeLLM(*answers)
     recipes = store()
     reviser = Reviser(catalog, catalog, llm, recipes)
-    return DishService(catalog, llm, None, recipes, reviser, catalog), llm
+    return DishParts(DishService(catalog, llm, None, recipes), reviser, catalog), llm
 
 
 def revised(catalog, data, ingredients=("밥", "김치")):
@@ -378,7 +379,7 @@ def test_suggest_marks_dishes_that_have_a_recipe(catalog):
         ]
     }
     svc, _ = service(catalog, answer)
-    flags = {d.name: d.has_recipe for d in svc.suggest(["밥"]).dishes}
+    flags = {d.name: d.has_recipe for d in svc.service.suggest(["밥"]).dishes}
     assert flags == {"김치볶음밥": True, "계란말이": False}
 
 

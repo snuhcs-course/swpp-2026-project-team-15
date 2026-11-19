@@ -14,8 +14,7 @@ from app.dishes.answers import (
 from app.dishes.choices import ingredient_vocabulary, suggest_choices
 from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError, VideoError
 from app.dishes.prompts import adapt_request, suggest_request
-from app.dishes.revision import Reviser
-from app.dishes.roles import Availability, ChatModel, DishCatalog, IngredientIndex, RecipeBook
+from app.dishes.roles import Availability, ChatModel, DishCatalog, RecipeBook
 from app.dishes.schemas import AdaptResponse, SuggestResponse, VideosResponse
 from app.dishes.videos import VideoFinder
 from app.dishes.youtube import thumbnail_url
@@ -30,8 +29,7 @@ class DishService:
         llm: ChatModel | None = None,
         finder: VideoFinder | None = None,
         recipes: RecipeBook | None = None,
-        reviser: Reviser | None = None,
-        index: IngredientIndex | None = None,
+        *,
         assumed: frozenset[str] = frozenset(),
         names: Availability | None = None,
     ):
@@ -39,8 +37,6 @@ class DishService:
         self.llm = llm
         self.finder = finder
         self.recipes = recipes
-        self.reviser = reviser
-        self.index = index
         self.assumed = assumed
         self.names = names  # who owns what: the same rule as the recipe view
         self._vocabulary = ingredient_vocabulary(catalog.all())
