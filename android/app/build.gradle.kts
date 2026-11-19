@@ -1,4 +1,5 @@
 import java.net.URI
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -12,6 +13,13 @@ require(serverEndpoint.scheme in listOf("http", "https") && serverEndpoint.host 
     serverEndpoint.userInfo == null && serverEndpoint.rawQuery == null &&
     serverEndpoint.rawFragment == null && serverBaseUrl.endsWith("/")) {
     "serverBaseUrl must be an HTTP(S) URL ending in /, without credentials, query or fragment"
+}
+
+// Release signing: -PreleaseSigning=/path/to/file.properties with storeFile, storePassword,
+// keyAlias and keyPassword. The file and the key stay outside the repository; without the
+// property the release build is unsigned.
+val releaseSigning: Properties? = providers.gradleProperty("releaseSigning").orNull?.let { path ->
+    Properties().apply { file(path).inputStream().use { load(it) } }
 }
 
 android {
@@ -33,6 +41,15 @@ android {
 
     testBuildType = if (providers.gradleProperty("cloudDeviceTest").isPresent) "cloudTest" else "debug"
 
+    if (releaseSigning != null) {
+        signingConfigs.create("release") {
+            storeFile = file(releaseSigning.getProperty("storeFile"))
+            storePassword = releaseSigning.getProperty("storePassword")
+            keyAlias = releaseSigning.getProperty("keyAlias")
+            keyPassword = releaseSigning.getProperty("keyPassword")
+        }
+    }
+
     buildTypes {
         debug {
             // JaCoCo report: ./gradlew createDebugUnitTestCoverageReport
@@ -47,7 +64,9 @@ android {
             resValue("string", "app_name", "MyLittleChef Cloud Test")
         }
         release {
-            buildConfigField("String", "SERVER_BASE_URL", "\"${providers.gradleProperty("releaseServerBaseUrl").orElse("https://localhost/").get()}\"")
+            // Defaults to the demo server; HTTP is allowed only for that IP (src/release network config).
+            buildConfigField("String", "SERVER_BASE_URL", "\"${providers.gradleProperty("releaseServerBaseUrl").orElse(serverBaseUrl).get()}\"")
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             optimization {
                 enable = false
             }
