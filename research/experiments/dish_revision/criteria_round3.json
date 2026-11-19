@@ -29,5 +29,12 @@
     "the fridge is the catalog's key ingredients only; real fridges hold more",
     "the name table is reviewed by one person; the roles of recipe rows were written by an AI",
     "the content judge is a model, checked on 24 hand labels only"
+  ],
+  "amendments": [
+    {
+      "date": "2026-11-19",
+      "before_calls": "yes, before the N3 calls",
+      "text": "N2's rule changed no outcome count (N1 vs N2: 9 failed->revised, 10 revised->failed). Because N2 may not be adopted, N3 is run both as registered (N2 + re-ask) and as N3a (N1 + re-ask). The re-ask adds to the user message: 'Your previous answer was rejected by a check: <violation message>. Answer again and follow every rule.' Every attempt's raw answer is stored. 32 diagnostic calls (the 16 bad_reference and 16 mentions_unavailable cases of N1 re-run with raw answers kept, data/dish-revision/round3-diagnosis.json) showed that bad_reference answers cite rows or steps beyond the source (numbers of new rows or of the revised steps, or 0). Added an offline metric on the stored N3/N3a answers: answers rejected only for out-of-range references that pass every other rule once those references are dropped. Budget unchanged."
+    }
   ]
 }

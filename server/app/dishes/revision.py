@@ -12,7 +12,7 @@ import logging
 
 from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError
 from app.dishes.korean import attach
-from app.dishes.prompts import revise_request
+from app.dishes.prompts import ModelRequest, revise_request
 from app.dishes.revision_check import (
     RefusalNeeded,
     Violation,
@@ -87,24 +87,47 @@ class Reviser:
         if self.llm is None:
             raise DishLLMError(MODEL_NOT_CONFIGURED)
         request = revise_request(recipe, view.name, status, ingredients)
+        return self._answer(request, recipe, status, ingredients, base)
+
+    def _answer(
+        self,
+        request: ModelRequest,
+        recipe: SourceRecipe,
+        status: list[str],
+        ingredients: list[str],
+        base: dict,
+    ) -> ReviseResponse:
+        """One model call, checked."""
         data = self.llm.complete(request.system, request.user, request.name, request.schema)
+        return self._judge(data, recipe, status, ingredients, base)[0]
+
+    def _judge(
+        self,
+        data: dict,
+        recipe: SourceRecipe,
+        status: list[str],
+        ingredients: list[str],
+        base: dict,
+    ) -> tuple[ReviseResponse, Violation | None]:
+        """The response for one answer, and the violation when the check rejected it."""
         if data.get("can_revise") is False:
             reason = data.get("refusal_reason")
             if isinstance(reason, str) and reason.strip():
                 log.info("dish revision: status=refused")
-                return ReviseResponse(status="refused", refusal_reason=reason.strip(), **base)
-            return self._failed(base, Violation("incomplete", "A refusal needs a reason"))
+                return ReviseResponse(status="refused", refusal_reason=reason.strip(), **base), None
+            violation = Violation("incomplete", "A refusal needs a reason")
+            return self._failed(base, violation), violation
         try:
             revised, changes = check(data, recipe, status, self.index, ingredients)
             check_main_kept(recipe, status, revised, changes)
             check_short_mentions(recipe, status, revised)
         except RefusalNeeded as needed:
             log.info("dish revision: status=refused source=check")
-            return ReviseResponse(status="refused", refusal_reason=needed.reason, **base)
+            return ReviseResponse(status="refused", refusal_reason=needed.reason, **base), None
         except Violation as violation:
-            return self._failed(base, violation)
+            return self._failed(base, violation), violation
         log.info("dish revision: status=revised changes=%d", len(changes))
-        return ReviseResponse(status="revised", revised=revised, changes=changes, **base)
+        return ReviseResponse(status="revised", revised=revised, changes=changes, **base), None
 
     @staticmethod
     def _failed(base: dict, violation: Violation) -> ReviseResponse:

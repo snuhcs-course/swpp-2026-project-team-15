@@ -75,6 +75,37 @@ def offline(index, catalog: Catalog, store: RecipeStore) -> dict:
     }
 
 
+REASK = (
+    "\n\nYour previous answer was rejected by a check: {message}. Answer again and follow every "
+    "rule."
+)
+
+
+class Recording:
+    """A chat model wrapper that keeps every raw answer."""
+
+    def __init__(self, llm) -> None:
+        self.llm, self.answers = llm, []
+
+    def complete(self, *args, **kwargs) -> dict:
+        data = self.llm.complete(*args, **kwargs)
+        self.answers.append(data)
+        return data
+
+
+class ReaskReviser(Reviser):
+    """Reviser that asks once more, with the violation message, when the check rejects."""
+
+    def _answer(self, request, recipe, status, ingredients, base):
+        data = self.llm.complete(request.system, request.user, request.name, request.schema)
+        response, violation = self._judge(data, recipe, status, ingredients, base)
+        if violation is None:
+            return response
+        user = request.user + REASK.format(message=violation.message)
+        data = self.llm.complete(request.system, user, request.name, request.schema)
+        return self._judge(data, recipe, status, ingredients, base)[0]
+
+
 class TokenLog(logging.Handler):
     """Collects (input, output) tokens from the model client's log line, one entry per call."""
 
@@ -88,13 +119,14 @@ class TokenLog(logging.Handler):
 
 
 def run(variant: str, index, catalog, store, llm) -> list[dict]:
-    reviser = Reviser(catalog, index, llm, store)
+    llm = Recording(llm)
+    reviser = (ReaskReviser if variant.startswith("N3") else Reviser)(catalog, index, llm, store)
     tokens = TokenLog()
     logging.getLogger("app.dishes.llm").addHandler(tokens)
     logging.getLogger("app.dishes.llm").setLevel(logging.INFO)
     rows = []
     for case in card_cases(catalog, store):
-        before = len(tokens.calls)
+        before, seen = len(tokens.calls), len(llm.answers)
         started = time.monotonic()
         try:
             r = reviser.revise(case["dish_id"], case["ingredients"])
@@ -110,6 +142,7 @@ def run(variant: str, index, catalog, store, llm) -> list[dict]:
             out = {"status": "provider_error", "code": str(exc)[:80]}
         out["seconds"] = round(time.monotonic() - started, 2)
         out["calls"] = tokens.calls[before:]
+        out["answers"] = llm.answers[seen:]
         rows.append({"variant": variant, **case, **out})
         print(variant, case["dish_id"], out["status"], out.get("code"), flush=True)
     logging.getLogger("app.dishes.llm").removeHandler(tokens)
@@ -125,7 +158,7 @@ def main(argv: list[str] | None = None) -> int:
     catalog = Catalog.load()
     store = RecipeStore.load(a.recipes)
     names = RecipeNames.load()
-    indexes = {"N0": catalog, "N1": names, "N2": names}
+    indexes = {"N0": catalog, "N1": names, "N2": names, "N3": names, "N3a": names}
     result: dict = {
         "started": datetime.now(UTC).isoformat(timespec="seconds"),
         "offline": {"N0": offline(catalog, catalog, store), "N1": offline(names, catalog, store)},
@@ -143,11 +176,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     llm = DishLLM(api_key=read_key())
     for variant in a.variants.split(","):
-        prompts.REVISE_SYSTEM = reference_variant(SERVED) if variant == "N2" else SERVED
+        with_rule = variant in ("N2", "N3")
+        prompts.REVISE_SYSTEM = reference_variant(SERVED) if with_rule else SERVED
         result[variant] = run(variant, indexes[variant], catalog, store, llm)
     prompts.REVISE_SYSTEM = SERVED
     OUT.mkdir(parents=True, exist_ok=True)
-    path = OUT / f"round3-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}.json"
+    tag = "" if a.variants == "N0,N1,N2" else "-" + a.variants.replace(",", "-")
+    path = OUT / f"round3{tag}-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}.json"
     path.write_text(json.dumps(result, ensure_ascii=False, indent=1))
     print(path)
     return 0
