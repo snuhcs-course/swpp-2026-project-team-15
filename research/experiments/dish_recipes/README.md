@@ -1,6 +1,6 @@
 # Dish recipe data tools
 
-Question: can the dish list be backed by a structured recipe per dish, restructured from the captions of the videos the app already shows? This directory holds the data tools only: a snapshot of the video lookup per dish, the caption fetch, the target schema and a validator. It makes no recipe and runs no restructuring model.
+Question: can the dish list be backed by a structured recipe per dish, restructured from the captions of the videos the app already shows? This directory holds the data tools: a snapshot of the video lookup per dish, the verification of the stored links, the caption fetch, the target schema and a validator, and (from 2026-11-19, below) the recipes written from the videos themselves and the orientation check. (Until 2026-11-19 this paragraph said the directory "makes no recipe and runs no restructuring model"; `video_recipes.py` now does.)
 
 | Path | Content |
 | --- | --- |
@@ -8,6 +8,11 @@ Question: can the dish list be backed by a structured recipe per dish, restructu
 | `collect_captions.py`, `captions.py` | Stage B: caption text of the first usable video per dish (up to four tried), through an unofficial route |
 | `schema.json`, `validate_recipe.py` | Stage C: target structure of a restructured recipe and its checks |
 | `coverage.py` | Counts of dishes with videos, with captions and without |
+| `verify_videos.py` | Verification of the stored links: `enrich` (one `videos.list` per 50 ids), `judge` (two model judges), `review` (queue for the reviewer), `build` (verified file and `verification.json`) |
+| `supplement_videos.py` | New links for dishes that lost every link, by the same discovery request and judges |
+| `search_videos.py` | New links from the official YouTube search (`search.list`) for the dishes still without a link |
+| `orientation.py` | Vertical or horizontal per stored video (player size from `videos.list`) |
+| `link_verification_results.json` | Counts of the link verification (no titles) |
 | `../../../server/tests/experiments/dish_recipes/` | Offline tests (fakes only) |
 
 ## Outputs stay local
@@ -82,7 +87,7 @@ Raw answers and recipes go to a working directory outside the repository (`--wor
 
 Both models received every video through Google AI Studio. A video costs about 296 input tokens per second (Shorts of 50–60 s cost $0.002–0.009); output is under 1,500 tokens.
 
-**Ingredients not in the captions, read by hand** (title, description and caption context; the video itself was not watched):
+**Ingredients not in the captions, read by the AI agent** (title, description and caption context; the video itself was not watched; corrected 2026-11-19 from "read by hand": no person did this reading):
 
 | | lite | flash |
 | --- | --- | --- |
@@ -92,7 +97,7 @@ Both models received every video through Google AI Studio. A video costs about 2
 
 No item was clearly invented, but the unclear ones cannot be settled without watching the videos.
 
-**Side by side (6 dishes: 김치볶음밥, 계란볶음밥, 김밥, 오므라이스, 버섯볶음밥, 두부덮밥).** Both models follow the same cooking order as the caption-based recipes and often add the amounts shown on screen (계란볶음밥: 1공기 200 g, 대파 40 g, 식용유 4큰술). flash splits steps more finely (김밥 25 steps against 10–12) and copies the on-screen ingredient card more completely (오므라이스: 20 ingredients including the garnish). The clearest difference is the main label: lite marked 양파, 당근, 피망, 버섯, 소시지 and 체다 치즈 as main for 오므라이스 and 양파 and 대파 for 버섯볶음밥, which would make the recipe check refuse a change whenever one of them is missing; flash kept main to what the dish is built on in these cases, but marked only 김 as main for 김밥.
+**Side by side (6 dishes: 김치볶음밥, 계란볶음밥, 김밥, 오므라이스, 버섯볶음밥, 두부덮밥).** Both models follow the same cooking order as the caption-based recipes and often add the amounts shown on screen (in 계란볶음밥, three of the ingredients got amounts read from the screen; the amounts themselves were removed from this page on 2026-11-19 because they are the video's content). flash splits steps more finely (김밥 25 steps against 10–12) and copies the on-screen ingredient card more completely (오므라이스: 20 ingredients including the garnish). The clearest difference is the main label: lite marked 양파, 당근, 피망, 버섯, 소시지 and 체다 치즈 as main for 오므라이스 and 양파 and 대파 for 버섯볶음밥, which would make the recipe check refuse a change whenever one of them is missing; flash kept main to what the dish is built on in these cases, but marked only 김 as main for 김밥.
 
 **Interpretation.**
 
@@ -103,10 +108,10 @@ No item was clearly invented, but the unclear ones cannot be settled without wat
 
 ### The stored file (built 2026-11-19 with `gemini-2.5-flash`)
 
-- Input: the verified links per dish (365 links, every one of the 128 dishes has at least one; judged by two models and reviewed). For each dish the first verified video the model confirmed was tried first, at most three per dish.
+- Input: the verified links per dish (365 links, every one of the 128 dishes has at least one; judged by two models and reviewed by the AI agent, see "Verifying the stored links" below). For each dish the first verified video the model confirmed was tried first, at most three per dish.
 - 131 calls, $4.78, median 25 s per call (max 90 s); every answer came through Google AI Studio. Input tokens track the video's length at about 296 per second (51 s → 15,271, 831 s → 245,378), which matches the documented frame and audio rates and shows that the video itself, not only its title, was processed.
 - 128 of 128 dishes got a valid recipe. Three needed a second video: one answer timed out, one video showed another dish (간장조림치킨 for 닭볶음), one answer had a single ingredient.
-- Hand review of the 27 dishes whose `cooked_dish` differs from the dish name: most are variants or longer names (간장계란밥, 소고기 뭇국, 묵참김밥). Four videos cook a different dish although the model confirmed them, and their recipes were removed from the file: 짜장라면 (쟁반 간짜장), 두부국 (뚝배기 순두부찌개), 마늘새우볶음 (마늘쫑 건새우 볶음), 감자국 (감자옹심이국). Borderline and kept: 계란후라이 (계란덮밥), 김치비빔밥 (described as a bibimbap like kimchi fried rice), 닭볶음 (닭볶음탕). **The file serves 124 dishes.**
+- Review by the AI agent (not a person; corrected 2026-11-19 from "hand review") of the 27 dishes whose `cooked_dish` differs from the dish name: most are variants or longer names (간장계란밥, 소고기 뭇국, 묵참김밥). Four videos cook a different dish although the model confirmed them, and their recipes were removed from the file: 짜장라면 (쟁반 간짜장), 두부국 (뚝배기 순두부찌개), 마늘새우볶음 (마늘쫑 건새우 볶음), 감자국 (감자옹심이국). Borderline and kept: 계란후라이 (계란덮밥), 김치비빔밥 (described as a bibimbap like kimchi fried rice), 닭볶음 (닭볶음탕). **The file serves 124 dishes.**
 - 20 recipes come from Shorts (60 s or less). They are thinner: median 9 ingredients and 9 steps with amounts for 50% of ingredients, against 10, 12.5 and 78% for longer videos.
 - Main labels: median one main ingredient per recipe; 된장찌개 and 군만두 have none, so the recipe check's main-ingredient rule does nothing for them.
 - The file keeps only the video id; title and channel are looked up live by the server.
@@ -132,3 +137,19 @@ Results (365 stored links, 353 distinct videos, 128 dishes; 124 stored recipes):
 | Duration as a proxy: vertical ≤ 60 s / vertical > 60 s / horizontal ≤ 60 s | 82 / 11 / 4 |
 
 Reading: about a quarter of the links are vertical and a fifth of the dishes would open with one. Duration is a poor stand-in for orientation (15 of 98 short-or-vertical cases disagree), so any later handling should use the orientation, not a length cut. How a vertical video looks in the app's player was not measured here (no phone run); that is the next step. Per-video orientation is stored outside the repository (`orientation.json` next to the recipe file).
+
+## Verifying the stored links (2026-11-18/19)
+
+Recorded after the fact (2026-11-19, from the review of the research records): the verification ran on 2026-11-18/19 without a protocol written first. The steps below are what the scripts did; counts are in [`link_verification_results.json`](link_verification_results.json), computed from the untracked working files.
+
+Question: of the links the web-search model proposed for each dish, which are videos that cook that dish, so that the server can serve them without a model call?
+
+1. **Snapshot** (`collect_videos.py`): one discovery request per dish, 130 dishes, 410 links (2 dishes without any), 133 model calls and 258 YouTube calls, $1.00.
+2. **Enrich** (`verify_videos.py enrich`): one `videos.list` call per 50 ids (8 units); all 410 links were still public and embeddable.
+3. **Judge**: the two judges validated in the second discovery study (`google/gemini-2.5-pro`, `anthropic/claude-haiku-4.5`) judged each pair from metadata. The primary said relevant for 232, the second for 308, both for 210. Judge cost was not recorded.
+4. **Review** (by the AI agent, not a person): every pair where the judges disagreed (150: 82 relevant, 66 not, 2 unsure), every pair the primary rejected (50: 3 relevant, 44 not, 3 unsure), and a seeded 10% sample of the pairs both accepted (21: 19 relevant, 2 not; 90%, Wilson 95% interval 71% to 97%). The other 189 both-accepted pairs were kept without review. Result: 293 links, 15 dishes without a link (2 dishes, 계란샐러드 and 김치죽, were later removed from the dish list).
+5. **Supplement** (`supplement_videos.py`): the same discovery request for the 15 dishes returned only ids already rejected or 2 new ones, both irrelevant.
+6. **Official search** (`search_videos.py`): one `search.list` call per dish ("<name> 레시피", then "<name> 만들기" for dishes still empty; 21 calls, 1,515 quota units), the same judges ($0.69), and review in search order until a dish had five links: 173 of 355 candidates read, 72 relevant, 86 irrelevant, 15 unsure; 182 not reached.
+7. **Result**: 365 links, every one of the 128 dishes has at least one.
+
+**Limits.** All review decisions are one AI agent's, from metadata (title, channel, description, tags, duration), without watching the videos; the 189 unreviewed pairs rest on the judges and the 19-of-21 sample; the judges' agreement with labels was measured in the second discovery study on 60 AI-made labels (kappa 0.61). The vertical-video removal of 2026-11-19 later replaced 94 of these links (`../shorts_removal/`).

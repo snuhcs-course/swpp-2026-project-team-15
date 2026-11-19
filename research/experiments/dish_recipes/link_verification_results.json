@@ -1,0 +1,78 @@
+{
+  "date": "2026-11-18/19",
+  "note": "Counts only, computed on 2026-11-19 from the untracked files in artifacts/dish-recipes/link-data/ (verification.json sha256 a7f6332987c7..., dish-videos.verified.pre-shorts.json 0a104e4a5410...). No titles or other third-party content. The 'reviewer' is the AI agent that ran the study, not a person.",
+  "snapshot_collect_videos": {
+    "dishes": 130,
+    "dishes_without_links": 2,
+    "links": 410,
+    "model_calls": 133,
+    "youtube_calls": 258,
+    "cost_usd": 1.0012
+  },
+  "verify": {
+    "pairs": 410,
+    "dishes": 128,
+    "distinct_videos_looked_up": 363,
+    "videos_list_units": 8,
+    "playable": 410,
+    "judges": {
+      "primary": "google/gemini-2.5-pro",
+      "second": "anthropic/claude-haiku-4.5",
+      "primary_yes": 232,
+      "second_yes": 308,
+      "both_yes": 210
+    },
+    "review_queue": {
+      "both_yes_unreviewed_kept": 189,
+      "both_yes_seeded_10pct_sample": {
+        "n": 21,
+        "reviewer_relevant": 19,
+        "reviewer_not": 2,
+        "wilson95_relevant": [
+          0.711,
+          0.973
+        ]
+      },
+      "primary_no": {
+        "n": 50,
+        "reviewer_relevant": 3,
+        "reviewer_not": 44,
+        "reviewer_unsure": 3
+      },
+      "judges_disagree": {
+        "n": 150,
+        "reviewer_relevant": 82,
+        "reviewer_not": 66,
+        "reviewer_unsure": 2
+      }
+    },
+    "kept_links": 293,
+    "dishes_left_without_link": 15,
+    "judge_cost": "not recorded"
+  },
+  "supplement_discovery": {
+    "dishes": 15,
+    "candidates_judged": 2,
+    "reviewer_relevant": 0,
+    "youtube_units": 2
+  },
+  "official_search": {
+    "dishes": 15,
+    "search_calls": 21,
+    "youtube_units": 1515,
+    "judge_cost_usd": 0.6935,
+    "candidates": 355,
+    "read_by_reviewer_in_search_order": 173,
+    "reviewer_relevant": 72,
+    "reviewer_irrelevant": 86,
+    "reviewer_unsure": 15,
+    "not_reached": 182,
+    "kept_per_dish_cap": 5
+  },
+  "final": {
+    "dishes": 128,
+    "links": 365,
+    "dishes_without_link": 0
+  },
+  "labeller": "AI agent (Claude Code); no human review of the links"
+}
