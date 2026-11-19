@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.platform.testTag
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -25,7 +27,8 @@ import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
 @Composable
 fun IngredientSuggestionSheet(
     suggestions: IngredientSuggestionViewModel,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onAdd: (String) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -77,6 +80,11 @@ fun IngredientSuggestionSheet(
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
+                    // Phone test 2026-11-19: tapping a suggestion did nothing; it now adds it.
+                    TextButton(
+                        onClick = { onAdd(suggestion.name) },
+                        modifier = Modifier.testTag("suggestion-add-${suggestion.name}")
+                    ) { Text("냉장고에 추가") }
                 }
             }
         }

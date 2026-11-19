@@ -10,7 +10,7 @@
 9,간장,seasonings,양념·소스·기름,seasoning,#CFB09B,false,
 10,갈비,meat,육류·육가공품,meat,#EBC4BE,false,
 11,갈치,seafood,해산물·해조류,fish,#C9DFEC,false,
-12,감자,vegetables,채소·버섯,root,#F3CEAE,false,
+12,감자,vegetables,채소·버섯,potato,#E9DCB8,false,
 13,감자전분,grains,곡물·면·빵·떡,rice,#EBE5D6,false,
 14,갑오징어,seafood,해산물·해조류,squid,#E1D3E9,false,
 15,갓,vegetables,채소·버섯,leafy,#D6E8CB,false,
@@ -491,7 +491,7 @@
 490,타바스코,seasonings,양념·소스·기름,seasoning,#EFA69A,false,
 491,타임,seasonings,양념·소스·기름,leafy,#D6E8CB,false,
 492,탄산수,liquids,육수·음료,stock,#D5E6F0,false,
-493,토란,vegetables,채소·버섯,root,#F3CEAE,false,
+493,토란,vegetables,채소·버섯,potato,#E9DCB8,false,
 494,토란탕,prepared,김치·절임·간편식,stock,#D5E2D5,true,원본의 토란탕은 완성된 국 요리로 임시 분류. 원재료 명칭인지 원문 확인 필요.
 495,토마토,vegetables,채소·버섯,fruit_vegetable,#EDB5AF,false,
 496,토마토소스,seasonings,양념·소스·기름,seasoning,#EFA69A,false,

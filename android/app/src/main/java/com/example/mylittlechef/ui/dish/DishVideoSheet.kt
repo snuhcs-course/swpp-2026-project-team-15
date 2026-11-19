@@ -252,7 +252,8 @@ private fun AdaptAnswer(adaptation: DishAdaptation, onDismiss: () -> Unit) {
         Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        if (adaptation.substitutions.isEmpty() && adaptation.skipOk.isEmpty()) {
+        // The server's note already says so when it has one; two sentences repeated it (phone test).
+        if (adaptation.substitutions.isEmpty() && adaptation.skipOk.isEmpty() && adaptation.note.isBlank()) {
             Text("대체할 방법을 찾지 못했어요.", style = MaterialTheme.typography.bodyMedium)
         }
         adaptation.substitutions.forEach { s ->

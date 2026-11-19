@@ -8,6 +8,7 @@ import com.example.mylittlechef.R
 fun ingredientIconResource(key: String): Int = when (key) {
     "leafy" -> R.drawable.ic_ingredient_leafy
     "root" -> R.drawable.ic_ingredient_root
+    "potato" -> R.drawable.ic_ingredient_potato
     "fruit_vegetable" -> R.drawable.ic_ingredient_fruit_vegetable
     "onion" -> R.drawable.ic_ingredient_onion
     "scallion" -> R.drawable.ic_ingredient_scallion

@@ -69,7 +69,11 @@ fun FridgeScreen(
             onDismissRequest = { showSuggestions = false },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ) {
-            IngredientSuggestionSheet(ingredientSuggestions, onRetry = { ingredientSuggestions.refresh(fridge.ingredients) })
+            IngredientSuggestionSheet(
+                ingredientSuggestions,
+                onRetry = { ingredientSuggestions.refresh(fridge.ingredients) },
+                onAdd = { name -> fridge.addIngredients(listOf(Ingredient(name))) }
+            )
         }
     }
 }

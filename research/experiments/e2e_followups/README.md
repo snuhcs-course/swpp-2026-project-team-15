@@ -76,3 +76,36 @@ lacks it); otherwise 415 "Not a readable image". Nothing is decoded, so a JPEG c
 middle still reaches the model (limit). Every dish route now answers 422 for an id outside the
 dish list; 404 keeps one meaning. The app never sends an unknown id, so its handling does not
 change. Tests fail on the old code (3) and pass on the new.
+
+## 5. Revised recipes that point at rows or steps that do not exist
+
+**Observed (main thread, code reading).** 카레라이스 (11 ingredient rows, 14 steps, no 밥 row) with
+the fridge 밥·카레·감자·양파·당근 failed twice: the model's fifth change "밥은 가지고 있으므로
+추가합니다" had `ingredient_refs: [14]`, a step number, so the check rejected it (bad_reference),
+and the re-ask returned the same answer. Its other changes had `ingredient_refs == step_refs`
+(1·1, 2·2, 4·4, 8·8): in range, so they pass, but probably wrong.
+
+**Question.** How often do revised answers carry out-of-range or mirrored references, and which of
+three changes reduces that: (V1) per-request closed choices, `ingredient_refs` items limited to
+1..rows and `step_refs` items to 1..steps (the idea of ADR 005; a probe call showed the provider
+accepts and enforces integer enums); (V2) a re-ask message that names the change, the bad number
+and the valid range; (V3) both. V0 is the served path.
+
+**Protocol (written before measuring).** Inputs: every stored recipe (124) with the fridge = the
+dish's key ingredients, the served model and served reviser (name table, one re-ask). Per variant,
+one run per recipe. Measured: final status (revised / refused / failed by code), first-answer
+violation codes, bad_reference on the first and on the final answer, delivered answers with at
+least one mirrored change (`ingredient_refs == step_refs`, non-empty), model calls, latency.
+Decision by the numbers in words; no preset bar. The recipe build leaving 밥 out of the curry rows
+is noted, not fixed.
+
+## 3. App and status fixes (no model calls)
+
+| Observed on the phone | Cause | Fix |
+|---|---|---|
+| Third autocomplete row hidden behind "냉장고에 반영" with the keyboard open | the list grows below the visible area of the scrolling column | the list scrolls itself into view when it appears |
+| 감자 shows the carrot icon | both use the shared "root" icon | a potato icon for 감자 and 토란 |
+| Tapping an ingredient suggestion does nothing | the sheet was information only | a "냉장고에 추가" button per suggestion |
+| "대체" with no result shows two sentences saying the same | the app's own sentence and the server's note | the app's sentence only when the server sends no note (the server text is kept: the frozen dish evaluation scores it) |
+| The ⓘ dialog does not mention recipes or "내 재료로 바꾸기" | written before those features | two sentences added |
+| A seasoning the user put in the fridge shows 기본 양념 | the server checked "staple at home" before "owned" | owned first (server; the current app reads it). A staple still never makes a dish count as using the fridge, so pantry seasonings do not bring back item 1 |
