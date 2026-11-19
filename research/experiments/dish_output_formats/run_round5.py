@@ -40,9 +40,10 @@ def one_call(
     send=formats.post_chat,
     sleep=time.sleep,
     in_schema=True,
+    max_tokens=formats.MAX_TOKENS,
 ):
     catalog, vocab = ctx
-    choices, payload = round5.body(catalog, vocab, ingredients, k, in_schema)
+    choices, payload = round5.body(catalog, vocab, ingredients, k, in_schema, max_tokens)
     answer = with_retry(lambda: send(payload, key), budget, sleep)
     call = answer.call
     data = call.data
