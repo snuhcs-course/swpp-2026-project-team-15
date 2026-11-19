@@ -363,6 +363,11 @@ def test_api_recipe_view_and_revise(catalog):
     assert out["status"] == "revised" and "AI가 만든 제안" in out["notice"]
     assert c.post("/dishes/revise", json={**body, "dish_id": "egg-roll"}).status_code == 404
     assert c.post("/dishes/revise", json={**body, "ingredients": []}).status_code == 422
+    # Phone test 2026-11-19: an unknown dish id is 422 on every dish route; 404 only means a
+    # known dish without a recipe.
+    assert c.get("/dishes/nope/recipe").status_code == 422
+    assert c.post("/dishes/recipe", json={"dish_id": "nope", "ingredients": []}).status_code == 422
+    assert c.post("/dishes/revise", json={**body, "dish_id": "nope"}).status_code == 422
 
 
 def test_api_revise_returns_502_when_the_model_fails(catalog):

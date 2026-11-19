@@ -63,3 +63,16 @@ input was taken; the offline replay of the HEAD answers gives the same counts.
 **Limits.** 12 fridges; the model still spends about 4 s on fridges that end with no dish (the
 answer is cut at the token limit); `have` now lists only items the dish uses, so a model's mention
 of a stand-in (e.g. 대파 for 쪽파) no longer shows.
+
+## 2. Broken image and unknown dish ids
+
+**Observed.** A broken PNG made by the phone test was sent to the model and came back as 502
+(0.24 s); an unknown dish id gave 422 on the video and substitution routes but 404 on the recipe
+and revision routes, where 404 also means "known dish, no recipe".
+
+**Fix, no model calls.** Before any model call the server checks the file's structure: it must
+start like a JPEG, PNG, WebP or HEIC/HEIF file, and a PNG must contain its end chunk (a cut-off PNG
+lacks it); otherwise 415 "Not a readable image". Nothing is decoded, so a JPEG cut short in the
+middle still reaches the model (limit). Every dish route now answers 422 for an id outside the
+dish list; 404 keeps one meaning. The app never sends an unknown id, so its handling does not
+change. Tests fail on the old code (3) and pass on the new.

@@ -83,4 +83,19 @@ def _read(upload: UploadFile, limit: int) -> ImageInput:
         raise HTTPException(413, "Image exceeds 16 MiB")
     if not data:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Empty image")
+    if not looks_like_image(data):
+        # A broken file used to reach the model and come back as 502 (phone test, 2026-11-19).
+        raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "Not a readable image")
     return ImageInput(data, upload.content_type)
+
+
+def looks_like_image(data: bytes) -> bool:
+    """A cheap structural check before any model call: the file starts like a JPEG, PNG, WebP or
+    HEIC/HEIF, and a PNG also has its end chunk (a cut-off PNG lacks it). No decoding."""
+    if data.startswith(b"\xff\xd8"):
+        return True
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return b"IEND" in data[-64:]
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return True
+    return data[4:8] == b"ftyp"

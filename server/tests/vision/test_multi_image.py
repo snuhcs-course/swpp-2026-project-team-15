@@ -171,8 +171,9 @@ def test_total_size_limit_applies_to_several_views(make_client, monkeypatch):
     vision = MultiVision()
     client = make_client(vision)
 
-    over = client.post("/analyze", files=views(jpeg("a.jpg", b"x" * 6), jpeg("b.jpg", b"y" * 6)))
-    within = client.post("/analyze", files=views(jpeg("a.jpg", b"x" * 5), jpeg("b.jpg", b"y" * 5)))
+    six, five = b"\xff\xd8" + b"x" * 4, b"\xff\xd8" + b"x" * 3  # JPEG starts (images are checked)
+    over = client.post("/analyze", files=views(jpeg("a.jpg", six), jpeg("b.jpg", six)))
+    within = client.post("/analyze", files=views(jpeg("a.jpg", five), jpeg("b.jpg", five)))
 
     assert over.status_code == 413
     assert within.status_code == 200

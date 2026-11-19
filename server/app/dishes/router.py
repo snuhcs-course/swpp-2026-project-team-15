@@ -22,6 +22,7 @@ from app.dishes.schemas import (
     VideosRequest,
     VideosResponse,
 )
+from app.dishes.service import DishService
 from app.schemas import ErrorResponse
 
 router = APIRouter(prefix="/dishes", tags=["dishes"])
@@ -100,9 +101,13 @@ def videos(body: VideosRequest, service: DishServiceDep) -> VideosResponse:
     "/{dish_id}/recipe",
     summary="The stored recipe of one dish",
     operation_id="dish_recipe",
-    responses={404: {"model": ErrorResponse, "description": "No recipe for this dish"}},
+    responses={
+        404: {"model": ErrorResponse, "description": "No recipe for this dish"},
+        422: {"model": ErrorResponse, "description": "Unknown dish id"},
+    },
 )
 def recipe(dish_id: str, service: DishServiceDep) -> SourceRecipe:
+    _known(service, dish_id)
     found = service.recipes.get(dish_id) if service.recipes is not None else None
     if found is None:
         raise HTTPException(404, "No recipe for this dish")
@@ -113,9 +118,13 @@ def recipe(dish_id: str, service: DishServiceDep) -> SourceRecipe:
     "/recipe",
     summary="The stored recipe with what the user has of each ingredient",
     operation_id="dish_recipe_view",
-    responses={404: {"model": ErrorResponse, "description": "No recipe for this dish"}},
+    responses={
+        404: {"model": ErrorResponse, "description": "No recipe for this dish"},
+        422: {"model": ErrorResponse, "description": "Unknown dish id"},
+    },
 )
-def recipe_view(body: RecipeRequest, reviser: ReviserDep) -> RecipeView:
+def recipe_view(body: RecipeRequest, service: DishServiceDep, reviser: ReviserDep) -> RecipeView:
+    _known(service, body.dish_id)
     view = reviser.view(body.dish_id, body.ingredients)
     if view is None:
         raise HTTPException(404, "No recipe for this dish")
@@ -131,7 +140,8 @@ def recipe_view(body: RecipeRequest, reviser: ReviserDep) -> RecipeView:
         502: {"model": ErrorResponse, "description": "The model call failed"},
     },
 )
-def revise(body: ReviseRequest, reviser: ReviserDep) -> ReviseResponse:
+def revise(body: ReviseRequest, service: DishServiceDep, reviser: ReviserDep) -> ReviseResponse:
+    _known(service, body.dish_id)
     try:
         result = reviser.revise(body.dish_id, body.ingredients)
     except DishLLMError as exc:
@@ -139,6 +149,13 @@ def revise(body: ReviseRequest, reviser: ReviserDep) -> ReviseResponse:
     if result is None:
         raise HTTPException(404, "No recipe for this dish")
     return result
+
+
+def _known(service: DishService, dish_id: str) -> None:
+    """422 for a dish id outside the list, as on the video and substitution routes; 404 stays for
+    a known dish that has no recipe (phone test 2026-11-19 found the two mixed up)."""
+    if service.catalog.get(dish_id) is None:
+        raise HTTPException(422, "Unknown dish id")
 
 
 @ingredients_router.get(
