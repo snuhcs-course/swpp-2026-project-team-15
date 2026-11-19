@@ -60,7 +60,17 @@ import com.example.mylittlechef.viewmodel.ReviseUiState
 private const val NOTICE = "AI가 만든 제안이에요. 맛과 알레르기는 직접 확인해 주세요."
 
 /** One ingredient line of either version of the recipe: the icon, the name and the amount. */
-private data class Line(val name: String, val amount: String?, val missing: Boolean)
+/** One ingredient row; [availability] is null in the revised recipe, which uses only what the user has. */
+private data class Line(val name: String, val amount: String?, val availability: Availability?) {
+    val missing get() = availability == Availability.UNAVAILABLE
+}
+
+/** The word shown next to a row of the original recipe. */
+internal fun availabilityLabel(availability: Availability): String = when (availability) {
+    Availability.OWNED -> "있음"
+    Availability.ASSUMED -> "기본 양념"
+    Availability.UNAVAILABLE -> "없음"
+}
 
 /** The recipe of one dish, then the same recipe revised to the fridge (original and revised side by side as two tabs). */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -106,7 +116,7 @@ private fun RecipeContent(recipe: DishRecipe, revision: ReviseUiState?, onRevise
     }
     if (done != null && showRevised) {
         Body(
-            lines = done.ingredients.map { Line(it.name, it.amount, false) },
+            lines = done.ingredients.map { Line(it.name, it.amount, null) },
             servings = done.servings ?: recipe.servings,
             steps = done.steps,
             tips = done.tips
@@ -115,7 +125,7 @@ private fun RecipeContent(recipe: DishRecipe, revision: ReviseUiState?, onRevise
     } else {
         Caption("요리 카드는 핵심 재료만 봐요. 아래는 이 영상 레시피에 쓰인 재료 전부예요.")
         Body(
-            lines = recipe.ingredients.map { Line(it.name, it.amount, it.availability == Availability.UNAVAILABLE) },
+            lines = recipe.ingredients.map { Line(it.name, it.amount, it.availability) },
             servings = recipe.servings,
             steps = recipe.steps,
             tips = recipe.tips
@@ -149,9 +159,11 @@ private fun Body(lines: List<Line>, servings: Int?, steps: List<RecipeStep>, tip
 
 @Composable
 private fun IngredientLine(line: Line) {
-    val state = if (line.missing) "없음" else "있음"
+    val state = line.availability?.let(::availabilityLabel)
     Row(
-        Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "${line.name} ${line.amount.orEmpty()}, $state" },
+        Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
+            contentDescription = listOfNotNull("${line.name} ${line.amount.orEmpty()}".trim(), state).joinToString(", ")
+        },
         verticalAlignment = Alignment.CenterVertically
     ) {
         val badge = if (line.missing) {
@@ -164,6 +176,20 @@ private fun IngredientLine(line: Line) {
         Text(line.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (!line.amount.isNullOrBlank()) {
             Text(line.amount, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (state != null) {
+            val color = when (line.availability) {
+                Availability.OWNED -> DeepGreen
+                Availability.UNAVAILABLE -> MaterialTheme.colorScheme.error
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                state,
+                style = MaterialTheme.typography.labelSmall,
+                color = color,
+                modifier = Modifier.border(1.dp, color, RoundedCornerShape(8.dp)).padding(horizontal = 6.dp, vertical = 2.dp)
+            )
         }
     }
 }

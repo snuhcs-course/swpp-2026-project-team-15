@@ -234,7 +234,7 @@ private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onRecip
                         dish.name,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = if (large) 2 else 1,
+                        maxLines = 2, // 계란후라이 was cut to 계란후… beside its category on a phone
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
@@ -254,7 +254,7 @@ private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onRecip
                         "핵심 재료가 다 있어요",
                         style = MaterialTheme.typography.labelMedium,
                         color = DeepGreen,
-                        maxLines = 1,
+                        maxLines = 2, // the narrow card column cut the line on a phone (2026-11-19)
                         overflow = TextOverflow.Ellipsis
                     )
                 } else {
@@ -262,7 +262,7 @@ private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onRecip
                         "핵심 재료 ${dish.missing.size}개 부족 · ${dish.missing.joinToString(", ")}",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = if (large) 2 else 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
