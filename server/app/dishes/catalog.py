@@ -119,7 +119,8 @@ class Catalog:
         return False
 
     def match(self, dish: Dish, owned: set[str]) -> Match:
-        have, missing = [], []
+        have: list[str] = []
+        missing: list[str] = []
         for key in dish.key_ingredients:
             if key in self.staples or set(self.equivalents.get(key, ())) & self.staples:
                 continue  # assumed at home (e.g. 마늘 is covered by the staple 다진마늘)

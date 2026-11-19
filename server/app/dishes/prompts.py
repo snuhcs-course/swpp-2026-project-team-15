@@ -8,6 +8,7 @@ and the wording can change without touching it. Recipe text is data, never instr
 # ruff: noqa: E501
 
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 
 from app.dishes.choices import SuggestChoices
@@ -165,7 +166,7 @@ REVISE_SCHEMA = {
 
 
 def revise_user_message(
-    recipe: SourceRecipe, dish_name: str, status: list[str], owned: list[str]
+    recipe: SourceRecipe, dish_name: str, status: Sequence[str], owned: list[str]
 ) -> str:
     rows = [
         {"n": i, "name": r.name, "amount": r.amount or "", "role": r.role, "status": s}
@@ -196,7 +197,7 @@ def adapt_request(dish_name: str, missing: list[str], owned: list[str]) -> Model
 
 
 def revise_request(
-    recipe: SourceRecipe, dish_name: str, status: list[str], owned: list[str]
+    recipe: SourceRecipe, dish_name: str, status: Sequence[str], owned: list[str]
 ) -> ModelRequest:
     user = revise_user_message(recipe, dish_name, status, owned)
     return ModelRequest(REVISE_SYSTEM, user, "dish_revise", REVISE_SCHEMA)

@@ -9,14 +9,16 @@ import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
+
+VisionProvider = Literal["mock", "gemini", "openrouter"]
 
 SERVER_DIR = Path(__file__).resolve().parents[1]
 
 
 @dataclass(frozen=True)
 class Settings:
-    vision_provider: Literal["mock", "gemini", "openrouter"]
+    vision_provider: VisionProvider
     vision_fixture_dir: Path
     gemini_api_key: str
     gemini_model: str
@@ -31,7 +33,7 @@ class Settings:
                 f"VISION_PROVIDER must be 'mock', 'gemini' or 'openrouter', got {provider!r}"
             )
         settings = cls(
-            vision_provider=provider,
+            vision_provider=cast(VisionProvider, provider),
             vision_fixture_dir=SERVER_DIR / "fixtures" / "vision",
             gemini_api_key=env.get("GEMINI_API_KEY", ""),
             gemini_model=env.get("GEMINI_MODEL", ""),

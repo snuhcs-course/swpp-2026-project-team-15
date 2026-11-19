@@ -3,6 +3,7 @@
 import base64
 import json
 from collections.abc import Sequence
+from typing import Any
 
 import httpx
 from pydantic import ValidationError
@@ -30,7 +31,7 @@ class OpenRouterVisionProvider:
         return self._request(images, multi_view_prompt(len(images)))
 
     def _request(self, images: Sequence[ImageInput], prompt: str) -> list[DetectedItem]:
-        schema = {
+        schema: dict[str, Any] = {
             "type": "object",
             "properties": {"items": DETECTED_ITEMS.json_schema()},
             "required": ["items"],

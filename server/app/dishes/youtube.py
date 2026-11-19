@@ -58,7 +58,7 @@ class YouTubeVerifier:
 
     def check(self, ids: list[str]) -> list[Video]:
         """The usable videos among ``ids``, in the order of ``ids``."""
-        params = {
+        params: dict[str, str | int] = {
             "part": "snippet,status,player",
             "maxWidth": EMBED_MAX_WIDTH,
             "id": ",".join(ids),

@@ -10,7 +10,8 @@ never repaired silently. Measured in research/experiments/dish_revision (rounds 
 
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from typing import Any
 
 from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError
 from app.dishes.http import APP_READ_SECONDS
@@ -74,7 +75,7 @@ class Reviser:
         if view is None:
             return None
         recipe, status = view.recipe, view.availability
-        base = {"dish_id": dish_id, "original": recipe, "availability": status}
+        base: dict[str, Any] = {"dish_id": dish_id, "original": recipe, "availability": status}
         if "unavailable" not in status:  # nothing to change: no model call
             same = RevisedRecipe(
                 servings=recipe.servings,
@@ -95,13 +96,14 @@ class Reviser:
         if self.llm is None:
             raise DishLLMError(MODEL_NOT_CONFIGURED)
         request = revise_request(recipe, view.name, status, ingredients)
-        return self._answer(request, recipe, status, ingredients, base, started)
+        return self._answer(self.llm, request, recipe, status, ingredients, base, started)
 
     def _answer(
         self,
+        llm: ChatModel,
         request: ModelRequest,
         recipe: SourceRecipe,
-        status: list[str],
+        status: Sequence[str],
         ingredients: list[str],
         base: dict,
         started: float,
@@ -109,7 +111,7 @@ class Reviser:
         """A checked answer. When the check rejects it, the model is asked once more with the
         check's message, if one more call still fits in the app's wait; the second answer is
         checked the same way and is never repaired."""
-        data = self.llm.complete(request.system, request.user, request.name, request.schema)
+        data = llm.complete(request.system, request.user, request.name, request.schema)
         response, violation = self._judge(data, recipe, status, ingredients, base)
         if violation is None:
             return response
@@ -118,14 +120,14 @@ class Reviser:
             return response
         log.info("dish revision: asking again after code=%s", violation.code)
         again = reask_request(request, violation.message)
-        data = self.llm.complete(again.system, again.user, again.name, again.schema)
+        data = llm.complete(again.system, again.user, again.name, again.schema)
         return self._judge(data, recipe, status, ingredients, base)[0]
 
     def _judge(
         self,
         data: dict,
         recipe: SourceRecipe,
-        status: list[str],
+        status: Sequence[str],
         ingredients: list[str],
         base: dict,
     ) -> tuple[ReviseResponse, Violation | None]:

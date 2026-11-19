@@ -9,6 +9,7 @@ the caller reports it as a failure and never repairs it silently.
 # ruff: noqa: E501
 
 import re
+from collections.abc import Sequence
 
 from app.dishes.answers import strings
 from app.dishes.korean import attach
@@ -70,7 +71,7 @@ def mentions(text: str, name: str, kept: set[str] | frozenset[str] = frozenset()
     return False
 
 
-def identity_missing(dish_name: str, recipe: SourceRecipe, status: list[str]) -> list[str]:
+def identity_missing(dish_name: str, recipe: SourceRecipe, status: Sequence[str]) -> list[str]:
     """Unavailable recipe ingredients that the dish is named after, in recipe order.
 
     A name of two or more characters counts when it (or a synonym) occurs in the dish name; a
@@ -92,7 +93,7 @@ def identity_missing(dish_name: str, recipe: SourceRecipe, status: list[str]) ->
 
 def check_main_kept(
     recipe: SourceRecipe,
-    status: list[str],
+    status: Sequence[str],
     revised: RevisedRecipe,
     changes: list[Change],
 ) -> None:
@@ -113,7 +114,9 @@ def check_main_kept(
             raise RefusalNeeded(row.name)
 
 
-def check_short_mentions(recipe: SourceRecipe, status: list[str], revised: RevisedRecipe) -> None:
+def check_short_mentions(
+    recipe: SourceRecipe, status: Sequence[str], revised: RevisedRecipe
+) -> None:
     """Raise Violation when a step or tip still names a removed one-character ingredient (밥, 김);
     ``check`` covers the longer names."""
     revised_keys = {_key(r.name) for r in revised.ingredients}
@@ -133,7 +136,7 @@ def _kept(name: str, revised_keys: set[str]) -> bool:
 def check(
     data: dict,
     recipe: SourceRecipe,
-    status: list[str],
+    status: Sequence[str],
     index: Availability,
     owned_names: list[str],
 ) -> tuple[RevisedRecipe, list[Change]]:
