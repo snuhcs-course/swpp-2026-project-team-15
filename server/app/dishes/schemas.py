@@ -1,7 +1,14 @@
 # AI-generated with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
+
+# One ingredient name as sent by the app. The longest name in any of our tables is 20 characters
+# (a recipe row with a parenthesised list); the app's own ingredient table tops out at 8. Without
+# a limit a single name could carry hundreds of thousands of paid prompt tokens (server review,
+# research/experiments/server_review).
+NAME_MAX = 20
+IngredientName = Annotated[str, StringConstraints(max_length=NAME_MAX)]
 
 
 class DishInfo(BaseModel):
@@ -25,7 +32,7 @@ class Video(BaseModel):
 
 
 class SuggestRequest(BaseModel):
-    ingredients: list[str] = Field(min_length=1, max_length=60)
+    ingredients: list[IngredientName] = Field(min_length=1, max_length=60)
 
 
 class SuggestedDish(BaseModel):
@@ -60,8 +67,8 @@ class VideosResponse(BaseModel):
 
 class AdaptRequest(BaseModel):
     dish_id: str = Field(min_length=1, max_length=80)
-    ingredients: list[str] = Field(min_length=1, max_length=60)
-    missing: list[str] = Field(default_factory=list, max_length=20)
+    ingredients: list[IngredientName] = Field(min_length=1, max_length=60)
+    missing: list[IngredientName] = Field(default_factory=list, max_length=20)
 
 
 class Substitution(BaseModel):
@@ -83,7 +90,9 @@ class IngredientCatalogResponse(BaseModel):
 
 
 class IngredientSuggestionRequest(BaseModel):
-    ingredients: list[str] = Field(description="Confirmed names in the user's fridge")
+    ingredients: list[IngredientName] = Field(
+        max_length=60, description="Confirmed names in the user's fridge"
+    )
 
 
 class IngredientSuggestion(BaseModel):
@@ -131,7 +140,7 @@ class SourceRecipe(BaseModel):
 
 class RecipeRequest(BaseModel):
     dish_id: str = Field(min_length=1, max_length=80)
-    ingredients: list[str] = Field(default_factory=list, max_length=60)
+    ingredients: list[IngredientName] = Field(default_factory=list, max_length=60)
 
 
 class RecipeView(BaseModel):
@@ -145,7 +154,7 @@ class RecipeView(BaseModel):
 
 class ReviseRequest(BaseModel):
     dish_id: str = Field(min_length=1, max_length=80)
-    ingredients: list[str] = Field(min_length=1, max_length=60)
+    ingredients: list[IngredientName] = Field(min_length=1, max_length=60)
 
 
 class RevisedIngredient(BaseModel):

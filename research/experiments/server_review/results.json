@@ -43,5 +43,46 @@
    "inside_kept_name": 0
   },
   "regression_found_and_fixed_during_study": "a first candidate blanked every kept name, so a kept 오일 hid a removed 올리브 오일 (bacon-pasta N3a answer 1 would have passed); final version blanks only kept names that contain the removed name"
+ },
+ "finding_2": {
+  "reproduced": true,
+  "longest_real_names": {
+   "dish_key_and_optional": 5,
+   "dish_names": 9,
+   "name_table": 9,
+   "stored_recipe_rows": 20,
+   "app_ingredient_table": 8,
+   "autocomplete": 7
+  },
+  "longest_real_name_example": "a recipe row with a parenthesised list (20 characters)",
+  "suggest_prompt_characters_by_name_length": {
+   "1": 2998,
+   "1000": 4996,
+   "10000": 22996,
+   "100000": 202996
+  },
+  "paid_calls": {
+   "suggest_1_char": {
+    "status": 200,
+    "prompt_tokens": 1008,
+    "cost_usd": 0.0001752
+   },
+   "suggest_10000_chars": {
+    "status": 400,
+    "note": "provider rejected the request (name also enters the answer schema)"
+   },
+   "revise_1_char": {
+    "status": 200,
+    "prompt_tokens": 1070,
+    "cost_usd": 0.0001218
+   },
+   "revise_10000_chars": {
+    "status": 200,
+    "prompt_tokens": 6069,
+    "cost_usd": 0.0006217
+   }
+  },
+  "fix": "each ingredient name at most 20 characters (the longest name in any of our tables); the addition-suggestion list at most 60 like the others; refused with 422 before any model call",
+  "after": "21-character name -> 422 on suggest, adapt, recipe, revise and ingredient-suggestions; 61 names -> 422; the 20-character real name -> 200"
  }
 }

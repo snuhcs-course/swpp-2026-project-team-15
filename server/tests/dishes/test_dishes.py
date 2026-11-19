@@ -557,6 +557,38 @@ def test_suggestions_carry_a_card_photo_without_asking_youtube(catalog):
     assert calls == []  # neither the model search nor YouTube was asked
 
 
+@pytest.mark.parametrize(
+    ("path", "body"),
+    [
+        ("/dishes/suggest", {"ingredients": ["가" * 21]}),
+        ("/dishes/adapt", {"dish_id": "egg-roll", "ingredients": ["계란"], "missing": ["가" * 21]}),
+        ("/dishes/recipe", {"dish_id": "egg-roll", "ingredients": ["가" * 21]}),
+        ("/dishes/revise", {"dish_id": "egg-roll", "ingredients": ["가" * 21]}),
+        ("/recipes/ingredient-suggestions", {"ingredients": ["가" * 21]}),
+        ("/recipes/ingredient-suggestions", {"ingredients": ["계란"] * 61}),
+    ],
+)
+def test_an_overlong_name_or_list_is_refused_before_any_model_call(catalog, path, body):
+    # Server review (2026-11-19): a 10,000-character name added about 5,000 paid prompt tokens.
+    from app.dishes.recipes import RecipeStore
+    from app.dishes.revision import Reviser
+
+    llm, recipes = FakeLLM(), RecipeStore()
+    service = DishService(
+        catalog, llm, None, recipes, Reviser(catalog, catalog, llm, recipes), catalog
+    )
+    assert client_for(service).post(path, json=body).status_code == 422
+    assert llm.calls == []
+
+
+def test_the_longest_real_name_is_accepted(catalog):
+    llm = FakeLLM(_answer(("김치볶음밥", ["밥", "김치"], [])))
+    body = {"ingredients": ["모둠버섯(표고, 느타리, 새송이버섯)", "밥", "김치"]}
+    assert (
+        client_for(DishService(catalog, llm)).post("/dishes/suggest", json=body).status_code == 200
+    )
+
+
 # --- start from the environment -------------------------------------------------------------
 
 
