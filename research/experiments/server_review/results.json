@@ -120,5 +120,270 @@
   "derivation": "reuse a check of stored videos for dishes*86400/(10000 - recipe videos) seconds: checking all 128 dishes once per period plus one credit lookup per recipe video a day stays within the default 10,000 daily units",
   "cost_of_the_fix": "a video removed or made private can still be listed for up to about 19 minutes after the last check (the player then shows its own error notice); before, every tap re-checked",
   "not_done": "a per-minute cap on paid searches: with the empty finding cached, paid searches are at most one per dish per day (128)"
+ },
+ "finding_4": {
+  "reproduced": true,
+  "names": 50,
+  "before": {
+   "names": 50,
+   "card_vs_addition": 23,
+   "card_vs_recipe": 23,
+   "addition_vs_recipe": 7
+  },
+  "after": {
+   "names": 50,
+   "card_vs_addition": 0,
+   "card_vs_recipe": 0,
+   "addition_vs_recipe": 0
+  },
+  "before_disagreements": [
+   {
+    "name": "햇반",
+    "card": [],
+    "addition": [
+     "밥"
+    ],
+    "recipe": [
+     "밥"
+    ]
+   },
+   {
+    "name": "즉석밥",
+    "card": [],
+    "addition": [
+     "밥"
+    ],
+    "recipe": [
+     "밥"
+    ]
+   },
+   {
+    "name": "찬밥",
+    "card": [],
+    "addition": [
+     "밥"
+    ],
+    "recipe": [
+     "밥"
+    ]
+   },
+   {
+    "name": "현미밥",
+    "card": [],
+    "addition": [
+     "밥"
+    ],
+    "recipe": [
+     "밥"
+    ]
+   },
+   {
+    "name": "삼겹살",
+    "card": [],
+    "addition": [
+     "돼지고기"
+    ],
+    "recipe": [
+     "돼지고기"
+    ]
+   },
+   {
+    "name": "목살",
+    "card": [],
+    "addition": [
+     "돼지고기"
+    ],
+    "recipe": [
+     "돼지고기"
+    ]
+   },
+   {
+    "name": "대패삼겹살",
+    "card": [],
+    "addition": [
+     "돼지고기"
+    ],
+    "recipe": [
+     "돼지고기"
+    ]
+   },
+   {
+    "name": "닭가슴살",
+    "card": [],
+    "addition": [
+     "닭고기"
+    ],
+    "recipe": [
+     "닭고기"
+    ]
+   },
+   {
+    "name": "불고기감",
+    "card": [],
+    "addition": [
+     "소고기"
+    ],
+    "recipe": [
+     "소고기"
+    ]
+   },
+   {
+    "name": "차돌박이",
+    "card": [],
+    "addition": [
+     "소고기"
+    ],
+    "recipe": [
+     "소고기"
+    ]
+   },
+   {
+    "name": "스팸",
+    "card": [],
+    "addition": [
+     "소시지",
+     "햄"
+    ],
+    "recipe": [
+     "햄"
+    ]
+   },
+   {
+    "name": "비엔나소시지",
+    "card": [],
+    "addition": [
+     "소시지",
+     "햄"
+    ],
+    "recipe": [
+     "소시지"
+    ]
+   },
+   {
+    "name": "런천미트",
+    "card": [],
+    "addition": [
+     "소시지",
+     "햄"
+    ],
+    "recipe": [
+     "햄"
+    ]
+   },
+   {
+    "name": "청양고추",
+    "card": [],
+    "addition": [
+     "고추"
+    ],
+    "recipe": [
+     "고추"
+    ]
+   },
+   {
+    "name": "풋고추",
+    "card": [],
+    "addition": [
+     "고추"
+    ],
+    "recipe": [
+     "고추"
+    ]
+   },
+   {
+    "name": "슬라이스치즈",
+    "card": [],
+    "addition": [],
+    "recipe": [
+     "치즈"
+    ]
+   },
+   {
+    "name": "모짜렐라치즈",
+    "card": [],
+    "addition": [],
+    "recipe": [
+     "치즈"
+    ]
+   },
+   {
+    "name": "묵은지",
+    "card": [],
+    "addition": [
+     "김치"
+    ],
+    "recipe": [
+     "김치"
+    ]
+   },
+   {
+    "name": "쪽파",
+    "card": [],
+    "addition": [
+     "대파"
+    ],
+    "recipe": []
+   },
+   {
+    "name": "소면",
+    "card": [],
+    "addition": [
+     "국수"
+    ],
+    "recipe": [
+     "국수"
+    ]
+   },
+   {
+    "name": "신라면",
+    "card": [],
+    "addition": [
+     "라면"
+    ],
+    "recipe": [
+     "라면"
+    ]
+   },
+   {
+    "name": "팽이버섯",
+    "card": [],
+    "addition": [
+     "버섯"
+    ],
+    "recipe": [
+     "버섯"
+    ]
+   },
+   {
+    "name": "파스타",
+    "card": [],
+    "addition": [
+     "스파게티면"
+    ],
+    "recipe": [
+     "스파게티면"
+    ]
+   },
+   {
+    "name": "캔옥수수",
+    "card": [],
+    "addition": [
+     "옥수수"
+    ],
+    "recipe": [
+     "옥수수"
+    ]
+   },
+   {
+    "name": "튀김가루",
+    "card": [],
+    "addition": [
+     "부침가루"
+    ],
+    "recipe": []
+   }
+  ],
+  "fix": "one rule for who owns what: the reviewed name table (recipe_names.json) now decides on the cards (closed missing choices), in the addition suggestions and in the recipe view; 불고기감, 찬밥, 런천미트 added to it",
+  "behaviour_change": "a stand-in is no longer ownership in the addition suggestions either (쪽파 does not own 대파, 튀김가루 does not own 부침가루), as already in the recipe view; the dish list's equivalents table is kept for autocomplete and the research replays"
  }
 }

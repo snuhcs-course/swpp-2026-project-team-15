@@ -38,8 +38,31 @@ RUNS = [
     (RUN_DIR / "round3-N1-20261119T032656Z.json", DATA / "recipes.pre-salad-row.json"),
 ]
 # Particles and endings that may follow a noun in a recipe step (longest first).
-PARTICLES = ("으로", "이랑", "에서", "까지", "부터", "하고", "처럼", "보다", "에다",
-             "을", "를", "이", "가", "은", "는", "과", "와", "도", "에", "만", "의", "로", "랑")
+PARTICLES = (
+    "으로",
+    "이랑",
+    "에서",
+    "까지",
+    "부터",
+    "하고",
+    "처럼",
+    "보다",
+    "에다",
+    "을",
+    "를",
+    "이",
+    "가",
+    "은",
+    "는",
+    "과",
+    "와",
+    "도",
+    "에",
+    "만",
+    "의",
+    "로",
+    "랑",
+)
 
 
 def key(text: str) -> str:
@@ -64,7 +87,9 @@ def names_in(text: str, form: str) -> bool:
     return re.search(rf"(?<![가-힣]){re.escape(form)}(?:{tail})?(?![가-힣])", text) is not None
 
 
-def candidate_hits(gone: list[str], kept: list[str], texts: list[str]) -> list[tuple[str, str, str]]:
+def candidate_hits(
+    gone: list[str], kept: list[str], texts: list[str]
+) -> list[tuple[str, str, str]]:
     hits = []
     kept_forms = sorted({f for k in kept for f in with_synonyms([k])}, key=len, reverse=True)
     for name in gone:
@@ -103,7 +128,11 @@ def main() -> None:
             for case in cases:
                 recipe = recipes.get(case["dish_id"])
                 for answer in case.get("answers") or []:
-                    if recipe is None or not isinstance(answer, dict) or answer.get("can_revise") is False:
+                    if (
+                        recipe is None
+                        or not isinstance(answer, dict)
+                        or answer.get("can_revise") is False
+                    ):
                         continue
                     totals["answers"] += 1
                     owned = names.owned(case["ingredients"])
@@ -123,8 +152,11 @@ def main() -> None:
                     if verdict != "pass":
                         continue
                     kept = [key(r.name) for r in revised.ingredients]
-                    gone = [key(r.name) for r, s in zip(recipe.ingredients, status) if s == "unavailable"
-                            and not (with_synonyms([key(r.name)]) & set(kept))]
+                    gone = [
+                        key(r.name)
+                        for r, s in zip(recipe.ingredients, status)
+                        if s == "unavailable" and not (with_synonyms([key(r.name)]) & set(kept))
+                    ]
                     texts = [s.text for s in revised.steps] + revised.tips
                     hits = candidate_hits(gone, kept, texts)
                     if hits:
@@ -132,11 +164,22 @@ def main() -> None:
                         for name, form, text in hits:
                             k = kind(name, form, kept)
                             totals[f"kind:{k}"] += 1
-                            examples.append({"file": Path(path).name, "variant": variant,
-                                             "dish_id": case["dish_id"], "removed": name, "form": form,
-                                             "kind": k, "text": text})
-    out = {"answers_replayed": totals.pop("answers"), "counts": dict(sorted(totals.items())),
-           "examples": examples}
+                            examples.append(
+                                {
+                                    "file": Path(path).name,
+                                    "variant": variant,
+                                    "dish_id": case["dish_id"],
+                                    "removed": name,
+                                    "form": form,
+                                    "kind": k,
+                                    "text": text,
+                                }
+                            )
+    out = {
+        "answers_replayed": totals.pop("answers"),
+        "counts": dict(sorted(totals.items())),
+        "examples": examples,
+    }
     print(json.dumps(out, ensure_ascii=False, indent=1))
 
 

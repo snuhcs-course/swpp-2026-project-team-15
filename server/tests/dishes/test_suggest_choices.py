@@ -131,3 +131,22 @@ def test_a_runaway_answer_is_ordered_and_cut_to_the_list_limit():
     assert len(dishes) == SUGGEST_LIMIT < len(names)
     assert all(d["missing"] == [] for d in dishes)  # fewest missing kept first
     assert model.sent[0][4] == SUGGEST_MAX_TOKENS
+
+
+def test_the_running_server_uses_one_owned_rule_for_cards_additions_and_recipes():
+    # Server review (2026-11-19): with 햇반 the card could still list 밥 as missing while the
+    # addition suggestions and the recipe view counted it as owned (23 of 50 Korean names).
+    from app.dishes.dependencies import build_dish_service
+
+    service = build_dish_service({})
+    model = RecordingModel({"dishes": []})
+    service.llm = model
+    client = TestClient(create_app(StubVision(), dishes=service))
+    assert (
+        client.post("/dishes/suggest", json={"ingredients": ["햇반", "삼겹살"]}).status_code == 200
+    )
+    missing = model.sent[0][3]["properties"]["dishes"]["items"]["properties"]["missing"]["items"]
+    assert "밥" not in missing["enum"] and "돼지고기" not in missing["enum"]
+    held = service.catalog.owned(["햇반", "쪽파"])
+    assert service.catalog.status("밥", held) == "owned"
+    assert service.catalog.status("대파", held) == "unavailable"  # a stand-in is not ownership

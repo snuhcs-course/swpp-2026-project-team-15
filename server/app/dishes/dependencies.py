@@ -55,16 +55,17 @@ def build_video_finder(
 def build_dish_service(env: Mapping[str, str] | None = None, model_key: str = "") -> DishService:
     """The service of the running app. ``model_key`` is the key of the general model settings."""
     env = os.environ if env is None else env
-    catalog = Catalog.load()
+    # One rule for who owns what: the reviewed name table decides on the cards, in the addition
+    # suggestions and in the recipe view (research/experiments/server_review, finding 4).
+    names = RecipeNames.load()
+    catalog = Catalog.load(names=names)
     llm = build_chat_model(env, model_key)
     stored_recipes = RecipeStore.load(env.get("DISH_RECIPES"))
     recipes: RecipeBook = stored_recipes
     youtube_key = env.get("YOUTUBE_API_KEY", "")
     if youtube_key.strip():
         recipes = CreditedRecipes(recipes, YouTubeVerifier(youtube_key))
-    # Recipe rows are matched with the reviewed name table, not the dish list's stand-ins
-    # (research/experiments/dish_revision, round 3).
-    reviser = Reviser(catalog, RecipeNames.load(), llm, recipes)
+    reviser = Reviser(catalog, names, llm, recipes)
     key = env.get("DISH_LLM_API_KEY") or model_key
     return DishService(
         catalog,
@@ -74,6 +75,7 @@ def build_dish_service(env: Mapping[str, str] | None = None, model_key: str = ""
         reviser=reviser,
         index=catalog,
         assumed=catalog.staples,
+        names=names,
     )
 
 

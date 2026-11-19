@@ -4,8 +4,12 @@
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from app.dishes.synonyms import with_synonyms
+
+if TYPE_CHECKING:
+    from app.dishes.roles import Availability
 
 DEFAULT_DATA = Path(__file__).with_name("dishes.json")
 STAPLES_FILE = Path(__file__).with_name("staples.json")
@@ -40,8 +44,13 @@ def load_staples(path: Path | str | None = None) -> frozenset[str]:
 
 
 class Catalog:
-    def __init__(self, data: dict, staples: frozenset[str]):
+    """The dish list. With ``names`` (the reviewed name table, recipe_names.py) ownership is
+    decided by that one rule, the same as on the cards and in the recipe view; without it, by the
+    list's own ``equivalents`` (kept for the research replays)."""
+
+    def __init__(self, data: dict, staples: frozenset[str], names: "Availability | None" = None):
         self.staples = staples
+        self._names = names
         self.equivalents = {k: tuple(v) for k, v in data.get("equivalents", {}).items()}
         self.substitutes = {k: tuple(v) for k, v in data.get("substitutes", {}).items()}
         self.dishes: dict[str, Dish] = {}
@@ -60,10 +69,15 @@ class Catalog:
         self._by_name = {d.name: d for d in self.dishes.values()}
 
     @classmethod
-    def load(cls, path: Path | str | None = None, staples: frozenset[str] | None = None):
+    def load(
+        cls,
+        path: Path | str | None = None,
+        staples: frozenset[str] | None = None,
+        names: "Availability | None" = None,
+    ):
         file = Path(path or DEFAULT_DATA)
         data = json.loads(file.read_text(encoding="utf-8"))
-        return cls(data, load_staples() if staples is None else staples)
+        return cls(data, load_staples() if staples is None else staples, names)
 
     def __len__(self) -> int:
         return len(self.dishes)
@@ -79,6 +93,8 @@ class Catalog:
 
     def owned(self, ingredients: list[str]) -> set[str]:
         """Names the user has, widened by synonyms and by what an item can stand in for."""
+        if self._names is not None:
+            return self._names.owned(ingredients)
         names = {n.strip().replace(" ", "") for n in ingredients if n and n.strip()}
         owned = with_synonyms(sorted(names))
         for key, alts in self.equivalents.items():
@@ -96,6 +112,8 @@ class Catalog:
         return Match(dish, tuple(have), tuple(missing))
 
     def _covered(self, key: str, owned: set[str]) -> bool:
+        if self._names is not None:
+            return self._names.status(key, owned) != "unavailable"
         return key in owned or bool(with_synonyms([key]) & owned)
 
     def status(self, name: str, owned: set[str]) -> str:

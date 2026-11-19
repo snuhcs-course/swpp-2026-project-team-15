@@ -138,7 +138,10 @@
     "떡국떡": "떡",
     "김밥용김": "김",
     "잡곡밥": "밥",
-    "현미밥": "밥"
+    "현미밥": "밥",
+    "불고기감": "소고기",
+    "찬밥": "밥",
+    "런천미트": "햄"
   },
   "kinds_note": "A general name in a recipe is covered by owning any one kind of it; owning the general name does not cover a specific kind.",
   "kinds": {

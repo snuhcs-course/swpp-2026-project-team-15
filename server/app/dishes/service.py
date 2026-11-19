@@ -15,7 +15,7 @@ from app.dishes.choices import ingredient_vocabulary, suggest_choices
 from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError, VideoError
 from app.dishes.prompts import adapt_request, suggest_request
 from app.dishes.revision import Reviser
-from app.dishes.roles import ChatModel, DishCatalog, IngredientIndex, RecipeBook
+from app.dishes.roles import Availability, ChatModel, DishCatalog, IngredientIndex, RecipeBook
 from app.dishes.schemas import AdaptResponse, SuggestResponse, VideosResponse
 from app.dishes.videos import VideoFinder
 from app.dishes.youtube import thumbnail_url
@@ -33,6 +33,7 @@ class DishService:
         reviser: Reviser | None = None,
         index: IngredientIndex | None = None,
         assumed: frozenset[str] = frozenset(),
+        names: Availability | None = None,
     ):
         self.catalog = catalog
         self.llm = llm
@@ -41,6 +42,7 @@ class DishService:
         self.reviser = reviser
         self.index = index
         self.assumed = assumed
+        self.names = names  # who owns what: the same rule as the recipe view
         self._vocabulary = ingredient_vocabulary(catalog.all())
 
     def suggest(self, ingredients: list[str]) -> SuggestResponse:
@@ -48,7 +50,7 @@ class DishService:
         if self.llm is None:
             raise DishLLMError(MODEL_NOT_CONFIGURED)
         names = [d.name for d in self.catalog.all()]
-        choices = suggest_choices(ingredients, names, self._vocabulary, self.assumed)
+        choices = suggest_choices(ingredients, names, self._vocabulary, self.assumed, self.names)
         request = suggest_request(choices)
         data = self.llm.complete(
             request.system, request.user, request.name, request.schema, request.max_tokens
