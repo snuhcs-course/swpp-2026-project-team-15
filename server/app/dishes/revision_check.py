@@ -16,8 +16,13 @@ from app.dishes.roles import Availability
 from app.dishes.schemas import Change, RecipeStep, RevisedIngredient, RevisedRecipe, SourceRecipe
 from app.dishes.synonyms import with_synonyms
 
-# Korean particles that may follow a one-character ingredient name in a step ("밥을 넣고").
-_PARTICLES = "을를이가은는과와도에만의로랑"
+# Particles that may follow a one-character ingredient name in a step ("밥을 넣고", "밥으로").
+# The two-syllable ones were missing until the server review (2026-11-19).
+_PARTICLES = (
+    "으로", "이랑", "에서", "까지", "부터", "하고", "처럼", "보다",
+    "을", "를", "이", "가", "은", "는", "과", "와", "도", "에", "만", "의", "로", "랑",
+)  # fmt: skip
+_TAIL = "|".join(_PARTICLES)
 
 
 class RefusalNeeded(Exception):
@@ -41,17 +46,28 @@ def _key(text: str) -> str:
     return text.strip().replace(" ", "")
 
 
-def mentions(text: str, name: str) -> bool:
-    """Whether ``text`` names the ingredient. Names of two or more characters match anywhere
-    (spaces ignored); a one-character name (밥, 김, 파) only as a word of its own, optionally
-    followed by a particle, so that 김치 does not count as 김 and 대파 or 파프리카 not as 파."""
-    key = _key(name)
-    if len(key) >= 2:
-        return key in _key(text)
-    if not key:
-        return False
-    word = rf"(?<![가-힣]){re.escape(key)}(?=[{_PARTICLES}]?(?![가-힣]))"
-    return re.search(word, text) is not None
+def mentions(text: str, name: str, kept: set[str] | frozenset[str] = frozenset()) -> bool:
+    """Whether ``text`` names the ingredient by any of its synonyms (계란/달걀).
+
+    Names of two or more characters match anywhere (spaces ignored); a one-character name (밥,
+    김, 파) only as a word of its own, optionally followed by a particle, so that 김치 does not
+    count as 김 and 대파 or 파프리카 not as 파. The ``kept`` names are blanked out first, longest
+    first, so a kept 고추장 does not count as a mention of a removed 고추. Only kept names that
+    contain the removed name are blanked: a kept 오일 must not hide a removed 올리브 오일."""
+    kept_forms = {f for k in kept for f in with_synonyms([_key(k)])}
+    for form in with_synonyms([_key(name)]):
+        if not form:
+            continue
+        spaced, flat = text, _key(text)
+        for other in sorted((k for k in kept_forms if form in k and k != form), key=len)[::-1]:
+            spaced = spaced.replace(other, "□" * len(other))
+            flat = flat.replace(other, "□" * len(other))
+        if len(form) >= 2 and form in flat:
+            return True
+        word = rf"(?<![가-힣]){re.escape(form)}(?:{_TAIL})?(?![가-힣])"
+        if len(form) == 1 and re.search(word, spaced):
+            return True
+    return False
 
 
 def identity_missing(dish_name: str, recipe: SourceRecipe, status: list[str]) -> list[str]:
@@ -106,7 +122,7 @@ def check_short_mentions(recipe: SourceRecipe, status: list[str], revised: Revis
         if s != "unavailable" or len(name) != 1 or _kept(name, revised_keys):
             continue
         texts = [step.text for step in revised.steps] + revised.tips
-        if any(mentions(t, name) for t in texts):
+        if any(mentions(t, name, revised_keys) for t in texts):
             raise Violation("mentions_unavailable", f"A step or tip mentions {name}")
 
 
@@ -155,9 +171,8 @@ def check(
         if s == "unavailable" and not _kept(r.name, revised_keys)
     ]
     for text in steps + tips:
-        flat = _key(text)
         for name in gone:
-            if len(name) >= 2 and name in flat and not any(name in k for k in revised_keys):
+            if len(name) >= 2 and mentions(text, name, revised_keys):
                 raise Violation("mentions_unavailable", f"A step or tip mentions {name}")
     servings = data.get("servings")
     return (

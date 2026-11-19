@@ -245,6 +245,63 @@ def test_a_removed_one_character_ingredient_in_a_step_fails(catalog):
     assert result.status == "failed" and result.error.code == "mentions_unavailable"
 
 
+@pytest.mark.parametrize(
+    ("text", "name"),
+    [("밥으로 주먹밥을 만든다", "밥"), ("김으로 싼다", "김"), ("밥에서 김이 난다", "밥")],
+)
+def test_a_one_character_name_before_a_two_syllable_particle_is_found(text, name):
+    # Server review (2026-11-19): 으로, 이랑, 에서, 까지 were not in the particle list.
+    from app.dishes.revision_check import mentions
+
+    assert mentions(text, name)
+
+
+def test_a_removed_ingredient_named_by_its_synonym_in_a_step_fails(catalog):
+    # Server review (2026-11-19): 계란 removed, the step says 달걀 (round 3: 참치 for 참치캔).
+    data = {**GOOD, "steps": ["기름에 김치를 볶는다.", "달걀을 풀어 밥과 볶는다."]}
+    result = revised(catalog, data)
+    assert result.status == "failed" and result.error.code == "mentions_unavailable"
+
+
+def test_a_removed_name_inside_a_kept_name_does_not_hide_its_own_mention(catalog):
+    # Server review (2026-11-19): with 고추장 kept, a step naming the removed 고추 passed.
+    recipe = SourceRecipe.model_validate(
+        {
+            **RECIPE,
+            "dish_id": "omurice",
+            "ingredients": [
+                *RECIPE["ingredients"],
+                {"name": "고추", "amount": "1개", "role": "secondary"},
+                {"name": "고추장", "amount": "1큰술", "role": "seasoning"},
+            ],
+        }
+    )
+    data = {
+        **GOOD,
+        "ingredients": [*GOOD["ingredients"], {"name": "고추장", "amount": "1큰술"}],
+        "steps": ["고추를 썰어 김치와 볶는다.", "고추장과 밥을 넣어 볶는다."],
+        "changes": [
+            *GOOD["changes"],
+            {"reason": "고추가 없어요.", "ingredient_refs": [6], "step_refs": [1]},
+        ],
+    }
+    fridge = ["밥", "김치", "고추장"]
+    reviser = Reviser(catalog, catalog, FakeLLM(data, data), RecipeStore({"omurice": recipe}))
+    result = reviser.revise("omurice", fridge)
+    assert result.status == "failed" and result.error.code == "mentions_unavailable"
+    clean = {**data, "steps": ["김치를 볶는다.", "고추장과 밥을 넣어 볶는다."]}
+    reviser = Reviser(catalog, catalog, FakeLLM(clean), RecipeStore({"omurice": recipe}))
+    assert reviser.revise("omurice", fridge).status == "revised"
+
+
+def test_a_kept_short_name_does_not_hide_a_removed_longer_one():
+    # Found while replaying round 3: a kept 오일 must not blank out a removed 올리브 오일.
+    from app.dishes.revision_check import mentions
+
+    assert mentions("팬에 올리브 오일을 두르세요.", "올리브 오일", {"오일", "베이컨"})
+    assert not mentions("팬에 오일을 두르세요.", "올리브 오일", {"오일"})
+
+
 def test_synonym_names_count_as_owned_and_kept(catalog):
     data = {**GOOD, "ingredients": [{"name": "달걀", "amount": "1개"}] + GOOD["ingredients"]}
     data["changes"] = GOOD["changes"][:1] + [

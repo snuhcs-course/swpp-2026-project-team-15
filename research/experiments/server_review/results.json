@@ -1,0 +1,47 @@
+{
+ "finding_1": {
+  "answers_replayed": 374,
+  "before": {
+   "candidate_flags_a_passed_answer": 2,
+   "current:bad_reference": 61,
+   "current:main_dropped": 10,
+   "current:mentions_unavailable": 67,
+   "current:pass": 185,
+   "current:refusal": 19,
+   "current:unavailable_ingredient": 15,
+   "current:unexplained_change": 17,
+   "kind:synonym": 2
+  },
+  "after": {
+   "current:bad_reference": 61,
+   "current:main_dropped": 10,
+   "current:mentions_unavailable": 69,
+   "current:pass": 183,
+   "current:refusal": 19,
+   "current:unavailable_ingredient": 15,
+   "current:unexplained_change": 17
+  },
+  "changed_verdicts": [
+   {
+    "run": "N3a",
+    "dish_id": "kimchi-bibimbap",
+    "before": "pass",
+    "after": "mentions_unavailable",
+    "read": "true miss: removed 참치캔 named as 참치"
+   },
+   {
+    "run": "N1 (before rebuild)",
+    "dish_id": "kimchi-bibimbap",
+    "before": "pass",
+    "after": "mentions_unavailable",
+    "read": "true miss: same"
+   }
+  ],
+  "kinds_in_recorded_answers": {
+   "synonym": 2,
+   "one_character_with_two_syllable_particle": 0,
+   "inside_kept_name": 0
+  },
+  "regression_found_and_fixed_during_study": "a first candidate blanked every kept name, so a kept 오일 hid a removed 올리브 오일 (bacon-pasta N3a answer 1 would have passed); final version blanks only kept names that contain the removed name"
+ }
+}
