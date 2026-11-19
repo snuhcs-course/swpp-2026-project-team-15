@@ -103,7 +103,10 @@ def git(*args: str) -> str:
 
 def reference(catalog: Catalog, ingredients: list[str]) -> set[str]:
     """Dishes with an owned key ingredient and at most one missing key ingredient."""
-    return {m.dish.id for m in catalog.rank(ingredients) if len(m.missing) <= 1}
+    # Catalog.rank was removed from the server (unused there); same rule kept here.
+    owned = catalog.owned(ingredients)
+    matches = (catalog.match(d, owned) for d in catalog.all())
+    return {m.dish.id for m in matches if m.have and len(m.missing) <= 1}
 
 
 def missing_counts(catalog: Catalog, ingredients: list[str]) -> dict[str, int]:

@@ -77,13 +77,6 @@ def test_synonyms_and_staples(catalog):
     assert garlic.missing == ()  # 마늘 is covered by the staple 다진마늘
 
 
-def test_rules_rank_fewest_missing_first_and_need_one_owned_item(catalog):
-    ranked = catalog.rank(["계란", "대파"])
-    assert ranked and all(m.have for m in ranked)
-    assert [len(m.missing) for m in ranked] == sorted(len(m.missing) for m in ranked)
-    assert catalog.rank(["우주식량"]) == []
-
-
 # --- suggest (naive: the model answers, the server checks the names) -------------------------
 
 

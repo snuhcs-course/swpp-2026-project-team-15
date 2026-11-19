@@ -139,13 +139,6 @@ class Catalog:
             return "assumed"
         return "owned" if self._covered(key, owned) else "unavailable"
 
-    def rank(self, ingredients: list[str]) -> list[Match]:
-        """Every dish sharing a main ingredient with the owned ones: fewest missing, then name."""
-        owned = self.owned(ingredients)
-        matches = [m for d in self.dishes.values() if (m := self.match(d, owned)).have]
-        matches.sort(key=lambda m: (len(m.missing), m.dish.name))
-        return matches
-
     # -- names for autocomplete and addition suggestions without the recipe database -------------
     def ingredient_names(self) -> list[str]:
         names: set[str] = set(self.staples) - {WATER} | set(PANTRY_NAMES)
