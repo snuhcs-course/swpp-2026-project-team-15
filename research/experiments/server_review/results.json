@@ -471,5 +471,15 @@
   "before": "a verifier that always returns [] passed all 3 verifier contract tests",
   "after": "it fails the order test (expects both known usable ids, in the order asked); the fake and the real YouTube verifier pass",
   "also_seen": "the chat model contract only checks that an answer is a dict; an always-{} model passes it, but the services check every answer's shape themselves, so it was left as is"
+ },
+ "finding_13": {
+  "reproduced": true,
+  "fix": "tests added with findings 1-12 (particles, synonyms, names inside kept names, non-text values, overlong names, repeated video taps, retry budget, second-call budget, credit outage, one owned rule, key rule, verifier contract)",
+  "proposal_not_done": "tests/dishes/test_deploy_modes.py asserts nginx has no rate limit. After this work every paid route is bounded per request and searches per dish per day, but a client can still repeat suggestions or revisions; a per-client nginx limit would need the app's real request pattern to set, which is not measured, so it is left to the owner"
+ },
+ "paid_calls": {
+  "count": 4,
+  "cost_usd": 0.0009187,
+  "note": "one suggestion call was rejected by the provider (no charge reported)"
  }
 }

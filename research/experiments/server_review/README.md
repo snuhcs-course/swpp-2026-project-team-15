@@ -24,6 +24,22 @@ No pass/fail thresholds: every number is reported and interpreted. Where a limit
 
 Real model calls: only for 2 (one call) and for re-checking 1 if a candidate check changes delivered answers (none planned). Calls and cost are recorded in `results.json`.
 
-## Results
+## Results (2026-11-19)
 
-(written after measuring)
+All numbers are in `results.json`. Four paid model calls (about $0.0009); everything else replays recorded answers or uses fakes.
+
+| # | Reproduced? | Measured before | Fix | Measured after | Limits |
+|---|---|---|---|---|---|
+| 1 | yes | 374 recorded answers replayed: 185 delivered; 2 of them named a removed 참치캔 as 참치 (synonym); no recorded case of the particle or the contained-name gap, both shown with built examples | one mention test for every length: synonyms, two-syllable particles, kept names that contain the removed name blanked first | 183 delivered, the 2 true misses now fail, no other verdict changed | a first version blanked every kept name and let a kept 오일 hide a removed 올리브 오일; caught by the replay and fixed |
+| 2 | yes | real names at most 20 characters (app table 8); a 10,000-character name added about 5,000 paid tokens to a revision, the suggestion call was rejected by the provider | every ingredient name at most 20 characters, the addition list at most 60; 422 before any model call | 21 characters or 61 names refused on all five routes; the longest real name accepted | a name longer than any in our tables is refused rather than shortened |
+| 3 | yes | 10 taps: 10 YouTube checks for a stored dish, 10 paid searches when nothing playable was found | empty finding cached for a day; stored check reused for dishes x 86400 / (10000 - recipe videos) s (about 19 min) | 1 check, 1 search | a removed video can stay listed up to about 19 minutes |
+| 4 | yes | 50 Korean fridge names: card vs addition 23, card vs recipe 23, addition vs recipe 7 disagree | the reviewed name table decides ownership on cards, additions and recipes (불고기감, 찬밥, 런천미트 added) | 0, 0, 0 | a stand-in (쪽파 for 대파) is no longer ownership in the additions either |
+| 5 | yes | null or numeric name or amount crashed the check (500) | such values are an `incomplete` failure | failure, no crash; the other answer checks did not crash on the same inputs | — |
+| 6 | yes (arithmetic) | worst case: revision about 222 s, video request about 231 s; the app waits 90 s | the app's 90 s is the budget: a model call 35 s, a revision asks again only if 35 s fit, a search 50 s (slowest recorded 22.7 s), each attempt only the time left, failed credit lookups not retried every view | revision and video request at most 90 s | timeouts bound the gap between bytes, not a whole slow transfer |
+| 7 | yes | the service held the reviser and index for the router | `DishParts` (service, reviser, index); each route takes its part | the service takes only what it uses | — |
+| 8 | yes | 3 synonym expansions and 4 spelling rules; they differed on 대파 (prepared form) and on notes in parentheses | one `compact` and one `with_synonyms(prepared=...)` | same measures as before the merge | — |
+| 9 | yes | 2 tests patched a module global for the retry waits | waits and sleep handed in | no test patches a module | — |
+| 10 | yes | the model-key fallback written twice | one `dish_model_key` | a test checks both calls get the same key | — |
+| 11 | partly | 3 old wordings used only by research; `Catalog.rank` used by a research replay; `skip_ok` always empty | wordings moved unchanged to `research/experiments/legacy_prompts.py` | `rank` kept | dropping `skip_ok` would change a response the app reads: proposed for a later app version |
+| 12 | yes | an always-empty verifier passed all 3 contract tests | the order test expects both usable videos | it now fails | — |
+| 13 | yes | the gaps above had no tests | tests added with 1-12 | — | a per-client rate limit is not set: the app's request pattern is not measured, so the limit is left to the owner |
