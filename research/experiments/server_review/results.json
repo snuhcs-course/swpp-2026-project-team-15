@@ -385,5 +385,18 @@
   ],
   "fix": "one rule for who owns what: the reviewed name table (recipe_names.json) now decides on the cards (closed missing choices), in the addition suggestions and in the recipe view; 불고기감, 찬밥, 런천미트 added to it",
   "behaviour_change": "a stand-in is no longer ownership in the addition suggestions either (쪽파 does not own 대파, 튀김가루 does not own 부침가루), as already in the recipe view; the dish list's equivalents table is kept for autocomplete and the research replays"
+ },
+ "finding_5": {
+  "reproduced": true,
+  "before": {
+   "name_null": "crash:AttributeError",
+   "name_number": "crash:AttributeError",
+   "amount_number": "crash:AttributeError",
+   "amount_list": "crash:AttributeError",
+   "row_string": "violation:incomplete",
+   "changes_string": "violation:unexplained_change"
+  },
+  "after": "each crash case is a failure with code 'incomplete' (no 500)",
+  "also_probed": "the suggestion and substitution checks with null, numbers and strings in place of lists: none crashed"
  }
 }

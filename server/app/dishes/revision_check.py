@@ -146,15 +146,17 @@ def check(
         raise Violation("incomplete", "The revised recipe has no ingredients or steps")
     revised: list[RevisedIngredient] = []
     for row in rows:
-        name = row.get("name", "").strip() if isinstance(row, dict) else ""
-        if not name:
+        # A provider that does not enforce the schema may send null or a number here.
+        name = row.get("name") if isinstance(row, dict) else None
+        if not isinstance(name, str) or not name.strip():
             raise Violation("incomplete", "A revised ingredient has no name")
+        name = name.strip()
         if index.status(name, owned) == "unavailable":
             raise Violation("unavailable_ingredient", f"{name} is not among the owned ingredients")
         amount = row.get("amount")
-        revised.append(
-            RevisedIngredient(name=name, amount=amount.strip() or None if amount else None)
-        )
+        if amount is not None and not isinstance(amount, str):
+            raise Violation("incomplete", "A revised amount is not text")
+        revised.append(RevisedIngredient(name=name, amount=(amount or "").strip() or None))
     revised_keys = {_key(r.name) for r in revised}
     changes = _checked_changes(data.get("changes"), recipe)
     explained = {ref for c in changes for ref in c.ingredient_refs}

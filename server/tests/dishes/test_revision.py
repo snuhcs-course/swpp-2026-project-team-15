@@ -302,6 +302,21 @@ def test_a_kept_short_name_does_not_hide_a_removed_longer_one():
     assert not mentions("팬에 오일을 두르세요.", "올리브 오일", {"오일"})
 
 
+@pytest.mark.parametrize(
+    "row",
+    [
+        {"name": None, "amount": "2공기"},
+        {"name": 3, "amount": "2공기"},
+        {"name": "밥", "amount": 3},
+    ],
+)
+def test_a_non_text_name_or_amount_is_a_failure_not_a_crash(catalog, row):
+    # Server review (2026-11-19): these raised AttributeError and the app got a 500.
+    data = {**GOOD, "ingredients": [row, *GOOD["ingredients"][1:]]}
+    result = revised(catalog, data)
+    assert result.status == "failed" and result.error.code == "incomplete"
+
+
 def test_synonym_names_count_as_owned_and_kept(catalog):
     data = {**GOOD, "ingredients": [{"name": "달걀", "amount": "1개"}] + GOOD["ingredients"]}
     data["changes"] = GOOD["changes"][:1] + [
