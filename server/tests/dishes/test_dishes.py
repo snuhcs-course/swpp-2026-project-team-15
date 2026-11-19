@@ -110,7 +110,8 @@ def test_model_answer_is_checked_and_ordered_by_its_missing_count(catalog):
     assert [d["name"] for d in body["dishes"]] == ["김치비빔밥", "김치볶음밥"]
     first = body["dishes"][1]
     assert first["id"] == "kimchi-fried-rice"
-    assert first["have"] == ["밥", "김치"] and first["missing"] == ["대파", "계란"]
+    # `have` is decided by the server: the user's items this dish uses, in the user's order
+    assert first["have"] == ["김치", "밥"] and first["missing"] == ["대파", "계란"]
     assert first["search_url"].startswith("https://www.youtube.com/results?search_query=")
     assert "reason" not in first and "keywords" not in first
 
@@ -144,7 +145,7 @@ def test_malformed_model_items_are_skipped(catalog):
         .json()
     )
     assert [d["name"] for d in body["dishes"]] == ["김치비빔밥"]
-    assert body["dishes"][0]["have"] == [] and body["dishes"][0]["missing"] == []
+    assert body["dishes"][0]["have"] == ["김치"] and body["dishes"][0]["missing"] == []
 
 
 def test_model_failure_and_missing_model_are_502_without_fallback(catalog):

@@ -84,6 +84,9 @@ class FakeCatalog:
     def all(self) -> list[Dish]:
         return list(self._dishes)
 
+    def uses(self, dish: Dish, item: str) -> bool:
+        return item.strip() in set(dish.key_ingredients) | set(dish.optional)
+
     def __len__(self) -> int:
         return len(self._dishes)
 

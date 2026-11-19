@@ -47,9 +47,10 @@ def check_suggest(
     choices: SuggestChoices | None = None,
 ) -> list[SuggestedDish]:
     """Keep the model's order; drop names outside the list and repeated names. With the request's
-    choices, also drop ``have``/``missing`` entries outside them, so an owned ingredient never
-    comes back as missing."""
-    have_ok = choices.have if choices else None
+    choices, also drop ``missing`` entries outside them, so an owned ingredient never comes back as
+    missing, and decide ``have`` here: the user's items that are this dish's own ingredients. A
+    dish that uses none of them is dropped (the served model listed 35 egg dishes with
+    ``have: [초콜릿]`` for a fridge of only 초콜릿; research/experiments/e2e_followups, item 1)."""
     missing_ok = choices.missing if choices else None
     out: list[SuggestedDish] = []
     seen: set[str] = set()
@@ -61,13 +62,19 @@ def check_suggest(
         dish = catalog.by_name(name.strip()) if isinstance(name, str) else None
         if dish is None or dish.id in seen:
             continue
+        if choices is not None:
+            have = [i for i in choices.have if catalog.uses(dish, i)]
+            if not have:
+                continue
+        else:
+            have = strings(item.get("have"))
         seen.add(dish.id)
         out.append(
             SuggestedDish(
                 id=dish.id,
                 name=dish.name,
                 category=dish.category,
-                have=_within(strings(item.get("have")), have_ok),
+                have=have,
                 missing=_within(strings(item.get("missing")), missing_ok),
                 search_url=search_url(dish.name),
                 has_recipe=recipes is not None and dish.id in recipes,

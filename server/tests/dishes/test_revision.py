@@ -379,7 +379,7 @@ def test_suggest_marks_dishes_that_have_a_recipe(catalog):
         ]
     }
     svc, _ = service(catalog, answer)
-    flags = {d.name: d.has_recipe for d in svc.service.suggest(["밥"]).dishes}
+    flags = {d.name: d.has_recipe for d in svc.service.suggest(["밥", "계란"]).dishes}
     assert flags == {"김치볶음밥": True, "계란말이": False}
 
 

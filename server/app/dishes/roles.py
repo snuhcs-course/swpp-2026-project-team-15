@@ -64,6 +64,10 @@ class DishCatalog(Protocol):
 
     def all(self) -> list[Dish]: ...
 
+    def uses(self, dish: Dish, item: str) -> bool:
+        """Whether the user's item is one of the dish's own ingredients (not a staple)."""
+        ...
+
     def __len__(self) -> int: ...
 
 

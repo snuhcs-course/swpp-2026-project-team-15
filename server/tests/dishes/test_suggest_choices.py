@@ -122,7 +122,8 @@ def test_a_runaway_answer_is_ordered_and_cut_to_the_list_limit():
     from app.dishes.answers import SUGGEST_LIMIT
     from app.dishes.prompts import SUGGEST_MAX_TOKENS
 
-    names = [d.name for d in CATALOG.all()]
+    # only dishes that use 계란 or 밥: the server drops the others (e2e_followups, item 1)
+    names = [d.name for d in CATALOG.all() if CATALOG.uses(d, "계란") or CATALOG.uses(d, "밥")]
     answer = {
         "dishes": [
             {"name": n, "have": ["계란"], "missing": ["대파"] if i % 2 else []}
@@ -132,7 +133,9 @@ def test_a_runaway_answer_is_ordered_and_cut_to_the_list_limit():
     model = RecordingModel(answer)
     dishes = _post(model, ["계란", "밥"]).json()["dishes"]
     assert len(dishes) == SUGGEST_LIMIT < len(names)
-    assert all(d["missing"] == [] for d in dishes)  # fewest missing kept first
+    counts = [len(d["missing"]) for d in dishes]
+    assert counts == sorted(counts)  # fewest missing kept first
+    assert counts.count(0) == min(SUGGEST_LIMIT, (len(names) + 1) // 2)
     assert model.sent[0][4] == SUGGEST_MAX_TOKENS
 
 
@@ -154,3 +157,24 @@ def test_the_running_server_uses_one_owned_rule_for_cards_additions_and_recipes(
     held = service.catalog.owned(["햇반", "쪽파"])
     assert service.catalog.status("밥", held) == "owned"
     assert service.catalog.status("대파", held) == "unavailable"  # a stand-in is not ownership
+
+
+def test_dishes_that_use_none_of_the_fridge_are_dropped():
+    # Phone test 2026-11-19: only 초콜릿 in the fridge gave 35 egg dishes with have=[초콜릿].
+    names = [d.name for d in CATALOG.all()][:35]
+    model = RecordingModel(
+        {"dishes": [{"name": n, "have": ["초콜릿"], "missing": []} for n in names]}
+    )
+    assert _post(model, ["초콜릿"]).json()["dishes"] == []
+
+
+def test_have_is_what_the_dish_uses_even_when_the_model_leaves_it_empty():
+    # The served model listed 계란말이 for 양파·대파·감자 with have=[] although it uses 대파.
+    model = RecordingModel({"dishes": [{"name": "계란말이", "have": [], "missing": ["계란"]}]})
+    dish = _post(model, ["양파", "대파", "감자"]).json()["dishes"][0]
+    assert dish["have"] == ["대파"]
+
+
+def test_a_staple_alone_does_not_make_a_dish_use_the_fridge():
+    dish = CATALOG.by_name("계란말이")
+    assert not CATALOG.uses(dish, "초콜릿") and CATALOG.uses(dish, "달걀")

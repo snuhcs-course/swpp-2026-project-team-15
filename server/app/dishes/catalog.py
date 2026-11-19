@@ -103,6 +103,19 @@ class Catalog:
                 owned.update(alts)
         return owned
 
+    def uses(self, dish: Dish, item: str) -> bool:
+        """Whether the user's ``item`` is one of the dish's ingredients (key or optional), by the
+        same ownership rule as everywhere else. A staple assumed at home does not count: owning
+        초콜릿 must not make a dish that needs only 소금 look like it uses 초콜릿."""
+        owned = self.owned([item])
+        for key in set(dish.key_ingredients) | set(dish.optional):
+            if self._names is not None:
+                if self._names.status(key, owned) == "owned":
+                    return True
+            elif self.status(key, owned) == "owned":
+                return True
+        return False
+
     def match(self, dish: Dish, owned: set[str]) -> Match:
         have, missing = [], []
         for key in dish.key_ingredients:
