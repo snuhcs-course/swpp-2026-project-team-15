@@ -1,5 +1,7 @@
 {
-  "note": "Hand labels for the round 3 content judge, written by reading each N1 revised recipe before the judge ran (2026-11-19). A problem is a step, or a tip that is part of the recipe (not an optional suggestion such as 'you may add 양파'), that uses an ingredient missing from the revised list (water excluded) or something no earlier step makes. The recipes themselves are third-party derived and stay in the ignored data folder.",
+  "note": "Labels for the round 3 content judge, written by the AI agent that ran the study (not a person) by reading each N1 revised recipe before the judge ran (2026-11-19). A problem is a step, or a tip that is part of the recipe (not an optional suggestion such as 'you may add 양파'), that uses an ingredient missing from the revised list (water excluded) or something no earlier step makes. The recipes themselves are third-party derived and stay in the ignored data folder.",
+  "labeller": "AI agent (Claude Code, the assistant running the study); no human review",
+  "provenance_correction": "2026-11-19: earlier text called these 'hand labels' without naming the labeller; evidence grade is AI-made labels",
   "sample_seed": 20261119,
   "labels": {
     "bacon-fried-rice": [],

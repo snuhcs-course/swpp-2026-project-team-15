@@ -93,6 +93,15 @@ class Recording:
         return data
 
 
+class SingleCallReviser(Reviser):
+    """Reviser with exactly one model call, as N0-N2 were run before the served Reviser started
+    asking again after a rejected answer (commit 2828d4a). Pinned so a re-run keeps the condition."""
+
+    def _answer(self, request, recipe, status, ingredients, base):
+        data = self.llm.complete(request.system, request.user, request.name, request.schema)
+        return self._judge(data, recipe, status, ingredients, base)[0]
+
+
 class ReaskReviser(Reviser):
     """Reviser that asks once more, with the violation message, when the check rejects."""
 
@@ -120,7 +129,7 @@ class TokenLog(logging.Handler):
 
 def run(variant: str, index, catalog, store, llm) -> list[dict]:
     llm = Recording(llm)
-    reviser = (ReaskReviser if variant.startswith("N3") else Reviser)(catalog, index, llm, store)
+    reviser = (ReaskReviser if variant.startswith("N3") else SingleCallReviser)(catalog, index, llm, store)
     tokens = TokenLog()
     logging.getLogger("app.dishes.llm").addHandler(tokens)
     logging.getLogger("app.dishes.llm").setLevel(logging.INFO)
