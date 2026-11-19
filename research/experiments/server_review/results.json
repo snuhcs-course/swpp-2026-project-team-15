@@ -435,5 +435,11 @@
   "fix": "a DishParts bundle (service, reviser, index) built by the composition root; each route depends on its own part; DishService no longer has reviser or index",
   "after": "DishService constructor has no reviser or index; a composition test checks it",
   "not_changed": "the 404 'No recipe for this dish' when no reviser is built is kept (the app shows it as 'not prepared yet'); in production a reviser is always built"
+ },
+ "finding_10": {
+  "reproduced": true,
+  "before": "'DISH_LLM_API_KEY, else the general key' written in build_chat_model and again in the composition root for the video search",
+  "fix": "one function dish_model_key used by both",
+  "after": "a composition test checks the model and the search get the same key in both cases"
  }
 }

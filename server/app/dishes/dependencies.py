@@ -27,9 +27,15 @@ from app.dishes.videos import VideoCache, VideoFinder, check_seconds
 from app.dishes.youtube import YouTubeVerifier
 
 
+def dish_model_key(env: Mapping[str, str], fallback_key: str = "") -> str:
+    """The key for the dish model and the video search: DISH_LLM_API_KEY, else the general one.
+    The one place this rule is written, so both calls always use the same key."""
+    return env.get("DISH_LLM_API_KEY") or fallback_key
+
+
 def build_chat_model(env: Mapping[str, str], fallback_key: str = "") -> ChatModel | None:
     """The dish model, or None when no key is set (suggest and adapt then answer 502)."""
-    key = env.get("DISH_LLM_API_KEY") or fallback_key
+    key = dish_model_key(env, fallback_key)
     if not key.strip():
         return None
     return DishLLM(key, env.get("DISH_LLM_MODEL") or DEFAULT_MODEL)
@@ -78,7 +84,7 @@ def build_dish_parts(env: Mapping[str, str] | None = None, model_key: str = "") 
         retry = check_seconds(len(catalog), len(stored_recipes))
         recipes = CreditedRecipes(recipes, YouTubeVerifier(youtube_key), retry_seconds=retry)
     reviser = Reviser(catalog, names, llm, recipes)
-    key = env.get("DISH_LLM_API_KEY") or model_key
+    key = dish_model_key(env, model_key)
     service = DishService(
         catalog,
         llm,

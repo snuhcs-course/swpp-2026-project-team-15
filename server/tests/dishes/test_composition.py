@@ -59,3 +59,11 @@ def test_the_reviser_matches_recipe_rows_with_the_name_table():
     reviser = build_dish_parts({}).reviser
     assert isinstance(reviser.index, RecipeNames)
     assert reviser.index.status("꽃소금", reviser.index.owned([])) == "assumed"
+
+
+def test_the_dish_model_and_the_video_search_use_the_same_key():
+    # Server review (2026-11-19): the fallback rule was written twice.
+    parts = build_dish_parts({"DISH_LLM_API_KEY": "dish", "YOUTUBE_API_KEY": "y"}, "general")
+    assert parts.service.llm._api_key == parts.service.finder._source._api_key == "dish"
+    parts = build_dish_parts({"YOUTUBE_API_KEY": "y"}, "general")
+    assert parts.service.llm._api_key == parts.service.finder._source._api_key == "general"
