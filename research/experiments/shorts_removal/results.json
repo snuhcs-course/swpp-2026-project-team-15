@@ -142,5 +142,26 @@
    "calls": 1,
    "note": "capability check only; cannot take video input"
   }
+ },
+ "followup_8_dishes": {
+  "date": "2026-11-19",
+  "rule": "a version with the extra ingredient and one without are different recipes (user); roles not relabelled; recipe kept when no stored video fits",
+  "dishes_checked": 8,
+  "stored_videos_checked": 24,
+  "new_build_calls": 0,
+  "cost_usd": 0.0,
+  "changed": 0,
+  "main_gap_dishes_before": 8,
+  "main_gap_dishes_after": 8,
+  "per_dish": {
+   "불고기덮밥": "other video uses 돼지불고기",
+   "카레라이스": "all other videos use meat",
+   "비빔밥": "sheet-pan video needs an oven and uses neither 시금치 nor 당근 (not taken); others use beef or tuna",
+   "햄김치찌개": "other video uses pork",
+   "고추장찌개": "all five use pork",
+   "무국": "other video uses beef",
+   "떡국": "others use 김치 or 굴",
+   "참치김밥": "other video uses 치마살"
+  }
  }
 }
