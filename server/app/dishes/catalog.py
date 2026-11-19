@@ -109,6 +109,8 @@ class Catalog:
         초콜릿 must not make a dish that needs only 소금 look like it uses 초콜릿."""
         owned = self.owned([item])
         for key in set(dish.key_ingredients) | set(dish.optional):
+            if self.status(key, set()) == "assumed":
+                continue  # a staple: pantry seasonings in most fridges match nearly every dish
             if self._names is not None:
                 if self._names.status(key, owned) == "owned":
                     return True

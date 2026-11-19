@@ -49,10 +49,11 @@ class RecipeNames:
         return _synonyms(self.canonical(n) for n in ingredients if n and n.strip())
 
     def status(self, name: str, owned: set[str]) -> str:
-        """'assumed' for a staple at home, 'owned' when the user has it, else 'unavailable'."""
+        """'owned' when the user has it, else 'assumed' for a staple at home, else 'unavailable'.
+        Owned comes first: a seasoning in the user's fridge showed as 기본 양념 (phone test)."""
         forms = _synonyms([self.canonical(name)])
-        if forms & self._staples:
-            return "assumed"
         if forms & owned or any(self._kinds.get(f, set()) & owned for f in forms):
             return "owned"
+        if forms & self._staples:
+            return "assumed"
         return "unavailable"
