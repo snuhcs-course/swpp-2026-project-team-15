@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mylittlechef.R
 import com.example.mylittlechef.domain.Availability
+import com.example.mylittlechef.domain.ChangeKind
 import com.example.mylittlechef.domain.DishRecipe
 import com.example.mylittlechef.domain.RecipeChange
 import com.example.mylittlechef.domain.RecipeStep
@@ -192,11 +193,23 @@ private fun Changes(changes: List<RecipeChange>) {
     Text("바뀐 점", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
     Column(
         Modifier.fillMaxWidth().background(Gray, RoundedCornerShape(16.dp)).padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        changes.forEach { Text("· ${it.reason}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("recipe-change")) }
+        changeGroups(changes).forEach { (title, group) ->
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, style = MaterialTheme.typography.labelLarge, modifier = Modifier.semantics { heading() })
+                group.forEach { Text("· ${it.reason}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("recipe-change")) }
+            }
+        }
     }
 }
+
+/** Changes grouped as the old revision screen meant them: left out, used instead, the rest. */
+internal fun changeGroups(changes: List<RecipeChange>): List<Pair<String, List<RecipeChange>>> = listOf(
+    "뺀 재료" to changes.filter { it.kind == ChangeKind.OMISSION },
+    "대신 쓴 재료" to changes.filter { it.kind == ChangeKind.SUBSTITUTION },
+    "그 밖에 바뀐 점" to changes.filter { it.kind == ChangeKind.OTHER }
+).filter { it.second.isNotEmpty() }
 
 @Composable
 private fun Uncertain(recipe: DishRecipe) {

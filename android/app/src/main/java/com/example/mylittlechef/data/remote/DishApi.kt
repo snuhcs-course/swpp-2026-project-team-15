@@ -114,7 +114,8 @@ data class RevisedRecipeDto(
 data class ChangeDto(
     val reason: String?,
     @SerializedName("ingredient_refs") val ingredientRefs: List<Int>?,
-    @SerializedName("step_refs") val stepRefs: List<Int>?
+    @SerializedName("step_refs") val stepRefs: List<Int>?,
+    val kind: String? = null
 )
 
 data class RevisionErrorDto(val code: String?, val message: String?)

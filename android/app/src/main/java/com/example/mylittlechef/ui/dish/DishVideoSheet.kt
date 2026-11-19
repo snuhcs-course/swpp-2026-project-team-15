@@ -53,12 +53,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.mylittlechef.domain.Dish
-import com.example.mylittlechef.domain.DishAdaptation
 import com.example.mylittlechef.domain.DishLinks
 import com.example.mylittlechef.domain.DishVideo
 import com.example.mylittlechef.ui.components.IngredientBadge
-import com.example.mylittlechef.viewmodel.AdaptUiState
-import com.example.mylittlechef.viewmodel.DishSheetMode
 import com.example.mylittlechef.viewmodel.RecipeUiState
 import com.example.mylittlechef.viewmodel.ReviseUiState
 import com.example.mylittlechef.viewmodel.VideoUiState
@@ -66,23 +63,18 @@ import com.example.mylittlechef.viewmodel.VideoUiState
 /**
  * One dish on one screen. With a stored recipe: the video the recipe was written from plays first,
  * the recipe follows, then the other videos (picking one only swaps the player). Without a recipe:
- * the videos. The AI substitution answer comes first when the card's substitution button opened it.
+ * the videos. Substitutions now come from "내 재료로 바꾸기" inside the recipe (2026-11-19).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DishDetailSheet(
     dish: Dish,
-    mode: DishSheetMode,
-    fridgeNames: List<String>,
     videos: VideoUiState?,
     onLoadVideos: () -> Unit,
     recipe: RecipeUiState?,
     revision: ReviseUiState?,
     onRetryRecipe: () -> Unit,
     onRevise: () -> Unit,
-    adapt: AdaptUiState?,
-    onAdapt: () -> Unit,
-    onDismissAdapt: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val stored = (recipe as? RecipeUiState.Success)?.recipe
@@ -105,11 +97,6 @@ fun DishDetailSheet(
                 Text(dish.reason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.height(12.dp))
-            val showAdapt = dish.missing.isNotEmpty()
-            if (mode == DishSheetMode.ADAPT && showAdapt) {
-                AdaptSection(dish, fridgeNames, adapt, onAdapt, onDismissAdapt)
-                Spacer(Modifier.height(16.dp))
-            }
             if (playing != null) {
                 Player(playing, onClose = if (dish.hasRecipe) null else ({ picked = null }))
                 if (stored != null && playing.videoId != stored.videoId) {
@@ -135,10 +122,6 @@ fun DishDetailSheet(
                 playingId = playing?.videoId,
                 onPlay = { picked = it }
             )
-            if (mode != DishSheetMode.ADAPT && showAdapt) {
-                Spacer(Modifier.height(16.dp))
-                AdaptSection(dish, fridgeNames, adapt, onAdapt, onDismissAdapt)
-            }
             Spacer(Modifier.height(4.dp))
             Attribution()
         }
@@ -214,84 +197,6 @@ private fun VideoSection(
                 TextButton(onClick = { openLink(context, dish.searchUrl) }) { Text("YouTube에서 더 검색", style = MaterialTheme.typography.labelMedium) }
             }
         }
-    }
-}
-
-/** Substitution answer: the missing ingredient's icon, an arrow, then the icon of what the fridge offers. */
-@Composable
-private fun AdaptSection(
-    dish: Dish,
-    fridgeNames: List<String>,
-    adapt: AdaptUiState?,
-    onAdapt: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    Text("AI 대체 재료", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
-    Spacer(Modifier.height(8.dp))
-    when (adapt) {
-        null -> OutlinedButton(onClick = onAdapt) { Text("대체할 재료 찾기") }
-        AdaptUiState.Loading -> Row(
-            Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-            Spacer(Modifier.width(8.dp))
-            Text("AI가 대체할 방법을 찾고 있어요...", style = MaterialTheme.typography.bodyMedium)
-        }
-        is AdaptUiState.Error -> Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
-            Text(adapt.message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
-            OutlinedButton(onClick = onAdapt) { Text("다시 시도") }
-        }
-        is AdaptUiState.Success -> AdaptAnswer(adapt.adaptation, onDismiss)
-    }
-}
-
-@Composable
-private fun AdaptAnswer(adaptation: DishAdaptation, onDismiss: () -> Unit) {
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        // The server's note already says so when it has one; two sentences repeated it (phone test).
-        if (adaptation.substitutions.isEmpty() && adaptation.skipOk.isEmpty() && adaptation.note.isBlank()) {
-            Text("대체할 방법을 찾지 못했어요.", style = MaterialTheme.typography.bodyMedium)
-        }
-        adaptation.substitutions.forEach { s ->
-            val uses = s.uses.ifEmpty { listOf(s.suggestion) }.take(2)
-            Row(
-                Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
-                    contentDescription = "${s.missing} 대신 ${s.suggestion}"
-                },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IngredientBadge(s.missing, Modifier.alpha(0.4f), size = 32.dp)
-                Text("  →  ", style = MaterialTheme.typography.titleMedium)
-                uses.forEach { IngredientBadge(it, size = 32.dp); Spacer(Modifier.width(4.dp)) }
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    s.suggestion,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-        if (adaptation.skipOk.isNotEmpty()) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                adaptation.skipOk.take(3).forEach { IngredientBadge(it, Modifier.alpha(0.4f), size = 24.dp); Spacer(Modifier.width(4.dp)) }
-                Text("없어도 돼요: ${adaptation.skipOk.joinToString(", ")}", style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-        if (adaptation.note.isNotBlank()) {
-            Text(adaptation.note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Text(
-            "AI가 만든 제안이에요. 맛과 알레르기는 직접 확인해 주세요.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        TextButton(onClick = onDismiss) { Text("제안 닫기") }
     }
 }
 

@@ -33,7 +33,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -70,8 +69,6 @@ import com.example.mylittlechef.ui.components.IngredientBadge
 import com.example.mylittlechef.ui.fridge.components.ingredientIconResource
 import com.example.mylittlechef.ui.theme.DeepGreen
 import com.example.mylittlechef.ui.theme.Gray
-import com.example.mylittlechef.ui.theme.GreenGray
-import com.example.mylittlechef.viewmodel.AdaptUiState
 import com.example.mylittlechef.viewmodel.DishSheetMode
 import com.example.mylittlechef.viewmodel.DishUiState
 import com.example.mylittlechef.viewmodel.DishViewModel
@@ -151,17 +148,12 @@ fun DishScreen(
         if (selected.hasRecipe) LaunchedEffect(selected.id, names) { dishes.recipes.requestRecipe(selected.id) }
         DishDetailSheet(
             dish = selected,
-            mode = dishes.selectedMode,
-            fridgeNames = names,
             videos = dishes.videoState(selected.id),
             onLoadVideos = { dishes.requestVideos(selected) },
             recipe = dishes.recipes.recipeState(selected.id),
             revision = dishes.recipes.reviseState(selected.id),
             onRetryRecipe = { dishes.recipes.requestRecipe(selected.id) },
             onRevise = { dishes.recipes.requestRevision(selected.id) },
-            adapt = dishes.adaptState(selected.id),
-            onAdapt = { dishes.requestAdapt(selected) },
-            onDismissAdapt = { dishes.dismissAdapt(selected.id) },
             onDismiss = { dishes.selectDish(null) }
         )
     }
@@ -197,10 +189,6 @@ private fun DishList(state: DishUiState.Success, dishes: DishViewModel) {
                 thumbnail = dish.thumbnailUrl ?: (dishes.videoState(dish.id) as? VideoUiState.Success)
                     ?.videos?.firstNotNullOfOrNull { it.thumbnailUrl },
                 onOpen = { dishes.selectDish(dish.id, DishSheetMode.VIDEOS) },
-                onAdapt = {
-                    dishes.selectDish(dish.id, DishSheetMode.ADAPT)
-                    if (dishes.adaptState(dish.id) == null) dishes.requestAdapt(dish)
-                }
             )
         }
         item { Spacer(Modifier.height(24.dp)) }
@@ -208,7 +196,7 @@ private fun DishList(state: DishUiState.Success, dishes: DishViewModel) {
 }
 
 @Composable
-private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onAdapt: () -> Unit) {
+private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit) {
     // With very large text the card keeps its shape: the category and the action labels give way, long lines wrap.
     val large = LocalDensity.current.fontScale >= 1.3f
     val ingredients = remember(dish) { dish.have.map { it to true } + dish.missing.map { it to false } }
@@ -264,27 +252,7 @@ private fun DishCard(dish: Dish, thumbnail: String?, onOpen: () -> Unit, onAdapt
                 Spacer(Modifier.height(6.dp))
                 BadgeRow(ingredients, dish)
             }
-            if (dish.missing.isNotEmpty()) {
-                // The card itself opens the video and the recipe; only the substitution keeps a button.
-                Spacer(Modifier.weight(0.05f))
-                VerticalDivider(thickness = 1.dp, color = GreenGray, modifier = Modifier.heightIn(min = CardImageSize))
-                Column(
-                    Modifier.width(72.dp).heightIn(min = CardImageSize),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CardAction(
-                        R.drawable.ic_swap,
-                        "대체",
-                        large,
-                        "AI 대체 재료 보기",
-                        Modifier.testTag("dish-adapt-${dish.id}"),
-                        onAdapt
-                    )
-                }
-            } else {
-                Spacer(Modifier.width(12.dp))
-            }
+            Spacer(Modifier.width(12.dp))
         }
     }
 }
@@ -315,31 +283,6 @@ private fun BadgeRow(ingredients: List<Pair<String, Boolean>>, dish: Dish) {
             }
         }
         if (more > 0) Text("+$more", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface)
-    }
-}
-
-@Composable
-private fun CardAction(
-    icon: Int,
-    label: String,
-    hideLabel: Boolean,
-    description: String,
-    modifier: Modifier,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier
-            .heightIn(min = 48.dp)
-            .width(54.dp)
-            .clickable(role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = "$description, $label" },
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
-        if (!hideLabel) {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
-        }
     }
 }
 

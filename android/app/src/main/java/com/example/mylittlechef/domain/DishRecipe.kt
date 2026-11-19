@@ -33,7 +33,21 @@ data class DishRecipe(
 data class RevisedIngredient(val name: String, val amount: String?)
 
 /** One change of the revised recipe: the reason and the original rows and steps (1-based) it touches. */
-data class RecipeChange(val reason: String, val ingredientRefs: List<Int>, val stepRefs: List<Int>)
+/** What a change does, as the server labels it; unknown or missing labels count as [OTHER]. */
+enum class ChangeKind { OMISSION, SUBSTITUTION, OTHER }
+
+fun changeKindOf(value: String?): ChangeKind = when (value) {
+    "omission" -> ChangeKind.OMISSION
+    "substitution" -> ChangeKind.SUBSTITUTION
+    else -> ChangeKind.OTHER
+}
+
+data class RecipeChange(
+    val reason: String,
+    val ingredientRefs: List<Int>,
+    val stepRefs: List<Int>,
+    val kind: ChangeKind = ChangeKind.OTHER
+)
 
 sealed interface Revision {
     data class Revised(
@@ -104,7 +118,7 @@ fun ReviseResponse.toRevision(): Revision? = when (status) {
             tips = recipe.tips.orEmpty().filter { it.isNotBlank() },
             changes = changes.orEmpty().mapNotNull { c ->
                 c.reason?.takeIf { it.isNotBlank() }
-                    ?.let { RecipeChange(it, c.ingredientRefs.orEmpty(), c.stepRefs.orEmpty()) }
+                    ?.let { RecipeChange(it, c.ingredientRefs.orEmpty(), c.stepRefs.orEmpty(), changeKindOf(c.kind)) }
             }
         )
     }
