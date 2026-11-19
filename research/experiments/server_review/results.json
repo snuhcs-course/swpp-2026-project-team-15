@@ -398,5 +398,11 @@
   },
   "after": "each crash case is a failure with code 'incomplete' (no 500)",
   "also_probed": "the suggestion and substitution checks with null, numbers and strings in place of lists: none crashed"
+ },
+ "finding_9": {
+  "reproduced": true,
+  "before": "two tests replaced app.dishes.http.RETRY_WAITS with monkeypatch (one autouse fixture for the whole test module)",
+  "fix": "post_with_retry takes waits and sleep; the model client and the video search take retry_waits; tests pass (0, 0) and no test patches a module",
+  "after": "0 tests patch the module; a new test checks the default waits are used in order"
  }
 }

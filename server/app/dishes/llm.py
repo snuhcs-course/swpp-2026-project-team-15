@@ -9,7 +9,7 @@ import httpx
 
 from app.dishes.answers import salvage_list
 from app.dishes.errors import DishLLMError
-from app.dishes.http import post_with_retry
+from app.dishes.http import RETRY_WAITS, post_with_retry
 
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "google/gemini-2.5-flash-lite"
@@ -18,12 +18,20 @@ log = logging.getLogger(__name__)
 
 
 class DishLLM:
-    def __init__(self, api_key: str, model: str = DEFAULT_MODEL, *, transport=None):
+    def __init__(
+        self,
+        api_key: str,
+        model: str = DEFAULT_MODEL,
+        *,
+        transport=None,
+        retry_waits: tuple[float, ...] = RETRY_WAITS,
+    ):
         if not api_key.strip():
             raise ValueError("an API key is required")
         self._api_key = api_key
         self._model = model
         self._transport = transport
+        self._retry_waits = retry_waits
 
     def complete(
         self, system: str, user: str, name: str, schema: dict, max_tokens: int | None = None
@@ -48,7 +56,9 @@ class DishLLM:
                 timeout=30, transport=self._transport, follow_redirects=False
             ) as client:
                 headers = {"Authorization": f"Bearer {self._api_key}"}
-                response = post_with_retry(client, ENDPOINT, payload, headers)
+                response = post_with_retry(
+                    client, ENDPOINT, payload, headers, waits=self._retry_waits
+                )
             if response.status_code == 429 or response.status_code >= 500:
                 raise DishLLMError("The model service is temporarily unavailable")
             if response.status_code != 200:

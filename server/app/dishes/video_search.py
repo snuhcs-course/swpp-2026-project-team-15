@@ -10,7 +10,7 @@ import re
 import httpx
 
 from app.dishes.errors import VideoError
-from app.dishes.http import post_with_retry
+from app.dishes.http import RETRY_WAITS, post_with_retry
 
 OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
 WEB_MODEL = "google/gemini-2.5-flash-lite:online"
@@ -45,19 +45,31 @@ def video_request(model: str, dish_name: str) -> dict:
 
 
 class WebSearchVideoSource:
-    def __init__(self, api_key: str, *, model: str = WEB_MODEL, transport=None):
+    def __init__(
+        self,
+        api_key: str,
+        *,
+        model: str = WEB_MODEL,
+        transport=None,
+        retry_waits: tuple[float, ...] = RETRY_WAITS,
+    ):
         if not api_key.strip():
             raise ValueError("an API key is required")
         self._api_key = api_key
         self._model = model
         self._transport = transport
+        self._retry_waits = retry_waits
 
     def propose(self, dish_name: str) -> list[str]:
         headers = {"Authorization": f"Bearer {self._api_key}"}
         try:
             with httpx.Client(timeout=60, transport=self._transport) as client:
                 response = post_with_retry(
-                    client, OPENROUTER, video_request(self._model, dish_name), headers
+                    client,
+                    OPENROUTER,
+                    video_request(self._model, dish_name),
+                    headers,
+                    waits=self._retry_waits,
                 )
             if response.status_code != 200:
                 raise VideoError("The model service is temporarily unavailable")

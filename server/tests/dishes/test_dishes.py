@@ -247,12 +247,7 @@ def test_ingredient_suggestions_complete_the_most_dishes(catalog):
 
 
 def _llm(handler) -> DishLLM:
-    return DishLLM("test-key", transport=httpx.MockTransport(handler))
-
-
-@pytest.fixture(autouse=True)
-def _no_retry_wait(monkeypatch):
-    monkeypatch.setattr("app.dishes.http.RETRY_WAITS", (0, 0))
+    return DishLLM("test-key", transport=httpx.MockTransport(handler), retry_waits=(0, 0))
 
 
 def test_llm_keeps_the_complete_items_of_an_answer_cut_at_the_token_limit(caplog):
@@ -394,7 +389,7 @@ def _finder(
         YouTubeVerifier("yt-key", transport=transport),
         stored or VideoStore(),
         cache or VideoCache(),
-        WebSearchVideoSource("or-key", transport=transport) if model else None,
+        WebSearchVideoSource("or-key", transport=transport, retry_waits=(0, 0)) if model else None,
         checked=checked,
         now=lambda: NOW,
     )
@@ -506,8 +501,7 @@ def test_finder_empty_answer_is_an_answer_and_a_thumbnail_is_built_when_missing(
     assert to_video({"id": "z", "status": {"embeddable": False}}) is None
 
 
-def test_finder_retries_a_rate_limited_model_call(monkeypatch):
-    monkeypatch.setattr("app.dishes.http.RETRY_WAITS", (0, 0))
+def test_finder_retries_a_rate_limited_model_call():
     state = {"n": 0}
 
     def limit_twice(handler):
@@ -728,3 +722,17 @@ def test_ties_keep_the_model_order(catalog):
         .json()
     )
     assert [d["name"] for d in body["dishes"]] == ["김치주먹밥", "김치볶음밥", "김치비빔밥"]
+
+
+def test_retry_waits_are_handed_in_not_patched():
+    # Server review (2026-11-19): tests patched a module global to skip the waits.
+    from app.dishes.http import RETRY_WAITS, post_with_retry
+
+    slept, answers = [], [429, 429, 200]
+
+    def handler(request):
+        return httpx.Response(answers.pop(0))
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        response = post_with_retry(client, "https://x.test", {}, {}, sleep=slept.append)
+    assert response.status_code == 200 and slept == list(RETRY_WAITS)
