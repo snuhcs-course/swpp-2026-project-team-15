@@ -366,6 +366,14 @@ private fun DishThumbnail(dish: Dish, thumbnail: String?, modifier: Modifier) {
                 modifier = Modifier.fillMaxSize()
             )
         }
+        // The card opens the video; the mark says so without a separate button.
+        // In the corner, so it never covers the ingredient icon shown before the photo arrives.
+        Box(
+            Modifier.align(Alignment.BottomEnd).padding(8.dp).size(32.dp).clip(CircleShape).background(Color(0x99000000)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(painterResource(R.drawable.ic_play), contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+        }
     }
 }
 
