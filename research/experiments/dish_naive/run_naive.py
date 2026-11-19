@@ -24,7 +24,7 @@ from pydantic import ValidationError
 
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DEFAULT_MODEL, MAX_TOKENS, DishLLM, DishLLMError
-from app.dishes.prompts import SUGGEST_SYSTEM
+from experiments.legacy_prompts import SUGGEST_SYSTEM
 from app.dishes.schemas import SuggestRequest
 from app.dishes.service import DishService
 

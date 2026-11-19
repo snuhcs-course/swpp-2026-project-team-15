@@ -15,12 +15,10 @@ from app.dishes.answers import check_suggest
 from app.dishes.catalog import Catalog
 from app.dishes.choices import SuggestChoices, owned_vocabulary, suggest_choices
 from app.dishes.prompts import (
-    SUGGEST_CLOSED_SYSTEM_ROUND2,
-    SUGGEST_SCHEMA,
-    SUGGEST_SYSTEM,
     suggest_schema,
     suggest_user_message,
 )
+from experiments.legacy_prompts import SUGGEST_CLOSED_SYSTEM_ROUND2, SUGGEST_SCHEMA, SUGGEST_SYSTEM
 
 from . import formats
 

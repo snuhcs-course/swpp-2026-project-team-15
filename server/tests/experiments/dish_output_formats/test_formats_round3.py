@@ -10,7 +10,7 @@ from experiments.dish_tokens.calls import Call
 
 from app.dishes.catalog import Catalog
 from app.dishes.choices import ingredient_vocabulary
-from app.dishes.prompts import SUGGEST_CLOSED_SYSTEM_ROUND2
+from experiments.legacy_prompts import SUGGEST_CLOSED_SYSTEM_ROUND2
 
 
 def _ctx():

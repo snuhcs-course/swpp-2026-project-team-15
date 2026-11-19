@@ -455,5 +455,15 @@
   },
   "fix": "one compact() and one with_synonyms(prepared=...) in synonyms.py; the cards and the recipe name table call it with prepared=False, which keeps their behaviour; the parentheses rule stays in the recipe name table on top of compact()",
   "after": "1 copy of each; finding 1 and finding 4 measures give the same numbers as before the merge; all tests pass"
+ },
+ "finding_11": {
+  "reproduced": "partly",
+  "unused_by_the_running_app": {
+   "SUGGEST_SYSTEM, SUGGEST_SCHEMA, SUGGEST_CLOSED_SYSTEM_ROUND2": "used by 7 research scripts and 1 research test only",
+   "Catalog.rank": "used by tests and by research/experiments/dish_naive/run_naive.py (not dead for the research replays)",
+   "AdaptResponse.skip_ok": "always an empty list; the app reads the field"
+  },
+  "fix": "the three old wordings moved, text unchanged (checked equal), to research/experiments/legacy_prompts.py and the research imports updated; Catalog.rank kept",
+  "proposal_not_done": "drop skip_ok from the substitution answer in a later app version: removing it now would change a response the submitted app reads"
  }
 }

@@ -31,31 +31,10 @@ class ModelRequest:
 SUGGEST_MAX_TOKENS = 1880
 
 
-# SUGGEST_SYSTEM and SUGGEST_SCHEMA are the free-text format that the studies under
-# research/experiments measured before round 2 of the answer format study; they stay for
-# reproducing those runs. The service sends SUGGEST_CLOSED_SYSTEM with suggest_schema(choices);
-# SUGGEST_CLOSED_SYSTEM_ROUND2 is the closed-choice wording served before round 3.
-SUGGEST_SYSTEM = (
-    "You help a Korean student living alone decide what to cook from the ingredients they have. "
-    "Return every dish from the given dish list that can reasonably be cooked with the owned "
-    "ingredients, best first. Use the dish names exactly as written in the list. For each dish, "
-    "'have' lists the main ingredients of the dish that the user owns (copy the user's wording) "
-    "and 'missing' lists the main ingredients the user lacks. Basic seasonings and oil at home "
-    "(salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish "
-    "fits, return an empty list. Never add dishes just to fill the list."
-)
-SUGGEST_CLOSED_SYSTEM_ROUND2 = (
-    "You help a Korean student living alone decide what to cook from the ingredients they have. "
-    "Return every dish from the given dish list that can reasonably be cooked with the owned "
-    "ingredients, best first. For each dish, 'have' lists ONLY ingredients that appear in the "
-    "user's owned list and that this dish uses, and 'missing' lists the main ingredients this "
-    "dish needs that are not in the owned list; both are chosen from the allowed values of the "
-    "answer format. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking "
-    "oil, sesame oil, water) are not listed. If no dish fits, return an empty list. Never add "
-    "dishes just to fill the list."
-)
+# The service sends SUGGEST_CLOSED_SYSTEM with suggest_schema(choices). Earlier wordings live in
+# research/experiments/legacy_prompts.py.
 # The wording below (round 3 of the answer format study, variant PA) asks for what the user can
-# cook now; measured against SUGGEST_CLOSED_SYSTEM_ROUND2 in research/experiments/dish_output_formats.
+# cook now; measured against the round-2 wording (research/experiments/legacy_prompts.py).
 SUGGEST_CLOSED_SYSTEM = (
     "You help a Korean student living alone decide what to cook from the ingredients they have. "
     "The user wants to know what they can cook now. From the given dish list, return only "
@@ -75,26 +54,6 @@ ADAPT_SYSTEM = (
     "owned list."
 )
 
-SUGGEST_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "dishes": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string"},
-                    "have": {"type": "array", "items": {"type": "string"}},
-                    "missing": {"type": "array", "items": {"type": "string"}},
-                },
-                "required": ["name", "have", "missing"],
-                "additionalProperties": False,
-            },
-        }
-    },
-    "required": ["dishes"],
-    "additionalProperties": False,
-}
 ADAPT_SCHEMA = {
     "type": "object",
     "properties": {
