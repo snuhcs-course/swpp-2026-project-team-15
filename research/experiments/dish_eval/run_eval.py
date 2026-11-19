@@ -24,12 +24,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
+from experiments import legacy_prompts
 from experiments.dish_tokens.calls import read_key
 from pydantic import ValidationError
 
 from app.dishes import prompts as prompts_module
 from app.dishes import service as service_module
-from experiments import legacy_prompts
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DEFAULT_MODEL, DishLLM, DishLLMError
 from app.dishes.schemas import AdaptRequest, SuggestRequest

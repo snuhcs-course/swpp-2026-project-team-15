@@ -211,7 +211,9 @@ def judge() -> None:
         if not todo:
             continue
         keys = [f"{d}|{v}" for v in todo]
-        items = "\n".join(item_text(k, table[d], e["candidates"][v]) for k, v in zip(keys, todo, strict=True))
+        items = "\n".join(
+            item_text(k, table[d], e["candidates"][v]) for k, v in zip(keys, todo, strict=True)
+        )
         for model in JUDGES:
             res = chat(key, model, JUDGE_PROMPT.format(items=items))
             parsed = parse_judgements(res.get("text", ""), keys) if "error" not in res else None
@@ -245,7 +247,9 @@ def parse(text: str, keys: list[str]) -> dict | None:
 
 
 def rejudge() -> None:
-    """Retry only the missing answers, per model, in batches of six (big batches failed to parse)."""
+    """Retry only the missing answers, per model, in batches of six.
+
+    Big batches failed to parse."""
     key = read_key("OPENROUTER_API_KEY", "openrouter.env")
     state, table = load_json(STATE, {}), dish_table()
     for d, e in state["dishes"].items():
@@ -287,7 +291,8 @@ def queue() -> None:
                 {True: "Y", False: "N", None: "?"}[(j.get(m) or {}).get("relevant")] for m in JUDGES
             )
             print(
-                f"{k} || {table[d]['name']} || {js} || {c['duration_s']}s || {c['channel']} || {c['title']} || "
+                f"{k} || {table[d]['name']} || {js} || {c['duration_s']}s || "
+                f"{c['channel']} || {c['title']} || "
                 f"{c['description'][:160]!r}"
             )
             kept += 1  # assume relevant for the look-ahead; rerun after reviewing

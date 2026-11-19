@@ -35,8 +35,15 @@ branch = true
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-# Preserve contributor experiment formatting; their original tests run in pytest.
-extend-exclude = ["tests/experiments"]
+# Only the original contributor tests are left as written: CI pins their content by hash
+# (tests/references/contributor-tests.json, scripts/check_integration_policy.py).
+extend-exclude = [
+    "tests/experiments/filtering/test_metrics_exclusions.py",
+    "tests/experiments/revision/test_adapters.py",
+    "tests/experiments/revision/test_core.py",
+    "tests/experiments/revision/test_loader.py",
+    "tests/experiments/revision/test_runner.py",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]

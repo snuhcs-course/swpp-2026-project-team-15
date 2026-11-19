@@ -4,7 +4,6 @@
 import importlib.util
 
 
-
 def _present(module: str) -> bool:
     try:
         return importlib.util.find_spec(module) is not None

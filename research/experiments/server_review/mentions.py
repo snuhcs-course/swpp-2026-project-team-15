@@ -154,7 +154,7 @@ def main() -> None:
                     kept = [key(r.name) for r in revised.ingredients]
                     gone = [
                         key(r.name)
-                        for r, s in zip(recipe.ingredients, status)
+                        for r, s in zip(recipe.ingredients, status, strict=True)
                         if s == "unavailable" and not (with_synonyms([key(r.name)]) & set(kept))
                     ]
                     texts = [s.text for s in revised.steps] + revised.tips

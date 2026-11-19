@@ -2,7 +2,6 @@
 """Known-answer tests for the independent checkers: hand-built recipes with planted violations."""
 
 from experiments.revision_input import checkers as ck
-
 from recipe_revision.models import SourceIngredient, SourceRecipe, SourceStep
 
 MAIN, SECONDARY, SEASONING = "3060001", "3060002", "3060003"

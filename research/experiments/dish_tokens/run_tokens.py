@@ -18,11 +18,11 @@ from pathlib import Path
 
 from experiments.dish_naive import scoring
 from experiments.dish_naive.run_naive import missing_counts, reference
+from experiments.legacy_prompts import SUGGEST_SCHEMA, SUGGEST_SYSTEM
 
 from app.dishes.answers import check_suggest
 from app.dishes.catalog import Catalog
 from app.dishes.prompts import suggest_user_message
-from experiments.legacy_prompts import SUGGEST_SCHEMA, SUGGEST_SYSTEM
 from app.dishes.service import DishService
 
 from .calls import Call, chat, json_schema_format, read_key

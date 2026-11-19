@@ -147,7 +147,8 @@ def show() -> None:
                 {True: "Y", False: "N", None: "?"}[(j.get(m) or {}).get("relevant")] for m in JUDGES
             )
             print(
-                f"{v} {js} {c['duration_s']}s {c['orientation'][0]} | {c['channel']} | {c['title'][:70]} | {c['description'][:120]!r}"
+                f"{v} {js} {c['duration_s']}s {c['orientation'][0]} | {c['channel']} | "
+                f"{c['title'][:70]} | {c['description'][:120]!r}"
             )
 
 

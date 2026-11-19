@@ -1,5 +1,7 @@
 # AI-generated with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
-"""Offline tests of the dish-evaluation scorer, the case file and the thresholds (no model, no network)."""
+"""Offline tests of the dish-evaluation scorer, the case file and the thresholds.
+
+No model, no network."""
 
 import json
 from pathlib import Path

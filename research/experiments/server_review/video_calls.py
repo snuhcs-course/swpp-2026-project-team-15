@@ -1,7 +1,8 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-11-19; not yet reviewed.
 """Finding 3: model and YouTube calls when the same dish's videos are asked for again and again.
 
-Fakes only, no network. Run from server/: uv run python ../research/experiments/server_review/video_calls.py
+Fakes only, no network. Run from server/:
+    uv run python ../research/experiments/server_review/video_calls.py
 """
 
 import json

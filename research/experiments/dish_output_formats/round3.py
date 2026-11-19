@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from experiments.legacy_prompts import SUGGEST_CLOSED_SYSTEM_ROUND2, SUGGEST_SCHEMA, SUGGEST_SYSTEM
+
 from app.dishes.answers import check_suggest
 from app.dishes.catalog import Catalog
 from app.dishes.choices import SuggestChoices, owned_vocabulary, suggest_choices
@@ -18,7 +20,6 @@ from app.dishes.prompts import (
     suggest_schema,
     suggest_user_message,
 )
-from experiments.legacy_prompts import SUGGEST_CLOSED_SYSTEM_ROUND2, SUGGEST_SCHEMA, SUGGEST_SYSTEM
 
 from . import formats
 

@@ -95,7 +95,10 @@ def test_kappa():
 
 def test_parse_judgements_is_strict():
     keys = ["a", "b"]
-    ok = '```json\n{"judgements":[{"i":"a","relevant":true,"reason":"x"},{"i":"b","relevant":false}]}\n```'
+    ok = (
+        '```json\n{"judgements":[{"i":"a","relevant":true,"reason":"x"},'
+        '{"i":"b","relevant":false}]}\n```'
+    )
     assert scoring.parse_judgements(ok, keys) == {"a": True, "b": False}
     assert scoring.parse_judgements('{"judgements":[{"i":"a","relevant":true}]}', keys) is None
     dup = '{"judgements":[{"i":"a","relevant":true},{"i":"a","relevant":true}]}'

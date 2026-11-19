@@ -20,11 +20,11 @@ from pathlib import Path
 
 import httpx
 from experiments.dish_tokens.calls import read_key
+from experiments.legacy_prompts import SUGGEST_SYSTEM
 from pydantic import ValidationError
 
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DEFAULT_MODEL, MAX_TOKENS, DishLLM, DishLLMError
-from experiments.legacy_prompts import SUGGEST_SYSTEM
 from app.dishes.schemas import SuggestRequest
 from app.dishes.service import DishService
 

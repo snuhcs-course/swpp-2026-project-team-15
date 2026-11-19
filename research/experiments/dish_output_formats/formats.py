@@ -18,10 +18,10 @@ from pathlib import Path
 
 import httpx
 from experiments.dish_tokens.calls import ENDPOINT, PRICE_PER_MTOK, Call
+from experiments.legacy_prompts import SUGGEST_SCHEMA, SUGGEST_SYSTEM
 
 from app.dishes.catalog import Catalog
 from app.dishes.prompts import suggest_user_message
-from experiments.legacy_prompts import SUGGEST_SCHEMA, SUGGEST_SYSTEM
 from app.dishes.synonyms import SYNONYM_GROUPS
 
 HERE = Path(__file__).resolve().parent

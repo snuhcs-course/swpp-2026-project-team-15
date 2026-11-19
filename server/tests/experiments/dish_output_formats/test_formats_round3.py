@@ -7,10 +7,10 @@ from experiments.dish_output_formats import round3, run_round3
 from experiments.dish_output_formats.formats import Answer
 from experiments.dish_output_formats.run_formats import Budget
 from experiments.dish_tokens.calls import Call
+from experiments.legacy_prompts import SUGGEST_CLOSED_SYSTEM_ROUND2
 
 from app.dishes.catalog import Catalog
 from app.dishes.choices import ingredient_vocabulary
-from experiments.legacy_prompts import SUGGEST_CLOSED_SYSTEM_ROUND2
 
 
 def _ctx():

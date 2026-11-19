@@ -3,13 +3,13 @@ repos:
     hooks:
       - id: python-lint
         name: Python runtime lint
-        entry: uv run --directory server --locked ruff check . ../scripts ../research/evaluation
+        entry: uv run --directory server --locked ruff check . ../scripts ../research
         language: system
         pass_filenames: false
         files: ^(server/|scripts/|research/).*\.py$
       - id: python-format
         name: Python runtime format
-        entry: uv run --directory server --locked ruff format --check . ../scripts ../research/evaluation
+        entry: uv run --directory server --locked ruff format --check . ../scripts ../research
         language: system
         pass_filenames: false
         files: ^(server/|scripts/|research/).*\.py$
