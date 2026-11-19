@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -87,11 +88,14 @@ fun EditNicknameScreen(
                 modifier = Modifier
                     .fillMaxWidth(),
                 trailingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_xcircle),
-                        contentDescription = "clear nickname",
-                        tint = Color.Unspecified
-                    )
+                    // The icon had no click handler, so tapping it did nothing (phone check, 2026-11-19).
+                    IconButton(onClick = { nickname = "" }) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_xcircle),
+                            contentDescription = "별명 지우기",
+                            tint = Color.Unspecified
+                        )
+                    }
                 }
             )
         }
