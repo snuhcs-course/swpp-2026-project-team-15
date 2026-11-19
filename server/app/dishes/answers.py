@@ -76,13 +76,21 @@ def check_suggest(
     return out
 
 
+# The longest list a suggestion returns. Chosen in round 5 of research/experiments/
+# dish_output_formats: the 90th percentile, over 29 inputs, of how many dishes the dish list says
+# the user can cook missing at most one key ingredient. Ordinary answers are shorter and are not
+# cut; only runaway answers that walk the whole dish list (계란 + 밥 gave 118) are.
+SUGGEST_LIMIT = 36
+
+
 def fewest_missing_first(dishes: list[SuggestedDish]) -> list[SuggestedDish]:
-    """Dishes the model says need fewer missing ingredients come first; ties keep its order.
+    """Dishes the model says need fewer missing ingredients come first; ties keep its order; at
+    most SUGGEST_LIMIT are kept.
 
     The model is asked for best-first order but walks the dish list in its given order (round 3 of
-    research/experiments/dish_output_formats), so the server orders by the model's own `missing`.
-    Nothing is dropped and no count is imposed."""
-    return sorted(dishes, key=lambda d: len(d.missing))
+    research/experiments/dish_output_formats), so the server orders by the model's own `missing`
+    and then keeps the first SUGGEST_LIMIT."""
+    return sorted(dishes, key=lambda d: len(d.missing))[:SUGGEST_LIMIT]
 
 
 def check_adapt(data: dict, missing: list[str], owned: list[str]) -> list[Substitution]:

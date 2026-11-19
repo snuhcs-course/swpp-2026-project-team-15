@@ -49,7 +49,9 @@ class DishService:
         names = [d.name for d in self.catalog.all()]
         choices = suggest_choices(ingredients, names, self._vocabulary, self.assumed)
         request = suggest_request(choices)
-        data = self.llm.complete(request.system, request.user, request.name, request.schema)
+        data = self.llm.complete(
+            request.system, request.user, request.name, request.schema, request.max_tokens
+        )
         dishes = fewest_missing_first(check_suggest(data, self.catalog, self.recipes, choices))
         return SuggestResponse(source="llm", dishes=dishes)
 

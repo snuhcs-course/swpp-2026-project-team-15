@@ -28,8 +28,10 @@ class RecordingModel:
         self.answer = answer
         self.sent: list[tuple] = []
 
-    def complete(self, system: str, user: str, name: str, schema: dict) -> dict:
-        self.sent.append((system, user, name, schema))
+    def complete(
+        self, system: str, user: str, name: str, schema: dict, max_tokens: int | None = None
+    ) -> dict:
+        self.sent.append((system, user, name, schema, max_tokens))
         return self.answer
 
 
@@ -77,7 +79,7 @@ def test_request_uses_the_closed_prompt_and_the_user_items():
 def test_service_sends_the_per_request_schema():
     model = RecordingModel({"dishes": []})
     assert _post(model, ["계란", "밥"]).status_code == 200
-    _, _, _, schema = model.sent[0]
+    _, _, _, schema, _ = model.sent[0]
     missing = _dish_props(schema)["missing"]["items"]["enum"]
     assert "계란" not in missing and "밥" not in missing and "대파" in missing
 
@@ -110,3 +112,22 @@ def test_the_running_service_leaves_staples_out_of_the_missing_choices():
     schema = model.sent[0][3]
     missing = schema["properties"]["dishes"]["items"]["properties"]["missing"]["items"]["enum"]
     assert "간장" not in missing and "참기름" not in missing
+
+
+def test_a_runaway_answer_is_ordered_and_cut_to_the_list_limit():
+    # Phone check 2026-11-19: 계란 + 밥 made the model list 118 dishes in 9.7 s (round 5).
+    from app.dishes.answers import SUGGEST_LIMIT
+    from app.dishes.prompts import SUGGEST_MAX_TOKENS
+
+    names = [d.name for d in CATALOG.all()]
+    answer = {
+        "dishes": [
+            {"name": n, "have": ["계란"], "missing": ["대파"] if i % 2 else []}
+            for i, n in enumerate(names)
+        ]
+    }
+    model = RecordingModel(answer)
+    dishes = _post(model, ["계란", "밥"]).json()["dishes"]
+    assert len(dishes) == SUGGEST_LIMIT < len(names)
+    assert all(d["missing"] == [] for d in dishes)  # fewest missing kept first
+    assert model.sent[0][4] == SUGGEST_MAX_TOKENS

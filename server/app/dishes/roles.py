@@ -14,10 +14,14 @@ from app.dishes.schemas import SourceRecipe, Video
 
 
 class ChatModel(Protocol):
-    def complete(self, system: str, user: str, name: str, schema: dict) -> dict:
+    def complete(
+        self, system: str, user: str, name: str, schema: dict, max_tokens: int | None = None
+    ) -> dict:
         """The model's answer to ``user`` as a JSON object that follows ``schema``.
 
-        Raises DishLLMError when the call fails or the answer is unusable."""
+        ``max_tokens`` bounds the answer (None: the client's default); an answer cut at the bound
+        keeps its complete leading items. Raises DishLLMError when the call fails or the answer
+        is unusable."""
         ...
 
 

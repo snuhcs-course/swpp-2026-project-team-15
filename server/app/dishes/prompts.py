@@ -20,6 +20,15 @@ class ModelRequest:
     user: str
     name: str
     schema: dict
+    max_tokens: int | None = None  # None: the model client's default
+
+
+# Room in the suggestion answer for about SUGGEST_LIMIT dishes (answers.py): SUGGEST_LIMIT times
+# the 95th percentile of output tokens per returned dish, measured in round 5 of
+# research/experiments/dish_output_formats (36 x 52.2). A runaway answer that walks the whole
+# dish list is cut here after about 4.5 s instead of at 4,096 tokens after 8-9 s; ordinary answers
+# are unchanged.
+SUGGEST_MAX_TOKENS = 1880
 
 
 # SUGGEST_SYSTEM and SUGGEST_SCHEMA are the free-text format that the studies under
@@ -213,7 +222,9 @@ def revise_user_message(
 
 def suggest_request(choices: SuggestChoices) -> ModelRequest:
     user = suggest_user_message(choices.have, choices.names)
-    return ModelRequest(SUGGEST_CLOSED_SYSTEM, user, "dish_choice", suggest_schema(choices))
+    return ModelRequest(
+        SUGGEST_CLOSED_SYSTEM, user, "dish_choice", suggest_schema(choices), SUGGEST_MAX_TOKENS
+    )
 
 
 def adapt_request(dish_name: str, missing: list[str], owned: list[str]) -> ModelRequest:

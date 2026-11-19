@@ -15,7 +15,9 @@ class FakeChatModel:
     def __init__(self, answer: dict | None = None, *, fail: bool = False):
         self._answer, self._fail = answer or {"dishes": []}, fail
 
-    def complete(self, system: str, user: str, name: str, schema: dict) -> dict:
+    def complete(
+        self, system: str, user: str, name: str, schema: dict, max_tokens: int | None = None
+    ) -> dict:
         if self._fail:
             raise DishLLMError("down")
         return self._answer

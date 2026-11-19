@@ -25,7 +25,9 @@ class DishLLM:
         self._model = model
         self._transport = transport
 
-    def complete(self, system: str, user: str, name: str, schema: dict) -> dict:
+    def complete(
+        self, system: str, user: str, name: str, schema: dict, max_tokens: int | None = None
+    ) -> dict:
         payload = {
             "model": self._model,
             "messages": [
@@ -37,7 +39,7 @@ class DishLLM:
                 "json_schema": {"name": name, "strict": True, "schema": schema},
             },
             "provider": {"require_parameters": True},
-            "max_tokens": MAX_TOKENS,
+            "max_tokens": max_tokens or MAX_TOKENS,
             "temperature": 0,
         }
         started = time.monotonic()

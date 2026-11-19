@@ -236,3 +236,42 @@ Paired against S_now per input (mean difference, bootstrap 95% interval): S_nose
 **Adopted (judgement, not a rule outcome).** S_noseason: the server leaves the staples it assumes at home (staples.json plus water, with their synonym spellings) out of the `missing` choices; the wording and the ordering are unchanged. The split is not adopted: it fixes the cut answers by making every list three to four times longer. What remains: an occasional runaway answer on very common inputs (2 of 29 here), which the server still salvages and orders.
 
 **Limits.** One run per variant, one model and provider; the split variants and names-only on 8 inputs; reference sets and rule-based missing counts come from the catalog, not from people.
+
+## Round 5: spelling versus variation, and a limit on the list (2026-11-19)
+
+Trigger: on the phone 계란 + 밥 gave 118 dishes in 9.7 s and 달걀 + 밥 16 dishes in 2.2 s. 계란 is the name the app itself sends (onboarding preset, ingredient list), so this is the common case. The user then allowed an upper limit on the list length (list length only). Design before any call in `criteria_round5.json` (commit `4e44fbc`), two amendments recorded in the same file before their calls. Model `google/gemini-2.5-flash-lite`, temperature 0. Calls: 214 + 122 + 64 = 400 (plus 3 diagnostic calls), about $0.14, no HTTP 429.
+
+**A. Spelling or variation?** Five repeats per spelling, alternating.
+
+| Pair | 계란 spelling: dishes, seconds | 달걀 spelling: dishes, seconds |
+|---|---|---|
+| P1 밥 | 118 (cut at 4,096 tokens) in all 5, 7.8-9.0 s | 16 in all 5, 1.6-1.8 s |
+| P2 alone | 18 in all 5 | 19 in all 5 |
+| P3 밥 + an unknown item | 114 (cut) in all 5 | 103 (cut) in all 5 |
+| P4 대파 | 19 in all 5 | 15 in all 5 |
+
+Every repeat gave the same list, so the difference is the input, not run-to-run variation. But the spelling is not the cause in itself: with 밥 and an unknown item both spellings run away, and in the amendment 김치 + 밥 ran away (122 dishes) when one sentence was added to the prompt. Some inputs make the model walk the whole dish list; which ones is not predictable from the input.
+
+**B. Where to put the limit.** Two limits were derived from the catalog before any call (how many dishes each of the 29 inputs can cook missing at most one key ingredient): K_mid = 15 (median), K_high = 36 (90th percentile). Two runs per input.
+
+| | served (no limit) | limit in the answer format (maxItems) | limit said in the prompt, K = 15 | prompt, K = 36 | server cut after ordering, K = 15 | server cut, K = 36 | output limit 1,880 tokens + server cut, K = 36 |
+|---|---|---|---|---|---|---|---|
+| Answers | 58 | 0 of 58 (HTTP 400: rejected on this route) | 58 | 58 | from served | from served | 58 |
+| Dishes median / max | 16 / 114 | — | 15 / 120 | 30 / 37 | 15 / 15 | 16 / 36 | 16 / 36 |
+| Answers longer than K | — | — | 6 of 58 (김치 + 밥, cut) | 28 of 58 | 0 | 0 | 0 |
+| Missing per dish (rules, mean) | 2.08 | — | 2.36 | 2.17 | 1.65 | 1.78 | 1.85 |
+| First five with at most one missing | 0.59 | — | 0.57 | 0.57 | 0.59 | 0.59 | 0.59 |
+| Reference recall / precision | 0.48 / 0.29 | — | 0.41 / 0.21 | 0.59 / 0.26 | 0.38 / 0.41 | 0.47 / 0.37 | 0.47 / 0.37 |
+| Latency p50 / p95 / max | 2.0 / 7.6 / 14.6 s | — | 1.8 / 7.1 / 7.9 s | 3.2 / 4.4 / 8.7 s | as served | as served | 2.1 / 4.4 / 4.9 s |
+
+Paired against the served lists (bootstrap 95% interval): the server cut at 15 removes 8.3 dishes per input (2.2 to 16.9) and lowers missing per dish by 0.13 (0.05 to 0.22); at 36 it removes 4.1 (0 to 10.9) and only touches the long answers. The output limit plus the cut at 36 gives the same list as the cut alone on every ordinary input (difference 0), missing per dish +0.03 (0 to 0.10), and is faster by 0.5 s on average (0.02 to 1.1). On the runaway inputs (계란 + 밥, and 밥 + an unknown item with either spelling) it returned 36 dishes in 4.3-5.0 s instead of 103-118 dishes in 7.8-9.0 s.
+
+**What the numbers show.**
+- The provider route rejects a maxItems limit in the answer format, so the limit cannot be enforced inside the request.
+- Saying the limit in the prompt makes the model fill the list up to the number (median exactly 15, or 30-37 for 36) with dishes that need more ingredients, and it still runs away on other inputs.
+- A cut by the server after its fewest-missing ordering is always honoured and keeps the first five unchanged. At 15 it shortens half of the ordinary answers too; at 36 it touches only the runaway answers, which is the problem that was seen.
+- The cut alone does not shorten the wait; the output limit sized for 36 dishes (36 x 52.2 tokens, the 95th percentile per returned dish) does, without changing any ordinary answer.
+
+**Adopted (judgement).** The server keeps at most 36 dishes after its ordering (`SUGGEST_LIMIT` in `server/app/dishes/answers.py`) and asks for at most 1,880 output tokens (`SUGGEST_MAX_TOKENS` in `server/app/dishes/prompts.py`). 36 rather than 15 because the complaint was the endless list and its wait, and 36 leaves every ordinary answer as it was; 15 would also remove dishes from ordinary lists with no gain in speed. No prompt sentence is added.
+
+**Limits.** Two runs per input (five for part A), one model and provider on one day; the limits and the rules-based missing counts come from the catalog, not from people; a runaway answer is cut where the model's walk through the dish list stopped, so the 36 dishes kept are the best of the first ~50 it listed, not of all 128.
