@@ -25,6 +25,11 @@ def is_portrait(player: dict) -> bool:
     return width > 0 and height > width
 
 
+def thumbnail_url(video_id: str) -> str:
+    """YouTube's still image of a video, addressed by its id alone (no API call)."""
+    return f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg"
+
+
 def to_video(item: dict) -> Video | None:
     """None unless the video is public, can be embedded and is not portrait."""
     status = item.get("status", {})
@@ -39,7 +44,7 @@ def to_video(item: dict) -> Video | None:
         video_id=item["id"],
         title=snippet.get("title", ""),
         channel=snippet.get("channelTitle", ""),
-        thumbnail_url=thumb or f"https://i.ytimg.com/vi/{item['id']}/mqdefault.jpg",
+        thumbnail_url=thumb or thumbnail_url(item["id"]),
     )
 
 

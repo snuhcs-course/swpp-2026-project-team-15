@@ -101,6 +101,11 @@ class RecipeBookContract:
     def test_unknown_dish_has_none(self):
         book = self.make()
         assert book.get("nope") is None and "nope" not in book
+        assert book.video_id("nope") is None
+
+    def test_video_id_is_the_recipes_own_video(self):
+        book = self.make()
+        assert book.video_id("kimchi-fried-rice") == RECIPE["video"]["id"]
 
 
 class TestFakeRecipeBook(RecipeBookContract):

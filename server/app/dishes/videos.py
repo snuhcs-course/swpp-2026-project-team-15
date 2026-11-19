@@ -55,6 +55,11 @@ class VideoFinder:
         self._source = source
         self._now = now
 
+    def first_stored_id(self, dish_id: str) -> str | None:
+        """The first stored video of the dish, without checking it with YouTube."""
+        stored = self._stored.fresh_ids(dish_id, self._now())
+        return stored[0] if stored else None
+
     def lookup(self, dish_id: str, dish_name: str) -> tuple[list[Video], str]:
         """The videos and where they came from: "stored" or "discovered"."""
         stored = self._stored.fresh_ids(dish_id, self._now())

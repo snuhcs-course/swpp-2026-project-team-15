@@ -525,6 +525,38 @@ def test_suggestions_carry_a_search_link_but_no_videos(catalog):
     assert "videos" not in dish and dish["search_url"].startswith("https://www.youtube.com/")
 
 
+def test_suggestions_carry_a_card_photo_without_asking_youtube(catalog):
+    # Found on the phone (2026-11-19): a card showed its photo only after the dish was opened.
+    from app.dishes.recipes import RecipeStore
+    from app.dishes.schemas import SourceRecipe
+    from tests.dishes.test_revision import RECIPE
+
+    llm = FakeLLM(
+        _answer(
+            ("김치볶음밥", ["밥", "김치"], ["대파"]),
+            ("계란말이", ["계란"], []),
+            ("계란국", ["계란"], []),
+        )
+    )
+    calls = []
+    stored = VideoStore({"egg-roll": (NOW, [IDS[1], IDS[2]])})
+    recipes = RecipeStore({"kimchi-fried-rice": SourceRecipe.model_validate(RECIPE)})
+    service = DishService(catalog, llm, _finder(calls, stored=stored), recipes)
+    body = (
+        client_for(service)
+        .post("/dishes/suggest", json={"ingredients": ["김치", "밥", "계란"]})
+        .json()
+    )
+    photos = {d["id"]: d["thumbnail_url"] for d in body["dishes"]}
+    assert (
+        photos["kimchi-fried-rice"]
+        == f"https://i.ytimg.com/vi/{RECIPE['video']['id']}/mqdefault.jpg"
+    )
+    assert photos["egg-roll"] == f"https://i.ytimg.com/vi/{IDS[1]}/mqdefault.jpg"
+    assert photos["egg-soup"] is None  # nothing stored and no recipe
+    assert calls == []  # neither the model search nor YouTube was asked
+
+
 # --- start from the environment -------------------------------------------------------------
 
 

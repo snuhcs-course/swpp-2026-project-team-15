@@ -48,6 +48,10 @@ class RecipeStore:
     def get(self, dish_id: str) -> SourceRecipe | None:
         return self._recipes.get(dish_id)
 
+    def video_id(self, dish_id: str) -> str | None:
+        recipe = self._recipes.get(dish_id)
+        return recipe.video.id if recipe is not None and recipe.video is not None else None
+
     def __contains__(self, dish_id: str) -> bool:
         return dish_id in self._recipes
 
@@ -78,6 +82,9 @@ class CreditedRecipes:
         title, channel = self._credit(recipe.video.id)
         video = RecipeVideo(id=recipe.video.id, title=title, channel=channel)
         return recipe.model_copy(update={"video": video})
+
+    def video_id(self, dish_id: str) -> str | None:
+        return self._recipes.video_id(dish_id)
 
     def __contains__(self, dish_id: str) -> bool:
         return dish_id in self._recipes

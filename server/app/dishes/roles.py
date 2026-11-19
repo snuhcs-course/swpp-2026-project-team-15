@@ -50,6 +50,10 @@ class StoredVideos(Protocol):
 class RecipeBook(Protocol):
     def get(self, dish_id: str) -> SourceRecipe | None: ...
 
+    def video_id(self, dish_id: str) -> str | None:
+        """The id of the video the recipe was written from, without any network call."""
+        ...
+
     def __contains__(self, dish_id: str) -> bool: ...
 
 

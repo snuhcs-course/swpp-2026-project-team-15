@@ -18,6 +18,7 @@ from app.dishes.revision import Reviser
 from app.dishes.roles import ChatModel, DishCatalog, IngredientIndex, RecipeBook
 from app.dishes.schemas import AdaptResponse, SuggestResponse, VideosResponse
 from app.dishes.videos import VideoFinder
+from app.dishes.youtube import thumbnail_url
 
 NO_SUBSTITUTE = "냉장고 재료로는 마땅한 대체를 찾지 못했어요."
 
@@ -53,7 +54,15 @@ class DishService:
             request.system, request.user, request.name, request.schema, request.max_tokens
         )
         dishes = fewest_missing_first(check_suggest(data, self.catalog, self.recipes, choices))
+        dishes = [d.model_copy(update={"thumbnail_url": self._thumbnail(d.id)}) for d in dishes]
         return SuggestResponse(source="llm", dishes=dishes)
+
+    def _thumbnail(self, dish_id: str) -> str | None:
+        """No YouTube call: a removed video leaves a broken image, which the app replaces."""
+        video_id = self.recipes.video_id(dish_id) if self.recipes is not None else None
+        if video_id is None and self.finder is not None:
+            video_id = self.finder.first_stored_id(dish_id)
+        return thumbnail_url(video_id) if video_id else None
 
     def videos(self, dish_id: str) -> VideosResponse | None:
         """None when the dish is unknown. Raises VideoError when the lookup fails or is off."""

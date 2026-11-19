@@ -36,6 +36,8 @@ class SuggestedDish(BaseModel):
     missing: list[str]
     search_url: str
     has_recipe: bool = False
+    # The card's photo before the dish is opened: the recipe's video, else the first stored one.
+    thumbnail_url: str | None = None
 
 
 class SuggestResponse(BaseModel):
