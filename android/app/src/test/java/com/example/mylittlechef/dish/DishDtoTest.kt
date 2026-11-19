@@ -76,4 +76,20 @@ class DishDtoTest {
         assertEquals(listOf("b", "a", "c"), sortDishes(dishes, DishSort.MOST_HAVE).map { it.id })
         assertEquals(listOf("b", "a", "c"), sortDishes(dishes, DishSort.NAME).map { it.id })
     }
+
+    // Server field added 2026-11-19 so a card shows its photo before the dish is opened.
+    @Test
+    fun suggestionPhotoIsKeptOnlyFromYouTubesImageHost() {
+        val json = """
+            {"source":"llm","dishes":[
+              {"id":"a","name":"A","thumbnail_url":"https://i.ytimg.com/vi/abcdefghijk/mqdefault.jpg"},
+              {"id":"b","name":"B","thumbnail_url":"https://example.com/x.jpg"},
+              {"id":"c","name":"C"}
+            ]}
+        """.trimIndent()
+        val dishes = gson.fromJson(json, DishSuggestResponse::class.java).dishes.orEmpty().mapNotNull { it.toDish() }
+        assertEquals("https://i.ytimg.com/vi/abcdefghijk/mqdefault.jpg", dishes[0].thumbnailUrl)
+        assertNull(dishes[1].thumbnailUrl)
+        assertNull(dishes[2].thumbnailUrl)
+    }
 }

@@ -191,7 +191,8 @@ private fun DishList(state: DishUiState.Success, dishes: DishViewModel) {
         items(state.dishes, key = { it.id }) { dish ->
             DishCard(
                 dish,
-                thumbnail = (dishes.videoState(dish.id) as? VideoUiState.Success)
+                // The recipe's own video first: the one that plays when the card opens.
+                thumbnail = dish.thumbnailUrl ?: (dishes.videoState(dish.id) as? VideoUiState.Success)
                     ?.videos?.firstNotNullOfOrNull { it.thumbnailUrl },
                 onOpen = { dishes.selectDish(dish.id, DishSheetMode.VIDEOS) },
                 onAdapt = {

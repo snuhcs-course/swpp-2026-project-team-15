@@ -20,7 +20,9 @@ data class Dish(
     val missing: List<String>,
     val reason: String,
     val searchUrl: String,
-    val hasRecipe: Boolean = false
+    val hasRecipe: Boolean = false,
+    /** The card's photo from the suggestion itself, so it shows before the dish is opened. */
+    val thumbnailUrl: String? = null
 )
 
 data class Substitution(val missing: String, val suggestion: String, val uses: List<String>)
@@ -56,7 +58,8 @@ fun DishDto.toDish(): Dish? {
         missing = missing.orEmpty(),
         reason = reason.orEmpty(),
         searchUrl = DishLinks.safeSearchUrl(searchUrl, name),
-        hasRecipe = hasRecipe == true
+        hasRecipe = hasRecipe == true,
+        thumbnailUrl = thumbnailUrl?.takeIf { it.startsWith("https://i.ytimg.com/") }
     )
 }
 

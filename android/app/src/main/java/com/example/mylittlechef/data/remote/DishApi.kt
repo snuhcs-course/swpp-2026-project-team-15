@@ -36,7 +36,8 @@ data class DishDto(
     val reason: String?,
     val keywords: List<String>?,
     @SerializedName("search_url") val searchUrl: String?,
-    @SerializedName("has_recipe") val hasRecipe: Boolean? = null
+    @SerializedName("has_recipe") val hasRecipe: Boolean? = null,
+    @SerializedName("thumbnail_url") val thumbnailUrl: String? = null
 )
 
 data class DishVideoDto(
