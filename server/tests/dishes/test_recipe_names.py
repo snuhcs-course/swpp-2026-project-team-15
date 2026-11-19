@@ -66,6 +66,12 @@ def test_stand_ins_and_other_kinds_are_unavailable(names, row, fridge):
         ("모짜렐라 치즈 가래떡", ["떡"]),
         ("모닝빵", ["식빵"]),
         ("비엔나 살라미", ["햄"]),
+        ("카레가루", ["카레"]),
+        ("고형카레", ["카레"]),
+        ("떡국떡", ["떡"]),
+        ("김밥용 김", ["김"]),
+        ("잡곡밥", ["밥"]),
+        ("현미밥", ["밥"]),
     ],
 )
 def test_related_kinds_chosen_by_the_user_are_owned(names, row, fridge):

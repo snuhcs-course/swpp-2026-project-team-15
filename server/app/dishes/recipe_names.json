@@ -132,7 +132,13 @@
     "모짜렐라치즈가래떡": "떡",
     "호기빵": "식빵",
     "모닝빵": "식빵",
-    "쌀": "밥"
+    "쌀": "밥",
+    "카레가루": "카레",
+    "고형카레": "카레",
+    "떡국떡": "떡",
+    "김밥용김": "김",
+    "잡곡밥": "밥",
+    "현미밥": "밥"
   },
   "kinds_note": "A general name in a recipe is covered by owning any one kind of it; owning the general name does not cover a specific kind.",
   "kinds": {
