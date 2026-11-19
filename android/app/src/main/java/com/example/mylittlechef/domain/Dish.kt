@@ -1,7 +1,6 @@
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
 package com.example.mylittlechef.domain
 
-import com.example.mylittlechef.data.remote.DishAdaptResponse
 import com.example.mylittlechef.data.remote.DishDto
 import com.example.mylittlechef.data.remote.DishVideoDto
 
@@ -23,15 +22,6 @@ data class Dish(
     val hasRecipe: Boolean = false,
     /** The card's photo from the suggestion itself, so it shows before the dish is opened. */
     val thumbnailUrl: String? = null
-)
-
-data class Substitution(val missing: String, val suggestion: String, val uses: List<String>)
-
-data class DishAdaptation(
-    val substitutions: List<Substitution>,
-    val skipOk: List<String>,
-    val note: String,
-    val source: String
 )
 
 enum class DishSort(val label: String) {
@@ -72,14 +62,3 @@ fun DishVideoDto.toVideo(): DishVideo? {
         thumbnailUrl = thumbnailUrl?.takeIf { it.startsWith("https://") }
     )
 }
-
-fun DishAdaptResponse.toAdaptation() = DishAdaptation(
-    substitutions = substitutions.orEmpty().mapNotNull {
-        val missing = it.missing?.takeIf(String::isNotBlank) ?: return@mapNotNull null
-        val suggestion = it.suggestion?.takeIf(String::isNotBlank) ?: return@mapNotNull null
-        Substitution(missing, suggestion, it.uses.orEmpty())
-    },
-    skipOk = skipOk.orEmpty(),
-    note = note.orEmpty(),
-    source = source.orEmpty()
-)

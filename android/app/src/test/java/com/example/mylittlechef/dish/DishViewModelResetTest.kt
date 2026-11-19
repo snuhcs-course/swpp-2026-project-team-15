@@ -1,8 +1,6 @@
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
 package com.example.mylittlechef.dish
 
-import com.example.mylittlechef.data.remote.DishAdaptRequest
-import com.example.mylittlechef.data.remote.DishAdaptResponse
 import com.example.mylittlechef.data.remote.DishApi
 import com.example.mylittlechef.data.remote.DishCatalogResponse
 import com.example.mylittlechef.data.remote.DishDto
@@ -40,7 +38,6 @@ class DishViewModelResetTest {
             suggestCalls++
             return DishSuggestResponse("llm", listOf(DishDto("a", "김치볶음밥", "볶음밥", listOf("김치"), listOf("대파"), "이유", emptyList(), null)))
         }
-        override suspend fun adapt(request: DishAdaptRequest) = DishAdaptResponse(request.dishId, emptyList(), emptyList(), "", "llm")
         override suspend fun videos(request: DishVideosRequest) = DishVideosResponse(emptyList())
     }
 

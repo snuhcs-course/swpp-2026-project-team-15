@@ -51,22 +51,6 @@ data class DishVideosRequest(@SerializedName("dish_id") val dishId: String)
 
 data class DishVideosResponse(val videos: List<DishVideoDto>?)
 
-data class DishAdaptRequest(
-    @SerializedName("dish_id") val dishId: String,
-    val ingredients: List<String>,
-    val missing: List<String> = emptyList()
-)
-
-data class DishAdaptResponse(
-    @SerializedName("dish_id") val dishId: String?,
-    val substitutions: List<DishSubstitutionDto>?,
-    @SerializedName("skip_ok") val skipOk: List<String>?,
-    val note: String?,
-    val source: String?
-)
-
-data class DishSubstitutionDto(val missing: String?, val suggestion: String?, val uses: List<String>?)
-
 data class RecipeIngredientDto(val name: String?, val amount: String?, val role: String?)
 
 data class RecipeStepDto(val n: Int?, val text: String?)
@@ -147,9 +131,6 @@ interface DishApi {
 
     @POST("dishes/videos")
     suspend fun videos(@Body request: DishVideosRequest): DishVideosResponse
-
-    @POST("dishes/adapt")
-    suspend fun adapt(@Body request: DishAdaptRequest): DishAdaptResponse
 }
 
 /** Own Retrofit instance so the existing ApiClient and its interfaces stay unchanged. */

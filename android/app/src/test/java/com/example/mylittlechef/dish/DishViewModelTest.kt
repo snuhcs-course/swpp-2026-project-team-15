@@ -1,19 +1,15 @@
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
 package com.example.mylittlechef.dish
 
-import com.example.mylittlechef.data.remote.DishAdaptRequest
-import com.example.mylittlechef.data.remote.DishAdaptResponse
 import com.example.mylittlechef.data.remote.DishApi
 import com.example.mylittlechef.data.remote.DishCatalogResponse
 import com.example.mylittlechef.data.remote.DishDto
-import com.example.mylittlechef.data.remote.DishSubstitutionDto
 import com.example.mylittlechef.data.remote.DishSuggestRequest
 import com.example.mylittlechef.data.remote.DishSuggestResponse
 import com.example.mylittlechef.data.remote.DishVideoDto
 import com.example.mylittlechef.data.remote.DishVideosRequest
 import com.example.mylittlechef.data.remote.DishVideosResponse
 import com.example.mylittlechef.domain.DishSort
-import com.example.mylittlechef.viewmodel.AdaptUiState
 import com.example.mylittlechef.viewmodel.DishUiState
 import com.example.mylittlechef.viewmodel.DishViewModel
 import com.example.mylittlechef.viewmodel.VideoUiState
@@ -49,17 +45,11 @@ class DishViewModelTest {
 
     private open class FakeApi : DishApi {
         val suggestRequests = mutableListOf<List<String>>()
-        val adaptRequests = mutableListOf<DishAdaptRequest>()
         var onSuggest: suspend (DishSuggestRequest) -> DishSuggestResponse = { DishSuggestResponse("llm", emptyList()) }
-        var onAdapt: suspend (DishAdaptRequest) -> DishAdaptResponse = { DishAdaptResponse(it.dishId, emptyList(), emptyList(), "", "llm") }
         override suspend fun dishes() = DishCatalogResponse(emptyList(), 0)
         override suspend fun suggest(request: DishSuggestRequest): DishSuggestResponse {
             suggestRequests += request.ingredients
             return onSuggest(request)
-        }
-        override suspend fun adapt(request: DishAdaptRequest): DishAdaptResponse {
-            adaptRequests += request
-            return onAdapt(request)
         }
         val videoRequests = mutableListOf<String>()
         var onVideos: suspend (DishVideosRequest) -> DishVideosResponse = { DishVideosResponse(emptyList()) }
@@ -173,54 +163,6 @@ class DishViewModelTest {
         gate.complete(Unit)
         advanceUntilIdle()
         assertEquals("쌀", (vm.state as DishUiState.Success).dishes.single().name)
-    }
-
-    @Test fun adaptShowsLoadingThenResultAndIsClearedWhenTheFridgeChanges() = runTest(dispatcher) {
-        val gate = CompletableDeferred<Unit>()
-        val api = FakeApi().apply {
-            onSuggest = { DishSuggestResponse("llm", listOf(dish("a", "가", missing = listOf("대파")))) }
-            onAdapt = {
-                gate.await()
-                DishAdaptResponse(it.dishId, listOf(DishSubstitutionDto("대파", "양파로 대체", listOf("양파"))), listOf("깨"), "참고", "llm")
-            }
-        }
-        val vm = DishViewModel(api, debounceMillis = 0)
-        vm.onFridgeChanged(listOf("김치", "양파"))
-        advanceUntilIdle()
-        val dish = (vm.state as DishUiState.Success).dishes.single()
-        vm.requestAdapt(dish)
-        vm.requestAdapt(dish) // second tap while loading is ignored
-        advanceUntilIdle()
-        assertTrue(vm.adaptState("a") is AdaptUiState.Loading)
-        gate.complete(Unit)
-        advanceUntilIdle()
-        val result = (vm.adaptState("a") as AdaptUiState.Success).adaptation
-        assertEquals("양파로 대체", result.substitutions.single().suggestion)
-        assertEquals(1, api.adaptRequests.size)
-        assertEquals(listOf("김치", "양파"), api.adaptRequests.single().ingredients)
-        assertEquals(listOf("대파"), api.adaptRequests.single().missing)
-        vm.onFridgeChanged(listOf("김치"))
-        advanceUntilIdle()
-        assertEquals(null, vm.adaptState("a"))
-    }
-
-    @Test fun adaptFailureCanBeRetried() = runTest(dispatcher) {
-        var fail = true
-        val api = FakeApi().apply {
-            onSuggest = { DishSuggestResponse("llm", listOf(dish("a", "가", missing = listOf("대파")))) }
-            onAdapt = { if (fail) throw IOException("x") else DishAdaptResponse(it.dishId, emptyList(), listOf("대파"), "", "llm") }
-        }
-        val vm = DishViewModel(api, debounceMillis = 0)
-        vm.onFridgeChanged(listOf("김치"))
-        advanceUntilIdle()
-        val dish = (vm.state as DishUiState.Success).dishes.single()
-        vm.requestAdapt(dish)
-        advanceUntilIdle()
-        assertTrue(vm.adaptState("a") is AdaptUiState.Error)
-        fail = false
-        vm.requestAdapt(dish)
-        advanceUntilIdle()
-        assertEquals(listOf("대파"), (vm.adaptState("a") as AdaptUiState.Success).adaptation.skipOk)
     }
 
     @Test fun selectedDishSurvivesLikeARotation() = runTest(dispatcher) {

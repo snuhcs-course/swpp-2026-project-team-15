@@ -1,12 +1,10 @@
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
 package com.example.mylittlechef.dish
 
-import com.example.mylittlechef.data.remote.DishAdaptResponse
 import com.example.mylittlechef.data.remote.DishSuggestResponse
 import com.example.mylittlechef.data.remote.DishVideosResponse
 import com.example.mylittlechef.domain.DishSort
 import com.example.mylittlechef.domain.sortDishes
-import com.example.mylittlechef.domain.toAdaptation
 import com.example.mylittlechef.domain.toDish
 import com.example.mylittlechef.domain.toVideo
 import com.google.gson.Gson
@@ -52,17 +50,6 @@ class DishDtoTest {
         val plain = gson.fromJson(suggestJson, DishSuggestResponse::class.java).dishes!!.mapNotNull { it.toDish() }[1]
         assertTrue(plain.have.isEmpty() && plain.missing.isEmpty())
         assertTrue(plain.searchUrl.startsWith("https://www.youtube.com/results?search_query="))
-    }
-
-    @Test fun adaptResponseKeepsOnlyCompleteSubstitutions() {
-        val json = """{"dish_id":"d","substitutions":[{"missing":"대파","suggestion":"양파로 대체","uses":["양파"]},
-            {"missing":"","suggestion":"x"},{"missing":"파","suggestion":null}],"skip_ok":["깨"],"note":"참고","source":"llm"}"""
-        val a = gson.fromJson(json, DishAdaptResponse::class.java).toAdaptation()
-        assertEquals(1, a.substitutions.size)
-        assertEquals("양파로 대체", a.substitutions[0].suggestion)
-        assertEquals(listOf("양파"), a.substitutions[0].uses)
-        assertEquals(listOf("깨"), a.skipOk)
-        assertEquals("참고", a.note)
     }
 
     @Test fun sortingFollowsTheChosenOrder() {

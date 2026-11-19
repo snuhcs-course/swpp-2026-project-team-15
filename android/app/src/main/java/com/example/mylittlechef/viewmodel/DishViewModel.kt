@@ -7,18 +7,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.mylittlechef.data.remote.DishAdaptRequest
 import com.example.mylittlechef.data.remote.DishApi
 import com.example.mylittlechef.data.remote.DishApiClient
 import com.example.mylittlechef.data.remote.DishRecipeApi
 import com.example.mylittlechef.data.remote.DishSuggestRequest
 import com.example.mylittlechef.data.remote.DishVideosRequest
 import com.example.mylittlechef.domain.Dish
-import com.example.mylittlechef.domain.DishAdaptation
 import com.example.mylittlechef.domain.DishSort
 import com.example.mylittlechef.domain.DishVideo
 import com.example.mylittlechef.domain.sortDishes
-import com.example.mylittlechef.domain.toAdaptation
 import com.example.mylittlechef.domain.toDish
 import com.example.mylittlechef.domain.toVideo
 import kotlinx.coroutines.CancellationException
@@ -36,15 +33,6 @@ sealed interface DishUiState {
     /** The server answered but found no dish for these ingredients. */
     data object NoMatch : DishUiState
     data class Error(val message: String) : DishUiState
-}
-
-/** What the dish sheet shows first: the videos or the substitution answer. */
-enum class DishSheetMode { VIDEOS, ADAPT }
-
-sealed interface AdaptUiState {
-    data object Loading : AdaptUiState
-    data class Success(val adaptation: DishAdaptation) : AdaptUiState
-    data class Error(val message: String) : AdaptUiState
 }
 
 /** The videos of one dish, found when its sheet opens. */
@@ -70,7 +58,6 @@ class DishViewModel(
     var selectedDishId by mutableStateOf<String?>(null)
         private set
 
-    private val adaptations = mutableStateMapOf<String, AdaptUiState>()
     private val videoStates = mutableStateMapOf<String, VideoUiState>()
     private var lastNames: List<String>? = null
     private var generation = 0L
@@ -78,20 +65,11 @@ class DishViewModel(
     private var rawDishes: List<Dish> = emptyList()
     private var rawSource = ""
 
-    fun adaptState(dishId: String): AdaptUiState? = adaptations[dishId]
-
     fun videoState(dishId: String): VideoUiState? = videoStates[dishId]
 
-    var selectedMode by mutableStateOf(DishSheetMode.VIDEOS)
-        private set
-
-    fun selectDish(id: String?, mode: DishSheetMode = DishSheetMode.VIDEOS) {
+    fun selectDish(id: String?) {
         selectedDishId = id
-        selectedMode = mode
     }
-
-    /** Hides a substitution answer (the user closes the AI box). */
-    fun dismissAdapt(dishId: String) { adaptations.remove(dishId) }
 
     fun selectSort(value: DishSort) {
         sort = value
@@ -111,14 +89,12 @@ class DishViewModel(
     fun resetState() {
         generation++
         job?.cancel()
-        adaptations.clear()
         videoStates.clear()
         recipes.reset()
         lastNames = null
         rawDishes = emptyList()
         rawSource = ""
         selectedDishId = null
-        selectedMode = DishSheetMode.VIDEOS
         state = DishUiState.EmptyFridge
     }
 
@@ -130,7 +106,6 @@ class DishViewModel(
     private fun load(names: List<String>, wait: Boolean) {
         val mine = ++generation
         job?.cancel()
-        adaptations.clear() // substitutions depend on what the fridge holds
         recipes.clear()
         if (names.isEmpty()) {
             rawDishes = emptyList()
@@ -171,23 +146,6 @@ class DishViewModel(
                 throw cancelled
             } catch (failure: Exception) {
                 if (mine == generation) videoStates[dish.id] = VideoUiState.Error(videoFailureMessage(failure))
-            }
-        }
-    }
-
-    fun requestAdapt(dish: Dish) {
-        val names = lastNames ?: return
-        if (adaptations[dish.id] is AdaptUiState.Loading) return
-        val mine = generation
-        adaptations[dish.id] = AdaptUiState.Loading
-        viewModelScope.launch {
-            try {
-                val result = api.adapt(DishAdaptRequest(dish.id, names, dish.missing)).toAdaptation()
-                if (mine == generation) adaptations[dish.id] = AdaptUiState.Success(result)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (failure: Exception) {
-                if (mine == generation) adaptations[dish.id] = AdaptUiState.Error(failureMessage(failure))
             }
         }
     }

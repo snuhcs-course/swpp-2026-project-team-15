@@ -69,7 +69,6 @@ import com.example.mylittlechef.ui.components.IngredientBadge
 import com.example.mylittlechef.ui.fridge.components.ingredientIconResource
 import com.example.mylittlechef.ui.theme.DeepGreen
 import com.example.mylittlechef.ui.theme.Gray
-import com.example.mylittlechef.viewmodel.DishSheetMode
 import com.example.mylittlechef.viewmodel.DishUiState
 import com.example.mylittlechef.viewmodel.DishViewModel
 import com.example.mylittlechef.viewmodel.VideoUiState
@@ -188,7 +187,7 @@ private fun DishList(state: DishUiState.Success, dishes: DishViewModel) {
                 // The recipe's own video first: the one that plays when the card opens.
                 thumbnail = dish.thumbnailUrl ?: (dishes.videoState(dish.id) as? VideoUiState.Success)
                     ?.videos?.firstNotNullOfOrNull { it.thumbnailUrl },
-                onOpen = { dishes.selectDish(dish.id, DishSheetMode.VIDEOS) },
+                onOpen = { dishes.selectDish(dish.id) },
             )
         }
         item { Spacer(Modifier.height(24.dp)) }
