@@ -56,12 +56,13 @@ See [Android setup](android/README.md) for SDK configuration and endpoint overri
 
 ## App and API
 
-The app uploads a photo, or the sharpest frames of a 5 s sweep, to `/analyze`; the user reviews the ingredient names; `/dishes/suggest` returns dishes (with `have`/`missing` and a search link), `/dishes/videos` returns embeddable YouTube videos for one dish when the user opens it, and `/dishes/adapt` returns substitutes or skips.
+The app uploads a photo, or the sharpest frames of a 5 s sweep, to `/analyze`; the user reviews the ingredient names; `/dishes/suggest` returns dishes (with `have`/`missing` and a search link), tapping a dish opens its recipe's video, the stored recipe (`/dishes/recipe`, each row marked owned, assumed or missing) and the other videos (`/dishes/videos`), and `/dishes/revise` adapts the recipe to the fridge or refuses.
 
 | Endpoint | Purpose |
 | --- | --- |
 | POST `/analyze` | Photo (`image`) or 2–15 views (`images`) → ingredient candidates |
-| GET `/dishes`, POST `/dishes/suggest`, POST `/dishes/adapt` | Dish list, suggestions, substitutes |
+| GET `/dishes`, POST `/dishes/suggest`, POST `/dishes/adapt` (deprecated) | Dish list, suggestions, substitutes for older installed apps |
+| POST `/dishes/videos`, GET `/dishes/{id}/recipe`, POST `/dishes/recipe`, POST `/dishes/revise` | Videos of a dish (landscape, embeddable), its stored recipe, the recipe with owned rows, the recipe adapted to the fridge |
 | GET `/recipes/ingredients`, POST `/recipes/ingredient-suggestions` | Entry completion and "add this to complete more dishes" |
 | GET `/health`, GET `/ready` | Liveness; dish list loaded |
 

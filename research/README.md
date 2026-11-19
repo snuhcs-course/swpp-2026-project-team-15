@@ -5,8 +5,8 @@ Use this directory to explore a feature before integrating it into the Android a
 Current tools retain their original Python package names to preserve contributor imports and tests:
 
 - `evaluation/`: real-photo ingredient benchmark, accepted-name ground truth and alternative prompts.
-- `experiments/filtering/`: read-only comparisons of ingredient filtering/ranking rules.
-- `experiments/revision/`: fixed revision cases, mock/provider adapters and observation reports.
+- `experiments/filtering/`: read-only comparisons of ingredient filtering/ranking rules (previous version; needs the recipe-database modules, which this branch removed, so its tests are skipped here. Kept in place because protected contributor tests import it).
+- `experiments/revision/`: fixed revision cases, mock/provider adapters and observation reports (previous version; same note as filtering).
 - `experiments/capture/`: frame-selection rules for a short fridge sweep, the Android demo app that measures them on a phone, and the multi-frame recognition evaluation.
 - `experiments/name_mapping/`: resolving free-text ingredient names to recipe-table ingredients (exact, synonym, embedding), with the scorer and the typed-input rules. Embedding is optional.
 - `experiments/revision_input/`: id-only revision cases, frozen criteria and a mock-by-default harness for the revision request's size and reliability. Needs the revision pipeline from the server.

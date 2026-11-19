@@ -41,7 +41,7 @@ docker compose down
 
 ## Android
 
-The default debug/cloudTest endpoint is the demo server `http://158.101.141.165:8080/`; HTTP is allowed only for this IP and localhost. Release builds disable cleartext traffic; supply `-PreleaseServerBaseUrl=https://YOUR-DOMAIN/` after configuring DNS and TLS. To build against another server: `sh scripts/install-android.sh http://host:port/`.
+The default debug/cloudTest endpoint is the demo server `http://158.101.141.165:8080/`; HTTP is allowed only for this IP and localhost. The release (store) build, application id `kr.ac.snu.swpp15.mylittlechef`, uses the same server and allows HTTP only to that IP; sign it with `-PreleaseSigning=/path/to/file.properties` (storeFile, storePassword, keyAlias, keyPassword; kept outside the repository) and point it elsewhere with `-PreleaseServerBaseUrl=...`. To build against another server: `sh scripts/install-android.sh http://host:port/`.
 
 ## CI
 
