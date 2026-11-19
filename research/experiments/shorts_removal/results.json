@@ -163,5 +163,141 @@
    "떡국": "others use 김치 or 굴",
    "참치김밥": "other video uses 치마살"
   }
+ },
+ "amendment_8_dishes_new_videos": {
+  "date": "2026-11-19",
+  "protocol": "yrd_search.py docstring, written before the first call; README section written after the calls",
+  "labelled_by": "the AI agent (Claude Code); no person reviewed the labels",
+  "searches": {
+   "bulgogi-bowl": "소불고기덮밥 만들기",
+   "curry-rice": "야채카레 만들기",
+   "bibimbap": "야채비빔밥 만들기",
+   "spam-kimchi-stew": "햄 김치찌개 만들기",
+   "gochujang-stew": "감자 애호박 고추장찌개",
+   "radish-soup": "멸치 무국 끓이는법",
+   "rice-cake-soup": "멸치육수 떡국 끓이는법",
+   "tuna-gimbap": "참치김밥 만들기"
+  },
+  "ids": {
+   "returned": 196,
+   "not_stored_or_judged": 192,
+   "landscape_playable_judged": 84
+  },
+  "builds": {
+   "bulgogi-bowl": {
+    "tried": 2,
+    "valid": 2,
+    "main_gap_rows": [
+     "불고기용 등심"
+    ]
+   },
+   "curry-rice": {
+    "tried": 3,
+    "valid": 3,
+    "main_gap_rows": [
+     "카레 가루",
+     "카레가루",
+     "고형 카레",
+     "현미밥"
+    ]
+   },
+   "bibimbap": {
+    "tried": 2,
+    "valid": 2,
+    "main_gap_rows": [
+     "잡곡밥"
+    ]
+   },
+   "spam-kimchi-stew": {
+    "tried": 1,
+    "valid": 1,
+    "main_gap_rows": []
+   },
+   "gochujang-stew": {
+    "tried": 1,
+    "valid": 1,
+    "main_gap_rows": []
+   },
+   "radish-soup": {
+    "tried": 1,
+    "valid": 1,
+    "main_gap_rows": []
+   },
+   "rice-cake-soup": {
+    "tried": 3,
+    "valid": 3,
+    "main_gap_rows": [
+     "떡국 떡",
+     "떡국떡",
+     "떡국떡"
+    ]
+   },
+   "tuna-gimbap": {
+    "tried": 2,
+    "valid": 2,
+    "main_gap_rows": [
+     "김밥용 김"
+    ]
+   }
+  },
+  "accepted": [
+   "bibimbap",
+   "bulgogi-bowl",
+   "gochujang-stew",
+   "radish-soup",
+   "spam-kimchi-stew",
+   "tuna-gimbap"
+  ],
+  "not_accepted_name_only_gap": {
+   "curry-rice": [
+    "카레 가루"
+   ],
+   "rice-cake-soup": [
+    "떡국 떡"
+   ]
+  },
+  "links_added": {
+   "bulgogi-bowl": 3,
+   "bibimbap": 1,
+   "spam-kimchi-stew": 3,
+   "gochujang-stew": 1,
+   "radish-soup": 3,
+   "rice-cake-soup": 2,
+   "tuna-gimbap": 3
+  },
+  "main_unavailable_8_dishes": {
+   "before": 8,
+   "after": 2,
+   "after_dishes": [
+    "카레라이스",
+    "떡국"
+   ]
+  },
+  "stored_links": {
+   "before": 439,
+   "after": 453
+  },
+  "cost": {
+   "youtube_units": 808,
+   "model_calls": 49,
+   "judge_calls": 34,
+   "build_calls": 15,
+   "usd": 0.9338
+  },
+  "files_sha256": {
+   "inputs": {
+    "recipes.pre-yrd-search.json": "97ca6e463e077728e436d7f95f1fe95d5f890fe520ca046676e751f925c740af",
+    "link-data/dish-videos.verified.pre-yrd-search.json": "d97c6d872159e424bffc09b185dd00a9b926335a41a60d049ccea4ab79cd35a4"
+   },
+   "outputs": {
+    "recipes.json": "0728e2fa8f0182ddfecf04dbf24f28e9e2c60cffa7cdbe1e9e86a312f4eb3cdc",
+    "link-data/dish-videos.verified.json": "93d74a71f65306f787d5d4e6ca1b136407aa6fdb1b88e7773260f0854379abed"
+   }
+  }
+ },
+ "input_files_sha256": {
+  "recipes.pre-shorts.json": "f8c84d04887e809be5bb965baf1f459e85ff5102d3bfe594a56b9f0af0642407",
+  "link-data/dish-videos.verified.pre-shorts.json": "0a104e4a54104ce0884b15b82c2dd23cabd6a120b5fd59d2961e9e68e76c0460",
+  "orientation.json": "37ba919a604c404b579f8c934aa19d932dfe130abd218e1ddc60b79a7a88da01"
  }
 }

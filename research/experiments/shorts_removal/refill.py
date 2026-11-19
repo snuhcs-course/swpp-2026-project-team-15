@@ -2,7 +2,7 @@
 """Shorts removal: landscape-only stored links, refill of emptied and single-link dishes.
 
 Run from pr-work/ytdemo/server with PYTHONPATH=.:../research. Data stay in W (outside git).
-Stages: plan | collect --live | judge --live | queue | merge
+Stages: plan | collect --live | judge --live | queue | merge, each with --root DATA_DIR
 """
 
 from __future__ import annotations
@@ -14,16 +14,32 @@ import sys
 from pathlib import Path
 
 import httpx
-
-from app.dishes.video_search import OPENROUTER, WEB_MODEL, extract_ids, video_request
 from experiments.dish_recipes.common import load_json, now_iso, read_key
 from experiments.dish_recipes.orientation import orientation
-from experiments.dish_recipes.search_videos import SEARCH_URL, search_params, result_ids
+from experiments.dish_recipes.search_videos import SEARCH_URL, result_ids, search_params
 from experiments.dish_recipes.verify_videos import (
-    JUDGE_PROMPT, JUDGES, YT_URL, chat, dish_table, item_text, parse_judgements, playable, to_video,
+    JUDGE_PROMPT,
+    JUDGES,
+    YT_URL,
+    chat,
+    dish_table,
+    item_text,
+    parse_judgements,
+    playable,
+    to_video,
 )
 
-ROOT = Path("/home/hyuk/PRJ/MyLittleChef/artifacts/dish-recipes")
+from app.dishes.video_search import OPENROUTER, WEB_MODEL, extract_ids, video_request
+
+
+def path_arg(flag: str) -> Path:
+    """A path given on the command line as ``flag PATH`` (no machine-specific default)."""
+    if flag not in sys.argv or sys.argv.index(flag) + 1 >= len(sys.argv):
+        raise SystemExit(f"pass {flag} PATH")
+    return Path(sys.argv[sys.argv.index(flag) + 1])
+
+
+ROOT = path_arg("--root")  # the artifacts/dish-recipes folder (outside git)
 LINKS = ROOT / "link-data"
 W = ROOT / "shorts-removal"
 VERIFIED = LINKS / "dish-videos.verified.json"
@@ -67,33 +83,51 @@ def plan() -> None:
         or_cost=state.get("or_cost", 0.0),
     )
     private(STATE, state)
-    print(len(empty), "empty,", len(single), "single,", state["removed_vertical"], "vertical removed")
+    print(
+        len(empty), "empty,", len(single), "single,", state["removed_vertical"], "vertical removed"
+    )
 
 
 def seen_ids(dish: str) -> set[str]:
     report = load_json(LINKS / "verification.json", {})
     # Pairs never reached by a reviewer (beyond the earlier per-dish cap) are candidates again.
-    return {p["video"] for p in report.values() if p["dish"] == dish and p["basis"] != "not_reached"}
+    return {
+        p["video"] for p in report.values() if p["dish"] == dish and p["basis"] != "not_reached"
+    }
 
 
 def d0(key: str, name: str) -> tuple[list[str], float, str | None]:
     with httpx.Client(timeout=120) as c:
-        r = c.post(OPENROUTER, json=video_request(WEB_MODEL, name),
-                   headers={"Authorization": f"Bearer {key}"})
+        r = c.post(
+            OPENROUTER,
+            json=video_request(WEB_MODEL, name),
+            headers={"Authorization": f"Bearer {key}"},
+        )
     if r.status_code != 200:
         return [], 0.0, f"HTTP {r.status_code}"
     data = r.json()
     msg = data["choices"][0]["message"]
     cites = [(a.get("url_citation") or {}).get("url", "") for a in msg.get("annotations") or []]
-    return extract_ids(msg.get("content") or "", cites), float((data.get("usage") or {}).get("cost") or 0), None
+    return (
+        extract_ids(msg.get("content") or "", cites),
+        float((data.get("usage") or {}).get("cost") or 0),
+        None,
+    )
 
 
 def details(key: str, ids: list[str]) -> dict[str, dict]:
     out = {}
     for n in range(0, len(ids), 50):
-        r = httpx.get(YT_URL, params={
-            "part": "snippet,contentDetails,statistics,status,player", "maxWidth": 1000,
-            "id": ",".join(ids[n:n + 50])}, headers={"X-Goog-Api-Key": key}, timeout=30)
+        r = httpx.get(
+            YT_URL,
+            params={
+                "part": "snippet,contentDetails,statistics,status,player",
+                "maxWidth": 1000,
+                "id": ",".join(ids[n : n + 50]),
+            },
+            headers={"X-Goog-Api-Key": key},
+            timeout=30,
+        )
         r.raise_for_status()
         for item in r.json().get("items", []):
             v = to_video(item)
@@ -104,7 +138,10 @@ def details(key: str, ids: list[str]) -> dict[str, dict]:
 
 
 def collect() -> None:
-    yt, orkey = read_key("YOUTUBE_API_KEY", "youtube.env"), read_key("OPENROUTER_API_KEY", "openrouter.env")
+    yt, orkey = (
+        read_key("YOUTUBE_API_KEY", "youtube.env"),
+        read_key("OPENROUTER_API_KEY", "openrouter.env"),
+    )
     state, table = load_json(STATE, {}), dish_table()
     prior = load_json(LINKS / "search.json", {"dishes": {}})["dishes"]
     for d in state["targets"]["empty"] + state["targets"]["single"]:
@@ -125,7 +162,9 @@ def collect() -> None:
             e["search"] = {"reused": searches[0]["at"], "q": searches[0]["q"], "ids": res}
         else:
             q = f"{name} 레시피"
-            r = httpx.get(SEARCH_URL, params=search_params(q), headers={"X-Goog-Api-Key": yt}, timeout=30)
+            r = httpx.get(
+                SEARCH_URL, params=search_params(q), headers={"X-Goog-Api-Key": yt}, timeout=30
+            )
             state["units"] += 100
             if r.status_code != 200:
                 e["search"] = {"at": now_iso(), "q": q, "error": f"HTTP {r.status_code}"}
@@ -142,16 +181,25 @@ def collect() -> None:
         state["units"] += (len(order) + 49) // 50
         e["new"] = order
         e["dropped"] = {
-            vid: ("gone" if vid not in info else "not_playable" if not playable(info[vid])
-                  else info[vid]["orientation"])
+            vid: (
+                "gone"
+                if vid not in info
+                else "not_playable"
+                if not playable(info[vid])
+                else info[vid]["orientation"]
+            )
             for vid in order
-            if vid not in info or not playable(info[vid]) or info[vid]["orientation"] in ("vertical", "unknown")
+            if vid not in info
+            or not playable(info[vid])
+            or info[vid]["orientation"] in ("vertical", "unknown")
         }
         e["candidates"] = {vid: info[vid] for vid in order if vid not in e["dropped"]}
         e["order"] = [vid for vid in order if vid in e["candidates"]]
         private(STATE, state)
-        print(f"{d}: d0 {len(prop)} search {len(e['search']['ids'])} new {len(order)} "
-              f"landscape-playable {len(e['order'])} dropped {len(e['dropped'])}")
+        print(
+            f"{d}: d0 {len(prop)} search {len(e['search']['ids'])} new {len(order)} "
+            f"landscape-playable {len(e['order'])} dropped {len(e['dropped'])}"
+        )
 
 
 def judge() -> None:
@@ -163,7 +211,7 @@ def judge() -> None:
         if not todo:
             continue
         keys = [f"{d}|{v}" for v in todo]
-        items = "\n".join(item_text(k, table[d], e["candidates"][v]) for k, v in zip(keys, todo))
+        items = "\n".join(item_text(k, table[d], e["candidates"][v]) for k, v in zip(keys, todo, strict=True))
         for model in JUDGES:
             res = chat(key, model, JUDGE_PROMPT.format(items=items))
             parsed = parse_judgements(res.get("text", ""), keys) if "error" not in res else None
@@ -184,8 +232,13 @@ def parse(text: str, keys: list[str]) -> dict | None:
     try:
         start, end = text.index("{"), text.rindex("}") + 1
         rows = json.loads(text[start:end])["judgements"]
-        out = {by_vid.get(str(r["i"]), str(r["i"])): {"relevant": bool(r["relevant"]),
-               "reason": str(r.get("reason", ""))} for r in rows}
+        out = {
+            by_vid.get(str(r["i"]), str(r["i"])): {
+                "relevant": bool(r["relevant"]),
+                "reason": str(r.get("reason", "")),
+            }
+            for r in rows
+        }
     except (ValueError, KeyError, TypeError):
         return None
     return out if set(out) == set(keys) else None
@@ -199,8 +252,10 @@ def rejudge() -> None:
         for model in JUDGES:
             todo = [k for k, j in e.get("judged", {}).items() if j.get(model) is None]
             for n in range(0, len(todo), 6):
-                keys = todo[n:n + 6]
-                items = "\n".join(item_text(k, table[d], e["candidates"][k.split("|", 1)[1]]) for k in keys)
+                keys = todo[n : n + 6]
+                items = "\n".join(
+                    item_text(k, table[d], e["candidates"][k.split("|", 1)[1]]) for k in keys
+                )
                 res = chat(key, model, JUDGE_PROMPT.format(items=items))
                 parsed = parse(res.get("text", ""), keys) if "error" not in res else None
                 state["or_cost"] += res["cost"]
@@ -216,7 +271,11 @@ def queue() -> None:
     state, table, review = load_json(STATE, {}), dish_table(), load_json(REVIEW, {})
     for d, e in state["dishes"].items():
         have = len(state["landscape"][d])
-        kept = sum(1 for v in e.get("order", []) if review.get(f"{d}|{v}", {}).get("decision") == "relevant")
+        kept = sum(
+            1
+            for v in e.get("order", [])
+            if review.get(f"{d}|{v}", {}).get("decision") == "relevant"
+        )
         for v in e.get("order", []):
             k = f"{d}|{v}"
             if k in review:
@@ -224,9 +283,13 @@ def queue() -> None:
             if have + kept >= KEEP:
                 break
             c, j = e["candidates"][v], e["judged"].get(k, {})
-            js = "/".join({True: "Y", False: "N", None: "?"}[(j.get(m) or {}).get("relevant")] for m in JUDGES)
-            print(f"{k} || {table[d]['name']} || {js} || {c['duration_s']}s || {c['channel']} || {c['title']} || "
-                  f"{c['description'][:160]!r}")
+            js = "/".join(
+                {True: "Y", False: "N", None: "?"}[(j.get(m) or {}).get("relevant")] for m in JUDGES
+            )
+            print(
+                f"{k} || {table[d]['name']} || {js} || {c['duration_s']}s || {c['channel']} || {c['title']} || "
+                f"{c['description'][:160]!r}"
+            )
             kept += 1  # assume relevant for the look-ahead; rerun after reviewing
 
 
@@ -245,11 +308,20 @@ def merge() -> None:
             if review.get(f"{d}|{vid}", {}).get("decision") == "relevant":
                 keep_ids.append(vid)
                 c = e["candidates"][vid]
-                videos[vid] = {f: c[f] for f in ("id", "title", "channel", "thumbnail", "duration_s", "view_count")}
+                videos[vid] = {
+                    f: c[f]
+                    for f in ("id", "title", "channel", "thumbnail", "duration_s", "view_count")
+                }
         added = len(keep_ids) - len(state["landscape"][d])
-        out[d] = {"fetched_at": now_iso() if added else entry["fetched_at"],
-                  "videos": [videos[i] for i in keep_ids]}
-        stats[d] = {"before": len(entry["videos"]), "landscape_kept": len(state["landscape"][d]), "added": added}
+        out[d] = {
+            "fetched_at": now_iso() if added else entry["fetched_at"],
+            "videos": [videos[i] for i in keep_ids],
+        }
+        stats[d] = {
+            "before": len(entry["videos"]),
+            "landscape_kept": len(state["landscape"][d]),
+            "added": added,
+        }
     backup = LINKS / "dish-videos.verified.pre-shorts.json"
     if not backup.exists():
         shutil.copy2(VERIFIED, backup)
@@ -270,4 +342,11 @@ if __name__ == "__main__":
     stage = sys.argv[1]
     if stage in ("collect", "judge", "rejudge") and "--live" not in sys.argv:
         raise SystemExit("pass --live")
-    {"plan": plan, "collect": collect, "judge": judge, "queue": queue, "rejudge": rejudge, "merge": merge}[stage]()
+    {
+        "plan": plan,
+        "collect": collect,
+        "judge": judge,
+        "queue": queue,
+        "rejudge": rejudge,
+        "merge": merge,
+    }[stage]()
