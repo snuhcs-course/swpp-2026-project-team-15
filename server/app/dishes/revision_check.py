@@ -204,9 +204,18 @@ def _checked_changes(raw: object, recipe: SourceRecipe) -> list[Change]:
         if not (isinstance(ing, list) and isinstance(stp, list)):
             raise Violation("bad_reference", "A change has malformed references")
         n_ing, n_steps = len(recipe.ingredients), len(recipe.steps)
-        if any(not isinstance(i, int) or not 1 <= i <= n_ing for i in ing) or any(
-            not isinstance(i, int) or not 1 <= i <= n_steps for i in stp
-        ):
-            raise Violation("bad_reference", "A change points at a row or step that does not exist")
+        bad_ing = [i for i in ing if not isinstance(i, int) or not 1 <= i <= n_ing]
+        bad_stp = [i for i in stp if not isinstance(i, int) or not 1 <= i <= n_steps]
+        if bad_ing or bad_stp:
+            # The one re-ask quotes this message. Naming the change, the numbers and the ranges
+            # left 4 of 124 answers with a bad reference instead of 8 (one run each;
+            # research/experiments/e2e_followups, item 5).
+            raise Violation(
+                "bad_reference",
+                f"Change {len(out) + 1} ({reason.strip()[:40]}) has ingredient_refs {bad_ing} and "
+                f"step_refs {bad_stp} that do not exist: ingredient rows are 1..{n_ing}, steps "
+                f"are 1..{n_steps}; an added owned ingredient has no source row, so its "
+                "ingredient_refs is empty",
+            )
         out.append(Change(reason=reason.strip(), ingredient_refs=ing, step_refs=stp))
     return out
