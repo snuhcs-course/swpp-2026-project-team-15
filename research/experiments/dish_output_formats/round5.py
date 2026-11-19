@@ -9,6 +9,7 @@ by the fixed procedure in ``criteria_round5.json``. See that file for the plan.
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 from app.dishes.catalog import Catalog
@@ -61,6 +62,7 @@ def body(
     ingredients: list[str],
     k: int | None,
     in_schema: bool = True,
+    max_tokens: int = formats.MAX_TOKENS,
 ):
     """The server's request body (app.dishes.llm.DishLLM), optionally limited to k dishes."""
     names = [d.name for d in catalog.all()]
@@ -79,7 +81,14 @@ def body(
             "json_schema": {"name": req.name, "strict": True, "schema": schema},
         },
         "provider": {"require_parameters": True},
-        "max_tokens": formats.MAX_TOKENS,
+        "max_tokens": max_tokens,
         "temperature": 0,
     }
     return choices, payload
+
+
+def token_room(k: int, served_rows: list[dict]) -> int:
+    """ceil(k x the 95th percentile of output tokens per returned dish) (amendment 2)."""
+    per = sorted(r["output_tokens"] / r["raw_count"] for r in served_rows if r["raw_count"])
+    p95 = per[min(len(per) - 1, round(0.95 * (len(per) - 1)))]
+    return math.ceil(k * p95)

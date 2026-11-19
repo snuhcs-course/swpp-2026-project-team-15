@@ -80,8 +80,8 @@
  ],
  "analysis": "Descriptive; no pass/fail threshold decides anything (user rule 2026-11-19). Part A: report every run; the spelling effect is read from the a-b difference against the spread among repeats of one spelling. Part B: full tables per variant; paired per-input differences against B_served (run means) with a percentile bootstrap 95% interval (2,000 resamples, seed 20261119). The served limit is chosen by judgement from these numbers (latency and cut answers versus how many 'cook now' dishes are lost) and the reason is written in the README.",
  "budget": {
-  "model_calls": 340,
-  "usd": 0.4,
+  "model_calls": 420,
+  "usd": 0.5,
   "planned_calls": 214,
   "plan": "part A 4 pairs x 2 spellings x 5 repeats = 40; part B 29 inputs x 2 repeats x 3 variants = 174",
   "retry": "HTTP 429 repeated after 5 s and 15 s; every attempt counts toward the cap"
@@ -97,6 +97,11 @@
    "date": "2026-11-19",
    "after_calls": "yes, after the 214 planned calls",
    "text": "Every B_cap_K call (116) was rejected by the provider with HTTP 400. Two diagnostic calls on D1 showed the cause: the answer format with maxItems is rejected on this route, the sentence alone is accepted. Added variants B_say_mid and B_say_high: the B_cap sentence in the system text without maxItems, same 29 inputs x 2 repeats (116 calls), plus the part A runaway inputs P1a (계란, 밥) and P3a/P3b x 2 repeats (6 calls). Because the sentence cannot guarantee the length, the server-side cut (B_after_K) stays the reference. Budget raised to 340 calls, $0.4."
+  },
+  {
+   "date": "2026-11-19",
+   "after_calls": "yes, after the 122 amendment calls",
+   "text": "The sentence made the model fill the list up to K on most inputs and still ran away on 김치 + 밥 (122 dishes, cut); the server-side cut (B_after_K) is always honoured but leaves the 8-9 s of a runaway answer, and 계란 + 밥 is what the app's own preset sends. Added B_tok: the served request with the output limit set to the room for K_high dishes, ceil(K_high x the 95th percentile of output tokens per returned dish in the B_served runs) = ceil(36 x 52.2) = 1880 tokens; a cut answer is salvaged, ordered and cut to K_high as the server would. Same 29 inputs plus P1a, P3a, P3b, 2 repeats (64 calls). Compared with B_after_high (same cut, full limit). Budget raised to 420 calls, $0.5."
   }
  ]
 }
