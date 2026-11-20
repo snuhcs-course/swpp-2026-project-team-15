@@ -6,6 +6,8 @@ research/experiments/dish_pipeline, round 3: no title filter, no sorting by view
 """
 
 import re
+import time
+from collections.abc import Callable
 
 import httpx
 import openai
@@ -56,11 +58,13 @@ class WebSearchVideoSource:
         model: str = WEB_MODEL,
         transport: httpx.BaseTransport | None = None,
         retry_waits: tuple[float, ...] = RETRY_WAITS,
+        clock: Callable[[], float] = time.monotonic,
     ):
         self._client = openrouter_client(api_key, timeout=SEARCH_BUDGET, transport=transport)
         self._api_key = api_key
         self._model = model
         self._retry_waits = retry_waits
+        self._clock = clock  # handed in so a test can check the time each attempt gets
 
     def propose(self, dish_name: str) -> list[str]:
         def attempt(left: float | None) -> ChatCompletion | None:
@@ -77,7 +81,11 @@ class WebSearchVideoSource:
 
         try:
             completion = retry_while(
-                attempt, lambda r: r is None, waits=self._retry_waits, budget=SEARCH_BUDGET
+                attempt,
+                lambda r: r is None,
+                waits=self._retry_waits,
+                budget=SEARCH_BUDGET,
+                clock=self._clock,
             )
             if completion is None:
                 raise VideoError("The model service is temporarily unavailable")

@@ -23,7 +23,10 @@ SERVER_DIR = Path(__file__).resolve().parents[1]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(frozen=True, extra="ignore", case_sensitive=False)
+    # hide_input_in_errors: a validation error would otherwise print part of the values, keys too.
+    model_config = SettingsConfigDict(
+        frozen=True, extra="ignore", case_sensitive=False, hide_input_in_errors=True
+    )
 
     vision_provider: VisionProvider = "mock"
     gemini_api_key: str = ""
@@ -47,7 +50,8 @@ class Settings(BaseSettings):
     def dish_model_key(self) -> str:
         """The key for the dish model and the video search: DISH_LLM_API_KEY, else the general
         one. The one place this rule is written, so both calls always use the same key."""
-        return self.dish_llm_api_key.strip() or self.openrouter_api_key.strip()
+        # A set but blank DISH_LLM_API_KEY turns the model off, as before (no fallback).
+        return (self.dish_llm_api_key or self.openrouter_api_key).strip()
 
     @model_validator(mode="after")
     def _provider_has_its_settings(self) -> "Settings":

@@ -144,3 +144,42 @@ def test_each_request_is_recorded_by_route_template_without_body():
     }
     assert all(set(r) == names for r in requests)
     assert {r["http.request.method"] for r in requests} == {"POST", "GET"}
+
+
+# --- integrity review (2026-11-20) ------------------------------------------------------------
+
+
+def test_the_usage_file_stops_at_its_size_limit(tmp_path, caplog):
+    path = tmp_path / "usage.jsonl"
+    sink = JsonlSink(path, max_bytes=40)
+    sink.write([{"n": 1}])
+    sink.write([{"n": 2}])
+    sink.write([{"n": 3, "pad": "x" * 50}])  # would pass the limit: dropped
+    sink.write([{"n": 4, "pad": "x" * 50}])
+    assert [json.loads(line)["n"] for line in path.read_text().splitlines()] == [1, 2]
+    assert caplog.text.count("size limit") == 1
+
+
+def test_a_dish_id_outside_the_dish_list_is_not_stored():
+    sink = ListSink()
+    client = TestClient(create_app(StubVision(), telemetry=sink))
+    events = [
+        {"name": "dish_open", "t": 1, "dish_id": "kimchi-fried-rice"},
+        {"name": "dish_open", "t": 2, "dish_id": "my-secret-text"},
+    ]
+    body = {"install_id": INSTALL, "session_id": SESSION, "app_version": "1.0", "events": events}
+    assert client.post("/telemetry/events", json=body).status_code == 202
+    opens = [r for r in sink.records if r.get("kind") == "app"]
+    assert [r.get("dish_id") for r in opens] == ["kimchi-fried-rice", None]
+
+
+def test_a_settings_error_shows_no_part_of_a_key():
+    key = "sk-or-v1-abcdefghijklmnopqrstuvwxyz0123456789"
+    with pytest.raises(ValueError) as error:
+        Settings.from_env({"VISION_PROVIDER": "openrouter", "YOUTUBE_API_KEY": key})
+    assert not any(key[i : i + 6] in str(error.value) for i in range(len(key) - 5))
+
+
+def test_a_blank_dish_key_turns_the_model_off_as_before():
+    settings = Settings.from_env({"DISH_LLM_API_KEY": "  ", "OPENROUTER_API_KEY": "or-key"})
+    assert settings.dish_model_key == ""

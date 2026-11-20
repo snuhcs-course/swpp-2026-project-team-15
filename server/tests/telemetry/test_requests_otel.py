@@ -2,10 +2,12 @@
 """Request records come from OpenTelemetry but go only to our local file: no network exporter is
 installed or configured, whatever OTEL_* variables say."""
 
-import importlib.util
+import importlib.metadata
 
+import pytest
 from fastapi.testclient import TestClient
 from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
 
 from app.main import create_app
 from app.telemetry.requests import SinkSpanExporter, record_requests
@@ -20,21 +22,25 @@ class ListSink:
         self.records.extend(records)
 
 
-def test_no_network_exporter_is_installed():
-    for module in (
-        "opentelemetry.exporter.otlp",
-        "opentelemetry.exporter.otlp.proto.http",
-        "opentelemetry.exporter.otlp.proto.grpc",
-        "opentelemetry.exporter.zipkin",
-        "opentelemetry.exporter.jaeger",
-        "opentelemetry.exporter.prometheus",
+def test_no_exporter_package_beyond_the_sdk_is_installed():
+    # A network exporter (OTLP, Zipkin, Prometheus, ...) ships as an opentelemetry-exporter-*
+    # distribution and registers itself under these entry-point groups; the SDK brings only
+    # "console". With none installed, no OTEL_* variable can switch one on.
+    names = {(d.metadata["Name"] or "").lower() for d in importlib.metadata.distributions()}
+    assert not {n for n in names if n.startswith("opentelemetry-exporter")}
+    for group in (
+        "opentelemetry_traces_exporter",
+        "opentelemetry_metrics_exporter",
+        "opentelemetry_logs_exporter",
     ):
-        assert importlib.util.find_spec(module.split(".")[0]) is not None  # the namespace exists
-        try:
-            found = importlib.util.find_spec(module)
-        except ModuleNotFoundError:
-            found = None
-        assert found is None, module
+        found = {e.name for e in importlib.metadata.entry_points(group=group)}
+        assert found <= {"console"}, (group, found)
+
+
+def test_the_app_refuses_a_global_provider_from_auto_instrumentation(monkeypatch):
+    monkeypatch.setattr(trace, "get_tracer_provider", lambda: TracerProvider())
+    with pytest.raises(RuntimeError):
+        record_requests(create_app(StubVision()), ListSink())
 
 
 def test_the_only_exporter_is_ours_even_with_otel_variables_set(monkeypatch):
@@ -49,3 +55,13 @@ def test_the_only_exporter_is_ours_even_with_otel_variables_set(monkeypatch):
     assert not isinstance(trace.get_tracer_provider(), type(provider))
     TestClient(app).get("/dishes")
     assert [r["http.route"] for r in sink.records] == ["/dishes"]
+
+
+def test_a_dish_route_containing_a_skipped_word_is_still_recorded():
+    sink = ListSink()
+    app = create_app(StubVision())
+    record_requests(app, sink)
+    client = TestClient(app)
+    client.get("/dishes/already-ready/recipe")
+    client.get("/ready")
+    assert [r["http.route"] for r in sink.records] == ["/dishes/{dish_id}/recipe"]

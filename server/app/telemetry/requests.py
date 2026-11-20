@@ -11,14 +11,17 @@ OTEL_* exporter variables have nothing to switch on (tests/telemetry/test_reques
 from collections.abc import Sequence
 
 from fastapi import FastAPI
+from opentelemetry import trace
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor, SpanExporter, SpanExportResult
-from opentelemetry.trace import SpanKind
+from opentelemetry.trace import NoOpTracerProvider, ProxyTracerProvider, SpanKind
 
 from app.telemetry.sink import TelemetrySink
 
-SKIPPED = "health,ready,telemetry/events"  # probes and the usage upload itself
+# Probes and the usage upload itself. Each pattern is a regular expression searched in the URL,
+# so it is anchored: an unanchored "ready" also skipped /dishes/already-ready/recipe.
+SKIPPED = "/health$,/ready$,/telemetry/events$"
 
 
 class SinkSpanExporter(SpanExporter):
@@ -53,8 +56,17 @@ def record(span: ReadableSpan) -> dict:
 
 
 def record_requests(app: FastAPI, sink: TelemetrySink) -> TracerProvider:
-    """Instrument ``app`` with a provider of its own; returns it for tests."""
+    """Instrument ``app`` with a provider of its own; returns it for tests. Refuses to run under
+    OpenTelemetry auto-instrumentation (``opentelemetry-instrument``), which installs a
+    process-wide provider whose exporters come from OTEL_* variables, not from us."""
+    refuse_global_provider()
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(SinkSpanExporter(sink)))
     FastAPIInstrumentor.instrument_app(app, tracer_provider=provider, excluded_urls=SKIPPED)
     return provider
+
+
+def refuse_global_provider() -> None:
+    """Request data may go only to the local file; a configured global provider could export it."""
+    if not isinstance(trace.get_tracer_provider(), ProxyTracerProvider | NoOpTracerProvider):
+        raise RuntimeError("OpenTelemetry auto-instrumentation is not supported: data stays local")

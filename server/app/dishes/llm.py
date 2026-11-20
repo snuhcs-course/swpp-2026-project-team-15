@@ -4,6 +4,7 @@
 import json
 import logging
 import time
+from collections.abc import Callable
 from typing import Any
 
 import httpx
@@ -33,11 +34,13 @@ class DishLLM:
         *,
         transport: httpx.BaseTransport | None = None,
         retry_waits: tuple[float, ...] = RETRY_WAITS,
+        clock: Callable[[], float] = time.monotonic,
     ):
         self._client = openrouter_client(api_key, timeout=CALL_TIMEOUT, transport=transport)
         self._api_key = api_key
         self._model = model
         self._retry_waits = retry_waits
+        self._clock = clock  # handed in so a test can check the time each attempt gets
 
     def complete(
         self, system: str, user: str, name: str, schema: dict, max_tokens: int | None = None
@@ -64,7 +67,11 @@ class DishLLM:
 
         try:
             completion = retry_while(
-                attempt, lambda r: r is None, waits=self._retry_waits, budget=CALL_BUDGET
+                attempt,
+                lambda r: r is None,
+                waits=self._retry_waits,
+                budget=CALL_BUDGET,
+                clock=self._clock,
             )
             if completion is None:
                 raise DishLLMError("The model service is temporarily unavailable")

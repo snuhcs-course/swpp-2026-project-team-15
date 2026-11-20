@@ -27,5 +27,12 @@ def events(batch: EventBatch, request: Request) -> BatchAccepted:
         "session": batch.session_id,
         "version": batch.app_version,
     }
-    sink.write([head | e.model_dump(exclude_none=True) for e in batch.events])
+    catalog = request.app.state.dishes.service.catalog
+    records = []
+    for e in batch.events:
+        record = e.model_dump(exclude_none=True)
+        if "dish_id" in record and catalog.get(record["dish_id"]) is None:
+            del record["dish_id"]  # only ids from the dish list are kept: no free text
+        records.append(head | record)
+    sink.write(records)
     return BatchAccepted(accepted=len(batch.events))

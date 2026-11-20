@@ -749,15 +749,45 @@ def test_a_retry_is_skipped_when_the_budget_has_no_time_left():
 
 
 def test_each_model_attempt_gets_only_the_time_that_is_left():
+    from app.dishes.llm import CALL_BUDGET, CALL_TIMEOUT
+
+    now = [0.0]
     seen = []
 
     def handler(request):
         seen.append(request.extensions["timeout"]["read"])
+        now[0] += 25  # each attempt takes 25 s on the fake clock
         return httpx.Response(429)
 
+    llm = DishLLM(
+        "test-key",
+        transport=httpx.MockTransport(handler),
+        retry_waits=(0, 0),
+        clock=lambda: now[0],
+    )
     with pytest.raises(DishLLMError):
-        _llm(handler).complete("s", "u", "n", {"type": "object"})
-    assert len(seen) == 3 and all(t <= 30 for t in seen)
+        llm.complete("s", "u", "n", {"type": "object"})
+    # first the full per-call timeout, then only what is left of the budget, then no retry
+    assert seen == [pytest.approx(CALL_TIMEOUT), pytest.approx(CALL_BUDGET - 25)]
+
+
+def test_the_video_search_gets_only_the_time_that_is_left():
+    from app.dishes.video_search import SEARCH_BUDGET
+
+    now = [0.0]
+    seen = []
+
+    def handler(request):
+        seen.append(request.extensions["timeout"]["read"])
+        now[0] += 15
+        return httpx.Response(429)
+
+    source = WebSearchVideoSource(
+        "or-key", transport=httpx.MockTransport(handler), retry_waits=(0, 0), clock=lambda: now[0]
+    )
+    with pytest.raises(VideoError):
+        source.propose("김치볶음밥")
+    assert seen[:2] == [pytest.approx(SEARCH_BUDGET), pytest.approx(SEARCH_BUDGET - 15)]
 
 
 def test_every_route_fits_in_the_apps_wait():

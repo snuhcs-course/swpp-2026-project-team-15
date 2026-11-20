@@ -30,3 +30,23 @@ def test_client_targets_openrouter_without_sdk_retries_or_redirects():
 def test_a_blank_key_is_refused():
     with pytest.raises(ValueError):
         openrouter_client("  ", timeout=5)
+
+
+def test_platform_and_organization_headers_are_not_sent(monkeypatch):
+    # Integrity review (2026-11-20): the SDK added the server's OS, CPU and Python version and
+    # forwarded OPENAI_ORG_ID / OPENAI_PROJECT_ID from the environment.
+    monkeypatch.setenv("OPENAI_ORG_ID", "org-from-env")
+    monkeypatch.setenv("OPENAI_PROJECT_ID", "proj-from-env")
+    sent = []
+
+    def handler(request):
+        sent.append(request.headers)
+        body = {"choices": [{"finish_reason": "stop", "message": {"content": "{}"}}]}
+        return httpx.Response(200, json=body)
+
+    client = openrouter_client("or-key", timeout=5, transport=httpx.MockTransport(handler))
+    client.chat.completions.create(model="m", messages=[{"role": "user", "content": "x"}])
+    names = {n.lower() for n in sent[0]}
+    assert not {n for n in names if n.startswith("x-stainless")}
+    assert "openai-organization" not in names and "openai-project" not in names
+    assert sent[0]["authorization"] == "Bearer or-key"
