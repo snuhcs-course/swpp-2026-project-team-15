@@ -87,6 +87,10 @@ class DishViewModel(
         private set
     var lastHidden by mutableStateOf<String?>(null)
         private set
+    /** The dish brought back by the last undo, so the list can scroll to it; a new value each time. */
+    var restored by mutableStateOf<Restored?>(null)
+        private set
+    private var restoreCount = 0
 
     init {
         viewModelScope.launch { favoriteStore.dishes.collect { favorites = it } }
@@ -113,6 +117,7 @@ class DishViewModel(
         val id = lastHidden ?: return
         hiddenIds = hiddenIds - id
         lastHidden = null
+        restored = Restored(id, ++restoreCount)
     }
 
     /** The suggested dishes to show: not hidden, and whose name contains [query] (search within this list). */
@@ -262,3 +267,6 @@ class DishViewModel(
         }
     }
 }
+
+/** A card brought back by "실행 취소"; [serial] makes two undos of the same dish distinct. */
+data class Restored(val id: String, val serial: Int)

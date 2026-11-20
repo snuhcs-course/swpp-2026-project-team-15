@@ -21,6 +21,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -52,6 +53,12 @@ class DishListActionsTest {
         vm.undoHide()
         assertEquals(2, vm.visibleSuggestions("").size)
         assertNull(vm.lastHidden)
+        // The list scrolls to the restored card; a second undo of the same dish is a new event.
+        val first = vm.restored
+        assertEquals("egg-roll", first?.id)
+        vm.hide("egg-roll"); vm.undoHide()
+        assertEquals("egg-roll", vm.restored?.id)
+        assertNotEquals(first, vm.restored)
         vm.hide("egg-roll")
         vm.onFridgeChanged(listOf("김치", "계란", "밥")) // a new list shows hidden dishes again
         advanceUntilIdle()

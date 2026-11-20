@@ -146,6 +146,13 @@ fun RecipeContent(dishes: DishViewModel, onDishClick: (Dish) -> Unit, modifier: 
 @Composable
 fun RecipeCardList(dishes:DishViewModel,items:List<Dish>,onDishClick:(Dish)->Unit,onHide:((Dish)->Unit)?=null) {
     val listState=rememberLazyListState()
+    // After "실행 취소" the card returns where it was, often above the visible part of the list:
+    // scroll to it so the user sees it come back (emulator E2E, 2026-11-20).
+    val restored=dishes.restored
+    LaunchedEffect(restored) {
+        val index=restored?.let { r -> items.indexOfFirst { it.id==r.id } } ?: -1
+        if(index>=0) listState.animateScrollToItem(index)
+    }
     LazyColumn(state=listState,contentPadding=PaddingValues(start=20.dp,end=20.dp,top=10.dp,bottom=88.dp),
         verticalArrangement=Arrangement.spacedBy(18.dp),modifier=Modifier.fillMaxSize().testTag("recipe-list")) {
         items(items,key={it.id}) {dish ->
