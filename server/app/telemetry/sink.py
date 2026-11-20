@@ -3,6 +3,7 @@
 tests hand in a list. Created once in main.py and injected (no module-level instance)."""
 
 import json
+import os
 import threading
 from collections.abc import Mapping
 from pathlib import Path
@@ -30,8 +31,11 @@ class JsonlSink:
             json.dumps(r, ensure_ascii=False, separators=(",", ":")) + "\n" for r in records
         )
         try:
-            with self._lock, self._path.open("a", encoding="utf-8") as out:
-                out.write(lines)
+            with self._lock:
+                # created owner-only: the usage file is for the team, not other server users
+                fd = os.open(self._path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+                with os.fdopen(fd, "a", encoding="utf-8") as out:
+                    out.write(lines)
         except OSError:
             pass  # see the role's contract
 

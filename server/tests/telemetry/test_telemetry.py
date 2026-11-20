@@ -56,6 +56,10 @@ class TestJsonlSink(SinkContract):
         lines = (tmp_path / "usage.jsonl").read_text(encoding="utf-8").splitlines()
         return [json.loads(line) for line in lines]
 
+    def test_file_is_owner_only(self, tmp_path):
+        JsonlSink(tmp_path / "usage.jsonl").write([{"n": 1}])
+        assert (tmp_path / "usage.jsonl").stat().st_mode & 0o777 == 0o600
+
     def test_unwritable_path_is_swallowed(self, tmp_path):
         JsonlSink(tmp_path / "missing-dir" / "usage.jsonl").write([{"n": 1}])  # no exception
 
