@@ -36,13 +36,12 @@ To run the server on this computer, see the [root instructions](../README.md#run
 | --- | --- | --- | --- |
 | debug | `com.example.mylittlechef` | `serverBaseUrl` | Regular development app |
 | cloudTest | `com.example.mylittlechef.cloudtest` | `serverBaseUrl` | Isolated installation/device tests |
-| release | `com.example.mylittlechef` | `releaseServerBaseUrl` | HTTPS deployment; configure before distribution |
+| release | `kr.ac.snu.swpp15.mylittlechef` | `releaseServerBaseUrl` (default: `serverBaseUrl`) | Store build; signed with `-PreleaseSigning=<properties file>` |
 
-Debug/cloudTest default to the demo server `http://158.101.141.165:8080/`. HTTP is permitted only for
-that IP, localhost and 127.0.0.1 by their network security configuration. An HTTP
-override to another host also requires updating that allowlist. Release disables
-cleartext and defaults to `https://localhost/`, a placeholder requiring an explicit
-HTTPS endpoint. The deployment IP is ephemeral.
+Every build (debug, cloudTest, uiPreview, release) defaults to the team server `http://158.101.141.165/`.
+HTTP is permitted only for that IP, localhost and 127.0.0.1 by their network security configuration;
+an HTTP override to another host also requires updating that allowlist. The server's public IP is
+ephemeral (kept as is by the team's decision); a new IP means a new APK.
 
 ```sh
 (cd android && sh ./gradlew assembleCloudTest)

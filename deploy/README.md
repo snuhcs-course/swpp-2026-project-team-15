@@ -6,8 +6,8 @@ Compose runs nginx → FastAPI/Uvicorn from a fresh clone. There is no database.
 git clone -b feat/youtube-recipe-demo git@github.com:snuhcs-course/swpp-2026-project-team-15.git
 cd swpp-2026-project-team-15
 cp deploy/runtime.env.example deploy/runtime.env && chmod 600 deploy/runtime.env   # then fill in the keys
-HTTP_PORT=8080 docker compose up -d --build                                        # HTTP_PORT defaults to 80
-curl -f http://127.0.0.1:8080/ready
+docker compose up -d --build                                                       # nginx on port 80 (HTTP_PORT to change)
+curl -f http://127.0.0.1/ready
 ```
 
 | Setting | Meaning |
@@ -43,7 +43,7 @@ docker compose down
 
 ## Android
 
-The default debug/cloudTest endpoint is the demo server `http://158.101.141.165:8080/`; HTTP is allowed only for this IP and localhost. The release (store) build, application id `kr.ac.snu.swpp15.mylittlechef`, uses the same server and allows HTTP only to that IP; sign it with `-PreleaseSigning=/path/to/file.properties` (storeFile, storePassword, keyAlias, keyPassword; kept outside the repository) and point it elsewhere with `-PreleaseServerBaseUrl=...`. To build against another server: `sh scripts/install-android.sh http://host:port/`.
+Every build defaults to the team server `http://158.101.141.165/`; HTTP is allowed only for this IP and localhost. The release (store) build, application id `kr.ac.snu.swpp15.mylittlechef`, uses the same server and allows HTTP only to that IP; sign it with `-PreleaseSigning=/path/to/file.properties` (storeFile, storePassword, keyAlias, keyPassword; kept outside the repository) and point it elsewhere with `-PreleaseServerBaseUrl=...`. To build against another server: `sh scripts/install-android.sh http://host:port/`.
 
 ## CI
 

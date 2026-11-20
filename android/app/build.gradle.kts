@@ -7,7 +7,7 @@ plugins {
 }
 
 val serverBaseUrl = providers.gradleProperty("serverBaseUrl")
-    .orElse("http://158.101.141.165:8080/").get()
+    .orElse("http://158.101.141.165/").get()
 val serverEndpoint = URI(serverBaseUrl)
 require(serverEndpoint.scheme in listOf("http", "https") && serverEndpoint.host != null &&
     serverEndpoint.userInfo == null && serverEndpoint.rawQuery == null &&
