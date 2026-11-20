@@ -33,7 +33,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
         buildConfigField("String", "SERVER_BASE_URL", "\"$serverBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -71,7 +71,9 @@ android {
             resValue("string", "app_name", "MyLittleChef UI Preview")
         }
         release {
-            // Defaults to the demo server; HTTP is allowed only for that IP (src/release network config).
+            // Defaults to the team server; HTTP is allowed only for that IP (src/release network config).
+            // Code shrinking stays off: Retrofit/Gson read models by reflection and the store build was
+            // verified without it (ONE Store does not require it).
             buildConfigField("String", "SERVER_BASE_URL", "\"${providers.gradleProperty("releaseServerBaseUrl").orElse(serverBaseUrl).get()}\"")
             signingConfigs.findByName("release")?.let { signingConfig = it }
             optimization {
