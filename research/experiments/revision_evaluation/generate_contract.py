@@ -297,7 +297,12 @@ def _telemetry(calls: list[dict], *, interrupted=False) -> dict:
         "logical_calls": len(calls),
         "reasks": sum(call["purpose"] == "reask" for call in calls),
         "http_attempts": len(attempts),
-        "http_429_retries": sum(a["status_code"] == 429 for a in attempts),
+        "http_429_responses": sum(a["status_code"] == 429 for a in attempts),
+        "http_429_retries": sum(
+            previous["status_code"] == 429
+            for call in calls
+            for previous in call["http_attempts"][:-1]
+        ),
         "provider_round_trip_s": _number(sum(a["provider_round_trip_s"] for a in timed))
         if timed
         else _number(applicability="not_applicable"),
@@ -350,6 +355,7 @@ def _aggregate_telemetry(values: list[dict]) -> dict:
         "logical_calls": sum(value["logical_calls"] for value in values),
         "reasks": sum(value["reasks"] for value in values),
         "http_attempts": sum(value["http_attempts"] for value in values),
+        "http_429_responses": sum(value["http_429_responses"] for value in values),
         "http_429_retries": sum(value["http_429_retries"] for value in values),
         "provider_round_trip_s": _sum_optional(
             [value["provider_round_trip_s"] for value in values]
@@ -818,6 +824,7 @@ def fixture_summary(observations: dict[str, dict]) -> dict:
             "logical_calls": aggregate["logical_calls"],
             "reasks": aggregate["reasks"],
             "http_attempts": total_attempts,
+            "http_429_responses": aggregate["http_429_responses"],
             "http_429_retries": aggregate["http_429_retries"],
             "provider_round_trip_s": aggregate["provider_round_trip_s"],
             "revision_s": aggregate["revision_s"],

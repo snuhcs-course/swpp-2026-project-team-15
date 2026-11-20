@@ -39,7 +39,8 @@ An observation identifies `run_id`, `case_id`, one-based `repetition`, and one-b
 - `checks`: production check events. These are separate from parsing and deterministic findings.
 - `deterministic_evaluation`: parsed-response structure/reference findings and explicit coverage
   numerator/denominator.
-- `telemetry`: calls, retries, provider time, Revision time, checkpoint overhead, tokens and cost.
+- `telemetry`: calls, 429 responses and actual retries, provider time, Revision time, checkpoint
+  overhead, tokens and cost.
 
 Run metadata also freezes code/working-tree identity and prompt, response-schema, input, and
 fixture hashes. Each plan unit carries cumulative telemetry across all of its execution attempts,

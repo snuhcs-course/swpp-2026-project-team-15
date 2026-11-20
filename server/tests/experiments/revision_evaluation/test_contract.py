@@ -192,6 +192,7 @@ def test_frozen_contract_can_represent_required_provenance_and_aggregates():
     assert summary.semantic_success.applicability == "not_applicable"
     assert summary.semantic_success.definition is None
     assert summary.totals.reasks == 2
+    assert summary.totals.http_429_responses == 1
     assert summary.totals.http_429_retries == 1
 
 
@@ -268,6 +269,21 @@ def test_http_attempt_numbers_are_contiguous_per_logical_call():
         Observation.model_validate(value)
 
 
+def test_terminal_429_is_a_response_without_an_actual_retry():
+    value = read_json(
+        fixture_root() / "observations/revised-after-reask-429__r01/attempt-001.json"
+    )
+    value["model_calls"][0]["http_attempts"] = value["model_calls"][0][
+        "http_attempts"
+    ][:1]
+    value["telemetry"].update(
+        http_attempts=2,
+        http_429_responses=1,
+        http_429_retries=0,
+    )
+    Observation.model_validate(value)
+
+
 @pytest.mark.parametrize(
     ("mutate", "message"),
     [
@@ -284,8 +300,12 @@ def test_http_attempt_numbers_are_contiguous_per_logical_call():
             "re-ask telemetry does not match",
         ),
         (
+            lambda value: value["telemetry"].update(http_429_responses=0),
+            "HTTP 429 response telemetry does not match",
+        ),
+        (
             lambda value: value["telemetry"].update(http_429_retries=0),
-            "HTTP 429 telemetry does not match",
+            "HTTP 429 retry telemetry does not match",
         ),
     ],
 )

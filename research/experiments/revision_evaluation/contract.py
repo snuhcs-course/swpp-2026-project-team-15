@@ -272,6 +272,7 @@ class Telemetry(StrictModel):
     logical_calls: NonNegativeInt
     reasks: NonNegativeInt
     http_attempts: NonNegativeInt
+    http_429_responses: NonNegativeInt
     http_429_retries: NonNegativeInt
     provider_round_trip_s: OptionalNumber
     revision_s: OptionalNumber
@@ -311,9 +312,17 @@ class Observation(StrictModel):
             raise ValueError("re-ask telemetry does not match model_calls")
         if self.telemetry.http_attempts != len(attempts):
             raise ValueError("HTTP-attempt telemetry must include prepared requests")
-        retries_429 = sum(attempt.status_code == 429 for attempt in attempts)
+        responses_429 = sum(attempt.status_code == 429 for attempt in attempts)
+        if self.telemetry.http_429_responses != responses_429:
+            raise ValueError("HTTP 429 response telemetry does not match HTTP attempts")
+        # A terminal 429 is a response but not a retry unless another request follows it.
+        retries_429 = sum(
+            previous.status_code == 429
+            for call in self.model_calls
+            for previous in call.http_attempts[:-1]
+        )
         if self.telemetry.http_429_retries != retries_429:
-            raise ValueError("HTTP 429 telemetry does not match HTTP attempts")
+            raise ValueError("HTTP 429 retry telemetry does not match HTTP attempts")
         for call in self.model_calls:
             if [attempt.index for attempt in call.http_attempts] != list(
                 range(1, len(call.http_attempts) + 1)
@@ -461,6 +470,7 @@ class RunTotals(StrictModel):
     logical_calls: NonNegativeInt
     reasks: NonNegativeInt
     http_attempts: NonNegativeInt
+    http_429_responses: NonNegativeInt
     http_429_retries: NonNegativeInt
     provider_round_trip_s: OptionalNumber
     revision_s: OptionalNumber

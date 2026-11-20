@@ -51,6 +51,7 @@
           "provenance": "not_applicable",
           "value": null
         },
+        "http_429_responses": 0,
         "http_429_retries": 0,
         "http_attempts": 0,
         "logical_calls": 0,
@@ -98,6 +99,7 @@
           "provenance": "missing",
           "value": null
         },
+        "http_429_responses": 1,
         "http_429_retries": 1,
         "http_attempts": 3,
         "logical_calls": 2,
@@ -145,6 +147,7 @@
           "provenance": "not_applicable",
           "value": null
         },
+        "http_429_responses": 0,
         "http_429_retries": 0,
         "http_attempts": 0,
         "logical_calls": 0,
@@ -192,6 +195,7 @@
           "provenance": "measured",
           "value": 0.0002
         },
+        "http_429_responses": 0,
         "http_429_retries": 0,
         "http_attempts": 2,
         "logical_calls": 2,
@@ -239,6 +243,7 @@
           "provenance": "measured",
           "value": 0.0001
         },
+        "http_429_responses": 0,
         "http_429_retries": 0,
         "http_attempts": 1,
         "logical_calls": 1,
@@ -286,6 +291,7 @@
           "provenance": "measured",
           "value": 0.0001
         },
+        "http_429_responses": 0,
         "http_429_retries": 0,
         "http_attempts": 1,
         "logical_calls": 1,
@@ -333,6 +339,7 @@
           "provenance": "missing",
           "value": null
         },
+        "http_429_responses": 0,
         "http_429_retries": 0,
         "http_attempts": 1,
         "logical_calls": 1,
@@ -380,6 +387,7 @@
           "provenance": "missing",
           "value": null
         },
+        "http_429_responses": 0,
         "http_429_retries": 0,
         "http_attempts": 2,
         "logical_calls": 2,

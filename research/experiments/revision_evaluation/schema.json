@@ -1320,6 +1320,11 @@
         "cost_usd": {
           "$ref": "#/$defs/Cost"
         },
+        "http_429_responses": {
+          "minimum": 0,
+          "title": "Http 429 Responses",
+          "type": "integer"
+        },
         "http_429_retries": {
           "minimum": 0,
           "title": "Http 429 Retries",
@@ -1367,6 +1372,7 @@
         "logical_calls",
         "reasks",
         "http_attempts",
+        "http_429_responses",
         "http_429_retries",
         "provider_round_trip_s",
         "revision_s",
@@ -1485,6 +1491,11 @@
         "cost_usd": {
           "$ref": "#/$defs/Cost"
         },
+        "http_429_responses": {
+          "minimum": 0,
+          "title": "Http 429 Responses",
+          "type": "integer"
+        },
         "http_429_retries": {
           "minimum": 0,
           "title": "Http 429 Retries",
@@ -1525,6 +1536,7 @@
         "logical_calls",
         "reasks",
         "http_attempts",
+        "http_429_responses",
         "http_429_retries",
         "provider_round_trip_s",
         "revision_s",
