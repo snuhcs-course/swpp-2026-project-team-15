@@ -11,11 +11,13 @@ from experiments.revision_evaluation.contract import (
     Cost,
     Observation,
     OptionalNumber,
+    PlanUnit,
     Rate,
     fixture_root,
     schema_document,
     validate_artifact,
     validate_fixture_bundle,
+    validate_plan_unit_observations,
 )
 from experiments.revision_evaluation.generate_contract import (
     fixture_metadata,
@@ -302,6 +304,35 @@ def test_checkpoint_and_execution_attempt_numbers_are_positive():
             Observation.model_validate(invalid)
 
 
+def test_plan_unit_rejects_invalid_completed_attempt_selection():
+    completed = fixture_metadata(fixture_observations())["plan"][0]
+    for selected in (None, len(completed["observation_refs"]) + 1):
+        invalid = deepcopy(completed)
+        invalid["selected_completed_attempt"] = selected
+        with pytest.raises(ValidationError, match="completed attempt"):
+            PlanUnit.model_validate(invalid)
+
+    incomplete = deepcopy(completed)
+    incomplete.update(state="incomplete", selected_completed_attempt=1)
+    with pytest.raises(ValidationError, match="non-completed plan unit"):
+        PlanUnit.model_validate(incomplete)
+
+
+def test_selection_must_identify_a_completed_observation():
+    observation_values = fixture_observations()
+    metadata = fixture_metadata(observation_values)
+    resumed_value = next(unit for unit in metadata["plan"] if unit["case_id"] == "resumed")
+    resumed_value["selected_completed_attempt"] = 1
+    resumed = PlanUnit.model_validate(resumed_value)
+    observations = [
+        Observation.model_validate(observation_values[reference.removeprefix("observations/")])
+        for reference in resumed.observation_refs
+    ]
+
+    with pytest.raises(ValueError, match="one completed observation"):
+        validate_plan_unit_observations(resumed, observations)
+
+
 def test_http_attempt_numbers_are_contiguous_per_logical_call():
     value = read_json(fixture_root() / "observations/revised-after-reask-429__r01/attempt-001.json")
     value["model_calls"][0]["http_attempts"][1]["index"] = 3
@@ -358,8 +389,12 @@ def test_fixture_only_consumer_can_find_judge_source_fields_without_runner_impor
     metadata = read_json(root / "metadata.json")
     summary = read_json(root / "summary.json")
     selected = next(unit for unit in metadata["plan"] if unit["case_id"] == "resumed")
-    final_ref = selected["observation_refs"][selected["selected_completed_attempt"] - 1]
-    observation = read_json(root / final_ref)
+    final_ref, observation = next(
+        (reference, value)
+        for reference in selected["observation_refs"]
+        if (value := read_json(root / reference))["execution_attempt"]
+        == selected["selected_completed_attempt"]
+    )
     assert observation["artifact_schema"] == OBSERVATION_SCHEMA
     assert observation["input"]["original_recipe"]["ingredients"]
     assert observation["execution"]["final_service_response"]["status"] == "revised"

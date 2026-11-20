@@ -44,7 +44,8 @@ An observation identifies `run_id`, `case_id`, one-based `repetition`, and one-b
 
 Run metadata also freezes code/working-tree identity and prompt, response-schema, input, and
 fixture hashes. Each plan unit carries cumulative telemetry across all of its execution attempts,
-including attempts superseded by resume.
+including attempts superseded by resume. A completed plan unit's `selected_completed_attempt`
+must identify exactly one completed observation for the same case and repetition.
 
 Terminal outcomes are `unchanged`, `revised`, `refused`, `check_failed`, `response_error`, and
 `api_error`. `outcome_source` independently identifies `no_change`, `prescreen`, `model`,

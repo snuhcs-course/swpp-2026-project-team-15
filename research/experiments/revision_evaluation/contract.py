@@ -406,6 +406,18 @@ class PlanUnit(StrictModel):
     selected_completed_attempt: PositiveInt | None
     cumulative_telemetry: Telemetry | None
 
+    @model_validator(mode="after")
+    def check_selected_attempt(self) -> PlanUnit:
+        """Require completed units to select one of their recorded attempts."""
+        if self.state == "completed":
+            if self.selected_completed_attempt is None:
+                raise ValueError("completed plan unit must select a completed attempt")
+            if self.selected_completed_attempt > len(self.observation_refs):
+                raise ValueError("selected completed attempt exceeds recorded attempts")
+        elif self.selected_completed_attempt is not None:
+            raise ValueError("non-completed plan unit cannot select a completed attempt")
+        return self
+
 
 # Budget consumption is cumulative across interrupted and resumed attempts.
 class HttpAttemptBudget(StrictModel):
@@ -624,6 +636,28 @@ def fixture_root() -> Path:
     return Path(__file__).with_name("fixtures") / "contract-v1"
 
 
+def validate_plan_unit_observations(
+    unit: PlanUnit, observations: list[Observation]
+) -> None:
+    """Verify that a plan selection identifies its own completed observation."""
+    if any(
+        observation.case_id != unit.case_id
+        or observation.repetition != unit.repetition
+        for observation in observations
+    ):
+        raise ValueError("plan unit references a different case or repetition")
+    if unit.selected_completed_attempt is not None:
+        selected = [
+            observation
+            for observation in observations
+            if observation.execution_attempt == unit.selected_completed_attempt
+        ]
+        if len(selected) != 1 or selected[0].execution.state != "completed":
+            raise ValueError(
+                "selected_completed_attempt must identify one completed observation"
+            )
+
+
 def validate_fixture_bundle(
     root: Path | None = None,
 ) -> tuple[RunMetadata, list[Observation], RunSummary]:
@@ -649,6 +683,12 @@ def validate_fixture_bundle(
     ]
     if set(metadata_refs) != set(refs):
         raise ValueError("metadata and summary observation references differ")
+    observations_by_ref = dict(zip(refs, observations, strict=True))
+    for unit in metadata.plan:
+        unit_observations = [
+            observations_by_ref[reference] for reference in unit.observation_refs
+        ]
+        validate_plan_unit_observations(unit, unit_observations)
     consumed = sum(value.telemetry.http_attempts for value in observations)
     if (
         metadata.http_attempt_budget.consumed != consumed
