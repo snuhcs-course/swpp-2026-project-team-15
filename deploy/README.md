@@ -18,6 +18,8 @@ curl -f http://127.0.0.1:8080/ready
 | `OPENROUTER_API_KEY` | Dish suggestions, substitutes, video proposals and photo recognition |
 | `YOUTUBE_API_KEY` | `videos.list` for `/dishes/videos` |
 | `DISH_DATA_DIR` | Host folder mounted read-only at `/data` in the API container (default `deploy/data`, gitignored) |
+| `TELEMETRY_DIR` | Host folder mounted writable at `/telemetry` (default `deploy/telemetry`, gitignored); create it owned by uid 10001, mode 700 |
+| `TELEMETRY_FILE` | In `runtime.env`, e.g. `/telemetry/usage.jsonl`: app usage events and one line per request (route, status, time; no bodies). Unset = off. Summary: `research/experiments/telemetry/summarize.py` |
 | `DISH_RECIPES`, `DISH_VIDEOS` | Files inside that folder, set in `runtime.env` as `/data/recipes.json` and `/data/dish-videos.json`; without them no dish has a recipe and videos are found on request |
 
 Keys stay in `deploy/runtime.env` (gitignored): never in Git, images or the app. The recipe and video files are made by the tools in `research/experiments/dish_recipes/`, contain content derived from third-party videos and are copied to the server by hand, not committed.
