@@ -1,3 +1,5 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
+// Photo UI navigation motion assisted by Codex, 2026-11-19; human review pending.
 // HE ingredient/exploration changes assisted by Codex, 2026-11-10; human review pending.
 // AI-generated initial navigation scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
@@ -6,10 +8,23 @@
 // Ingredient catalog wiring added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.navigation
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.core.net.toUri
+import com.example.mylittlechef.data.IngredientAnalyzer
+import com.example.mylittlechef.viewmodel.PhotoAnalysisViewModel
+import com.example.mylittlechef.ui.fridge.add.EntrySheet
+import com.example.mylittlechef.ui.fridge.add.LocalEntrySheet
+import java.util.UUID
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -89,16 +104,28 @@ fun AppNavHost(
         recipes.updateUserContext(fridge.ingredients, user.allergies, user.utensils)
     }
     val startDestination = remember { if (user.onboardingComplete) Routes.MAIN else Routes.ONBOARDING }
-    val guideRepository = remember(store) { UsageGuideRepository(store) }
-    val currentEntry by navController.currentBackStackEntryAsState()
-    FirstUseGuide(guideRepository, enabled = currentEntry?.destination?.route == Routes.MAIN && user.onboardingComplete)
+    var entrySheet by rememberSaveable { mutableStateOf<String?>(null) }
+    var photoUri by rememberSaveable { mutableStateOf<String?>(null) }
+    var photoToken by rememberSaveable { mutableStateOf("") }
+    val photoFactory = remember(applicationContext) { object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T: ViewModel> create(modelClass: Class<T>): T {
+            val analyzer=IngredientAnalyzer(applicationContext)
+            return PhotoAnalysisViewModel { analyzer.review(it.toUri()) } as T
+        }
+    } }
+    val photoReview: PhotoAnalysisViewModel = viewModel(factory=photoFactory)
+    fun closeEntry() { if(entrySheet=="photo") photoReview.cancel(); entrySheet=null }
+
 
     NavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier,
-        enterTransition = { EnterTransition.None },
-        exitTransition = { ExitTransition.None }
+        enterTransition = { fadeIn(tween(180)) + slideInHorizontally(tween(180)) { it / 20 } },
+        exitTransition = { fadeOut(tween(100)) },
+        popEnterTransition = { fadeIn(tween(140)) },
+        popExitTransition = { fadeOut(tween(120)) + slideOutHorizontally(tween(140)) { it / 20 } }
     ) {
         composable(Routes.ONBOARDING) {
             OnboardingScreen(
@@ -122,7 +149,7 @@ fun AppNavHost(
                 onAddIngredientClick = {
                     navController.navigate(Routes.CAPTURE)
                 },
-                onManualAddClick = { navController.navigate(Routes.MANUAL_ADD) },
+                onManualAddClick = { entrySheet="manual" },
                 onEditNicknameClick = {
                     navController.navigate(Routes.EDIT_NICKNAME)
                 },
@@ -148,10 +175,12 @@ fun AppNavHost(
                     navController.popBackStack()
                 },
                 onCaptured = {
-                    uri -> navController.navigate(Routes.analyzeRoute(uri.toString()))
+                    uri ->
+                    photoUri=uri.toString(); photoToken=UUID.randomUUID().toString()
+                    navController.popBackStack(Routes.MAIN, false); entrySheet="photo"
                 },
                 onManualAddClick = {
-                    navController.navigate(Routes.MANUAL_ADD)
+                    navController.popBackStack(Routes.MAIN, false); entrySheet="manual"
                 }
             )
         }
@@ -279,4 +308,20 @@ fun AppNavHost(
             }
         }
     }
+    entrySheet?.let { kind ->
+        key(kind, photoToken) {
+            EntrySheet(onClose=::closeEntry,heightFraction=if(kind=="manual") .72f else .94f) {
+                val controls=LocalEntrySheet.current
+                if(kind=="manual") ManualAddScreen(fridge, ingredientCatalog,
+                    onBackClick={controls?.requestClose?.invoke()}, onSaveClick={controls?.complete?.invoke()})
+                else AnalyzeScreen(fridge=fridge, ingredientCatalog=ingredientCatalog,
+                    imageUri=photoUri, reviewModel=photoReview, entryToken=photoToken,
+                    onBackClick={controls?.requestClose?.invoke()},
+                    onManualClick={photoReview.cancel();entrySheet="manual"},
+                    onRetakeClick={closeEntry();navController.navigate(Routes.CAPTURE)},
+                    onSaveClick={controls?.complete?.invoke()})
+            }
+        }
+    }
+
 }

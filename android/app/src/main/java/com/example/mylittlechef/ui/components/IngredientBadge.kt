@@ -27,7 +27,7 @@ fun IngredientBadge(name: String, modifier: Modifier = Modifier, size: Dp = 32.d
     val appearance = catalog.appearanceFor(name)
     Box(modifier.size(size).clip(CircleShape).background(Color(appearance.backgroundArgb)),
         contentAlignment = Alignment.Center) {
-        Icon(painterResource(ingredientIconResource(appearance.iconKey)), contentDescription = name,
-            tint = Color(0xFF172C25), modifier = Modifier.size(size))
+        Icon(painterResource(ingredientIconResource(if(name=="감자") "potato" else if(name in listOf("고추","청고추","홍고추","청양고추")) "chili" else appearance.iconKey)), contentDescription = name,
+            tint = Color(0xFF172C25), modifier = Modifier.size(size * 0.82f))
     }
 }

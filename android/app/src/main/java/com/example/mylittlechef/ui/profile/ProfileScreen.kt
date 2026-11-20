@@ -1,3 +1,4 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // Pantry profile row added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.ui.profile
@@ -19,6 +20,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.example.mylittlechef.ui.help.LocalSectionTour
+import com.example.mylittlechef.ui.help.tourAnchor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -74,26 +77,27 @@ fun ProfileContent(
     modifier: Modifier = Modifier
 )
 {
+    val sectionTour=LocalSectionTour.current
     var showGuide by remember { mutableStateOf(false) }
     if (showGuide) UsageGuideDialog(onClose = { showGuide = false })
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(
-                horizontal = 29.dp
+                horizontal = 20.dp
             )
     )
     {
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(20.dp))
 
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.Top) {
-            TitleText(text="다시 만나서 반가워요,\n${user.nickname} 님",
+            TitleText(text="내 정보",
                 color=MaterialTheme.colorScheme.onBackground,modifier=Modifier.weight(1f))
             AppearancePicker()
         }
         LocalAppearanceSettings.current.error?.let { Text(it,color=MaterialTheme.colorScheme.error) }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(20.dp))
 
         Column(
             modifier = Modifier
@@ -130,10 +134,11 @@ fun ProfileContent(
             }
             ProfileItem(
                 onMoreClick = onEditPantryClick,
+                modifier = Modifier.tourAnchor("profile-pantry"),
                 title = "기본 재료·조미료",
                 contents = listOf(pantrySummary)
             )
-            ProfileItem(onMoreClick = { showGuide = true }, title = "사용 안내", contents = listOf("재료 추가 · 결과 확인 · AI 제안"))
+            ProfileItem(onMoreClick = { if(sectionTour!=null) sectionTour.launch() else showGuide = true }, title = "사용 안내", contents = listOf("화면을 보며 앱 둘러보기"))
         }
 
     }

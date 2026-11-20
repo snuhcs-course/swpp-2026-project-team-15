@@ -1,7 +1,10 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // AI-assisted with Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.ui.profile
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -29,7 +32,7 @@ fun EditPantryScreen(fridge: FridgeViewModel, onBackClick: () -> Unit, onSaveCli
         onSaveClick = { fridge.updatePantryItems(selected, onSaved = onSaveClick) },
         title = "기본 재료·조미료 설정"
     ) {
-        Column(Modifier.verticalScroll(rememberScrollState())) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal=20.dp,vertical=12.dp)) {
             fridge.pantryError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             if (fridge.isSavingPantry) Text("저장하고 있어요…", color = MaterialTheme.colorScheme.onSurface)
             PantrySelectionContent(selected, { if (!fridge.isSavingPantry) selected = it })

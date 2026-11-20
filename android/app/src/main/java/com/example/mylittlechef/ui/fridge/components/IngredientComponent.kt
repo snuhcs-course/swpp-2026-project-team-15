@@ -1,3 +1,4 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // Fridge presentation/sorting and arrival-order updates assisted by Codex, 2026-11-02; human review pending.
 // AI-generated initial IngredientItem, EditableIngredientList, IngredientRow, and IngredientEditorState drafts with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
@@ -84,15 +85,15 @@ fun IngredientItem(
         val imageRes = ingredient.imageRes
         if (appearance != null) {
             Box(
-                modifier = Modifier.size(imageSize).clip(CircleShape)
+                modifier = Modifier.size(imageSize).clip(RoundedCornerShape(imageSize * 0.36f))
                     .background(Color(appearance.backgroundArgb)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    painter = painterResource(ingredientIconResource(appearance.iconKey)),
+                    painter = painterResource(ingredientIconResource(if(ingredient.name=="감자") "potato" else if(ingredient.name in listOf("고추","청고추","홍고추","청양고추")) "chili" else appearance.iconKey)),
                     contentDescription = ingredient.name,
                     tint = Color(0xFF172C25),
-                    modifier = Modifier.size(imageSize).testTag("ingredient-icon-" + ingredient.name)
+                    modifier = Modifier.size(imageSize * 0.82f).testTag("ingredient-icon-" + ingredient.name)
                 )
             }
         }
@@ -119,10 +120,10 @@ fun IngredientItem(
 
         Text(
             text = ingredient.name,
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
 
@@ -247,9 +248,9 @@ fun IngredientRow(
                 .fillMaxWidth()
                 .heightIn(min = 56.dp)
                 .clip(RoundedCornerShape(15.dp))
-                .background(Gray)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .padding(
-                    start = 24.dp,
+                    start = 12.dp,
                     end = 48.dp,
                     top = 4.dp,
                     bottom = 4.dp
@@ -344,7 +345,7 @@ fun IngredientRow(
                     .fillMaxWidth()
                     .padding(top = 4.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Gray)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 suggestions.forEach { suggestion ->
                     Text(

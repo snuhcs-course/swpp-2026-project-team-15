@@ -46,6 +46,13 @@ android {
             enableUnitTestCoverage = false
             resValue("string", "app_name", "MyLittleChef Cloud Test")
         }
+        create("uiPreview") {
+            initWith(getByName("cloudTest"))
+            applicationIdSuffix = ".uipreview"
+            versionNameSuffix = "-ui-preview"
+            matchingFallbacks += listOf("cloudTest", "debug")
+            resValue("string", "app_name", "MyLittleChef UI Preview")
+        }
         release {
             buildConfigField("String", "SERVER_BASE_URL", "\"${providers.gradleProperty("releaseServerBaseUrl").orElse("https://localhost/").get()}\"")
             optimization {
