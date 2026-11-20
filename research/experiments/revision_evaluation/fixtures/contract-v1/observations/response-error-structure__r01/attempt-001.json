@@ -86,6 +86,8 @@
         {
           "cost_usd": {
             "applicability": "value",
+            "price_inputs": null,
+            "provenance": "measured",
             "value": 0.0001
           },
           "counts_against_budget": true,
@@ -134,6 +136,8 @@
     },
     "cost_usd": {
       "applicability": "value",
+      "price_inputs": null,
+      "provenance": "measured",
       "value": 0.0001
     },
     "http_429_retries": 0,

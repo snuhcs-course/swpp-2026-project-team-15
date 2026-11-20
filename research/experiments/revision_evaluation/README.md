@@ -41,6 +41,10 @@ An observation identifies `run_id`, `case_id`, one-based `repetition`, and one-b
   numerator/denominator.
 - `telemetry`: calls, retries, provider time, Revision time, checkpoint overhead, tokens and cost.
 
+Run metadata also freezes code/working-tree identity and prompt, response-schema, input, and
+fixture hashes. Each plan unit carries cumulative telemetry across all of its execution attempts,
+including attempts superseded by resume.
+
 Terminal outcomes are `unchanged`, `revised`, `refused`, `check_failed`, `response_error`, and
 `api_error`. `outcome_source` independently identifies `no_change`, `prescreen`, `model`,
 `production_check`, `response`, or `transport`.
@@ -66,6 +70,13 @@ Numeric measurements that may not exist use both `applicability` and `value`:
 
 Rates always retain numerator and denominator. A zero denominator has a null rate; it is not
 reported as zero or one.
+
+Costs additionally use `provenance`: `measured` for provider-supplied cost, `estimated` only with
+the retained price inputs, `missing` when cost cannot be established, and `not_applicable` for a
+zero-call path. Summary latency publishes p50/p95 with sample counts and its incomplete-attempt
+policy. The summary also retains initial/final failure-code counts, per-case planned/completed
+repetitions and outcome distributions. Semantic success is explicitly `not_applicable` until a
+run names a versioned success definition.
 
 ## Judge boundary
 

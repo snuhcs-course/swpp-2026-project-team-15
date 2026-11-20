@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,29 @@ def _number(value: float | None = None, *, applicability: str | None = None) -> 
 
     state = applicability or ("value" if value is not None else "unavailable")
     return {"applicability": state, "value": value}
+
+
+def _cost(
+    value: float | None = None,
+    *,
+    provenance: str | None = None,
+    price_inputs: dict[str, float] | None = None,
+) -> dict:
+    """Build a cost value with explicit measured, estimated, missing, or N/A provenance."""
+
+    source = provenance or ("measured" if value is not None else "missing")
+    applicability = {
+        "measured": "value",
+        "estimated": "value",
+        "missing": "unavailable",
+        "not_applicable": "not_applicable",
+    }[source]
+    return {
+        "applicability": applicability,
+        "value": value,
+        "provenance": source,
+        "price_inputs": price_inputs,
+    }
 
 
 def _usage(input_tokens=None, output_tokens=None, reasoning_tokens=None, cached_tokens=None):
@@ -151,7 +175,7 @@ def _http(index: int, status: int = 200, text: str = "{}", *, cost: float = 0.00
         "finish_reason": "stop" if status == 200 else None,
         "safe_response_text": text if status == 200 else None,
         "usage": _usage(10, 20, 0, 0) if status == 200 else None,
-        "cost_usd": _number(cost) if status == 200 else _number(),
+        "cost_usd": _cost(cost) if status == 200 else _cost(),
     }
 
 
@@ -171,7 +195,7 @@ def _prepared(index: int) -> dict:
         "finish_reason": None,
         "safe_response_text": None,
         "usage": None,
-        "cost_usd": _number(),
+        "cost_usd": _cost(),
     }
 
 
@@ -203,9 +227,12 @@ def _telemetry(calls: list[dict], *, interrupted=False) -> dict:
     output_tokens = sum((a["usage"] or {}).get("output_tokens", 0) for a in received)
     measured = [a["cost_usd"]["value"] for a in received if a["cost_usd"]["value"] is not None]
     # A partial or interrupted set cannot be labelled as a complete measured total.
-    cost = (
-        _number(sum(measured)) if len(measured) == len(received) and not interrupted else _number()
-    )
+    if not attempts:
+        cost = _cost(provenance="not_applicable")
+    elif len(measured) == len(received) == len(attempts) and not interrupted:
+        cost = _cost(sum(measured))
+    else:
+        cost = _cost()
     return {
         "logical_calls": len(calls),
         "reasks": sum(call["purpose"] == "reask" for call in calls),
@@ -220,6 +247,88 @@ def _telemetry(calls: list[dict], *, interrupted=False) -> dict:
         "non_http_remainder_s": _number(0.3) if received and not interrupted else _number(),
         "tokens": _usage(input_tokens, output_tokens, 0, 0) if received else _usage(),
         "cost_usd": cost,
+    }
+
+
+def _sum_optional(values: list[dict]) -> dict:
+    """Sum compatible optional measurements without converting unknown values to zero."""
+
+    applicable = [value for value in values if value["applicability"] != "not_applicable"]
+    if not applicable:
+        return _number(applicability="not_applicable")
+    if any(value["applicability"] != "value" for value in applicable):
+        return _number()
+    return _number(sum(value["value"] for value in applicable))
+
+
+def _sum_usage(values: list[dict]) -> dict:
+    """Sum each token category only when every attempt-level total supplied it."""
+
+    result = {}
+    for key in ("input_tokens", "output_tokens", "reasoning_tokens", "cached_tokens"):
+        entries = [value[key] for value in values]
+        result[key] = sum(entries) if all(value is not None for value in entries) else None
+    return result
+
+
+def _sum_cost(values: list[dict]) -> dict:
+    """Aggregate only complete measured costs; otherwise retain missing or N/A provenance."""
+
+    if values and all(value["provenance"] == "not_applicable" for value in values):
+        return _cost(provenance="not_applicable")
+    if values and all(value["provenance"] == "measured" for value in values):
+        return _cost(sum(value["value"] for value in values))
+    return _cost()
+
+
+def _aggregate_telemetry(values: list[dict]) -> dict:
+    """Build cumulative telemetry for all execution attempts of one repetition."""
+
+    return {
+        "logical_calls": sum(value["logical_calls"] for value in values),
+        "reasks": sum(value["reasks"] for value in values),
+        "http_attempts": sum(value["http_attempts"] for value in values),
+        "http_429_retries": sum(value["http_429_retries"] for value in values),
+        "provider_round_trip_s": _sum_optional(
+            [value["provider_round_trip_s"] for value in values]
+        ),
+        "revision_s": _sum_optional([value["revision_s"] for value in values]),
+        "observed_wall_s": _sum_optional([value["observed_wall_s"] for value in values]),
+        "checkpoint_persistence_s": _sum_optional(
+            [value["checkpoint_persistence_s"] for value in values]
+        ),
+        "non_http_remainder_s": _sum_optional(
+            [value["non_http_remainder_s"] for value in values]
+        ),
+        "tokens": _sum_usage([value["tokens"] for value in values]),
+        "cost_usd": _sum_cost([value["cost_usd"] for value in values]),
+    }
+
+
+def _percentiles(values: list[float]) -> dict:
+    """Build deterministic linearly interpolated p50/p95 values for completed attempts."""
+
+    ordered = sorted(values)
+
+    def percentile(quantile: float) -> float:
+        position = (len(ordered) - 1) * quantile
+        lower, upper = math.floor(position), math.ceil(position)
+        if lower == upper:
+            return ordered[lower]
+        return ordered[lower] + (ordered[upper] - ordered[lower]) * (position - lower)
+
+    if not ordered:
+        return {
+            "sample_count": 0,
+            "incomplete_attempt_policy": "exclude",
+            "p50_s": _number(applicability="not_applicable"),
+            "p95_s": _number(applicability="not_applicable"),
+        }
+    return {
+        "sample_count": len(ordered),
+        "incomplete_attempt_policy": "exclude",
+        "p50_s": _number(percentile(0.5)),
+        "p95_s": _number(percentile(0.95)),
     }
 
 
@@ -473,6 +582,7 @@ def fixture_metadata(observations: dict[str, dict]) -> dict:
                 "state": "completed",
                 "observation_refs": [refs[name]],
                 "selected_completed_attempt": 1,
+                "cumulative_telemetry": _aggregate_telemetry([value["telemetry"]]),
             }
         )
     plan.append(
@@ -485,6 +595,12 @@ def fixture_metadata(observations: dict[str, dict]) -> dict:
                 refs["resumed__r03/attempt-002.json"],
             ],
             "selected_completed_attempt": 2,
+            "cumulative_telemetry": _aggregate_telemetry(
+                [
+                    observations["resumed__r03/attempt-001.json"]["telemetry"],
+                    observations["resumed__r03/attempt-002.json"]["telemetry"],
+                ]
+            ),
         }
     )
     consumed = sum(value["telemetry"]["http_attempts"] for value in observations.values())
@@ -496,6 +612,13 @@ def fixture_metadata(observations: dict[str, dict]) -> dict:
         "created_at": STAMP,
         "updated_at": STAMP,
         "compatibility_fingerprint": "b" * 64,
+        "code_identity": {"commit": "c" * 40, "tree": "d" * 40, "dirty": False},
+        "identities": {
+            "prompt_sha256": "e" * 64,
+            "response_schema_sha256": "f" * 64,
+            "input_sha256": {value["case_id"]: HASH for value in observations.values()},
+            "fixture_sha256": {"contract-v1": "1" * 64},
+        },
         "effective_assumed_staples": ["소금"],
         "model": {"id": "fixture/model", "temperature": 0},
         "pricing": {
@@ -550,6 +673,40 @@ def fixture_summary(observations: dict[str, dict]) -> dict:
         value["deterministic_evaluation"]["deleted_ingredient_explanation"]["denominator"]
         for value in observations.values()
     )
+    initial_failure_codes: dict[str, int] = {}
+    final_failure_codes: dict[str, int] = {}
+    for observation_value in observations.values():
+        for check in observation_value["checks"]:
+            if check["code"] is None or check["result"] == "passed":
+                continue
+            target = initial_failure_codes if check["phase"] == "initial" else final_failure_codes
+            target[check["code"]] = target.get(check["code"], 0) + 1
+
+    case_summaries = []
+    for case_id in dict.fromkeys(value["case_id"] for value in observations.values()):
+        attempts = [value for value in observations.values() if value["case_id"] == case_id]
+        selected = [value for value in attempts if value["execution"]["state"] == "completed"]
+        case_outcomes = {name: 0 for name in outcomes}
+        for selected_value in selected:
+            case_outcomes[selected_value["execution"]["terminal_outcome"]] += 1
+        case_summaries.append(
+            {
+                "case_id": case_id,
+                "planned_repetitions": 1,
+                "completed_repetitions": len(selected),
+                "all_planned_completed": len(selected) == 1,
+                "outcomes": case_outcomes,
+            }
+        )
+
+    def completed_measurements(name: str) -> list[float]:
+        return [
+            value["telemetry"][name]["value"]
+            for value in completed
+            if value["telemetry"][name]["applicability"] == "value"
+        ]
+
+    aggregate = _aggregate_telemetry([value["telemetry"] for value in observations.values()])
     value = {
         "artifact_schema": SUMMARY_SCHEMA,
         "observation_schema": OBSERVATION_SCHEMA,
@@ -580,13 +737,35 @@ def fixture_summary(observations: dict[str, dict]) -> dict:
             if explanation_denominator
             else None,
         },
+        "initial_failure_codes": initial_failure_codes,
+        "final_failure_codes": final_failure_codes,
+        "latency": {
+            "revision_s": _percentiles(completed_measurements("revision_s")),
+            "observed_wall_s": _percentiles(completed_measurements("observed_wall_s")),
+            "checkpoint_persistence_s": _percentiles(
+                completed_measurements("checkpoint_persistence_s")
+            ),
+        },
+        "cases": case_summaries,
+        "semantic_success": {
+            "applicability": "not_applicable",
+            "definition": None,
+            "rate": None,
+        },
         "totals": {
             "completed_repetitions": len(completed),
             "incomplete_attempts": len(observations) - len(completed),
-            "logical_calls": sum(v["telemetry"]["logical_calls"] for v in observations.values()),
+            "logical_calls": aggregate["logical_calls"],
+            "reasks": aggregate["reasks"],
             "http_attempts": total_attempts,
-            "tokens": _usage(),
-            "cost_usd": _number(),
+            "http_429_retries": aggregate["http_429_retries"],
+            "provider_round_trip_s": aggregate["provider_round_trip_s"],
+            "revision_s": aggregate["revision_s"],
+            "observed_wall_s": aggregate["observed_wall_s"],
+            "checkpoint_persistence_s": aggregate["checkpoint_persistence_s"],
+            "non_http_remainder_s": aggregate["non_http_remainder_s"],
+            "tokens": aggregate["tokens"],
+            "cost_usd": aggregate["cost_usd"],
         },
     }
     validate_artifact(value)

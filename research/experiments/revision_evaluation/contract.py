@@ -17,6 +17,8 @@ ARTIFACT_SCHEMAS = (METADATA_SCHEMA, OBSERVATION_SCHEMA, SUMMARY_SCHEMA)
 PositiveInt = Annotated[int, Field(ge=1)]
 NonNegativeInt = Annotated[int, Field(ge=0)]
 NonNegativeFloat = Annotated[float, Field(ge=0)]
+Sha256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
+GitObjectId = Annotated[str, Field(pattern=r"^[0-9a-f]{40}([0-9a-f]{24})?$")]
 
 
 class StrictModel(BaseModel):
@@ -35,6 +37,33 @@ class OptionalNumber(StrictModel):
     def check_value_matches_applicability(self) -> OptionalNumber:
         if (self.applicability == "value") != (self.value is not None):
             raise ValueError("value must be present exactly when applicability is 'value'")
+        return self
+
+
+class Cost(StrictModel):
+    """Preserve whether a cost was observed, estimated, missing, or inapplicable."""
+
+    applicability: Literal["value", "unavailable", "not_applicable"]
+    value: NonNegativeFloat | None
+    provenance: Literal["measured", "estimated", "missing", "not_applicable"]
+    price_inputs: dict[str, NonNegativeFloat] | None
+
+    @model_validator(mode="after")
+    def check_provenance(self) -> Cost:
+        """Keep cost value, provenance, and estimation inputs mutually consistent."""
+        if self.provenance in {"measured", "estimated"}:
+            if self.applicability != "value" or self.value is None:
+                raise ValueError("measured or estimated cost requires a value")
+        elif self.provenance == "missing":
+            if self.applicability != "unavailable" or self.value is not None:
+                raise ValueError("missing cost must be unavailable")
+        elif self.applicability != "not_applicable" or self.value is not None:
+            raise ValueError("inapplicable cost must use not_applicable")
+        if self.provenance == "estimated":
+            if not self.price_inputs:
+                raise ValueError("estimated cost requires price inputs")
+        elif self.price_inputs is not None:
+            raise ValueError("only estimated cost may carry price inputs")
         return self
 
 
@@ -96,7 +125,7 @@ class RequestSnapshot(StrictModel):
     system: str
     user: str
     response_schema: dict[str, Any] = Field(alias="schema")
-    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    sha256: Sha256
 
 
 # Token categories remain independently nullable because providers may omit a subset.
@@ -113,7 +142,7 @@ class HttpAttempt(StrictModel):
     index: PositiveInt
     state: Literal["request_prepared", "response_received", "transport_error"]
     prepared_at: str
-    request_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    request_sha256: Sha256
     model: str
     counts_against_budget: Literal[True]
     delivery: Literal["unknown", "confirmed", "failed"]
@@ -122,7 +151,7 @@ class HttpAttempt(StrictModel):
     finish_reason: str | None
     safe_response_text: str | None
     usage: Usage | None
-    cost_usd: OptionalNumber
+    cost_usd: Cost
 
     @model_validator(mode="after")
     def check_attempt_state(self) -> HttpAttempt:
@@ -231,7 +260,7 @@ class Telemetry(StrictModel):
     checkpoint_persistence_s: OptionalNumber
     non_http_remainder_s: OptionalNumber
     tokens: Usage
-    cost_usd: OptionalNumber
+    cost_usd: Cost
 
 
 # One observation corresponds to one execution attempt, not one planned repetition.
@@ -271,6 +300,7 @@ class PlanUnit(StrictModel):
     state: Literal["completed", "incomplete", "not_started"]
     observation_refs: list[str]
     selected_completed_attempt: PositiveInt | None
+    cumulative_telemetry: Telemetry | None
 
 
 # Budget consumption is cumulative across interrupted and resumed attempts.
@@ -287,6 +317,23 @@ class HttpAttemptBudget(StrictModel):
         return self
 
 
+class CodeIdentity(StrictModel):
+    """Record both the checked-out commit and working-tree identity used by a run."""
+
+    commit: GitObjectId
+    tree: GitObjectId
+    dirty: bool
+
+
+class InputIdentities(StrictModel):
+    """Keep the immutable prompt, schema, input, and fixture hashes behind compatibility."""
+
+    prompt_sha256: Sha256
+    response_schema_sha256: Sha256
+    input_sha256: dict[str, Sha256]
+    fixture_sha256: dict[str, Sha256]
+
+
 # Metadata is the authoritative index for plan progress and resume compatibility.
 class RunMetadata(StrictModel):
     artifact_schema: Literal[METADATA_SCHEMA]
@@ -295,7 +342,9 @@ class RunMetadata(StrictModel):
     state: Literal["running", "interrupted", "completed"]
     created_at: str
     updated_at: str
-    compatibility_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+    compatibility_fingerprint: Sha256
+    code_identity: CodeIdentity
+    identities: InputIdentities
     effective_assumed_staples: list[str]
     model: dict[str, Any]
     pricing: dict[str, Any]
@@ -314,14 +363,83 @@ class OutcomeCounts(StrictModel):
     api_error: NonNegativeInt
 
 
+class Percentiles(StrictModel):
+    """Report percentile values together with their sample count and inclusion policy."""
+
+    sample_count: NonNegativeInt
+    incomplete_attempt_policy: Literal["exclude", "include_when_available"]
+    p50_s: OptionalNumber
+    p95_s: OptionalNumber
+
+    @model_validator(mode="after")
+    def check_samples(self) -> Percentiles:
+        """Require percentiles exactly when at least one sample exists."""
+        values_present = self.p50_s.applicability == self.p95_s.applicability == "value"
+        if (self.sample_count > 0) != values_present:
+            raise ValueError("percentile values must match whether samples exist")
+        return self
+
+
+class LatencySummary(StrictModel):
+    revision_s: Percentiles
+    observed_wall_s: Percentiles
+    checkpoint_persistence_s: Percentiles
+
+
+class CaseSummary(StrictModel):
+    """Describe one case's planned repetitions and selected terminal results."""
+
+    case_id: str
+    planned_repetitions: PositiveInt
+    completed_repetitions: NonNegativeInt
+    all_planned_completed: bool
+    outcomes: OutcomeCounts
+
+    @model_validator(mode="after")
+    def check_completion(self) -> CaseSummary:
+        """Keep the completion flag derived from the explicit repetition counts."""
+        if self.completed_repetitions > self.planned_repetitions:
+            raise ValueError("completed repetitions cannot exceed planned repetitions")
+        if self.all_planned_completed != (
+            self.completed_repetitions == self.planned_repetitions
+        ):
+            raise ValueError("case completion flag does not match repetition counts")
+        return self
+
+
+class SemanticSuccess(StrictModel):
+    """Keep semantic success unavailable until a named, versioned definition exists."""
+
+    applicability: Literal["value", "not_applicable"]
+    definition: str | None
+    rate: Rate | None
+
+    @model_validator(mode="after")
+    def check_definition(self) -> SemanticSuccess:
+        """Prevent an unnamed semantic-success value from entering the summary."""
+        if self.applicability == "value":
+            if not self.definition or self.rate is None:
+                raise ValueError("semantic success requires a definition and rate")
+        elif self.definition is not None or self.rate is not None:
+            raise ValueError("inapplicable semantic success cannot carry a definition or rate")
+        return self
+
+
 # Totals include incomplete attempts so interrupted usage is not lost on resume.
 class RunTotals(StrictModel):
     completed_repetitions: NonNegativeInt
     incomplete_attempts: NonNegativeInt
     logical_calls: NonNegativeInt
+    reasks: NonNegativeInt
     http_attempts: NonNegativeInt
+    http_429_retries: NonNegativeInt
+    provider_round_trip_s: OptionalNumber
+    revision_s: OptionalNumber
+    observed_wall_s: OptionalNumber
+    checkpoint_persistence_s: OptionalNumber
+    non_http_remainder_s: OptionalNumber
     tokens: Usage
-    cost_usd: OptionalNumber
+    cost_usd: Cost
 
 
 # JSON summary data is authoritative; any Markdown report is only a projection.
@@ -337,6 +455,11 @@ class RunSummary(StrictModel):
     structural_validity: Rate
     reference_validity: Rate
     explanation_coverage: Rate
+    initial_failure_codes: dict[str, NonNegativeInt]
+    final_failure_codes: dict[str, NonNegativeInt]
+    latency: LatencySummary
+    cases: list[CaseSummary]
+    semantic_success: SemanticSuccess
     totals: RunTotals
 
 

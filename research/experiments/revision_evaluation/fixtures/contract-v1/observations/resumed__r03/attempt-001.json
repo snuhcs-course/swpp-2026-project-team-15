@@ -84,6 +84,8 @@
         {
           "cost_usd": {
             "applicability": "unavailable",
+            "price_inputs": null,
+            "provenance": "missing",
             "value": null
           },
           "counts_against_budget": true,
@@ -127,6 +129,8 @@
     },
     "cost_usd": {
       "applicability": "unavailable",
+      "price_inputs": null,
+      "provenance": "missing",
       "value": null
     },
     "http_429_retries": 0,

@@ -47,6 +47,42 @@
       "title": "AnswerEvaluation",
       "type": "object"
     },
+    "CaseSummary": {
+      "additionalProperties": false,
+      "description": "Describe one case's planned repetitions and selected terminal results.",
+      "properties": {
+        "all_planned_completed": {
+          "title": "All Planned Completed",
+          "type": "boolean"
+        },
+        "case_id": {
+          "title": "Case Id",
+          "type": "string"
+        },
+        "completed_repetitions": {
+          "minimum": 0,
+          "title": "Completed Repetitions",
+          "type": "integer"
+        },
+        "outcomes": {
+          "$ref": "#/$defs/OutcomeCounts"
+        },
+        "planned_repetitions": {
+          "minimum": 1,
+          "title": "Planned Repetitions",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "case_id",
+        "planned_repetitions",
+        "completed_repetitions",
+        "all_planned_completed",
+        "outcomes"
+      ],
+      "title": "CaseSummary",
+      "type": "object"
+    },
     "CheckEvent": {
       "additionalProperties": false,
       "properties": {
@@ -98,6 +134,93 @@
         "message"
       ],
       "title": "CheckEvent",
+      "type": "object"
+    },
+    "CodeIdentity": {
+      "additionalProperties": false,
+      "description": "Record both the checked-out commit and working-tree identity used by a run.",
+      "properties": {
+        "commit": {
+          "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$",
+          "title": "Commit",
+          "type": "string"
+        },
+        "dirty": {
+          "title": "Dirty",
+          "type": "boolean"
+        },
+        "tree": {
+          "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$",
+          "title": "Tree",
+          "type": "string"
+        }
+      },
+      "required": [
+        "commit",
+        "tree",
+        "dirty"
+      ],
+      "title": "CodeIdentity",
+      "type": "object"
+    },
+    "Cost": {
+      "additionalProperties": false,
+      "description": "Preserve whether a cost was observed, estimated, missing, or inapplicable.",
+      "properties": {
+        "applicability": {
+          "enum": [
+            "value",
+            "unavailable",
+            "not_applicable"
+          ],
+          "title": "Applicability",
+          "type": "string"
+        },
+        "price_inputs": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "minimum": 0,
+                "type": "number"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Price Inputs"
+        },
+        "provenance": {
+          "enum": [
+            "measured",
+            "estimated",
+            "missing",
+            "not_applicable"
+          ],
+          "title": "Provenance",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "applicability",
+        "value",
+        "provenance",
+        "price_inputs"
+      ],
+      "title": "Cost",
       "type": "object"
     },
     "DeterministicEvaluation": {
@@ -245,7 +368,7 @@
       "additionalProperties": false,
       "properties": {
         "cost_usd": {
-          "$ref": "#/$defs/OptionalNumber"
+          "$ref": "#/$defs/Cost"
         },
         "counts_against_budget": {
           "const": true,
@@ -389,6 +512,67 @@
         "remaining"
       ],
       "title": "HttpAttemptBudget",
+      "type": "object"
+    },
+    "InputIdentities": {
+      "additionalProperties": false,
+      "description": "Keep the immutable prompt, schema, input, and fixture hashes behind compatibility.",
+      "properties": {
+        "fixture_sha256": {
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Fixture Sha256",
+          "type": "object"
+        },
+        "input_sha256": {
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Input Sha256",
+          "type": "object"
+        },
+        "prompt_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Prompt Sha256",
+          "type": "string"
+        },
+        "response_schema_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Response Schema Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "prompt_sha256",
+        "response_schema_sha256",
+        "input_sha256",
+        "fixture_sha256"
+      ],
+      "title": "InputIdentities",
+      "type": "object"
+    },
+    "LatencySummary": {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint_persistence_s": {
+          "$ref": "#/$defs/Percentiles"
+        },
+        "observed_wall_s": {
+          "$ref": "#/$defs/Percentiles"
+        },
+        "revision_s": {
+          "$ref": "#/$defs/Percentiles"
+        }
+      },
+      "required": [
+        "revision_s",
+        "observed_wall_s",
+        "checkpoint_persistence_s"
+      ],
+      "title": "LatencySummary",
       "type": "object"
     },
     "ModelCall": {
@@ -697,12 +881,55 @@
       "title": "ParsingResult",
       "type": "object"
     },
+    "Percentiles": {
+      "additionalProperties": false,
+      "description": "Report percentile values together with their sample count and inclusion policy.",
+      "properties": {
+        "incomplete_attempt_policy": {
+          "enum": [
+            "exclude",
+            "include_when_available"
+          ],
+          "title": "Incomplete Attempt Policy",
+          "type": "string"
+        },
+        "p50_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "p95_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "sample_count": {
+          "minimum": 0,
+          "title": "Sample Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "sample_count",
+        "incomplete_attempt_policy",
+        "p50_s",
+        "p95_s"
+      ],
+      "title": "Percentiles",
+      "type": "object"
+    },
     "PlanUnit": {
       "additionalProperties": false,
       "properties": {
         "case_id": {
           "title": "Case Id",
           "type": "string"
+        },
+        "cumulative_telemetry": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Telemetry"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "observation_refs": {
           "items": {
@@ -743,7 +970,8 @@
         "repetition",
         "state",
         "observation_refs",
-        "selected_completed_attempt"
+        "selected_completed_attempt",
+        "cumulative_telemetry"
       ],
       "title": "PlanUnit",
       "type": "object"
@@ -883,6 +1111,9 @@
           "title": "Artifact Schema",
           "type": "string"
         },
+        "code_identity": {
+          "$ref": "#/$defs/CodeIdentity"
+        },
         "compatibility_fingerprint": {
           "pattern": "^[0-9a-f]{64}$",
           "title": "Compatibility Fingerprint",
@@ -901,6 +1132,9 @@
         },
         "http_attempt_budget": {
           "$ref": "#/$defs/HttpAttemptBudget"
+        },
+        "identities": {
+          "$ref": "#/$defs/InputIdentities"
         },
         "model": {
           "additionalProperties": true,
@@ -958,6 +1192,8 @@
         "created_at",
         "updated_at",
         "compatibility_fingerprint",
+        "code_identity",
+        "identities",
         "effective_assumed_staples",
         "model",
         "pricing",
@@ -976,6 +1212,13 @@
           "title": "Artifact Schema",
           "type": "string"
         },
+        "cases": {
+          "items": {
+            "$ref": "#/$defs/CaseSummary"
+          },
+          "title": "Cases",
+          "type": "array"
+        },
         "complete": {
           "title": "Complete",
           "type": "boolean"
@@ -983,12 +1226,31 @@
         "explanation_coverage": {
           "$ref": "#/$defs/Rate"
         },
+        "final_failure_codes": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "title": "Final Failure Codes",
+          "type": "object"
+        },
         "generated_at": {
           "title": "Generated At",
           "type": "string"
         },
+        "initial_failure_codes": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "title": "Initial Failure Codes",
+          "type": "object"
+        },
         "json_parse_success": {
           "$ref": "#/$defs/Rate"
+        },
+        "latency": {
+          "$ref": "#/$defs/LatencySummary"
         },
         "observation_refs": {
           "items": {
@@ -1012,6 +1274,9 @@
           "title": "Run Id",
           "type": "string"
         },
+        "semantic_success": {
+          "$ref": "#/$defs/SemanticSuccess"
+        },
         "structural_validity": {
           "$ref": "#/$defs/Rate"
         },
@@ -1031,6 +1296,11 @@
         "structural_validity",
         "reference_validity",
         "explanation_coverage",
+        "initial_failure_codes",
+        "final_failure_codes",
+        "latency",
+        "cases",
+        "semantic_success",
         "totals"
       ],
       "title": "RunSummary",
@@ -1039,13 +1309,21 @@
     "RunTotals": {
       "additionalProperties": false,
       "properties": {
+        "checkpoint_persistence_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
         "completed_repetitions": {
           "minimum": 0,
           "title": "Completed Repetitions",
           "type": "integer"
         },
         "cost_usd": {
-          "$ref": "#/$defs/OptionalNumber"
+          "$ref": "#/$defs/Cost"
+        },
+        "http_429_retries": {
+          "minimum": 0,
+          "title": "Http 429 Retries",
+          "type": "integer"
         },
         "http_attempts": {
           "minimum": 0,
@@ -1062,6 +1340,23 @@
           "title": "Logical Calls",
           "type": "integer"
         },
+        "non_http_remainder_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "observed_wall_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "provider_round_trip_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "reasks": {
+          "minimum": 0,
+          "title": "Reasks",
+          "type": "integer"
+        },
+        "revision_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
         "tokens": {
           "$ref": "#/$defs/Usage"
         }
@@ -1070,11 +1365,60 @@
         "completed_repetitions",
         "incomplete_attempts",
         "logical_calls",
+        "reasks",
         "http_attempts",
+        "http_429_retries",
+        "provider_round_trip_s",
+        "revision_s",
+        "observed_wall_s",
+        "checkpoint_persistence_s",
+        "non_http_remainder_s",
         "tokens",
         "cost_usd"
       ],
       "title": "RunTotals",
+      "type": "object"
+    },
+    "SemanticSuccess": {
+      "additionalProperties": false,
+      "description": "Keep semantic success unavailable until a named, versioned definition exists.",
+      "properties": {
+        "applicability": {
+          "enum": [
+            "value",
+            "not_applicable"
+          ],
+          "title": "Applicability",
+          "type": "string"
+        },
+        "definition": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Definition"
+        },
+        "rate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Rate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "applicability",
+        "definition",
+        "rate"
+      ],
+      "title": "SemanticSuccess",
       "type": "object"
     },
     "SourceRecipeSnapshot": {
@@ -1139,7 +1483,7 @@
           "$ref": "#/$defs/OptionalNumber"
         },
         "cost_usd": {
-          "$ref": "#/$defs/OptionalNumber"
+          "$ref": "#/$defs/Cost"
         },
         "http_429_retries": {
           "minimum": 0,

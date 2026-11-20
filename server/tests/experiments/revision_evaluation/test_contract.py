@@ -8,6 +8,7 @@ import pytest
 from experiments.revision_evaluation.contract import (
     OBSERVATION_SCHEMA,
     ContractVersionError,
+    Cost,
     Observation,
     OptionalNumber,
     Rate,
@@ -129,6 +130,55 @@ def test_null_zero_and_not_applicable_are_distinct():
     assert Rate.model_validate({"numerator": 0, "denominator": 0, "value": None}).value is None
     with pytest.raises(ValidationError):
         OptionalNumber.model_validate({"applicability": "unavailable", "value": 0})
+
+
+def test_cost_provenance_requires_price_inputs_only_for_estimates():
+    measured = Cost.model_validate(
+        {
+            "applicability": "value",
+            "value": 0.25,
+            "provenance": "measured",
+            "price_inputs": None,
+        }
+    )
+    estimated = Cost.model_validate(
+        {
+            "applicability": "value",
+            "value": 0.1,
+            "provenance": "estimated",
+            "price_inputs": {"input_per_million_usd": 0.2},
+        }
+    )
+    assert measured.provenance == "measured"
+    assert estimated.price_inputs == {"input_per_million_usd": 0.2}
+    with pytest.raises(ValidationError, match="estimated cost requires price inputs"):
+        Cost.model_validate(
+            {
+                "applicability": "value",
+                "value": 0.1,
+                "provenance": "estimated",
+                "price_inputs": None,
+            }
+        )
+
+
+def test_frozen_contract_can_represent_required_provenance_and_aggregates():
+    metadata, _, summary = validate_fixture_bundle()
+    resumed = next(unit for unit in metadata.plan if unit.case_id == "resumed")
+    assert metadata.code_identity.commit and metadata.code_identity.tree
+    assert metadata.identities.prompt_sha256 != metadata.identities.response_schema_sha256
+    assert resumed.cumulative_telemetry is not None
+    assert resumed.cumulative_telemetry.http_attempts == 2
+
+    assert summary.initial_failure_codes == {"unexplained_change": 2}
+    assert summary.final_failure_codes == {"unexplained_change": 1}
+    assert summary.latency.revision_s.sample_count == 8
+    assert len(summary.cases) == 8
+    assert all(case.all_planned_completed for case in summary.cases)
+    assert summary.semantic_success.applicability == "not_applicable"
+    assert summary.semantic_success.definition is None
+    assert summary.totals.reasks == 2
+    assert summary.totals.http_429_retries == 1
 
 
 def test_prepared_unknown_request_consumes_http_attempt_budget():

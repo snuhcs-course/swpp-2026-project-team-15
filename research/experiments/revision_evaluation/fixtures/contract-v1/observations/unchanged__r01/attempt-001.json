@@ -152,8 +152,10 @@
       "value": 0.02
     },
     "cost_usd": {
-      "applicability": "value",
-      "value": 0
+      "applicability": "not_applicable",
+      "price_inputs": null,
+      "provenance": "not_applicable",
+      "value": null
     },
     "http_429_retries": 0,
     "http_attempts": 0,

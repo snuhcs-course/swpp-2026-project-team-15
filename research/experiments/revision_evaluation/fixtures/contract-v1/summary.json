@@ -1,16 +1,174 @@
 {
   "artifact_schema": "revision-evaluation-summary/v1",
+  "cases": [
+    {
+      "all_planned_completed": true,
+      "case_id": "unchanged",
+      "completed_repetitions": 1,
+      "outcomes": {
+        "api_error": 0,
+        "check_failed": 0,
+        "refused": 0,
+        "response_error": 0,
+        "revised": 0,
+        "unchanged": 1
+      },
+      "planned_repetitions": 1
+    },
+    {
+      "all_planned_completed": true,
+      "case_id": "revised-after-reask-429",
+      "completed_repetitions": 1,
+      "outcomes": {
+        "api_error": 0,
+        "check_failed": 0,
+        "refused": 0,
+        "response_error": 0,
+        "revised": 1,
+        "unchanged": 0
+      },
+      "planned_repetitions": 1
+    },
+    {
+      "all_planned_completed": true,
+      "case_id": "refused-prescreen",
+      "completed_repetitions": 1,
+      "outcomes": {
+        "api_error": 0,
+        "check_failed": 0,
+        "refused": 1,
+        "response_error": 0,
+        "revised": 0,
+        "unchanged": 0
+      },
+      "planned_repetitions": 1
+    },
+    {
+      "all_planned_completed": true,
+      "case_id": "check-failed",
+      "completed_repetitions": 1,
+      "outcomes": {
+        "api_error": 0,
+        "check_failed": 1,
+        "refused": 0,
+        "response_error": 0,
+        "revised": 0,
+        "unchanged": 0
+      },
+      "planned_repetitions": 1
+    },
+    {
+      "all_planned_completed": true,
+      "case_id": "response-error-json",
+      "completed_repetitions": 1,
+      "outcomes": {
+        "api_error": 0,
+        "check_failed": 0,
+        "refused": 0,
+        "response_error": 1,
+        "revised": 0,
+        "unchanged": 0
+      },
+      "planned_repetitions": 1
+    },
+    {
+      "all_planned_completed": true,
+      "case_id": "response-error-structure",
+      "completed_repetitions": 1,
+      "outcomes": {
+        "api_error": 0,
+        "check_failed": 0,
+        "refused": 0,
+        "response_error": 1,
+        "revised": 0,
+        "unchanged": 0
+      },
+      "planned_repetitions": 1
+    },
+    {
+      "all_planned_completed": true,
+      "case_id": "api-error",
+      "completed_repetitions": 1,
+      "outcomes": {
+        "api_error": 1,
+        "check_failed": 0,
+        "refused": 0,
+        "response_error": 0,
+        "revised": 0,
+        "unchanged": 0
+      },
+      "planned_repetitions": 1
+    },
+    {
+      "all_planned_completed": true,
+      "case_id": "resumed",
+      "completed_repetitions": 1,
+      "outcomes": {
+        "api_error": 0,
+        "check_failed": 0,
+        "refused": 0,
+        "response_error": 0,
+        "revised": 1,
+        "unchanged": 0
+      },
+      "planned_repetitions": 1
+    }
+  ],
   "complete": true,
   "explanation_coverage": {
     "denominator": 2,
     "numerator": 2,
     "value": 1.0
   },
+  "final_failure_codes": {
+    "unexplained_change": 1
+  },
   "generated_at": "2026-11-20T00:00:00Z",
+  "initial_failure_codes": {
+    "unexplained_change": 2
+  },
   "json_parse_success": {
     "denominator": 7,
     "numerator": 6,
     "value": 0.8571428571428571
+  },
+  "latency": {
+    "checkpoint_persistence_s": {
+      "incomplete_attempt_policy": "exclude",
+      "p50_s": {
+        "applicability": "value",
+        "value": 0.02
+      },
+      "p95_s": {
+        "applicability": "value",
+        "value": 0.02
+      },
+      "sample_count": 8
+    },
+    "observed_wall_s": {
+      "incomplete_attempt_policy": "exclude",
+      "p50_s": {
+        "applicability": "value",
+        "value": 0.82
+      },
+      "p95_s": {
+        "applicability": "value",
+        "value": 0.82
+      },
+      "sample_count": 8
+    },
+    "revision_s": {
+      "incomplete_attempt_policy": "exclude",
+      "p50_s": {
+        "applicability": "value",
+        "value": 0.8
+      },
+      "p95_s": {
+        "applicability": "value",
+        "value": 0.8
+      },
+      "sample_count": 8
+    }
   },
   "observation_refs": [
     "observations/unchanged__r01/attempt-001.json",
@@ -38,20 +196,49 @@
     "value": 0.8333333333333334
   },
   "run_id": "contract-v1-fixture",
+  "semantic_success": {
+    "applicability": "not_applicable",
+    "definition": null,
+    "rate": null
+  },
   "structural_validity": {
     "denominator": 6,
     "numerator": 5,
     "value": 0.8333333333333334
   },
   "totals": {
+    "checkpoint_persistence_s": {
+      "applicability": "value",
+      "value": 0.18
+    },
     "completed_repetitions": 8,
     "cost_usd": {
       "applicability": "unavailable",
+      "price_inputs": null,
+      "provenance": "missing",
       "value": null
     },
+    "http_429_retries": 1,
     "http_attempts": 10,
     "incomplete_attempts": 1,
     "logical_calls": 9,
+    "non_http_remainder_s": {
+      "applicability": "unavailable",
+      "value": null
+    },
+    "observed_wall_s": {
+      "applicability": "unavailable",
+      "value": null
+    },
+    "provider_round_trip_s": {
+      "applicability": "value",
+      "value": 2.0
+    },
+    "reasks": 2,
+    "revision_s": {
+      "applicability": "unavailable",
+      "value": null
+    },
     "tokens": {
       "cached_tokens": null,
       "input_tokens": null,
