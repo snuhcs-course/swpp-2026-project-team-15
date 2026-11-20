@@ -37,25 +37,6 @@ fun TitleText(
 }
 
 @Composable
-fun SubtitleText(
-    text: String,
-    modifier: Modifier = Modifier,
-    textAlign: TextAlign? = null,
-    color: Color = Color.Unspecified,
-    overflow: TextOverflow = TextOverflow.Clip
-)
-{
-    BaseText(
-        text = text,
-        style = MaterialTheme.typography.headlineSmall,
-        modifier = modifier,
-        textAlign = textAlign,
-        color = color,
-        overflow = overflow
-    )
-}
-
-@Composable
 fun NormalButtonText(
     text: String,
     modifier: Modifier = Modifier,
@@ -109,36 +90,6 @@ fun NavTabText(
         textAlign = textAlign,
         color = color,
         overflow = overflow
-    )
-}
-
-@Composable
-fun RecipeSubtitleText(
-    text: String
-)
-{
-    BaseText(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        textAlign = TextAlign.Left,
-        color = MaterialTheme.colorScheme.onSurface,
-        overflow = TextOverflow.Clip,
-        modifier = Modifier
-    )
-}
-
-@Composable
-fun RecipeBodyText(
-    text: String
-)
-{
-    BaseText(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium,
-        textAlign = TextAlign.Left,
-        color = MaterialTheme.colorScheme.onSurface,
-        overflow = TextOverflow.Clip,
-        modifier = Modifier
     )
 }
 
