@@ -16,6 +16,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.mylittlechef.domain.DishLinks
+import kotlinx.coroutines.delay
+import java.util.concurrent.atomic.AtomicBoolean
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer as Player
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
@@ -37,6 +39,10 @@ fun YouTubePlayer(videoId: String, modifier: Modifier = Modifier, onError: (Stri
         LaunchedEffect(videoId) { reportError("INVALID_VIDEO_ID") }
         return
     }
+    val ready = remember(videoId) { AtomicBoolean(false) }
+    // The library reports YouTube's errors but not a page that never loads (offline, blocked): without this the
+    // player would just stay blank, where the earlier WebView showed the in-app notice on a load error.
+    LaunchedEffect(videoId) { reportIfNotReady(ready::get, LOAD_TIMEOUT_MS) { reportError("LOAD_TIMEOUT") } }
     val view = remember(videoId) {
         YouTubePlayerView(context).apply {
             enableAutomaticInitialization = false
@@ -46,7 +52,10 @@ fun YouTubePlayer(videoId: String, modifier: Modifier = Modifier, onError: (Stri
                 .origin(DishLinks.EMBED_BASE_URL)
                 .build()
             initialize(object : AbstractYouTubePlayerListener() {
-                override fun onReady(youTubePlayer: Player) = youTubePlayer.cueVideo(videoId, 0f)
+                override fun onReady(youTubePlayer: Player) {
+                    ready.set(true)
+                    youTubePlayer.cueVideo(videoId, 0f)
+                }
                 override fun onError(youTubePlayer: Player, error: PlayerConstants.PlayerError) = reportError(error.name)
             }, options)
         }
@@ -56,4 +65,16 @@ fun YouTubePlayer(videoId: String, modifier: Modifier = Modifier, onError: (Stri
         factory = { view },
         modifier = modifier.fillMaxWidth().aspectRatio(16f / 9f).semantics { contentDescription = "YouTube 영상 플레이어" }
     )
+}
+
+/**
+ * A judgement, not a measurement: long enough for the embed page on a slow mobile connection, short enough that
+ * the notice with the "YouTube에서 열기" button comes before the user gives up on a blank box.
+ */
+const val LOAD_TIMEOUT_MS = 15_000L
+
+/** Reports once when the player has not become ready within [timeoutMs]. */
+suspend fun reportIfNotReady(isReady: () -> Boolean, timeoutMs: Long, report: () -> Unit) {
+    delay(timeoutMs)
+    if (!isReady()) report()
 }
