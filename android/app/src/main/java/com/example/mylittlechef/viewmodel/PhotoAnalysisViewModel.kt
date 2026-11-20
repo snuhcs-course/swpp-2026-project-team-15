@@ -13,6 +13,7 @@ import com.example.mylittlechef.model.Ingredient
 import com.example.mylittlechef.ui.fridge.components.IngredientEditorState
 import kotlinx.coroutines.*
 import retrofit2.HttpException
+import java.io.FileNotFoundException
 import java.io.IOException
 import java.net.SocketTimeoutException
 
@@ -95,6 +96,9 @@ fun photoAnalysisFailure(error: Throwable): String = when {
         503 -> "지금은 인식을 이용하기 어려워요. 잠시 후 다시 시도해 주세요."
         else -> "인식을 완료하지 못했어요. 다시 시도하거나 직접 입력해 주세요."
     }
+    // A picked photo that cannot be opened is a local problem, not the network (emulator E2E, 2026-11-20).
+    error is FileNotFoundException || error is SecurityException ->
+        "사진을 불러올 수 없어요. 다시 고르거나 직접 입력해 주세요."
     error is IOException -> "연결을 확인하고 다시 시도해 주세요. 직접 입력도 가능해요."
     else -> "사진을 확인하지 못했어요. 다시 찍거나 직접 입력해 주세요."
 }
