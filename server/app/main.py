@@ -3,6 +3,7 @@
 # Modified with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
 # Changes: Serve dishes and recognition only; the recipe database and its routes are gone.
 # Modified with Claude Code (Opus 5.5), 2026-11-20: usage data for the beta week (telemetry).
+# Modified with Claude Code (Opus 5.5), 2026-11-20: mount the photo review routes from #23.
 
 """Application factory. Collaborators are injected so tests can replace them.
 
@@ -25,6 +26,7 @@ from app.telemetry.sink import TelemetrySink, build_telemetry_sink
 from app.vision.gemini import REQUEST_TIMEOUT_MS, GeminiVisionProvider
 from app.vision.openrouter import OpenRouterVisionProvider
 from app.vision.providers import FixtureVisionProvider, VisionProvider
+from app.vision.review import router as vision_review_router
 from app.vision.router import router as vision_router
 
 
@@ -41,6 +43,7 @@ def create_app(
     app.state.vision_provider = vision
     app.state.dishes = dishes if dishes is not None else build_dish_parts(Settings.from_env({}))
     app.include_router(vision_router)
+    app.include_router(vision_review_router)  # photo review flow of the app (#23)
     app.include_router(dishes_router)
     app.include_router(ingredients_router)
     app.state.telemetry = telemetry  # None: usage collection is off

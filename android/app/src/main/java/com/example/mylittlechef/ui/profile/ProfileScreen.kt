@@ -1,8 +1,10 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // Pantry profile row added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.ui.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,13 +26,21 @@ import androidx.compose.ui.platform.testTag
 import com.example.mylittlechef.viewmodel.DataResetViewModel
 import com.example.mylittlechef.viewmodel.UsageDataViewModel
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.example.mylittlechef.ui.help.LocalSectionTour
+import com.example.mylittlechef.ui.help.tourAnchor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.example.mylittlechef.ui.help.UsageGuideDialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -89,28 +99,32 @@ fun ProfileContent(
     usageData: UsageDataViewModel? = null
 )
 {
+    val sectionTour=LocalSectionTour.current
+    var showGuide by remember { mutableStateOf(false) }
+    if (showGuide) UsageGuideDialog(onClose = { showGuide = false })
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(
-                horizontal = 29.dp
+                horizontal = 20.dp
             )
     )
     {
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(20.dp))
 
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.Top) {
-            TitleText(text="다시 만나서 반가워요,\n${user.nickname} 님",
+            TitleText(text="내 정보",
                 color=MaterialTheme.colorScheme.onBackground,modifier=Modifier.weight(1f))
             AppearancePicker()
         }
         LocalAppearanceSettings.current.error?.let { Text(it,color=MaterialTheme.colorScheme.error) }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(20.dp))
 
         Column(
-            modifier = modifier
-                .fillMaxSize()
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
         )
         {
@@ -142,9 +156,11 @@ fun ProfileContent(
             }
             ProfileItem(
                 onMoreClick = onEditPantryClick,
+                modifier = Modifier.tourAnchor("profile-pantry"),
                 title = "기본 재료·조미료",
                 contents = listOf(pantrySummary)
             )
+            ProfileItem(onMoreClick = { if(sectionTour!=null) sectionTour.launch() else showGuide = true }, title = "사용 안내", contents = listOf("화면을 보며 앱 둘러보기"))
 
             if (usageData != null) {
                 Spacer(Modifier.height(24.dp))
@@ -221,6 +237,7 @@ fun ProfileItem(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .clickable(onClick = onMoreClick)
     )
     {
         Text(
@@ -248,7 +265,7 @@ fun ProfileItem(
             {
                 Icon(
                     painter = painterResource(R.drawable.ic_more),
-                    contentDescription = "more",
+                    contentDescription = "$title 수정 또는 열기",
                     tint = DeepGreen
                 )
             }

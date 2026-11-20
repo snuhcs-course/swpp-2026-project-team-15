@@ -16,7 +16,7 @@ def test_analyze_rejects_a_broken_image_before_the_model(make_client):
         ("noise.jpg", b"not an image at all", "image/jpeg"),
     ]:
         response = make_client(vision).post("/analyze", files={"image": (name, body, kind)})
-        assert response.status_code == 415, name
+        assert response.status_code == 422, name  # unreadable content (415: declared type)
 
 
 def test_image_check_accepts_the_supported_formats():

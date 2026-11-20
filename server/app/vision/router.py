@@ -27,7 +27,7 @@ router = APIRouter(tags=["vision"])
     operation_id="analyze_photo",
     responses={
         413: {"model": ErrorResponse, "description": "An image or the total upload is too large"},
-        415: {"model": ErrorResponse, "description": "Not a JPEG, PNG, WebP, HEIC or HEIF image"},
+        415: {"model": ErrorResponse, "description": "Not a JPEG, PNG, WebP, HEIC or HEIF upload"},
         422: {"model": ErrorResponse, "description": "No image, empty image or too many images"},
         502: {"model": ErrorResponse, "description": "Recognition failed or returned bad output"},
         503: {"model": ErrorResponse, "description": "Recognition temporarily unavailable; retry"},
@@ -87,7 +87,14 @@ def _read(upload: UploadFile, limit: int) -> ImageInput:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Empty image")
     if not looks_like_image(data):
         # A broken file used to reach the model and come back as 502 (phone test, 2026-11-19).
-        raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "Not a readable image")
+        # Another image format than the supported ones is 415 (as the photo review route of #23
+        # answers); content that is no readable image is 422. The app shows one message for both.
+        kind = filetype.guess(data)
+        if kind is not None and kind.mime.startswith("image/") and kind.mime != "image/png":
+            raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "Unsupported image format")
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "The uploaded file could not be read as a photo"
+        )
     return ImageInput(data, upload.content_type)
 
 

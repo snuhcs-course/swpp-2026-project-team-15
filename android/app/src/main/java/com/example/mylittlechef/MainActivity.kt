@@ -1,6 +1,8 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef
 
+import com.example.mylittlechef.ui.components.StartupIntro
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,7 +27,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             AppearanceSettingsHost {
-                AppNavHost()
+                StartupIntro(coldLaunch=savedInstanceState==null) { AppNavHost() }
                 //Scaffold(modifier = Modifier.fillMaxSize())
                 //{
                 //    innerPadding ->

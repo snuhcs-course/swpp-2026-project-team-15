@@ -1,10 +1,19 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
+// Photo UI navigation motion assisted by Codex, 2026-11-19; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // AI-generated initial navigation scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 // Pantry edit navigation added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
+// Merged with Claude Code (Opus 5.5), 2026-11-20: the recipe tab shows dishes from the YouTube-based
+// server; usage data (screen views), data reset and the usage switch are wired underneath this UI.
 package com.example.mylittlechef.navigation
 
 import androidx.annotation.DrawableRes // drawable 리소스 ID 파라미터 표시
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.padding // 안쪽 여백 (탭 바에 화면이 안 가려지게)
@@ -15,21 +24,27 @@ import androidx.compose.material3.NavigationBarItem // 탭 하나
 import androidx.compose.material3.NavigationBarItemDefaults // 탭 색상 지정
 import androidx.compose.material3.Scaffold // 본문 + 하단바 뼈대
 import androidx.compose.material3.Text // 탭 이름 글자
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue // `by` 문법으로 상태 읽기
 import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mylittlechef.domain.NoTelemetry
 import com.example.mylittlechef.domain.Telemetry
 import com.example.mylittlechef.domain.Usage
 import com.example.mylittlechef.domain.UsageEvent
+import com.example.mylittlechef.viewmodel.DataResetViewModel
+import com.example.mylittlechef.viewmodel.DishViewModel
 import com.example.mylittlechef.viewmodel.UsageDataViewModel
+import androidx.compose.ui.platform.LocalContext
+import com.example.mylittlechef.data.local.localDataStore
+import com.example.mylittlechef.data.local.SectionTourRepository
+import com.example.mylittlechef.ui.help.SectionTourHost
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue // `by` 문법으로 상태 읽기
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color // 투명색 (선택 표시 배경 제거)
 import androidx.compose.ui.res.painterResource // drawable → 그릴 수 있는 형태
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination // 탭 전환 시 시작 지점 찾기
 import androidx.navigation.compose.NavHost // 화면 전환 컨테이너
 import androidx.navigation.compose.composable // 경로에 화면 등록
@@ -43,8 +58,6 @@ import com.example.mylittlechef.ui.dish.DishScreen
 
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.ui.theme.DeepGreen
-import com.example.mylittlechef.viewmodel.DataResetViewModel
-import com.example.mylittlechef.viewmodel.DishViewModel
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
@@ -72,6 +85,7 @@ fun MainScreen(
     modifier: Modifier = Modifier,
     ingredientSuggestions: IngredientSuggestionViewModel? = null,
     onEditPantryClick: () -> Unit = {},
+    onManualAddClick: () -> Unit = onAddIngredientClick,
     dataReset: DataResetViewModel? = null,
     onDataResetDone: () -> Unit = {},
     telemetry: Telemetry = NoTelemetry,
@@ -100,6 +114,14 @@ fun MainScreen(
         if (screen != null) telemetry.track(Usage(UsageEvent.SCREEN_VIEW, screen = screen))
     }
 
+    val store=LocalContext.current.applicationContext.localDataStore
+    val tourRepository=remember(store) { SectionTourRepository(store) }
+    SectionTourHost(tourRepository,currentRoute,automaticEnabled=user.onboardingComplete,navigate={route ->
+        tabNavController.navigate(route) {
+            popUpTo(tabNavController.graph.findStartDestination().id) { saveState=true }
+            launchSingleTop=true;restoreState=true
+        }
+    }) {
     Scaffold(
         modifier = modifier,
         bottomBar = {
@@ -132,7 +154,7 @@ fun MainScreen(
                             selectedTextColor = DeepGreen,
                             unselectedIconColor = GreenGray,
                             unselectedTextColor = GreenGray,
-                            indicatorColor = Color.Transparent // Figma처럼 선택 배경(알약 모양) 제거
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer // Figma처럼 선택 배경(알약 모양) 제거
                         )
                     )
                 }
@@ -144,15 +166,16 @@ fun MainScreen(
             navController = tabNavController,
             startDestination = Routes.FRIDGE,
             modifier = Modifier.padding(innerPadding),
-            enterTransition = { EnterTransition.None },
-            exitTransition = { ExitTransition.None }
+            enterTransition = { fadeIn(tween(130)) },
+            exitTransition = { fadeOut(tween(90)) }
         ) {
             composable(Routes.FRIDGE) {
                 FridgeScreen(
                     user = user,
                     fridge = fridge,
                     ingredientSuggestions = ingredientSuggestions,
-                    onAddIngredientClick = onAddIngredientClick
+                    onAddIngredientClick = onAddIngredientClick,
+                    onManualAddClick = onManualAddClick
                 )
             }
             composable(Routes.RECIPE) {
@@ -175,6 +198,7 @@ fun MainScreen(
                 )
             }
         }
+    }
     }
 }
  

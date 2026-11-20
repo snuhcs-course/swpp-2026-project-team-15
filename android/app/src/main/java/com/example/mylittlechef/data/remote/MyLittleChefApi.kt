@@ -1,3 +1,4 @@
+// HE ingredient/exploration changes assisted by Codex, 2026-11-10; human review pending.
 // Deployed main API wiring assisted by Codex, 2026-11-03; human review pending.
 // Restored and integrated with Codex, 2026-10-29; human review pending.
 // AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
@@ -59,4 +60,5 @@ object ApiClient {
     val api: IngredientSupportApi by lazy { retrofit.create(IngredientSupportApi::class.java) }
 
     val multiImageApi: MultiImageApi by lazy { retrofit.create(MultiImageApi::class.java) }
+    val recognitionReviewApi: RecognitionReviewApi by lazy { retrofit.create(RecognitionReviewApi::class.java) }
 }

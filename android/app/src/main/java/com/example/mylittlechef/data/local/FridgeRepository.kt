@@ -8,6 +8,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.mylittlechef.domain.FridgeInventory
+import com.example.mylittlechef.domain.RemovedInventoryItem
+import com.example.mylittlechef.domain.restoreInventoryNames
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -18,6 +20,9 @@ interface FridgeRepository {
     suspend fun remove(value: String)
     suspend fun removeAll(values: Set<String>) {
         throw UnsupportedOperationException("Bulk removal is not supported")
+    }
+    suspend fun restoreRemoved(items: List<RemovedInventoryItem>) {
+        throw UnsupportedOperationException("Deletion recovery is not supported")
     }
     suspend fun replaceSelection(options: Set<String>, selected: List<String>) {
         throw UnsupportedOperationException("Selection updates are not supported")
@@ -50,6 +55,11 @@ class PreferencesFridgeRepository(private val store: DataStore<Preferences>) : F
     override suspend fun removeAll(values: Set<String>) {
         store.edit { prefs ->
             prefs[key] = gson.toJson(FridgeInventory(read(prefs[key])).removeAll(values).names)
+        }
+    }
+    override suspend fun restoreRemoved(items: List<RemovedInventoryItem>) {
+        store.edit { prefs ->
+            prefs[key] = gson.toJson(restoreInventoryNames(read(prefs[key]), items))
         }
     }
     override suspend fun replaceSelection(options: Set<String>, selected: List<String>) {

@@ -147,14 +147,15 @@ fun DashedButton(
     text: String,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
-    color: Color = Color.Unspecified
+    color: Color = Color.Unspecified,
+    enabled: Boolean = true
 )
 {
     Box(
         modifier = modifier
             .defaultMinSize(minHeight = 48.dp)
             .clip(RoundedCornerShape(15.dp))
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .border(
                 width = 2.dp,
                 color = color,

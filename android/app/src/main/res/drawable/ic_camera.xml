@@ -1,0 +1,7 @@
+<!-- AI-assisted vector icon, 2026-11-09; native drawable, no third-party image. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#00000000" android:strokeColor="#FF000000"
+        android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M4,6.5H7L9,3.5H15L17,6.5H20C21.1,6.5 22,7.4 22,8.5V18C22,19.1 21.1,20 20,20H4C2.9,20 2,19.1 2,18V8.5C2,7.4 2.9,6.5 4,6.5Z M16,13A4,4 0,1 1,8 13A4,4 0,1 1,16 13" />
+</vector>

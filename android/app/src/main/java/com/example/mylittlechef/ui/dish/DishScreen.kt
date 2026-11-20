@@ -1,4 +1,8 @@
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
+// TODO(recipe tab design, merge of #23/#24 on 2026-11-20): this tab still uses the dish screen's own look.
+// Pending team decisions from side-by-side screenshots: card fields and photo-card style (#24), detail
+// layout with the video area, the revision panel, search / other-suggestions / favourites / hide, and the
+// cooking-completion fridge cleanup. Data and behaviour stay as they are (YouTube-based dishes).
 package com.example.mylittlechef.ui.dish
 
 import com.example.mylittlechef.ui.profile.UsageDataCopy

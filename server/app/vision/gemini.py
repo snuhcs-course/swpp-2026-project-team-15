@@ -17,7 +17,10 @@ PROMPT = (
     "List the food items visible in this refrigerator or pantry photo. "
     "For each item give name_raw (label text or description as seen), "
     "category (a generic Korean ingredient name usable in a recipe, e.g. 신라면 -> 라면) "
-    "and confidence between 0 and 1. Omit non-food objects."
+    "and confidence between 0 and 1. Omit non-food objects. "
+    "Report only ingredients visibly identifiable in the supplied image. "
+    "Do not invent ingredients from the room, containers or expected refrigerator contents. "
+    "If the photo has no identifiable food, return an empty list. Omit uncertain guesses."
 )
 
 
@@ -28,7 +31,10 @@ def multi_view_prompt(count: int) -> str:
         "and may overlap. List each distinct food item once, even if it appears in several "
         "photos. For each item give name_raw (label text or description as seen), "
         "category (a generic Korean ingredient name usable in a recipe, e.g. 신라면 -> 라면) "
-        "and confidence between 0 and 1. Omit non-food objects."
+        "and confidence between 0 and 1. Omit non-food objects. "
+        "Report only visibly identifiable ingredients; do not infer food from the scene or "
+        "containers. Return an empty list if no view contains identifiable food. "
+        "Omit uncertain guesses."
     )
 
 
@@ -61,12 +67,13 @@ class GeminiVisionProvider:
 
     def _generate(self, images: Sequence[ImageInput], prompt: str) -> list[DetectedItem]:
         try:
+            parts: list[types.PartUnionDict] = [
+                *(types.Part.from_bytes(data=i.data, mime_type=i.mime_type) for i in images),
+                prompt,
+            ]
             response = self._client.models.generate_content(
                 model=self._model,
-                contents=[
-                    *(types.Part.from_bytes(data=i.data, mime_type=i.mime_type) for i in images),
-                    prompt,
-                ],
+                contents=parts,  # typed: with pillow installed the SDK also accepts PIL images
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     response_schema=self._response_schema,
