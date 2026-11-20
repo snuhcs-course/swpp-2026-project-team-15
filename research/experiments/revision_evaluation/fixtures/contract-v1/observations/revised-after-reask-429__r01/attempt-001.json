@@ -3,8 +3,8 @@
   "case_id": "revised-after-reask-429",
   "checks": [
     {
-      "code": "fixture",
-      "message": "retry",
+      "code": "unexplained_change",
+      "message": "A dropped ingredient has no reason",
       "phase": "initial",
       "result": "violation"
     },
@@ -31,15 +31,90 @@
       }
     ],
     "deleted_ingredient_explanation": {
-      "denominator": 0,
-      "numerator": 0,
-      "value": null
+      "denominator": 1,
+      "numerator": 1,
+      "value": 1.0
     }
   },
   "execution": {
     "checkpoint_revision": 1,
     "checkpoint_stage": "terminal",
     "final_service_response": {
+      "availability": [
+        "owned",
+        "unavailable",
+        "assumed"
+      ],
+      "changes": [
+        {
+          "ingredient_refs": [
+            2
+          ],
+          "kind": "omission",
+          "reason": "대파가 없어서 생략했어요.",
+          "step_refs": [
+            1,
+            2
+          ]
+        }
+      ],
+      "dish_id": "fixture-rice",
+      "error": null,
+      "notice": "AI가 만든 제안이에요. 맛과 알레르기는 직접 확인해 주세요.",
+      "original": {
+        "dish_id": "fixture-rice",
+        "ingredients": [
+          {
+            "amount": "1공기",
+            "name": "밥",
+            "role": "main"
+          },
+          {
+            "amount": "1/4대",
+            "name": "대파",
+            "role": "secondary"
+          },
+          {
+            "amount": "1꼬집",
+            "name": "소금",
+            "role": "seasoning"
+          }
+        ],
+        "servings": 1,
+        "source": "contract_fixture",
+        "steps": [
+          {
+            "n": 1,
+            "text": "대파를 썬다."
+          },
+          {
+            "n": 2,
+            "text": "밥과 함께 볶는다."
+          }
+        ],
+        "tips": []
+      },
+      "refusal_reason": null,
+      "revised": {
+        "ingredients": [
+          {
+            "amount": "1공기",
+            "name": "밥"
+          },
+          {
+            "amount": "1꼬집",
+            "name": "소금"
+          }
+        ],
+        "servings": 1,
+        "steps": [
+          {
+            "n": 1,
+            "text": "밥에 소금을 넣고 볶는다."
+          }
+        ],
+        "tips": []
+      },
       "status": "revised"
     },
     "finished_at": "2026-11-20T00:00:00Z",
@@ -103,8 +178,22 @@
       "decoded_answer": {
         "can_revise": true,
         "changes": [],
-        "ingredients": [],
-        "steps": []
+        "ingredients": [
+          {
+            "amount": "1공기",
+            "name": "밥"
+          },
+          {
+            "amount": "1꼬집",
+            "name": "소금"
+          }
+        ],
+        "refusal_reason": "",
+        "servings": 1,
+        "steps": [
+          "밥에 소금을 넣고 볶는다."
+        ],
+        "tips": []
       },
       "http_attempts": [
         {
@@ -138,7 +227,7 @@
           "prepared_at": "2026-11-20T00:00:00Z",
           "provider_round_trip_s": 0.25,
           "request_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-          "safe_response_text": "{\"can_revise\":true}",
+          "safe_response_text": "{\"can_revise\": true, \"refusal_reason\": \"\", \"servings\": 1, \"ingredients\": [{\"name\": \"밥\", \"amount\": \"1공기\"}, {\"name\": \"소금\", \"amount\": \"1꼬집\"}], \"steps\": [\"밥에 소금을 넣고 볶는다.\"], \"tips\": [], \"changes\": []}",
           "state": "response_received",
           "status_code": 200,
           "usage": {
@@ -169,9 +258,35 @@
     {
       "decoded_answer": {
         "can_revise": true,
-        "changes": [],
-        "ingredients": [],
-        "steps": []
+        "changes": [
+          {
+            "ingredient_refs": [
+              2
+            ],
+            "kind": "omission",
+            "reason": "대파가 없어서 생략했어요.",
+            "step_refs": [
+              1,
+              2
+            ]
+          }
+        ],
+        "ingredients": [
+          {
+            "amount": "1공기",
+            "name": "밥"
+          },
+          {
+            "amount": "1꼬집",
+            "name": "소금"
+          }
+        ],
+        "refusal_reason": "",
+        "servings": 1,
+        "steps": [
+          "밥에 소금을 넣고 볶는다."
+        ],
+        "tips": []
       },
       "http_attempts": [
         {
@@ -187,7 +302,7 @@
           "prepared_at": "2026-11-20T00:00:00Z",
           "provider_round_trip_s": 0.25,
           "request_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-          "safe_response_text": "{\"can_revise\":true}",
+          "safe_response_text": "{\"can_revise\": true, \"refusal_reason\": \"\", \"servings\": 1, \"ingredients\": [{\"name\": \"밥\", \"amount\": \"1공기\"}, {\"name\": \"소금\", \"amount\": \"1꼬집\"}], \"steps\": [\"밥에 소금을 넣고 볶는다.\"], \"tips\": [], \"changes\": [{\"kind\": \"omission\", \"reason\": \"대파가 없어서 생략했어요.\", \"ingredient_refs\": [2], \"step_refs\": [1, 2]}]}",
           "state": "response_received",
           "status_code": 200,
           "usage": {

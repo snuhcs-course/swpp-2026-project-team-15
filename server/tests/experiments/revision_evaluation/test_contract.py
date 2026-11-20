@@ -64,6 +64,50 @@ def test_fixture_bundle_covers_terminal_and_interrupted_paths():
     assert interrupted[0].execution.checkpoint_stage == "request_prepared"
 
 
+def test_successful_revision_fixture_contains_a_checked_meaningful_recipe():
+    value = read_json(
+        fixture_root()
+        / "observations/revised-after-reask-429__r01/attempt-001.json"
+    )
+    initial, final = value["model_calls"]
+    assert initial["decoded_answer"]["changes"] == []
+    initial_text = initial["http_attempts"][1]["safe_response_text"]
+    assert json.loads(initial_text) == initial["decoded_answer"]
+    assert value["checks"][0]["code"] == "unexplained_change"
+    assert final["decoded_answer"]["ingredients"]
+    assert final["decoded_answer"]["steps"]
+    assert final["decoded_answer"]["changes"][0]["ingredient_refs"] == [2]
+    assert all(row["name"] != "대파" for row in final["decoded_answer"]["ingredients"])
+    assert json.loads(final["http_attempts"][0]["safe_response_text"]) == final["decoded_answer"]
+
+    response = value["execution"]["final_service_response"]
+    assert response["revised"]["ingredients"] == final["decoded_answer"]["ingredients"]
+    assert response["changes"] == final["decoded_answer"]["changes"]
+    assert value["deterministic_evaluation"]["deleted_ingredient_explanation"] == {
+        "numerator": 1,
+        "denominator": 1,
+        "value": 1.0,
+    }
+    assert read_json(fixture_root() / "summary.json")["explanation_coverage"] == {
+        "numerator": 2,
+        "denominator": 2,
+        "value": 1.0,
+    }
+
+
+def test_unchanged_fixture_preserves_the_complete_no_call_service_response():
+    value = read_json(fixture_root() / "observations/unchanged__r01/attempt-001.json")
+    response = value["execution"]["final_service_response"]
+    source = value["input"]["original_recipe"]
+    assert value["execution"]["terminal_outcome"] == "unchanged"
+    assert response["status"] == "revised"
+    assert response["changes"] == []
+    assert response["revised"]["ingredients"] == [
+        {"name": row["name"], "amount": row["amount"]} for row in source["ingredients"]
+    ]
+    assert value["model_calls"] == []
+
+
 def test_unknown_contract_version_is_rejected_explicitly():
     value = read_json(fixture_root() / "observations/unchanged__r01/attempt-001.json")
     value["artifact_schema"] = "revision-evaluation-observation/v2"

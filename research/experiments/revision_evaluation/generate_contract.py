@@ -54,6 +54,62 @@ def _recipe() -> dict:
     }
 
 
+def _revised_answer(*, explain_omission: bool = True) -> dict:
+    change = {
+        "kind": "omission",
+        "reason": "대파가 없어서 생략했어요.",
+        "ingredient_refs": [2],
+        "step_refs": [1, 2],
+    }
+    return {
+        "can_revise": True,
+        "refusal_reason": "",
+        "servings": 1,
+        "ingredients": [
+            {"name": "밥", "amount": "1공기"},
+            {"name": "소금", "amount": "1꼬집"},
+        ],
+        "steps": ["밥에 소금을 넣고 볶는다."],
+        "tips": [],
+        "changes": [change] if explain_omission else [],
+    }
+
+
+def _service_response(answer: dict, *, availability=None) -> dict:
+    return {
+        "status": "revised",
+        "dish_id": "fixture-rice",
+        "original": _recipe(),
+        "availability": availability or ["owned", "unavailable", "assumed"],
+        "revised": {
+            "servings": answer["servings"],
+            "ingredients": answer["ingredients"],
+            "steps": [
+                {"n": index, "text": text} for index, text in enumerate(answer["steps"], 1)
+            ],
+            "tips": answer["tips"],
+        },
+        "changes": answer["changes"],
+        "refusal_reason": None,
+        "error": None,
+        "notice": "AI가 만든 제안이에요. 맛과 알레르기는 직접 확인해 주세요.",
+    }
+
+
+def _unchanged_response() -> dict:
+    recipe = _recipe()
+    answer = {
+        "servings": recipe["servings"],
+        "ingredients": [
+            {"name": row["name"], "amount": row["amount"]} for row in recipe["ingredients"]
+        ],
+        "steps": [step["text"] for step in recipe["steps"]],
+        "tips": recipe["tips"],
+        "changes": [],
+    }
+    return _service_response(answer, availability=["owned", "owned", "assumed"])
+
+
 def _request(purpose: str) -> dict:
     return {
         "name": f"revision_{purpose}",
@@ -154,7 +210,9 @@ def _input(availability=None) -> dict:
     }
 
 
-def _evaluation(calls: list[dict], *, structural=True) -> dict:
+def _evaluation(
+    calls: list[dict], *, structural=True, deleted_ingredient_explanation: tuple[int, int] = (0, 0)
+) -> dict:
     answers = []
     for call in calls:
         parsed = call["parsing"]["succeeded"]
@@ -166,12 +224,13 @@ def _evaluation(calls: list[dict], *, structural=True) -> dict:
                 "issues": [] if structural or not parsed else ["missing required fields"],
             }
         )
+    covered, total = deleted_ingredient_explanation
     return {
         "answers": answers,
         "deleted_ingredient_explanation": {
-            "numerator": 0,
-            "denominator": 0,
-            "value": None,
+            "numerator": covered,
+            "denominator": total,
+            "value": covered / total if total else None,
         },
     }
 
@@ -191,6 +250,7 @@ def observation(
     error: str | None = None,
     final_response: dict | None = None,
     availability=None,
+    deleted_ingredient_explanation: tuple[int, int] = (0, 0),
 ) -> dict:
     interrupted = state != "completed"
     value = {
@@ -213,7 +273,11 @@ def observation(
         },
         "model_calls": calls,
         "checks": checks or [],
-        "deterministic_evaluation": _evaluation(calls, structural=structural),
+        "deterministic_evaluation": _evaluation(
+            calls,
+            structural=structural,
+            deleted_ingredient_explanation=deleted_ingredient_explanation,
+        ),
         "telemetry": _telemetry(calls, interrupted=interrupted),
     }
     validate_artifact(value)
@@ -221,13 +285,25 @@ def observation(
 
 
 def fixture_observations() -> dict[str, dict]:
-    revised_answer = {"can_revise": True, "ingredients": [], "steps": [], "changes": []}
+    revised_answer = _revised_answer()
+    unexplained_answer = _revised_answer(explain_omission=False)
     malformed = _call(1, "initial", [_http(1, text="{bad")], None, parsed=False)
     invalid = _call(1, "initial", [_http(1, text="[]")], [], parsed=True)
     first = _call(
-        1, "initial", [_http(1, 429, cost=0), _http(2, text='{"can_revise":true}')], revised_answer
+        1,
+        "initial",
+        [
+            _http(1, 429, cost=0),
+            _http(2, text=json.dumps(unexplained_answer, ensure_ascii=False)),
+        ],
+        unexplained_answer,
     )
-    second = _call(2, "reask", [_http(1, text='{"can_revise":true}')], revised_answer)
+    second = _call(
+        2,
+        "reask",
+        [_http(1, text=json.dumps(revised_answer, ensure_ascii=False))],
+        revised_answer,
+    )
     api_attempt = _http(1, status=503, cost=0)
     api_attempt["state"] = "transport_error"
     api_attempt["delivery"] = "failed"
@@ -237,7 +313,7 @@ def fixture_observations() -> dict[str, dict]:
             "unchanged",
             "no_change",
             [],
-            final_response={"status": "revised"},
+            final_response=_unchanged_response(),
             availability=["owned", "owned", "assumed"],
         ),
         "revised-after-reask-429__r01/attempt-001.json": observation(
@@ -246,10 +322,16 @@ def fixture_observations() -> dict[str, dict]:
             "model",
             [first, second],
             checks=[
-                {"phase": "initial", "result": "violation", "code": "fixture", "message": "retry"},
+                {
+                    "phase": "initial",
+                    "result": "violation",
+                    "code": "unexplained_change",
+                    "message": "A dropped ingredient has no reason",
+                },
                 {"phase": "final", "result": "passed", "code": None, "message": None},
             ],
-            final_response={"status": "revised"},
+            final_response=_service_response(revised_answer),
+            deleted_ingredient_explanation=(1, 1),
         ),
         "refused-prescreen__r01/attempt-001.json": observation(
             "refused-prescreen",
@@ -263,12 +345,32 @@ def fixture_observations() -> dict[str, dict]:
             "check_failed",
             "production_check",
             [
-                _call(1, "initial", [_http(1)], revised_answer),
-                _call(2, "reask", [_http(1)], revised_answer),
+                _call(
+                    1,
+                    "initial",
+                    [_http(1, text=json.dumps(unexplained_answer, ensure_ascii=False))],
+                    unexplained_answer,
+                ),
+                _call(
+                    2,
+                    "reask",
+                    [_http(1, text=json.dumps(unexplained_answer, ensure_ascii=False))],
+                    unexplained_answer,
+                ),
             ],
             checks=[
-                {"phase": "initial", "result": "violation", "code": "fixture", "message": "bad"},
-                {"phase": "final", "result": "violation", "code": "fixture", "message": "bad"},
+                {
+                    "phase": "initial",
+                    "result": "violation",
+                    "code": "unexplained_change",
+                    "message": "A dropped ingredient has no reason",
+                },
+                {
+                    "phase": "final",
+                    "result": "violation",
+                    "code": "unexplained_change",
+                    "message": "A dropped ingredient has no reason",
+                },
             ],
             final_response={"status": "failed"},
         ),
@@ -308,10 +410,18 @@ def fixture_observations() -> dict[str, dict]:
             "resumed",
             "revised",
             "model",
-            [_call(1, "initial", [_http(1)], revised_answer)],
+            [
+                _call(
+                    1,
+                    "initial",
+                    [_http(1, text=json.dumps(revised_answer, ensure_ascii=False))],
+                    revised_answer,
+                )
+            ],
             execution_attempt=2,
             checkpoint_revision=4,
-            final_response={"status": "revised"},
+            final_response=_service_response(revised_answer),
+            deleted_ingredient_explanation=(1, 1),
         ),
     }
 
@@ -396,6 +506,14 @@ def fixture_summary(observations: dict[str, dict]) -> dict:
         if finding["structure_valid"] is not None
     )
     total_attempts = sum(v["telemetry"]["http_attempts"] for v in observations.values())
+    explanation_numerator = sum(
+        value["deterministic_evaluation"]["deleted_ingredient_explanation"]["numerator"]
+        for value in observations.values()
+    )
+    explanation_denominator = sum(
+        value["deterministic_evaluation"]["deleted_ingredient_explanation"]["denominator"]
+        for value in observations.values()
+    )
     value = {
         "artifact_schema": SUMMARY_SCHEMA,
         "observation_schema": OBSERVATION_SCHEMA,
@@ -419,7 +537,13 @@ def fixture_summary(observations: dict[str, dict]) -> dict:
             "denominator": len(parsed),
             "value": structurally_valid / len(parsed),
         },
-        "explanation_coverage": {"numerator": 0, "denominator": 0, "value": None},
+        "explanation_coverage": {
+            "numerator": explanation_numerator,
+            "denominator": explanation_denominator,
+            "value": explanation_numerator / explanation_denominator
+            if explanation_denominator
+            else None,
+        },
         "totals": {
             "completed_repetitions": len(completed),
             "incomplete_attempts": len(observations) - len(completed),

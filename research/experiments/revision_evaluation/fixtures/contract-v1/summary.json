@@ -2,9 +2,9 @@
   "artifact_schema": "revision-evaluation-summary/v1",
   "complete": true,
   "explanation_coverage": {
-    "denominator": 0,
-    "numerator": 0,
-    "value": null
+    "denominator": 2,
+    "numerator": 2,
+    "value": 1.0
   },
   "generated_at": "2026-11-20T00:00:00Z",
   "json_parse_success": {
