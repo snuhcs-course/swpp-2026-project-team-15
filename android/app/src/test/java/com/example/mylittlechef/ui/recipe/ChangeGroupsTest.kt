@@ -1,5 +1,5 @@
 // AI-generated with Claude Code (Opus 5.5), 2026-11-19; reviewed by Jaehyuk Choi.
-package com.example.mylittlechef.ui.dish
+package com.example.mylittlechef.ui.recipe
 
 import com.example.mylittlechef.domain.ChangeKind
 import com.example.mylittlechef.domain.RecipeChange

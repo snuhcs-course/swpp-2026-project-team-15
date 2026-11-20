@@ -75,6 +75,9 @@ import com.example.mylittlechef.domain.UsageEvent
 import com.example.mylittlechef.ui.profile.UsageDataNotice
 import com.example.mylittlechef.viewmodel.DataResetViewModel
 import com.example.mylittlechef.viewmodel.UsageDataViewModel
+import com.example.mylittlechef.data.local.PreferencesFavoriteDishes
+import com.example.mylittlechef.ui.recipe.RecipeDetailScreen
+import com.example.mylittlechef.viewmodel.DishViewModel
 
 @Composable
 fun AppNavHost(
@@ -124,6 +127,15 @@ fun AppNavHost(
         }
     }
     val dataReset: DataResetViewModel = viewModel(factory = dataResetFactory)
+    // The dish list and the detail route share one: the detail shows the dish the list holds.
+    val dishFactory = remember(store, telemetry) {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                DishViewModel(telemetry = telemetry, favoriteStore = PreferencesFavoriteDishes(store)) as T
+        }
+    }
+    val dishes: DishViewModel = viewModel(factory = dishFactory)
 
     // Wait for persisted data before choosing the first screen or fetching recommendations.
     if (!user.isLoaded || !fridge.isLoaded) return
@@ -188,6 +200,8 @@ fun AppNavHost(
                 dataReset = dataReset,
                 telemetry = telemetry,
                 usageData = usageData,
+                dishViewModel = dishes,
+                onDishClick = { id -> navController.navigate(Routes.recipeDetailRoute(id)) },
                 onDataResetDone = {
                     // Like a fresh install: the first screen again, and Back cannot return to the old data.
                     navController.navigate(Routes.ONBOARDING) {
@@ -267,6 +281,40 @@ fun AppNavHost(
                 onSaveClick = {
                     navController.popBackStack(Routes.MAIN, inclusive = false)
                 }
+            )
+        }
+
+        composable(
+            route = "${Routes.RECIPE_DETAIL}/{${Routes.ARG_DISH_ID}}",
+            arguments = listOf(navArgument(Routes.ARG_DISH_ID) { type = NavType.StringType })
+        ) { entry ->
+            val id = entry.arguments?.getString(Routes.ARG_DISH_ID).orEmpty()
+            val dish = dishes.dishById(id)
+            if (dish == null) {
+                LaunchedEffect(id) { navController.popBackStack() }
+                return@composable
+            }
+            DisposableEffect(id) {
+                dishes.selectDish(id)
+                onDispose { dishes.selectDish(null) }
+            }
+            LaunchedEffect(id) {
+                dishes.requestVideos(dish)
+                if (dish.hasRecipe) dishes.recipes.requestRecipe(id)
+            }
+            RecipeDetailScreen(
+                dish = dish,
+                liked = dishes.isFavorite(id),
+                recipe = dishes.recipes.recipeState(id),
+                revision = dishes.recipes.reviseState(id),
+                videos = dishes.videoState(id),
+                fridge = fridge,
+                onBackClick = { navController.popBackStack() },
+                onLikeClick = { dishes.toggleFavorite(dish) },
+                onRetryRecipe = { dishes.recipes.requestRecipe(id) },
+                onRevise = { dishes.recipes.requestRevision(id) },
+                onRetryVideos = { dishes.requestVideos(dish) },
+                onPlayerError = { dishes.onPlayerError(id) }
             )
         }
 

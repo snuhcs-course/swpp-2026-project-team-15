@@ -54,7 +54,7 @@ import com.example.mylittlechef.R
 import com.example.mylittlechef.ui.components.NavTabText
 import com.example.mylittlechef.ui.fridge.FridgeScreen
 import com.example.mylittlechef.ui.profile.ProfileScreen
-import com.example.mylittlechef.ui.dish.DishScreen
+import com.example.mylittlechef.ui.recipe.RecipeScreen
 
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.ui.theme.DeepGreen
@@ -89,7 +89,9 @@ fun MainScreen(
     dataReset: DataResetViewModel? = null,
     onDataResetDone: () -> Unit = {},
     telemetry: Telemetry = NoTelemetry,
-    usageData: UsageDataViewModel? = null
+    usageData: UsageDataViewModel? = null,
+    dishViewModel: DishViewModel? = null,
+    onDishClick: (String) -> Unit = {}
 ) {
     // 요리 추천 탭의 상태. 탭을 오가거나 화면을 돌려도 유지되도록 이 화면 단위로 만든다
     val dishFactory = remember(telemetry) {
@@ -98,7 +100,8 @@ fun MainScreen(
             override fun <T : ViewModel> create(modelClass: Class<T>): T = DishViewModel(telemetry = telemetry) as T
         }
     }
-    val dishes: DishViewModel = viewModel(factory = dishFactory)
+    // The app passes its own (the detail route reads the same one); previews and tests get their own here.
+    val dishes: DishViewModel = dishViewModel ?: viewModel(factory = dishFactory)
     // 탭 전환만 담당하는 NavController (최상위 NavController와 별개)
     val tabNavController = rememberNavController()
     // 현재 보고 있는 탭의 경로. 바뀔 때마다 탭 바가 다시 그려진다
@@ -179,7 +182,7 @@ fun MainScreen(
                 )
             }
             composable(Routes.RECIPE) {
-                DishScreen(user = user, fridge = fridge, dishes = dishes)
+                RecipeScreen(fridge = fridge, dishes = dishes, onDishClick = { onDishClick(it.id) })
             }
             composable(Routes.PROFILE) {
                 ProfileScreen(

@@ -1,5 +1,5 @@
 // Photo-led UI regressions assisted by Codex, 2026-11-19; human review pending.
-// Modified with Claude Code (Opus 5.5), 2026-11-20: recipe-card/detail cases parked (see TODO).
+// Modified with Claude Code (Opus 5.5), 2026-11-20: recipe-card cases moved to ui/recipe.
 package com.example.mylittlechef.ui.design
 
 import androidx.compose.ui.test.*
@@ -30,7 +30,6 @@ class PhotoUiRegressionTest {
         rule.onNodeWithTag("fridge-ingredient-두부").assertIsDisplayed()
         rule.onNodeWithTag("fridge-ingredient-계란").assertIsDisplayed()
     }
-    // TODO(recipe tab design): the photo-card and detail regressions of #24 return once the team picks the
-    // recipe tab's look on the YouTube-based dishes (merge 2026-11-20); they targeted the removed Recipe
-    // model and RecipeCard/RecipeDetailScreen.
+    // The photo-card and bookmark checks of #24 now live in ui/recipe/RecipeCardInteractionTest on the
+    // YouTube-based dishes (2026-11-20); the old Recipe model they targeted is gone.
 }

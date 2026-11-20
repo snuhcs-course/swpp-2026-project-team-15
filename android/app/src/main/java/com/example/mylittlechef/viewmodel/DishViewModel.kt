@@ -1,5 +1,6 @@
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
 // Usage events (dish_list, dish_open, player_error) added with Claude Code (Opus 5.5), 2026-11-20.
+// Bookmarks, hide-for-this-list and in-list search for the #24 recipe UI added with Claude Code (Opus 5.5), 2026-11-20.
 package com.example.mylittlechef.viewmodel
 
 import androidx.compose.runtime.getValue
@@ -8,6 +9,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mylittlechef.data.local.FavoriteDish
+import com.example.mylittlechef.data.local.FavoriteDishes
+import com.example.mylittlechef.data.local.InMemoryFavoriteDishes
 import com.example.mylittlechef.data.remote.DishApi
 import com.example.mylittlechef.data.remote.DishApiClient
 import com.example.mylittlechef.data.remote.DishRecipeApi
@@ -52,7 +56,8 @@ class DishViewModel(
     private val api: DishApi = DishApiClient.api,
     private val debounceMillis: Long = 400L,
     recipeApi: DishRecipeApi = DishApiClient.recipeApi,
-    private val telemetry: Telemetry = NoTelemetry
+    private val telemetry: Telemetry = NoTelemetry,
+    private val favoriteStore: FavoriteDishes = InMemoryFavoriteDishes()
 ) : ViewModel() {
     /** The recipe sheet and the revision of a dish; kept next to the dish list it opens from. */
     val recipes = DishRecipeSession(recipeApi, viewModelScope, telemetry) { lastNames.orEmpty() }
@@ -73,6 +78,65 @@ class DishViewModel(
     private var rawSource = ""
 
     fun videoState(dishId: String): VideoUiState? = videoStates[dishId]
+
+    /** Bookmarked dishes, kept on the phone (the server has no account to keep them). */
+    var favorites by mutableStateOf<List<FavoriteDish>>(emptyList())
+        private set
+    /** Dishes hidden from this suggestion list only; a new list shows them again. */
+    var hiddenIds by mutableStateOf<Set<String>>(emptySet())
+        private set
+    var lastHidden by mutableStateOf<String?>(null)
+        private set
+
+    init {
+        viewModelScope.launch { favoriteStore.dishes.collect { favorites = it } }
+    }
+
+    fun isFavorite(id: String) = favorites.any { it.id == id }
+
+    /** True when the dish is in the current suggestions, so its missing list is known. */
+    fun isSuggested(id: String) = rawDishes.any { it.id == id }
+
+    fun toggleFavorite(dish: Dish) {
+        viewModelScope.launch {
+            if (isFavorite(dish.id)) favoriteStore.remove(dish.id)
+            else favoriteStore.add(FavoriteDish(dish.id, dish.name, dish.thumbnailUrl))
+        }
+    }
+
+    fun hide(id: String) {
+        hiddenIds = hiddenIds + id
+        lastHidden = id
+    }
+
+    fun undoHide() {
+        val id = lastHidden ?: return
+        hiddenIds = hiddenIds - id
+        lastHidden = null
+    }
+
+    /** The suggested dishes to show: not hidden, and whose name contains [query] (search within this list). */
+    fun visibleSuggestions(query: String): List<Dish> {
+        val current = (state as? DishUiState.Success)?.dishes.orEmpty()
+        val q = query.trim()
+        return current.filter { it.id !in hiddenIds && (q.isEmpty() || it.name.contains(q, ignoreCase = true)) }
+    }
+
+    /** Bookmarks as dishes: the current suggestion when it has one, else a card from what was kept. */
+    fun favoriteDishes(): List<Dish> {
+        val current = rawDishes.associateBy { it.id }
+        return favorites.map { saved -> current[saved.id] ?: saved.asDish() }
+    }
+
+    /** The dish a detail screen shows, from the suggestions or the bookmarks. */
+    fun dishById(id: String): Dish? =
+        rawDishes.firstOrNull { it.id == id } ?: favorites.firstOrNull { it.id == id }?.asDish()
+
+    private fun FavoriteDish.asDish() = Dish(
+        id = id, name = name, category = "", have = emptyList(), missing = emptyList(), reason = "",
+        searchUrl = com.example.mylittlechef.domain.DishLinks.safeSearchUrl(null, name),
+        hasRecipe = true, thumbnailUrl = thumbnailUrl
+    )
 
     fun selectDish(id: String?) {
         if (id != null && id != selectedDishId) telemetry.track(Usage(UsageEvent.DISH_OPEN, dishId = id))
@@ -108,6 +172,8 @@ class DishViewModel(
         rawDishes = emptyList()
         rawSource = ""
         selectedDishId = null
+        hiddenIds = emptySet()
+        lastHidden = null
         state = DishUiState.EmptyFridge
     }
 
@@ -120,6 +186,8 @@ class DishViewModel(
         val mine = ++generation
         job?.cancel()
         recipes.clear()
+        hiddenIds = emptySet()
+        lastHidden = null
         if (names.isEmpty()) {
             rawDishes = emptyList()
             state = DishUiState.EmptyFridge
