@@ -11,6 +11,7 @@ from app.vision.providers import ImageInput
 from app.vision.schemas import AnalyzeResponse
 from app.vision.service import detect_images, to_candidates, unique_raw_texts
 
+HEIF_BRANDS = {b"heic", b"heix", b"hevc", b"hevx", b"heim", b"heis", b"mif1", b"msf1"}
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 MAX_IMAGE_BYTES = 16 * 1024 * 1024
 # Several views are one request body; keep their total below the 16 MiB proxy limit.
@@ -94,6 +95,9 @@ def looks_like_image(data: bytes) -> bool:
     """A cheap structural check before any model call: the file's signature is a JPEG, PNG, WebP or
     HEIC/HEIF (filetype), and a PNG also has its end chunk (a cut-off PNG lacks it). No decoding."""
     kind = filetype.guess(data)
-    if kind is None or kind.mime not in SUPPORTED_IMAGE_TYPES:
+    if kind is None:
+        # filetype knows only some HEIF brands; phones also write these (not mp4 or avif).
+        return data[4:8] == b"ftyp" and data[8:12] in HEIF_BRANDS
+    if kind.mime not in SUPPORTED_IMAGE_TYPES:
         return False
     return kind.mime != "image/png" or b"IEND" in data[-64:]
