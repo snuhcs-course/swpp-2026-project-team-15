@@ -25,6 +25,8 @@ dev = [
     "pytest-cov>=7.1.0",
     "python-dotenv>=1.0,<2",
     "ruff>=0.17.0",
+    "scikit-learn>=1.9,<1.10",
+    "statsmodels>=0.15,<0.16",
     "types-cachetools>=7.0.0.20260713",
 ]
 

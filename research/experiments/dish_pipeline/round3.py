@@ -14,6 +14,8 @@ import random
 import re
 from statistics import median
 
+from sklearn.metrics import cohen_kappa_score  # Cohen (1960), the textbook formula
+
 ID_RE = re.compile(r"(?:v=|youtu\.be/|/embed/|/shorts/)([A-Za-z0-9_-]{11})")
 DUR_RE = re.compile(r"^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$")
 HANGUL = re.compile("[가-힣]")
@@ -144,10 +146,10 @@ def cohen_kappa(a: list[bool], b: list[bool]) -> float | None:
     n = len(a)
     if n == 0 or n != len(b):
         return None
-    po = sum(x == y for x, y in zip(a, b, strict=True)) / n
     pa, pb = sum(a) / n, sum(b) / n
-    pe = pa * pb + (1 - pa) * (1 - pb)
-    return None if pe == 1 else (po - pe) / (1 - pe)
+    if pa * pb + (1 - pa) * (1 - pb) == 1:  # chance agreement is total: kappa is undefined
+        return None
+    return float(cohen_kappa_score(a, b))
 
 
 def quartiles(xs: list[float]) -> tuple[float, float, float] | None:
