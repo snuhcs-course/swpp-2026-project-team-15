@@ -118,6 +118,13 @@ class ObservationInput(StrictModel):
     availability: list[Literal["owned", "assumed", "unavailable"]]
     original_recipe: SourceRecipeSnapshot
 
+    @model_validator(mode="after")
+    def check_availability_rows(self) -> ObservationInput:
+        """Keep one availability decision for every preserved source ingredient row."""
+        if len(self.availability) != len(self.original_recipe.ingredients):
+            raise ValueError("availability must align with source ingredient rows")
+        return self
+
 
 # Keep both auditable safe content and a stable identity for compatibility checks.
 class RequestSnapshot(StrictModel):
@@ -293,10 +300,20 @@ class Observation(StrictModel):
     def check_attempt_counts(self) -> Observation:
         """Ensure telemetry counts the exact logical calls and durable HTTP identities."""
         attempts = [attempt for call in self.model_calls for attempt in call.http_attempts]
+        if [call.index for call in self.model_calls] != list(
+            range(1, len(self.model_calls) + 1)
+        ):
+            raise ValueError("logical calls must be one-based and contiguous")
         if self.telemetry.logical_calls != len(self.model_calls):
             raise ValueError("logical-call telemetry does not match model_calls")
+        reasks = sum(call.purpose == "reask" for call in self.model_calls)
+        if self.telemetry.reasks != reasks:
+            raise ValueError("re-ask telemetry does not match model_calls")
         if self.telemetry.http_attempts != len(attempts):
             raise ValueError("HTTP-attempt telemetry must include prepared requests")
+        retries_429 = sum(attempt.status_code == 429 for attempt in attempts)
+        if self.telemetry.http_429_retries != retries_429:
+            raise ValueError("HTTP 429 telemetry does not match HTTP attempts")
         for call in self.model_calls:
             if [attempt.index for attempt in call.http_attempts] != list(
                 range(1, len(call.http_attempts) + 1)

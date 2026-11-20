@@ -246,6 +246,36 @@ def test_http_attempt_numbers_are_contiguous_per_logical_call():
         Observation.model_validate(value)
 
 
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (
+            lambda value: value["input"]["availability"].pop(),
+            "availability must align",
+        ),
+        (
+            lambda value: value["model_calls"][1].update(index=1),
+            "logical calls must be one-based and contiguous",
+        ),
+        (
+            lambda value: value["telemetry"].update(reasks=99),
+            "re-ask telemetry does not match",
+        ),
+        (
+            lambda value: value["telemetry"].update(http_429_retries=0),
+            "HTTP 429 telemetry does not match",
+        ),
+    ],
+)
+def test_observation_rejects_cross_field_count_mismatches(mutate, message):
+    value = read_json(
+        fixture_root() / "observations/revised-after-reask-429__r01/attempt-001.json"
+    )
+    mutate(value)
+    with pytest.raises(ValidationError, match=message):
+        Observation.model_validate(value)
+
+
 def test_fixture_only_consumer_can_find_judge_source_fields_without_runner_imports():
     # Deliberately use dictionaries here: the Judge contract is JSON, not Python models.
     root = fixture_root()
