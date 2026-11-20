@@ -110,6 +110,7 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.android.youtube.player)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.androidx.datastore.preferences)

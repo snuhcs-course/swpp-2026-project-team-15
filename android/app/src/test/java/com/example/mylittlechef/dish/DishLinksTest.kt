@@ -24,24 +24,6 @@ class DishLinksTest {
         )
     }
 
-    @Test fun playerPageHostsTheIframePlayerAtFullSizeAndReportsErrors() {
-        val html = DishLinks.playerHtml("dQw4w9WgXcQ")
-        assertTrue(html.contains("videoId:'dQw4w9WgXcQ'"))
-        assertTrue(html.contains("https://www.youtube.com/iframe_api"))
-        assertTrue(html.contains("html,body,#p{margin:0;width:100%;height:100%"))
-        assertTrue(html.contains("origin:'${DishLinks.EMBED_BASE_URL}'"))
-        assertTrue(html.contains("${DishLinks.PLAYER_BRIDGE}.onError("))
-        assertTrue(DishLinks.EMBED_PAGE_URL.startsWith(DishLinks.EMBED_BASE_URL))
-    }
-
-    @Test fun playerPageRefusesAnInvalidVideoId() {
-        val bad = listOf("", "short", "dQw4w9WgXcQ');alert(1);//")
-        bad.forEach { id ->
-            val failed = runCatching { DishLinks.playerHtml(id) }.isFailure
-            assertTrue("accepted $id", failed)
-        }
-    }
-
     @Test fun serverSearchLinkIsUsedOnlyForHttpsYouTube() {
         val ok = "https://www.youtube.com/results?search_query=%EA%B9%80%EC%B9%98"
         assertEquals(ok, DishLinks.safeSearchUrl(ok, "김치볶음밥"))
