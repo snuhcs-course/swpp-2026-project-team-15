@@ -30,3 +30,29 @@ def test_nginx_limits_only_the_usage_upload():
     assert "limit_req" not in general
     assert "limit_req zone=telemetry" in conf.split("location = /telemetry/events {", 1)[1]
     assert "client_max_body_size 16m;" in conf and "proxy_read_timeout 210s;" in conf
+
+
+def test_release_script_deploys_the_database_free_stack():
+    # Auto-deploy kept from main (2026-11-20) and adapted: keys, data and usage file live outside
+    # the release checkout, only api and nginx are (re)started, and an old postgres is left alone.
+    script = (ROOT / "deploy/release.sh").read_text(encoding="utf-8")
+    assert "set -euo pipefail" in script
+    for setting in (
+        'RUNTIME_ENV="$ROOT/config/runtime-dishes.env"',
+        'DISH_DATA_DIR="$ROOT/data/dish-data"',
+        'TELEMETRY_DIR="$ROOT/data/telemetry"',
+        "HTTP_PORT=80",
+    ):
+        assert setting in script
+    code = "\n".join(line for line in script.splitlines() if not line.lstrip().startswith("#"))
+    candidate = code.split("for attempt", 1)[0]
+    assert "postgres" not in candidate and "DATABASE" not in candidate
+    assert "docker compose up -d --no-deps api" in candidate
+    assert "--remove-orphans" not in script and " down" not in script
+
+
+def test_auto_deploy_runs_the_release_script_for_green_main_pushes():
+    workflow = (ROOT / ".github/workflows/deploy.yml").read_text(encoding="utf-8")
+    assert "workflows: [ci]" in workflow and "branches: [main]" in workflow
+    assert 'bash "$path/deploy/release.sh" "$sha"' in workflow
+    assert "merge-base --is-ancestor" in workflow

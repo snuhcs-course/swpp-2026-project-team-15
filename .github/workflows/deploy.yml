@@ -1,0 +1,41 @@
+name: deploy
+on:
+  workflow_run:
+    workflows: [ci]
+    branches: [main]
+    types: [completed]
+permissions:
+  contents: read
+concurrency:
+  group: oracle-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy verified main revision to Oracle ARM
+        env:
+          DEPLOY_KEY: ${{ secrets.ORACLE_DEPLOY_KEY }}
+          KNOWN_HOSTS: ${{ secrets.ORACLE_KNOWN_HOSTS }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          trap 'rm -f ~/.ssh/deploy_key' EXIT
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes ubuntu@158.101.141.165 "bash -s -- $SOURCE_SHA" <<'REMOTE'
+          set -euo pipefail
+          sha=$1
+          [[ $sha =~ ^[a-f0-9]{40}$ ]]
+          path="/opt/mylittlechef/releases/$sha"
+          if [[ ! -d "$path/.git" ]]; then
+            git clone https://github.com/snuhcs-course/swpp-2026-project-team-15.git "$path"
+          fi
+          git -C "$path" fetch origin main
+          git -C "$path" merge-base --is-ancestor "$sha" origin/main
+          git -C "$path" checkout --detach "$sha"
+          bash "$path/deploy/release.sh" "$sha"
+          REMOTE
