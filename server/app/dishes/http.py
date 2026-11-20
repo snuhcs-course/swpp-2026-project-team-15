@@ -5,7 +5,6 @@
 import time
 from collections.abc import Callable
 
-import httpx
 from tenacity import (
     RetryCallState,
     Retrying,
@@ -54,32 +53,3 @@ def retry_while[T](
         retry_error_callback=lambda state: state.outcome.result() if state.outcome else None,
     )
     return retrying(lambda: attempt(left()))
-
-
-def post_with_retry(
-    client: httpx.Client,
-    url: str,
-    payload: dict,
-    headers: dict[str, str],
-    *,
-    waits: tuple[float, ...] = RETRY_WAITS,
-    sleep: Callable[[float], None] = time.sleep,
-    budget: float | None = None,
-    clock: Callable[[], float] = time.monotonic,
-) -> httpx.Response:
-    """POST, retrying after a 429; every attempt may take only the time that is left."""
-
-    def attempt(remaining: float | None) -> httpx.Response:
-        if remaining is None:
-            return client.post(url, json=payload, headers=headers)
-        timeout = min(remaining, client.timeout.read or remaining)
-        return client.post(url, json=payload, headers=headers, timeout=timeout)
-
-    return retry_while(
-        attempt,
-        lambda r: r.status_code == 429,
-        waits=waits,
-        sleep=sleep,
-        budget=budget,
-        clock=clock,
-    )

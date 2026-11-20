@@ -29,7 +29,10 @@ from experiments.dish_recipes.verify_videos import (
     to_video,
 )
 
-from app.dishes.video_search import OPENROUTER, WEB_MODEL, extract_ids, video_request
+from app.dishes.video_search import WEB_MODEL, extract_ids, video_messages
+from app.openrouter import OPENROUTER_BASE_URL
+
+OPENROUTER = f"{OPENROUTER_BASE_URL}/chat/completions"
 
 
 def path_arg(flag: str) -> Path:
@@ -100,7 +103,7 @@ def d0(key: str, name: str) -> tuple[list[str], float, str | None]:
     with httpx.Client(timeout=120) as c:
         r = c.post(
             OPENROUTER,
-            json=video_request(WEB_MODEL, name),
+            json={"model": WEB_MODEL, "temperature": 0, "messages": video_messages(name)},
             headers={"Authorization": f"Bearer {key}"},
         )
     if r.status_code != 200:

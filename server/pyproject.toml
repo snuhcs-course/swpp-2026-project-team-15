@@ -8,6 +8,7 @@ dependencies = [
     "fastapi>=0.143.0",
     "google-genai>=2.29.0",
     "httpx>=0.28.1",
+    "openai>=2.54,<3",
     "pydantic-settings>=2.10",
     "python-multipart>=0.0.32",
     "tenacity>=9.0",

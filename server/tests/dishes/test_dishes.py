@@ -722,38 +722,42 @@ def test_ties_keep_the_model_order(catalog):
 
 def test_retry_waits_are_handed_in_not_patched():
     # Server review (2026-11-19): tests patched a module global to skip the waits.
-    from app.dishes.http import RETRY_WAITS, post_with_retry
+    from app.dishes.http import RETRY_WAITS, retry_while
 
     slept, answers = [], [429, 429, 200]
-
-    def handler(request):
-        return httpx.Response(answers.pop(0))
-
-    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
-        response = post_with_retry(client, "https://x.test", {}, {}, sleep=slept.append)
-    assert response.status_code == 200 and slept == list(RETRY_WAITS)
+    result = retry_while(lambda left: answers.pop(0), lambda r: r == 429, sleep=slept.append)
+    assert result == 200 and slept == list(RETRY_WAITS)
 
 
 def test_a_retry_is_skipped_when_the_budget_has_no_time_left():
     # Server review (2026-11-19): worst case a revision took about 220 s, the app waits 90 s.
-    from app.dishes.http import post_with_retry
+    from app.dishes.http import retry_while
 
-    now, answers, timeouts = [0.0], [429, 429, 200], []
+    now, answers, lefts = [0.0], [429, 429, 200], []
 
-    def handler(request):
-        timeouts.append(request.extensions["timeout"]["read"])
+    def attempt(left):
+        lefts.append(left)
         now[0] += 10  # each attempt takes 10 s
-        return httpx.Response(answers.pop(0))
+        return answers.pop(0)
 
     def sleep(seconds):
         now[0] += seconds
 
-    with httpx.Client(transport=httpx.MockTransport(handler), timeout=30) as client:
-        response = post_with_retry(
-            client, "https://x.test", {}, {}, sleep=sleep, budget=20, clock=lambda: now[0]
-        )
-    assert response.status_code == 429  # 10 s used, 3 s wait, 7 s left: one retry, then none
-    assert len(timeouts) == 2 and timeouts[0] == 20 and timeouts[1] == 7
+    result = retry_while(attempt, lambda r: r == 429, sleep=sleep, budget=20, clock=lambda: now[0])
+    assert result == 429  # 10 s used, 3 s wait, 7 s left: one retry, then none
+    assert lefts == [20, 7]
+
+
+def test_each_model_attempt_gets_only_the_time_that_is_left():
+    seen = []
+
+    def handler(request):
+        seen.append(request.extensions["timeout"]["read"])
+        return httpx.Response(429)
+
+    with pytest.raises(DishLLMError):
+        _llm(handler).complete("s", "u", "n", {"type": "object"})
+    assert len(seen) == 3 and all(t <= 30 for t in seen)
 
 
 def test_every_route_fits_in_the_apps_wait():

@@ -8,17 +8,19 @@ research/experiments/dish_pipeline, round 3: no title filter, no sorting by view
 import re
 
 import httpx
+import openai
+from openai.types.chat import ChatCompletion, ChatCompletionUserMessageParam
 
 from app.dishes.errors import VideoError
-from app.dishes.http import APP_READ_SECONDS, RETRY_WAITS, post_with_retry
+from app.dishes.http import APP_READ_SECONDS, RETRY_WAITS, retry_while
 from app.dishes.youtube import YOUTUBE_TIMEOUT
+from app.openrouter import openrouter_client
 
 # A video request may check stored videos, search, then check what was found: the search gets
 # what is left of the app's wait after two YouTube checks. The slowest search recorded in the
 # discovery study took 22.7 s (median 3.5 s).
 SEARCH_BUDGET = APP_READ_SECONDS - 2 * YOUTUBE_TIMEOUT
 
-OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
 WEB_MODEL = "google/gemini-2.5-flash-lite:online"
 ID_RE = re.compile(r"(?:v=|youtu\.be/|/embed/|/shorts/)([A-Za-z0-9_-]{11})")
 MAX_IDS = 12  # one videos.list call takes up to 50 ids; the model is asked for 8
@@ -42,12 +44,8 @@ def extract_ids(text: str, citation_urls: list[str]) -> list[str]:
     return list(seen)[:MAX_IDS]
 
 
-def video_request(model: str, dish_name: str) -> dict:
-    return {
-        "model": model,
-        "temperature": 0,
-        "messages": [{"role": "user", "content": REQUEST.format(dish=dish_name)}],
-    }
+def video_messages(dish_name: str) -> list[ChatCompletionUserMessageParam]:
+    return [{"role": "user", "content": REQUEST.format(dish=dish_name)}]
 
 
 class WebSearchVideoSource:
@@ -56,37 +54,42 @@ class WebSearchVideoSource:
         api_key: str,
         *,
         model: str = WEB_MODEL,
-        transport=None,
+        transport: httpx.BaseTransport | None = None,
         retry_waits: tuple[float, ...] = RETRY_WAITS,
     ):
-        if not api_key.strip():
-            raise ValueError("an API key is required")
+        self._client = openrouter_client(api_key, timeout=SEARCH_BUDGET, transport=transport)
         self._api_key = api_key
         self._model = model
-        self._transport = transport
         self._retry_waits = retry_waits
 
     def propose(self, dish_name: str) -> list[str]:
-        headers = {"Authorization": f"Bearer {self._api_key}"}
-        try:
-            with httpx.Client(timeout=SEARCH_BUDGET, transport=self._transport) as client:
-                response = post_with_retry(
-                    client,
-                    OPENROUTER,
-                    video_request(self._model, dish_name),
-                    headers,
-                    waits=self._retry_waits,
-                    budget=SEARCH_BUDGET,
+        def attempt(left: float | None) -> ChatCompletion | None:
+            """None after a rate limit, so the retry waits and tries again."""
+            try:
+                return self._client.chat.completions.create(
+                    model=self._model,
+                    temperature=0,
+                    messages=video_messages(dish_name),
+                    timeout=SEARCH_BUDGET if left is None else left,
                 )
-            if response.status_code != 200:
+            except openai.RateLimitError:
+                return None
+
+        try:
+            completion = retry_while(
+                attempt, lambda r: r is None, waits=self._retry_waits, budget=SEARCH_BUDGET
+            )
+            if completion is None:
                 raise VideoError("The model service is temporarily unavailable")
-            message = response.json()["choices"][0]["message"]
+            message = completion.choices[0].message
             citations = [
-                (a.get("url_citation") or {}).get("url", "")
-                for a in message.get("annotations") or []
+                getattr(getattr(a, "url_citation", None), "url", "") or ""
+                for a in message.annotations or []
             ]
-            return extract_ids(message.get("content") or "", citations)
-        except (httpx.TimeoutException, httpx.TransportError):
+            return extract_ids(message.content or "", citations)
+        except openai.APIStatusError:
+            raise VideoError("The model service is temporarily unavailable") from None
+        except (openai.APITimeoutError, openai.APIConnectionError):
             raise VideoError("The model service could not be reached") from None
-        except (ValueError, KeyError, TypeError, IndexError):
+        except (ValueError, KeyError, TypeError, IndexError, AttributeError):
             raise VideoError("The model returned an invalid answer") from None
