@@ -152,6 +152,9 @@ fun RecipeCardList(dishes:DishViewModel,items:List<Dish>,onDishClick:(Dish)->Uni
             Box(Modifier.animateItem(fadeInSpec=tween(160),fadeOutSpec=tween(100))) {
                 if(onHide!=null) {
                     val dismiss=rememberSwipeToDismissBoxState(confirmValueChange={value->if(value==SwipeToDismissBoxValue.EndToStart){onHide(dish);true}else false})
+                    // The swipe state is saved per dish: after "실행 취소" the card comes back swiped away
+                    // unless it is reset when it re-enters the list (found on the emulator, 2026-11-20).
+                    LaunchedEffect(dish.id) { if(dismiss.currentValue!=SwipeToDismissBoxValue.Settled) dismiss.reset() }
                     SwipeToDismissBox(dismiss,backgroundContent={Box(Modifier.fillMaxSize().clip(RoundedCornerShape(19.dp)).background(MaterialTheme.colorScheme.errorContainer),contentAlignment=Alignment.CenterEnd){Text("이번 목록에서 숨기기",Modifier.padding(20.dp))}},
                         enableDismissFromStartToEnd=false,modifier=Modifier.clip(RoundedCornerShape(19.dp))) {RecipeCard(dishes,dish,onDishClick)}
                 } else RecipeCard(dishes,dish,onDishClick)

@@ -119,7 +119,8 @@ fun RecipeDetailScreen(
                     var failed by remember(playingId) { mutableStateOf(false) }
                     if (failed) Text("이 영상은 앱에서 재생할 수 없어요. YouTube에서 열어 보세요.", Modifier.padding(24.dp),
                         color = Color.White, style = MaterialTheme.typography.bodyMedium)
-                    else YouTubePlayer(playingId, Modifier.fillMaxWidth().padding(top = 52.dp), onError = { failed = true; onPlayerError() })
+                    // A new view per video: the player's view is made once per id, and AndroidView keeps its first view.
+                    else key(playingId) { YouTubePlayer(playingId, Modifier.fillMaxWidth().padding(top = 52.dp), onError = { failed = true; onPlayerError() }) }
                 } else RecipeImage(dish.name, dish.thumbnailUrl, Modifier.fillMaxWidth().height(236.dp))
             }
             Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
