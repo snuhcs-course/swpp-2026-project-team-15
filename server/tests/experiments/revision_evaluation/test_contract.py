@@ -1,3 +1,4 @@
+# AI-assisted with Codex, 2026-11-20; reviewed by Soohyun An
 """Offline tests for the frozen Revision evaluation v1 JSON contract."""
 
 import json
@@ -24,6 +25,8 @@ from pydantic import ValidationError
 
 
 def read_json(path):
+    """Read an artifact as an external JSON consumer would."""
+
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -165,6 +168,7 @@ def test_http_attempt_numbers_are_contiguous_per_logical_call():
 
 
 def test_fixture_only_consumer_can_find_judge_source_fields_without_runner_imports():
+    # Deliberately use dictionaries here: the Judge contract is JSON, not Python models.
     root = fixture_root()
     metadata = read_json(root / "metadata.json")
     summary = read_json(root / "summary.json")

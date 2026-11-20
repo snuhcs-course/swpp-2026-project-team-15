@@ -1,4 +1,9 @@
-"""Versioned artifacts for evaluating the current dish Revision pipeline."""
+# AI-assisted with Codex, 2026-11-20; reviewed by Soohyun An
+"""Public v1 artifact contract for evaluating the current dish Revision pipeline.
+
+The package exports contract types only so fixture consumers do not depend on a
+future Runner implementation.
+"""
 
 from .contract import (
     ARTIFACT_SCHEMAS,

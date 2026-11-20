@@ -1,3 +1,4 @@
+# AI-assisted with Codex, 2026-11-20; reviewed by Soohyun An
 """Generate deterministic v1 JSON Schema and the committed contract fixture bundle."""
 
 from __future__ import annotations
@@ -23,11 +24,15 @@ HASH = "a" * 64
 
 
 def _number(value: float | None = None, *, applicability: str | None = None) -> dict:
+    """Build the explicit value/unavailable/not-applicable numeric representation."""
+
     state = applicability or ("value" if value is not None else "unavailable")
     return {"applicability": state, "value": value}
 
 
 def _usage(input_tokens=None, output_tokens=None, reasoning_tokens=None, cached_tokens=None):
+    """Build token usage while preserving independently missing categories."""
+
     return {
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
@@ -37,6 +42,8 @@ def _usage(input_tokens=None, output_tokens=None, reasoning_tokens=None, cached_
 
 
 def _recipe() -> dict:
+    """Return the deterministic source recipe shared by contract scenarios."""
+
     return {
         "dish_id": "fixture-rice",
         "source": "contract_fixture",
@@ -55,6 +62,8 @@ def _recipe() -> dict:
 
 
 def _revised_answer(*, explain_omission: bool = True) -> dict:
+    """Return a realistic model answer that omits the unavailable source ingredient."""
+
     change = {
         "kind": "omission",
         "reason": "대파가 없어서 생략했어요.",
@@ -76,6 +85,8 @@ def _revised_answer(*, explain_omission: bool = True) -> dict:
 
 
 def _service_response(answer: dict, *, availability=None) -> dict:
+    """Project a checked model answer into the complete production response shape."""
+
     return {
         "status": "revised",
         "dish_id": "fixture-rice",
@@ -97,6 +108,8 @@ def _service_response(answer: dict, *, availability=None) -> dict:
 
 
 def _unchanged_response() -> dict:
+    """Return the production no-call response, which uses status revised with identical content."""
+
     recipe = _recipe()
     answer = {
         "servings": recipe["servings"],
@@ -111,6 +124,8 @@ def _unchanged_response() -> dict:
 
 
 def _request(purpose: str) -> dict:
+    """Return a safe logical request snapshot for an initial call or re-ask."""
+
     return {
         "name": f"revision_{purpose}",
         "system": "Return the requested recipe revision as JSON.",
@@ -121,6 +136,8 @@ def _request(purpose: str) -> dict:
 
 
 def _http(index: int, status: int = 200, text: str = "{}", *, cost: float = 0.0001) -> dict:
+    """Build a completed HTTP-attempt fixture with response data only on success."""
+
     return {
         "index": index,
         "state": "response_received",
@@ -139,6 +156,8 @@ def _http(index: int, status: int = 200, text: str = "{}", *, cost: float = 0.00
 
 
 def _prepared(index: int) -> dict:
+    """Build an uncertain pre-request checkpoint that still consumes attempt budget."""
+
     return {
         "index": index,
         "state": "request_prepared",
@@ -157,6 +176,8 @@ def _prepared(index: int) -> dict:
 
 
 def _call(index: int, purpose: str, attempts: list[dict], answer: Any, *, parsed=True) -> dict:
+    """Build one logical call and keep JSON parsing distinct from answer structure."""
+
     return {
         "index": index,
         "purpose": purpose,
@@ -174,11 +195,14 @@ def _call(index: int, purpose: str, attempts: list[dict], answer: Any, *, parsed
 
 
 def _telemetry(calls: list[dict], *, interrupted=False) -> dict:
+    """Aggregate one attempt without inventing cost for interrupted delivery."""
+
     attempts = [attempt for call in calls for attempt in call["http_attempts"]]
     received = [attempt for attempt in attempts if attempt["state"] == "response_received"]
     input_tokens = sum((a["usage"] or {}).get("input_tokens", 0) for a in received)
     output_tokens = sum((a["usage"] or {}).get("output_tokens", 0) for a in received)
     measured = [a["cost_usd"]["value"] for a in received if a["cost_usd"]["value"] is not None]
+    # A partial or interrupted set cannot be labelled as a complete measured total.
     cost = (
         _number(sum(measured)) if len(measured) == len(received) and not interrupted else _number()
     )
@@ -200,6 +224,8 @@ def _telemetry(calls: list[dict], *, interrupted=False) -> dict:
 
 
 def _input(availability=None) -> dict:
+    """Build the immutable input and effective assumed-staples snapshot."""
+
     return {
         "dish_id": "fixture-rice",
         "dish_name": "Fixture Rice",
@@ -213,6 +239,8 @@ def _input(availability=None) -> dict:
 def _evaluation(
     calls: list[dict], *, structural=True, deleted_ingredient_explanation: tuple[int, int] = (0, 0)
 ) -> dict:
+    """Build deterministic findings without repairing or discarding decoded answers."""
+
     answers = []
     for call in calls:
         parsed = call["parsing"]["succeeded"]
@@ -252,6 +280,8 @@ def observation(
     availability=None,
     deleted_ingredient_explanation: tuple[int, int] = (0, 0),
 ) -> dict:
+    """Build and validate one terminal or interrupted execution-attempt artifact."""
+
     interrupted = state != "completed"
     value = {
         "artifact_schema": OBSERVATION_SCHEMA,
@@ -285,6 +315,8 @@ def observation(
 
 
 def fixture_observations() -> dict[str, dict]:
+    """Return representative observations for every required v1 execution path."""
+
     revised_answer = _revised_answer()
     unexplained_answer = _revised_answer(explain_omission=False)
     malformed = _call(1, "initial", [_http(1, text="{bad")], None, parsed=False)
@@ -427,6 +459,8 @@ def fixture_observations() -> dict[str, dict]:
 
 
 def fixture_metadata(observations: dict[str, dict]) -> dict:
+    """Build run metadata that selects completed attempts but retains interrupted ones."""
+
     refs = {name: f"observations/{name}" for name in observations}
     plan = []
     for name, value in observations.items():
@@ -478,6 +512,8 @@ def fixture_metadata(observations: dict[str, dict]) -> dict:
 
 
 def fixture_summary(observations: dict[str, dict]) -> dict:
+    """Build authoritative aggregate metrics from every fixture observation."""
+
     completed = [v for v in observations.values() if v["execution"]["state"] == "completed"]
     outcomes = {
         name: 0
@@ -558,6 +594,8 @@ def fixture_summary(observations: dict[str, dict]) -> dict:
 
 
 def _write(path: Path, value: dict) -> None:
+    """Write canonical UTF-8 JSON so committed assets remain deterministic."""
+
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8"

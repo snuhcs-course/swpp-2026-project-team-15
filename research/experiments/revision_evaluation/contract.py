@@ -1,3 +1,4 @@
+# AI-assisted with Codex, 2026-11-20; reviewed by Soohyun An
 """Strict v1 models and deterministic JSON Schema for Revision evaluation artifacts."""
 
 from __future__ import annotations
@@ -37,6 +38,7 @@ class OptionalNumber(StrictModel):
         return self
 
 
+# Store every aggregate rate with the counts needed to audit its denominator.
 class Rate(StrictModel):
     numerator: NonNegativeInt
     denominator: NonNegativeInt
@@ -44,6 +46,7 @@ class Rate(StrictModel):
 
     @model_validator(mode="after")
     def check_rate(self) -> Rate:
+        """Reject internally inconsistent rate representations."""
         if self.numerator > self.denominator:
             raise ValueError("rate numerator cannot exceed denominator")
         if self.denominator == 0 and self.value is not None:
@@ -55,6 +58,7 @@ class Rate(StrictModel):
         return self
 
 
+# Preserve source fields rather than rebuilding recipes from current service data.
 class RecipeIngredient(StrictModel):
     name: str
     amount: str | None
@@ -66,6 +70,7 @@ class RecipeStep(StrictModel):
     text: str
 
 
+# This snapshot makes later rescoring independent of mutable recipe storage.
 class SourceRecipeSnapshot(StrictModel):
     dish_id: str
     source: str
@@ -75,6 +80,7 @@ class SourceRecipeSnapshot(StrictModel):
     tips: list[str]
 
 
+# Record the effective policy inputs, including the staples list used at execution time.
 class ObservationInput(StrictModel):
     dish_id: str
     dish_name: str
@@ -84,6 +90,7 @@ class ObservationInput(StrictModel):
     original_recipe: SourceRecipeSnapshot
 
 
+# Keep both auditable safe content and a stable identity for compatibility checks.
 class RequestSnapshot(StrictModel):
     name: str
     system: str
@@ -92,6 +99,7 @@ class RequestSnapshot(StrictModel):
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
+# Token categories remain independently nullable because providers may omit a subset.
 class Usage(StrictModel):
     input_tokens: NonNegativeInt | None
     output_tokens: NonNegativeInt | None
@@ -99,6 +107,8 @@ class Usage(StrictModel):
     cached_tokens: NonNegativeInt | None
 
 
+# A durable request_prepared identity consumes budget even when delivery cannot
+# be confirmed, preventing resume from spending the same budget unit again.
 class HttpAttempt(StrictModel):
     index: PositiveInt
     state: Literal["request_prepared", "response_received", "transport_error"]
@@ -116,6 +126,7 @@ class HttpAttempt(StrictModel):
 
     @model_validator(mode="after")
     def check_attempt_state(self) -> HttpAttempt:
+        """Keep response-derived fields unknown until a response is durably observed."""
         if self.state == "request_prepared":
             unavailable = (
                 self.delivery == "unknown"
@@ -131,12 +142,14 @@ class HttpAttempt(StrictModel):
         return self
 
 
+# Parsing is recorded separately from structural and reference validity.
 class ParsingResult(StrictModel):
     attempted: bool
     succeeded: bool | None
     error: str | None
 
 
+# One logical call may contain multiple HTTP attempts after transport retries.
 class ModelCall(StrictModel):
     index: PositiveInt
     purpose: Literal["initial", "reask"]
@@ -146,6 +159,7 @@ class ModelCall(StrictModel):
     decoded_answer: dict[str, Any] | list[Any] | str | int | float | bool | None
 
 
+# These events mirror production checks; they do not define replacement policy.
 class CheckEvent(StrictModel):
     phase: Literal["initial", "final"]
     result: Literal["passed", "violation", "refusal_needed", "not_run"]
@@ -153,6 +167,7 @@ class CheckEvent(StrictModel):
     message: str | None
 
 
+# Deterministic findings annotate answers without repairing or discarding them.
 class AnswerEvaluation(StrictModel):
     logical_call_index: PositiveInt
     structure_valid: bool | None
@@ -160,11 +175,13 @@ class AnswerEvaluation(StrictModel):
     issues: list[str]
 
 
+# Keep offline findings independent of production checks and later Judge scores.
 class DeterministicEvaluation(StrictModel):
     answers: list[AnswerEvaluation]
     deleted_ingredient_explanation: Rate
 
 
+# An execution attempt is immutable once completed or preserved as interrupted.
 class Execution(StrictModel):
     state: Literal["running", "completed", "interrupted"]
     checkpoint_revision: PositiveInt
@@ -191,6 +208,7 @@ class Execution(StrictModel):
 
     @model_validator(mode="after")
     def check_terminal_state(self) -> Execution:
+        """Prevent incomplete attempts from receiving fabricated terminal outcomes."""
         if self.state == "completed":
             if self.checkpoint_stage != "terminal" or self.finished_at is None:
                 raise ValueError("completed execution must be a finished terminal checkpoint")
@@ -201,6 +219,7 @@ class Execution(StrictModel):
         return self
 
 
+# Timing fields separate checkpoint overhead from observed Revision behavior.
 class Telemetry(StrictModel):
     logical_calls: NonNegativeInt
     reasks: NonNegativeInt
@@ -215,6 +234,7 @@ class Telemetry(StrictModel):
     cost_usd: OptionalNumber
 
 
+# One observation corresponds to one execution attempt, not one planned repetition.
 class Observation(StrictModel):
     artifact_schema: Literal[OBSERVATION_SCHEMA]
     run_id: str
@@ -230,6 +250,7 @@ class Observation(StrictModel):
 
     @model_validator(mode="after")
     def check_attempt_counts(self) -> Observation:
+        """Ensure telemetry counts the exact logical calls and durable HTTP identities."""
         attempts = [attempt for call in self.model_calls for attempt in call.http_attempts]
         if self.telemetry.logical_calls != len(self.model_calls):
             raise ValueError("logical-call telemetry does not match model_calls")
@@ -243,6 +264,7 @@ class Observation(StrictModel):
         return self
 
 
+# A plan unit retains all attempts while selecting at most one completed result.
 class PlanUnit(StrictModel):
     case_id: str
     repetition: PositiveInt
@@ -251,6 +273,7 @@ class PlanUnit(StrictModel):
     selected_completed_attempt: PositiveInt | None
 
 
+# Budget consumption is cumulative across interrupted and resumed attempts.
 class HttpAttemptBudget(StrictModel):
     maximum: PositiveInt
     consumed: NonNegativeInt
@@ -258,11 +281,13 @@ class HttpAttemptBudget(StrictModel):
 
     @model_validator(mode="after")
     def check_budget(self) -> HttpAttemptBudget:
+        """Reject budget totals that could permit overspending after resume."""
         if self.consumed > self.maximum or self.remaining != self.maximum - self.consumed:
             raise ValueError("HTTP-attempt budget arithmetic is inconsistent")
         return self
 
 
+# Metadata is the authoritative index for plan progress and resume compatibility.
 class RunMetadata(StrictModel):
     artifact_schema: Literal[METADATA_SCHEMA]
     observation_schema: Literal[OBSERVATION_SCHEMA]
@@ -279,6 +304,7 @@ class RunMetadata(StrictModel):
     resume_history: list[dict[str, Any]]
 
 
+# Keep operational errors distinct from model refusals in aggregate reporting.
 class OutcomeCounts(StrictModel):
     unchanged: NonNegativeInt
     revised: NonNegativeInt
@@ -288,6 +314,7 @@ class OutcomeCounts(StrictModel):
     api_error: NonNegativeInt
 
 
+# Totals include incomplete attempts so interrupted usage is not lost on resume.
 class RunTotals(StrictModel):
     completed_repetitions: NonNegativeInt
     incomplete_attempts: NonNegativeInt
@@ -297,6 +324,7 @@ class RunTotals(StrictModel):
     cost_usd: OptionalNumber
 
 
+# JSON summary data is authoritative; any Markdown report is only a projection.
 class RunSummary(StrictModel):
     artifact_schema: Literal[SUMMARY_SCHEMA]
     observation_schema: Literal[OBSERVATION_SCHEMA]
@@ -364,12 +392,14 @@ def validate_fixture_bundle(
 
     def read(relative: str) -> dict[str, Any]:
         path = (bundle / relative).resolve()
+        # Fixture references are untrusted contract data; keep reads inside the bundle.
         if bundle not in path.parents:
             raise ValueError(f"artifact reference escapes fixture root: {relative}")
         return __import__("json").loads(path.read_text(encoding="utf-8"))
 
     metadata = RunMetadata.model_validate(read("metadata.json"))
     summary = RunSummary.model_validate(read("summary.json"))
+    # Preserve declared order while avoiding duplicate files in aggregate accounting.
     refs = list(dict.fromkeys(summary.observation_refs))
     observations = [Observation.model_validate(read(reference)) for reference in refs]
     if any(value.run_id != metadata.run_id for value in [summary, *observations]):
