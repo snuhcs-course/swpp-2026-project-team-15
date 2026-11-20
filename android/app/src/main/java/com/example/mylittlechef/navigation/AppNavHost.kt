@@ -5,20 +5,18 @@
 // Ingredient catalog wiring added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.navigation
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.mylittlechef.BuildConfig
 import com.example.mylittlechef.data.local.PreferencesUsageDataSettings
-import com.example.mylittlechef.data.remote.DishApiClient
-import com.example.mylittlechef.data.telemetry.RemoteTelemetry
+import com.example.mylittlechef.data.telemetry.AppUsage
 import com.example.mylittlechef.domain.Telemetry
 import com.example.mylittlechef.domain.Usage
 import com.example.mylittlechef.domain.UsageEvent
@@ -67,12 +65,10 @@ fun AppNavHost(
     val store = LocalContext.current.applicationContext.localDataStore
     val userRepository = remember(store) { PreferencesUserRepository(store) }
     val fridgeRepository = remember(store) { PreferencesFridgeRepository(store) }
-    // Usage data for the beta week: one Telemetry for the whole app, handed to the ViewModels that emit events.
+    // Usage data for the beta week: one Telemetry for the app process, handed to the ViewModels that emit events.
     val usageSettings = remember(store) { PreferencesUsageDataSettings(store) }
-    val telemetryScope = rememberCoroutineScope()
-    val telemetry: Telemetry = remember(usageSettings) {
-        RemoteTelemetry(DishApiClient.telemetryApi::send, usageSettings, telemetryScope, BuildConfig.VERSION_NAME)
-    }
+    val context = LocalContext.current
+    val telemetry: Telemetry = remember { AppUsage.telemetry(context) }
     val usageFactory = remember(usageSettings) {
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -284,19 +280,13 @@ fun AppNavHost(
 @Composable
 private fun SessionEvents(telemetry: Telemetry) {
     val owner = LocalLifecycleOwner.current
+    val activity = LocalActivity.current
     DisposableEffect(owner, telemetry) {
-        var started = 0L
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_START -> {
-                    started = System.currentTimeMillis()
-                    telemetry.track(Usage(UsageEvent.SESSION_START))
-                }
-                Lifecycle.Event.ON_STOP -> {
-                    val length = if (started > 0) System.currentTimeMillis() - started else null
-                    telemetry.track(Usage(UsageEvent.SESSION_END, durationMs = length))
-                    telemetry.flush()
-                }
+                Lifecycle.Event.ON_START -> AppUsage.sessions.onStart(telemetry)
+                Lifecycle.Event.ON_STOP ->
+                    AppUsage.sessions.onStop(telemetry, activity?.isChangingConfigurations == true)
                 else -> Unit
             }
         }

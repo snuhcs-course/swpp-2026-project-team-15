@@ -15,7 +15,8 @@ import java.util.UUID
 
 /**
  * Buffers events in memory and posts them in batches, best effort: a failed post is dropped, never retried,
- * so a bad connection costs nothing but data. Nothing is buffered while sending is off.
+ * so a bad connection costs nothing but data. Nothing is buffered while sending is off. [scope] must outlive
+ * screens (one per app process, see [AppUsage]): a screen-bound scope is cancelled on rotation.
  */
 class RemoteTelemetry(
     private val send: suspend (TelemetryBatchDto) -> Unit,
@@ -24,21 +25,34 @@ class RemoteTelemetry(
     private val appVersion: String,
     private val batchSize: Int = 20
 ) : Telemetry {
-    @Volatile private var state = UsageDataState()
+    /** Null until the stored consent has loaded; events tracked before that wait in [pending]. */
+    @Volatile private var state: UsageDataState? = null
     @Volatile private var sessionId = UUID.randomUUID().toString()
     private val buffer = mutableListOf<Usage>()
+    private val pending = mutableListOf<Usage>()
 
     init {
         scope.launch {
             settings.state.collect {
+                val first = state == null
                 state = it
                 if (!it.sending) synchronized(buffer) { buffer.clear() }
+                if (first) {
+                    // The cold start's session_start comes before the consent is read: keep or drop it now.
+                    val waiting = synchronized(pending) { pending.toList().also { pending.clear() } }
+                    waiting.forEach(::track)
+                }
             }
         }
     }
 
     override fun track(usage: Usage) {
-        if (!state.sending) return
+        val current = state
+        if (current == null) {
+            synchronized(pending) { if (pending.size < batchSize) pending.add(usage) }
+            return
+        }
+        if (!current.sending) return
         if (usage.event == UsageEvent.SESSION_START) {
             flush() // the previous session's events leave with its own id
             sessionId = UUID.randomUUID().toString()
@@ -56,7 +70,7 @@ class RemoteTelemetry(
         if (events.isEmpty()) return
         scope.launch {
             try {
-                if (!state.sending) return@launch
+                if (state?.sending != true) return@launch
                 send(TelemetryBatchDto(settings.installId(), session, appVersion, events.map(::toDto)))
             } catch (cancelled: CancellationException) {
                 throw cancelled
