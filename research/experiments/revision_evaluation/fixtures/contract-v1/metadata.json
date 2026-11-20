@@ -1,0 +1,107 @@
+{
+  "artifact_schema": "revision-evaluation-metadata/v1",
+  "compatibility_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "created_at": "2026-11-20T00:00:00Z",
+  "effective_assumed_staples": [
+    "소금"
+  ],
+  "http_attempt_budget": {
+    "consumed": 10,
+    "maximum": 20,
+    "remaining": 10
+  },
+  "model": {
+    "id": "fixture/model",
+    "temperature": 0
+  },
+  "observation_schema": "revision-evaluation-observation/v1",
+  "plan": [
+    {
+      "case_id": "unchanged",
+      "observation_refs": [
+        "observations/unchanged__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "revised-after-reask-429",
+      "observation_refs": [
+        "observations/revised-after-reask-429__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "refused-prescreen",
+      "observation_refs": [
+        "observations/refused-prescreen__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "check-failed",
+      "observation_refs": [
+        "observations/check-failed__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "response-error-json",
+      "observation_refs": [
+        "observations/response-error-json__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "response-error-structure",
+      "observation_refs": [
+        "observations/response-error-structure__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "api-error",
+      "observation_refs": [
+        "observations/api-error__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "resumed",
+      "observation_refs": [
+        "observations/resumed__r03/attempt-001.json",
+        "observations/resumed__r03/attempt-002.json"
+      ],
+      "repetition": 3,
+      "selected_completed_attempt": 2,
+      "state": "completed"
+    }
+  ],
+  "pricing": {
+    "input_per_million_usd": 0.1,
+    "output_per_million_usd": 0.4,
+    "source": "fixture"
+  },
+  "resume_history": [
+    {
+      "from_execution_attempt": 1,
+      "resumed_at": "2026-11-20T00:00:00Z"
+    }
+  ],
+  "run_id": "contract-v1-fixture",
+  "state": "completed",
+  "updated_at": "2026-11-20T00:00:00Z"
+}

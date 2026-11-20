@@ -1,0 +1,62 @@
+{
+  "artifact_schema": "revision-evaluation-summary/v1",
+  "complete": true,
+  "explanation_coverage": {
+    "denominator": 0,
+    "numerator": 0,
+    "value": null
+  },
+  "generated_at": "2026-11-20T00:00:00Z",
+  "json_parse_success": {
+    "denominator": 7,
+    "numerator": 6,
+    "value": 0.8571428571428571
+  },
+  "observation_refs": [
+    "observations/unchanged__r01/attempt-001.json",
+    "observations/revised-after-reask-429__r01/attempt-001.json",
+    "observations/refused-prescreen__r01/attempt-001.json",
+    "observations/check-failed__r01/attempt-001.json",
+    "observations/response-error-json__r01/attempt-001.json",
+    "observations/response-error-structure__r01/attempt-001.json",
+    "observations/api-error__r01/attempt-001.json",
+    "observations/resumed__r03/attempt-001.json",
+    "observations/resumed__r03/attempt-002.json"
+  ],
+  "observation_schema": "revision-evaluation-observation/v1",
+  "outcomes": {
+    "api_error": 1,
+    "check_failed": 1,
+    "refused": 1,
+    "response_error": 2,
+    "revised": 2,
+    "unchanged": 1
+  },
+  "reference_validity": {
+    "denominator": 6,
+    "numerator": 5,
+    "value": 0.8333333333333334
+  },
+  "run_id": "contract-v1-fixture",
+  "structural_validity": {
+    "denominator": 6,
+    "numerator": 5,
+    "value": 0.8333333333333334
+  },
+  "totals": {
+    "completed_repetitions": 8,
+    "cost_usd": {
+      "applicability": "unavailable",
+      "value": null
+    },
+    "http_attempts": 10,
+    "incomplete_attempts": 1,
+    "logical_calls": 9,
+    "tokens": {
+      "cached_tokens": null,
+      "input_tokens": null,
+      "output_tokens": null,
+      "reasoning_tokens": null
+    }
+  }
+}
