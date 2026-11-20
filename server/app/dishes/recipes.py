@@ -7,15 +7,18 @@ such as titles may not be stored longer than 30 days).
 """
 
 import json
+import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
 
+from cachetools import TTLCache
 from pydantic import ValidationError
 
 from app.dishes.errors import VideoError
 from app.dishes.roles import RecipeBook, VideoVerifier
 from app.dishes.schemas import RecipeVideo, SourceRecipe
+from app.dishes.videos import CACHE_ENTRIES
 
 CREDIT_SECONDS = 24 * 3600  # how long a looked-up title and channel are reused
 
@@ -75,10 +78,12 @@ class CreditedRecipes:
     ):
         """``retry_seconds``: how long a failed lookup is not tried again, so a YouTube outage
         does not add a timeout to every recipe view."""
-        self._recipes, self._verifier, self._clock = recipes, verifier, clock
-        self._retry_seconds = retry_seconds
-        self._failed: dict[str, float] = {}
-        self._credits: dict[str, tuple[float, str, str]] = {}
+        self._recipes, self._verifier = recipes, verifier
+        self._credits: TTLCache[str, tuple[str, str]] = TTLCache(
+            CACHE_ENTRIES, CREDIT_SECONDS, timer=clock
+        )
+        self._failed: TTLCache[str, bool] = TTLCache(CACHE_ENTRIES, retry_seconds, timer=clock)
+        self._lock = threading.Lock()
 
     def get(self, dish_id: str) -> SourceRecipe | None:
         recipe = self._recipes.get(dish_id)
@@ -95,17 +100,19 @@ class CreditedRecipes:
         return dish_id in self._recipes
 
     def _credit(self, video_id: str) -> tuple[str, str]:
-        cached = self._credits.get(video_id)
-        if cached and self._clock() - cached[0] < CREDIT_SECONDS:
-            return cached[1], cached[2]
-        failed = self._failed.get(video_id)
-        if failed is not None and self._clock() - failed < self._retry_seconds:
-            return "", ""
+        with self._lock:
+            cached = self._credits.get(video_id)
+            if cached is not None:
+                return cached
+            if video_id in self._failed:
+                return "", ""
         try:
             found = self._verifier.check([video_id])
         except VideoError:
-            self._failed[video_id] = self._clock()
+            with self._lock:
+                self._failed[video_id] = True
             return "", ""
-        title, channel = (found[0].title, found[0].channel) if found else ("", "")
-        self._credits[video_id] = (self._clock(), title, channel)
-        return title, channel
+        credit = (found[0].title, found[0].channel) if found else ("", "")
+        with self._lock:
+            self._credits[video_id] = credit
+        return credit

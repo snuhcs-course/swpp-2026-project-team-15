@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "FastAPI backend for My Little Chef: ingredient recognition and dish suggestions"
 requires-python = ">=3.12"
 dependencies = [
+    "cachetools>=5.5",
     "fastapi>=0.143.0",
     "google-genai>=2.29.0",
     "httpx>=0.28.1",
@@ -20,6 +21,7 @@ dev = [
     "pytest-cov>=7.1.0",
     "python-dotenv>=1.0,<2",
     "ruff>=0.17.0",
+    "types-cachetools>=7.0.0.20260713",
 ]
 
 [tool.uv]

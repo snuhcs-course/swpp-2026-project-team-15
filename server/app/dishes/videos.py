@@ -10,9 +10,12 @@ repeated taps cannot spend the daily YouTube quota (server review, 2026-11-19).
 """
 
 import logging
+import threading
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
+
+from cachetools import TTLCache
 
 from app.dishes.errors import VideoError
 from app.dishes.roles import StoredVideos, VideoSource, VideoVerifier
@@ -38,22 +41,25 @@ NOT_CONFIGURED = "Video search is not configured on this server"
 log = logging.getLogger(__name__)
 
 
+# Bounds memory only: far above what is ever cached (128 dishes, about 450 stored videos).
+CACHE_ENTRIES = 4096
+
+
 class VideoCache:
-    """Videos found for a dish, kept for a day. One instance is made at app start."""
+    """Videos per dish for a fixed time (a cachetools TTLCache). One instance is made at app
+    start; requests run on a thread pool, so every access holds the lock."""
 
     def __init__(self, *, clock: Callable[[], float] = time.monotonic, ttl: float = CACHE_SECONDS):
-        self._clock = clock
-        self._ttl = ttl
-        self._entries: dict[str, tuple[float, list[Video]]] = {}
+        self._entries: TTLCache[str, list[Video]] = TTLCache(CACHE_ENTRIES, ttl, timer=clock)
+        self._lock = threading.Lock()
 
     def get(self, dish_id: str) -> list[Video] | None:
-        entry = self._entries.get(dish_id)
-        if entry and self._clock() - entry[0] < self._ttl:
-            return entry[1]
-        return None
+        with self._lock:
+            return self._entries.get(dish_id)
 
     def put(self, dish_id: str, videos: list[Video]) -> None:
-        self._entries[dish_id] = (self._clock(), videos)
+        with self._lock:
+            self._entries[dish_id] = videos
 
 
 class VideoFinder:
