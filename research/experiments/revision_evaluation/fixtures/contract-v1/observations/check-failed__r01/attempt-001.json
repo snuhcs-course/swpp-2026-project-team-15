@@ -40,6 +40,53 @@
     "checkpoint_revision": 1,
     "checkpoint_stage": "terminal",
     "final_service_response": {
+      "availability": [
+        "owned",
+        "unavailable",
+        "assumed"
+      ],
+      "changes": [],
+      "dish_id": "fixture-rice",
+      "error": {
+        "code": "unexplained_change",
+        "message": "바꾼 레시피가 규칙을 어겨서 보여 드릴 수 없어요."
+      },
+      "notice": "AI가 만든 제안이에요. 맛과 알레르기는 직접 확인해 주세요.",
+      "original": {
+        "dish_id": "fixture-rice",
+        "ingredients": [
+          {
+            "amount": "1공기",
+            "name": "밥",
+            "role": "main"
+          },
+          {
+            "amount": "1/4대",
+            "name": "대파",
+            "role": "secondary"
+          },
+          {
+            "amount": "1꼬집",
+            "name": "소금",
+            "role": "seasoning"
+          }
+        ],
+        "servings": 1,
+        "source": "contract_fixture",
+        "steps": [
+          {
+            "n": 1,
+            "text": "대파를 썬다."
+          },
+          {
+            "n": 2,
+            "text": "밥과 함께 볶는다."
+          }
+        ],
+        "tips": []
+      },
+      "refusal_reason": null,
+      "revised": null,
       "status": "failed"
     },
     "finished_at": "2026-11-20T00:00:00Z",

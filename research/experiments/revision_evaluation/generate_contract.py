@@ -147,6 +147,41 @@ def _unchanged_response() -> dict:
     return _service_response(answer, availability=["owned", "owned", "assumed"])
 
 
+def _refused_response(reason: str) -> dict:
+    """Return the complete production response for a prescreen refusal."""
+
+    return {
+        "status": "refused",
+        "dish_id": "fixture-rice",
+        "original": _recipe(),
+        "availability": ["owned", "unavailable", "assumed"],
+        "revised": None,
+        "changes": [],
+        "refusal_reason": reason,
+        "error": None,
+        "notice": "AI가 만든 제안이에요. 맛과 알레르기는 직접 확인해 주세요.",
+    }
+
+
+def _failed_response(code: str) -> dict:
+    """Return the complete production response for a rejected model answer."""
+
+    return {
+        "status": "failed",
+        "dish_id": "fixture-rice",
+        "original": _recipe(),
+        "availability": ["owned", "unavailable", "assumed"],
+        "revised": None,
+        "changes": [],
+        "refusal_reason": None,
+        "error": {
+            "code": code,
+            "message": "바꾼 레시피가 규칙을 어겨서 보여 드릴 수 없어요.",
+        },
+        "notice": "AI가 만든 제안이에요. 맛과 알레르기는 직접 확인해 주세요.",
+    }
+
+
 def _request(purpose: str) -> dict:
     """Return a safe logical request snapshot for an initial call or re-ask."""
 
@@ -479,7 +514,7 @@ def fixture_observations() -> dict[str, dict]:
             "refused",
             "prescreen",
             [],
-            final_response={"status": "refused", "refusal_reason": "missing identity"},
+            final_response=_refused_response("missing identity"),
         ),
         "check-failed__r01/attempt-001.json": observation(
             "check-failed",
@@ -513,7 +548,7 @@ def fixture_observations() -> dict[str, dict]:
                     "message": "A dropped ingredient has no reason",
                 },
             ],
-            final_response={"status": "failed"},
+            final_response=_failed_response("unexplained_change"),
         ),
         "response-error-json__r01/attempt-001.json": observation(
             "response-error-json",

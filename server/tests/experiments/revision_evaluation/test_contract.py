@@ -24,6 +24,8 @@ from experiments.revision_evaluation.generate_contract import (
 )
 from pydantic import ValidationError
 
+from app.dishes.schemas import ReviseResponse
+
 
 def read_json(path):
     """Read an artifact as an external JSON consumer would."""
@@ -110,6 +112,18 @@ def test_unchanged_fixture_preserves_the_complete_no_call_service_response():
         {"name": row["name"], "amount": row["amount"]} for row in source["ingredients"]
     ]
     assert value["model_calls"] == []
+
+
+def test_every_stored_service_response_matches_the_complete_production_shape():
+    _, observations, _ = validate_fixture_bundle()
+    responses = [
+        observation.execution.final_service_response
+        for observation in observations
+        if observation.execution.final_service_response is not None
+    ]
+    assert len(responses) == 5
+    validated = [ReviseResponse.model_validate(response) for response in responses]
+    assert {response.status for response in validated} == {"revised", "refused", "failed"}
 
 
 def test_unknown_contract_version_is_rejected_explicitly():
