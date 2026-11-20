@@ -196,6 +196,23 @@ def test_frozen_contract_can_represent_required_provenance_and_aggregates():
     assert summary.totals.http_429_retries == 1
 
 
+def test_reference_validity_is_aggregated_independently_from_structure():
+    observations = fixture_observations()
+    finding = next(
+        finding
+        for value in observations.values()
+        for finding in value["deterministic_evaluation"]["answers"]
+        if finding["structure_valid"] is True and finding["reference_valid"] is True
+    )
+    finding["reference_valid"] = False
+
+    summary = fixture_summary(observations)
+
+    assert summary["structural_validity"]["numerator"] == (
+        summary["reference_validity"]["numerator"] + 1
+    )
+
+
 def test_prepared_unknown_request_consumes_http_attempt_budget():
     metadata, observations, summary = validate_fixture_bundle()
     prepared = [

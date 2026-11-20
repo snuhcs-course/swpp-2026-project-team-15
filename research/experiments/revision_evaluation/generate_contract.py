@@ -724,11 +724,22 @@ def fixture_summary(observations: dict[str, dict]) -> dict:
         if call["parsing"]["attempted"]
     ]
     parsed = [call for call in returned if call["parsing"]["succeeded"]]
-    structurally_valid = sum(
-        finding["structure_valid"] is True
+    answer_findings = [
+        finding
         for value in observations.values()
         for finding in value["deterministic_evaluation"]["answers"]
-        if finding["structure_valid"] is not None
+    ]
+    structural_findings = [
+        finding for finding in answer_findings if finding["structure_valid"] is not None
+    ]
+    reference_findings = [
+        finding for finding in answer_findings if finding["reference_valid"] is not None
+    ]
+    structurally_valid = sum(
+        finding["structure_valid"] is True for finding in structural_findings
+    )
+    references_valid = sum(
+        finding["reference_valid"] is True for finding in reference_findings
     )
     total_attempts = sum(v["telemetry"]["http_attempts"] for v in observations.values())
     explanation_numerator = sum(
@@ -788,13 +799,17 @@ def fixture_summary(observations: dict[str, dict]) -> dict:
         },
         "structural_validity": {
             "numerator": structurally_valid,
-            "denominator": len(parsed),
-            "value": structurally_valid / len(parsed),
+            "denominator": len(structural_findings),
+            "value": structurally_valid / len(structural_findings)
+            if structural_findings
+            else None,
         },
         "reference_validity": {
-            "numerator": structurally_valid,
-            "denominator": len(parsed),
-            "value": structurally_valid / len(parsed),
+            "numerator": references_valid,
+            "denominator": len(reference_findings),
+            "value": references_valid / len(reference_findings)
+            if reference_findings
+            else None,
         },
         "explanation_coverage": {
             "numerator": explanation_numerator,
