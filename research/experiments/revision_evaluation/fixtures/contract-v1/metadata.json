@@ -47,6 +47,7 @@
         },
         "cost_usd": {
           "applicability": "not_applicable",
+          "confirmed_subtotal": 0,
           "price_inputs": null,
           "provenance": "not_applicable",
           "value": null
@@ -73,10 +74,26 @@
           "value": 0.8
         },
         "tokens": {
-          "cached_tokens": null,
-          "input_tokens": null,
-          "output_tokens": null,
-          "reasoning_tokens": null
+          "cached_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "input_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "output_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "reasoning_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          }
         }
       },
       "observation_refs": [
@@ -95,6 +112,7 @@
         },
         "cost_usd": {
           "applicability": "unavailable",
+          "confirmed_subtotal": 0.0002,
           "price_inputs": null,
           "provenance": "missing",
           "value": null
@@ -121,10 +139,26 @@
           "value": 0.8
         },
         "tokens": {
-          "cached_tokens": null,
-          "input_tokens": null,
-          "output_tokens": null,
-          "reasoning_tokens": null
+          "cached_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "input_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 20,
+            "value": null
+          },
+          "output_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 40,
+            "value": null
+          },
+          "reasoning_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          }
         }
       },
       "observation_refs": [
@@ -143,6 +177,7 @@
         },
         "cost_usd": {
           "applicability": "not_applicable",
+          "confirmed_subtotal": 0,
           "price_inputs": null,
           "provenance": "not_applicable",
           "value": null
@@ -169,10 +204,26 @@
           "value": 0.8
         },
         "tokens": {
-          "cached_tokens": null,
-          "input_tokens": null,
-          "output_tokens": null,
-          "reasoning_tokens": null
+          "cached_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "input_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "output_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "reasoning_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          }
         }
       },
       "observation_refs": [
@@ -191,6 +242,7 @@
         },
         "cost_usd": {
           "applicability": "value",
+          "confirmed_subtotal": 0.0002,
           "price_inputs": null,
           "provenance": "measured",
           "value": 0.0002
@@ -217,10 +269,26 @@
           "value": 0.8
         },
         "tokens": {
-          "cached_tokens": 0,
-          "input_tokens": 20,
-          "output_tokens": 40,
-          "reasoning_tokens": 0
+          "cached_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 0,
+            "value": 0
+          },
+          "input_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 20,
+            "value": 20
+          },
+          "output_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 40,
+            "value": 40
+          },
+          "reasoning_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 0,
+            "value": 0
+          }
         }
       },
       "observation_refs": [
@@ -239,6 +307,7 @@
         },
         "cost_usd": {
           "applicability": "value",
+          "confirmed_subtotal": 0.0001,
           "price_inputs": null,
           "provenance": "measured",
           "value": 0.0001
@@ -265,10 +334,26 @@
           "value": 0.8
         },
         "tokens": {
-          "cached_tokens": 0,
-          "input_tokens": 10,
-          "output_tokens": 20,
-          "reasoning_tokens": 0
+          "cached_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 0,
+            "value": 0
+          },
+          "input_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 10,
+            "value": 10
+          },
+          "output_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 20,
+            "value": 20
+          },
+          "reasoning_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 0,
+            "value": 0
+          }
         }
       },
       "observation_refs": [
@@ -287,6 +372,7 @@
         },
         "cost_usd": {
           "applicability": "value",
+          "confirmed_subtotal": 0.0001,
           "price_inputs": null,
           "provenance": "measured",
           "value": 0.0001
@@ -313,10 +399,26 @@
           "value": 0.8
         },
         "tokens": {
-          "cached_tokens": 0,
-          "input_tokens": 10,
-          "output_tokens": 20,
-          "reasoning_tokens": 0
+          "cached_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 0,
+            "value": 0
+          },
+          "input_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 10,
+            "value": 10
+          },
+          "output_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 20,
+            "value": 20
+          },
+          "reasoning_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 0,
+            "value": 0
+          }
         }
       },
       "observation_refs": [
@@ -335,6 +437,7 @@
         },
         "cost_usd": {
           "applicability": "unavailable",
+          "confirmed_subtotal": 0,
           "price_inputs": null,
           "provenance": "missing",
           "value": null
@@ -361,10 +464,26 @@
           "value": 0.8
         },
         "tokens": {
-          "cached_tokens": null,
-          "input_tokens": null,
-          "output_tokens": null,
-          "reasoning_tokens": null
+          "cached_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "input_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "output_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "reasoning_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          }
         }
       },
       "observation_refs": [
@@ -383,6 +502,7 @@
         },
         "cost_usd": {
           "applicability": "unavailable",
+          "confirmed_subtotal": 0.0001,
           "price_inputs": null,
           "provenance": "missing",
           "value": null
@@ -409,10 +529,26 @@
           "value": null
         },
         "tokens": {
-          "cached_tokens": null,
-          "input_tokens": null,
-          "output_tokens": null,
-          "reasoning_tokens": null
+          "cached_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "input_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 10,
+            "value": null
+          },
+          "output_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 20,
+            "value": null
+          },
+          "reasoning_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          }
         }
       },
       "observation_refs": [

@@ -74,7 +74,9 @@ reported as zero or one.
 
 Costs additionally use `provenance`: `measured` for provider-supplied cost, `estimated` only with
 the retained price inputs, `missing` when cost cannot be established, and `not_applicable` for a
-zero-call path. Summary latency publishes p50/p95 with sample counts and its incomplete-attempt
+zero-call path. Aggregate token categories and costs retain a `confirmed_subtotal` even when their
+complete value is unavailable; zero-call aggregates are `not_applicable`, not missing. Summary
+latency publishes p50/p95 with sample counts and its incomplete-attempt
 policy. The summary also retains initial/final failure-code counts, per-case planned/completed
 repetitions and outcome distributions. Semantic success is explicitly `not_applicable` until a
 run names a versioned success definition.

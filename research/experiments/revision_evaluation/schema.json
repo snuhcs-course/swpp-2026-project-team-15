@@ -176,6 +176,11 @@
           "title": "Applicability",
           "type": "string"
         },
+        "confirmed_subtotal": {
+          "minimum": 0,
+          "title": "Confirmed Subtotal",
+          "type": "number"
+        },
         "price_inputs": {
           "anyOf": [
             {
@@ -217,6 +222,7 @@
       "required": [
         "applicability",
         "value",
+        "confirmed_subtotal",
         "provenance",
         "price_inputs"
       ],
@@ -1363,7 +1369,7 @@
           "$ref": "#/$defs/OptionalNumber"
         },
         "tokens": {
-          "$ref": "#/$defs/Usage"
+          "$ref": "#/$defs/TokenTotals"
         }
       },
       "required": [
@@ -1529,7 +1535,7 @@
           "$ref": "#/$defs/OptionalNumber"
         },
         "tokens": {
-          "$ref": "#/$defs/Usage"
+          "$ref": "#/$defs/TokenTotals"
         }
       },
       "required": [
@@ -1547,6 +1553,70 @@
         "cost_usd"
       ],
       "title": "Telemetry",
+      "type": "object"
+    },
+    "TokenTotal": {
+      "additionalProperties": false,
+      "description": "Retain known tokens even when an aggregate has incomplete provider usage.",
+      "properties": {
+        "applicability": {
+          "enum": [
+            "value",
+            "unavailable",
+            "not_applicable"
+          ],
+          "title": "Applicability",
+          "type": "string"
+        },
+        "confirmed_subtotal": {
+          "minimum": 0,
+          "title": "Confirmed Subtotal",
+          "type": "integer"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "applicability",
+        "value",
+        "confirmed_subtotal"
+      ],
+      "title": "TokenTotal",
+      "type": "object"
+    },
+    "TokenTotals": {
+      "additionalProperties": false,
+      "properties": {
+        "cached_tokens": {
+          "$ref": "#/$defs/TokenTotal"
+        },
+        "input_tokens": {
+          "$ref": "#/$defs/TokenTotal"
+        },
+        "output_tokens": {
+          "$ref": "#/$defs/TokenTotal"
+        },
+        "reasoning_tokens": {
+          "$ref": "#/$defs/TokenTotal"
+        }
+      },
+      "required": [
+        "input_tokens",
+        "output_tokens",
+        "reasoning_tokens",
+        "cached_tokens"
+      ],
+      "title": "TokenTotals",
       "type": "object"
     },
     "Usage": {

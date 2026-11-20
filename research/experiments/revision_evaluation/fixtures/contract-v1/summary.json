@@ -214,6 +214,7 @@
     "completed_repetitions": 8,
     "cost_usd": {
       "applicability": "unavailable",
+      "confirmed_subtotal": 0.0007,
       "price_inputs": null,
       "provenance": "missing",
       "value": null
@@ -241,10 +242,26 @@
       "value": null
     },
     "tokens": {
-      "cached_tokens": null,
-      "input_tokens": null,
-      "output_tokens": null,
-      "reasoning_tokens": null
+      "cached_tokens": {
+        "applicability": "unavailable",
+        "confirmed_subtotal": 0,
+        "value": null
+      },
+      "input_tokens": {
+        "applicability": "unavailable",
+        "confirmed_subtotal": 70,
+        "value": null
+      },
+      "output_tokens": {
+        "applicability": "unavailable",
+        "confirmed_subtotal": 140,
+        "value": null
+      },
+      "reasoning_tokens": {
+        "applicability": "unavailable",
+        "confirmed_subtotal": 0,
+        "value": null
+      }
     }
   }
 }

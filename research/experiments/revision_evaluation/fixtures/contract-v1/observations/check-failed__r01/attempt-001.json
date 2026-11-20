@@ -171,6 +171,7 @@
         {
           "cost_usd": {
             "applicability": "value",
+            "confirmed_subtotal": 0.0001,
             "price_inputs": null,
             "provenance": "measured",
             "value": 0.0001
@@ -236,6 +237,7 @@
         {
           "cost_usd": {
             "applicability": "value",
+            "confirmed_subtotal": 0.0001,
             "price_inputs": null,
             "provenance": "measured",
             "value": 0.0001
@@ -286,6 +288,7 @@
     },
     "cost_usd": {
       "applicability": "value",
+      "confirmed_subtotal": 0.0002,
       "price_inputs": null,
       "provenance": "measured",
       "value": 0.0002
@@ -312,10 +315,26 @@
       "value": 0.8
     },
     "tokens": {
-      "cached_tokens": 0,
-      "input_tokens": 20,
-      "output_tokens": 40,
-      "reasoning_tokens": 0
+      "cached_tokens": {
+        "applicability": "value",
+        "confirmed_subtotal": 0,
+        "value": 0
+      },
+      "input_tokens": {
+        "applicability": "value",
+        "confirmed_subtotal": 20,
+        "value": 20
+      },
+      "output_tokens": {
+        "applicability": "value",
+        "confirmed_subtotal": 40,
+        "value": 40
+      },
+      "reasoning_tokens": {
+        "applicability": "value",
+        "confirmed_subtotal": 0,
+        "value": 0
+      }
     }
   }
 }

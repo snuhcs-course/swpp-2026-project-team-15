@@ -71,10 +71,7 @@ def test_fixture_bundle_covers_terminal_and_interrupted_paths():
 
 
 def test_successful_revision_fixture_contains_a_checked_meaningful_recipe():
-    value = read_json(
-        fixture_root()
-        / "observations/revised-after-reask-429__r01/attempt-001.json"
-    )
+    value = read_json(fixture_root() / "observations/revised-after-reask-429__r01/attempt-001.json")
     initial, final = value["model_calls"]
     assert initial["decoded_answer"]["changes"] == []
     initial_text = initial["http_attempts"][1]["safe_response_text"]
@@ -151,6 +148,7 @@ def test_cost_provenance_requires_price_inputs_only_for_estimates():
         {
             "applicability": "value",
             "value": 0.25,
+            "confirmed_subtotal": 0.25,
             "provenance": "measured",
             "price_inputs": None,
         }
@@ -159,6 +157,7 @@ def test_cost_provenance_requires_price_inputs_only_for_estimates():
         {
             "applicability": "value",
             "value": 0.1,
+            "confirmed_subtotal": 0.1,
             "provenance": "estimated",
             "price_inputs": {"input_per_million_usd": 0.2},
         }
@@ -170,6 +169,7 @@ def test_cost_provenance_requires_price_inputs_only_for_estimates():
             {
                 "applicability": "value",
                 "value": 0.1,
+                "confirmed_subtotal": 0.1,
                 "provenance": "estimated",
                 "price_inputs": None,
             }
@@ -245,26 +245,49 @@ def test_api_error_fixture_is_a_transport_failure_without_an_http_response():
     }
 
 
-def test_partial_http_usage_remains_unknown_in_attempt_totals():
+def test_partial_usage_and_cost_preserve_confirmed_subtotals():
     partial = read_json(
         fixture_root() / "observations/revised-after-reask-429__r01/attempt-001.json"
     )
-    complete = read_json(
-        fixture_root() / "observations/check-failed__r01/attempt-001.json"
-    )
+    complete = read_json(fixture_root() / "observations/check-failed__r01/attempt-001.json")
     assert partial["model_calls"][0]["http_attempts"][0]["usage"] is None
     assert partial["telemetry"]["tokens"] == {
-        "input_tokens": None,
-        "output_tokens": None,
-        "reasoning_tokens": None,
-        "cached_tokens": None,
+        "input_tokens": {"applicability": "unavailable", "value": None, "confirmed_subtotal": 20},
+        "output_tokens": {"applicability": "unavailable", "value": None, "confirmed_subtotal": 40},
+        "reasoning_tokens": {
+            "applicability": "unavailable",
+            "value": None,
+            "confirmed_subtotal": 0,
+        },
+        "cached_tokens": {"applicability": "unavailable", "value": None, "confirmed_subtotal": 0},
     }
     assert complete["telemetry"]["tokens"] == {
-        "input_tokens": 20,
-        "output_tokens": 40,
-        "reasoning_tokens": 0,
-        "cached_tokens": 0,
+        "input_tokens": {"applicability": "value", "value": 20, "confirmed_subtotal": 20},
+        "output_tokens": {"applicability": "value", "value": 40, "confirmed_subtotal": 40},
+        "reasoning_tokens": {"applicability": "value", "value": 0, "confirmed_subtotal": 0},
+        "cached_tokens": {"applicability": "value", "value": 0, "confirmed_subtotal": 0},
     }
+    assert partial["telemetry"]["cost_usd"] == {
+        "applicability": "unavailable",
+        "value": None,
+        "confirmed_subtotal": 0.0002,
+        "provenance": "missing",
+        "price_inputs": None,
+    }
+
+
+def test_zero_call_totals_are_not_applicable_instead_of_missing():
+    value = read_json(fixture_root() / "observations/unchanged__r01/attempt-001.json")
+    assert all(
+        total
+        == {
+            "applicability": "not_applicable",
+            "value": None,
+            "confirmed_subtotal": 0,
+        }
+        for total in value["telemetry"]["tokens"].values()
+    )
+    assert value["telemetry"]["cost_usd"]["provenance"] == "not_applicable"
 
 
 def test_checkpoint_and_execution_attempt_numbers_are_positive():
@@ -287,12 +310,8 @@ def test_http_attempt_numbers_are_contiguous_per_logical_call():
 
 
 def test_terminal_429_is_a_response_without_an_actual_retry():
-    value = read_json(
-        fixture_root() / "observations/revised-after-reask-429__r01/attempt-001.json"
-    )
-    value["model_calls"][0]["http_attempts"] = value["model_calls"][0][
-        "http_attempts"
-    ][:1]
+    value = read_json(fixture_root() / "observations/revised-after-reask-429__r01/attempt-001.json")
+    value["model_calls"][0]["http_attempts"] = value["model_calls"][0]["http_attempts"][:1]
     value["telemetry"].update(
         http_attempts=2,
         http_429_responses=1,
@@ -327,9 +346,7 @@ def test_terminal_429_is_a_response_without_an_actual_retry():
     ],
 )
 def test_observation_rejects_cross_field_count_mismatches(mutate, message):
-    value = read_json(
-        fixture_root() / "observations/revised-after-reask-429__r01/attempt-001.json"
-    )
+    value = read_json(fixture_root() / "observations/revised-after-reask-429__r01/attempt-001.json")
     mutate(value)
     with pytest.raises(ValidationError, match=message):
         Observation.model_validate(value)

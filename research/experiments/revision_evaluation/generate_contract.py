@@ -36,6 +36,7 @@ def _cost(
     *,
     provenance: str | None = None,
     price_inputs: dict[str, float] | None = None,
+    confirmed_subtotal: float | None = None,
 ) -> dict:
     """Build a cost value with explicit measured, estimated, missing, or N/A provenance."""
 
@@ -49,12 +50,21 @@ def _cost(
     return {
         "applicability": applicability,
         "value": value,
+        "confirmed_subtotal": (
+            value
+            if value is not None
+            else confirmed_subtotal
+            if confirmed_subtotal
+            else 0
+        ),
         "provenance": source,
         "price_inputs": price_inputs,
     }
 
 
-def _usage(input_tokens=None, output_tokens=None, reasoning_tokens=None, cached_tokens=None):
+def _usage(
+    input_tokens=None, output_tokens=None, reasoning_tokens=None, cached_tokens=None
+):
     """Build token usage while preserving independently missing categories."""
 
     return {
@@ -62,6 +72,22 @@ def _usage(input_tokens=None, output_tokens=None, reasoning_tokens=None, cached_
         "output_tokens": output_tokens,
         "reasoning_tokens": reasoning_tokens,
         "cached_tokens": cached_tokens,
+    }
+
+
+def _token_total(
+    value: int | None = None,
+    *,
+    applicability: str | None = None,
+    confirmed_subtotal: int = 0,
+) -> dict:
+    """Build a complete, partial, or inapplicable aggregate token count."""
+
+    state = applicability or ("value" if value is not None else "unavailable")
+    return {
+        "applicability": state,
+        "value": value,
+        "confirmed_subtotal": value if value is not None else confirmed_subtotal,
     }
 
 
@@ -120,7 +146,8 @@ def _service_response(answer: dict, *, availability=None) -> dict:
             "servings": answer["servings"],
             "ingredients": answer["ingredients"],
             "steps": [
-                {"n": index, "text": text} for index, text in enumerate(answer["steps"], 1)
+                {"n": index, "text": text}
+                for index, text in enumerate(answer["steps"], 1)
             ],
             "tips": answer["tips"],
         },
@@ -138,7 +165,8 @@ def _unchanged_response() -> dict:
     answer = {
         "servings": recipe["servings"],
         "ingredients": [
-            {"name": row["name"], "amount": row["amount"]} for row in recipe["ingredients"]
+            {"name": row["name"], "amount": row["amount"]}
+            for row in recipe["ingredients"]
         ],
         "steps": [step["text"] for step in recipe["steps"]],
         "tips": recipe["tips"],
@@ -194,7 +222,9 @@ def _request(purpose: str) -> dict:
     }
 
 
-def _http(index: int, status: int = 200, text: str = "{}", *, cost: float = 0.0001) -> dict:
+def _http(
+    index: int, status: int = 200, text: str = "{}", *, cost: float = 0.0001
+) -> dict:
     """Build a completed HTTP-attempt fixture with response data only on success."""
 
     return {
@@ -254,7 +284,9 @@ def _transport_error(index: int) -> dict:
     }
 
 
-def _call(index: int, purpose: str, attempts: list[dict], answer: Any, *, parsed=True) -> dict:
+def _call(
+    index: int, purpose: str, attempts: list[dict], answer: Any, *, parsed=True
+) -> dict:
     """Build one logical call and keep JSON parsing distinct from answer structure."""
 
     return {
@@ -277,22 +309,28 @@ def _telemetry(calls: list[dict], *, interrupted=False) -> dict:
     """Aggregate one attempt without inventing cost for interrupted delivery."""
 
     attempts = [attempt for call in calls for attempt in call["http_attempts"]]
-    received = [attempt for attempt in attempts if attempt["state"] == "response_received"]
-    timed = [attempt for attempt in attempts if attempt["provider_round_trip_s"] is not None]
+    received = [
+        attempt for attempt in attempts if attempt["state"] == "response_received"
+    ]
+    timed = [
+        attempt for attempt in attempts if attempt["provider_round_trip_s"] is not None
+    ]
     usage = _sum_usage(
         [
             attempt["usage"] if attempt["usage"] is not None else _usage()
             for attempt in attempts
         ]
     )
-    measured = [a["cost_usd"]["value"] for a in received if a["cost_usd"]["value"] is not None]
+    measured = [
+        a["cost_usd"]["value"] for a in received if a["cost_usd"]["value"] is not None
+    ]
     # A partial or interrupted set cannot be labelled as a complete measured total.
     if not attempts:
         cost = _cost(provenance="not_applicable")
     elif len(measured) == len(received) == len(attempts) and not interrupted:
         cost = _cost(sum(measured))
     else:
-        cost = _cost()
+        cost = _cost(confirmed_subtotal=sum(measured))
     return {
         "logical_calls": len(calls),
         "reasks": sum(call["purpose"] == "reask" for call in calls),
@@ -309,7 +347,9 @@ def _telemetry(calls: list[dict], *, interrupted=False) -> dict:
         "revision_s": _number(0.8) if not interrupted else _number(),
         "observed_wall_s": _number(0.82) if not interrupted else _number(),
         "checkpoint_persistence_s": _number(0.02),
-        "non_http_remainder_s": _number(0.3) if received and not interrupted else _number(),
+        "non_http_remainder_s": _number(0.3)
+        if received and not interrupted
+        else _number(),
         "tokens": usage,
         "cost_usd": cost,
     }
@@ -318,7 +358,9 @@ def _telemetry(calls: list[dict], *, interrupted=False) -> dict:
 def _sum_optional(values: list[dict]) -> dict:
     """Sum compatible optional measurements without converting unknown values to zero."""
 
-    applicable = [value for value in values if value["applicability"] != "not_applicable"]
+    applicable = [
+        value for value in values if value["applicability"] != "not_applicable"
+    ]
     if not applicable:
         return _number(applicability="not_applicable")
     if any(value["applicability"] != "value" for value in applicable):
@@ -327,25 +369,60 @@ def _sum_optional(values: list[dict]) -> dict:
 
 
 def _sum_usage(values: list[dict]) -> dict:
-    """Sum each token category only when every attempt-level total supplied it."""
+    """Aggregate raw usage while retaining known subtotals and applicability."""
 
     if not values:
-        return _usage()
+        return {
+            key: _token_total(applicability="not_applicable")
+            for key in (
+                "input_tokens",
+                "output_tokens",
+                "reasoning_tokens",
+                "cached_tokens",
+            )
+        }
     result = {}
     for key in ("input_tokens", "output_tokens", "reasoning_tokens", "cached_tokens"):
         entries = [value[key] for value in values]
-        result[key] = sum(entries) if all(value is not None for value in entries) else None
+        subtotal = sum(value for value in entries if value is not None)
+        result[key] = (
+            _token_total(subtotal)
+            if all(value is not None for value in entries)
+            else _token_total(confirmed_subtotal=subtotal)
+        )
+    return result
+
+
+def _sum_token_totals(values: list[dict]) -> dict:
+    """Combine attempt aggregates without treating N/A as missing usage."""
+
+    result = {}
+    for key in ("input_tokens", "output_tokens", "reasoning_tokens", "cached_tokens"):
+        entries = [value[key] for value in values]
+        applicable = [
+            entry for entry in entries if entry["applicability"] != "not_applicable"
+        ]
+        subtotal = sum(entry["confirmed_subtotal"] for entry in applicable)
+        if not applicable:
+            result[key] = _token_total(applicability="not_applicable")
+        elif all(entry["applicability"] == "value" for entry in applicable):
+            result[key] = _token_total(subtotal)
+        else:
+            result[key] = _token_total(confirmed_subtotal=subtotal)
     return result
 
 
 def _sum_cost(values: list[dict]) -> dict:
     """Aggregate only complete measured costs; otherwise retain missing or N/A provenance."""
 
-    if values and all(value["provenance"] == "not_applicable" for value in values):
+    applicable = [value for value in values if value["provenance"] != "not_applicable"]
+    if not applicable:
         return _cost(provenance="not_applicable")
-    if values and all(value["provenance"] == "measured" for value in values):
-        return _cost(sum(value["value"] for value in values))
-    return _cost()
+    if all(value["provenance"] == "measured" for value in applicable):
+        return _cost(sum(value["value"] for value in applicable))
+    return _cost(
+        confirmed_subtotal=sum(value["confirmed_subtotal"] for value in applicable)
+    )
 
 
 def _aggregate_telemetry(values: list[dict]) -> dict:
@@ -361,14 +438,16 @@ def _aggregate_telemetry(values: list[dict]) -> dict:
             [value["provider_round_trip_s"] for value in values]
         ),
         "revision_s": _sum_optional([value["revision_s"] for value in values]),
-        "observed_wall_s": _sum_optional([value["observed_wall_s"] for value in values]),
+        "observed_wall_s": _sum_optional(
+            [value["observed_wall_s"] for value in values]
+        ),
         "checkpoint_persistence_s": _sum_optional(
             [value["checkpoint_persistence_s"] for value in values]
         ),
         "non_http_remainder_s": _sum_optional(
             [value["non_http_remainder_s"] for value in values]
         ),
-        "tokens": _sum_usage([value["tokens"] for value in values]),
+        "tokens": _sum_token_totals([value["tokens"] for value in values]),
         "cost_usd": _sum_cost([value["cost_usd"] for value in values]),
     }
 
@@ -414,7 +493,10 @@ def _input(availability=None) -> dict:
 
 
 def _evaluation(
-    calls: list[dict], *, structural=True, deleted_ingredient_explanation: tuple[int, int] = (0, 0)
+    calls: list[dict],
+    *,
+    structural=True,
+    deleted_ingredient_explanation: tuple[int, int] = (0, 0),
 ) -> dict:
     """Build deterministic findings without repairing or discarding decoded answers."""
 
@@ -426,7 +508,9 @@ def _evaluation(
                 "logical_call_index": call["index"],
                 "structure_valid": structural if parsed else None,
                 "reference_valid": structural if parsed else None,
-                "issues": [] if structural or not parsed else ["missing required fields"],
+                "issues": []
+                if structural or not parsed
+                else ["missing required fields"],
             }
         )
     covered, total = deleted_ingredient_explanation
@@ -669,7 +753,9 @@ def fixture_metadata(observations: dict[str, dict]) -> dict:
             ),
         }
     )
-    consumed = sum(value["telemetry"]["http_attempts"] for value in observations.values())
+    consumed = sum(
+        value["telemetry"]["http_attempts"] for value in observations.values()
+    )
     value = {
         "artifact_schema": METADATA_SCHEMA,
         "observation_schema": OBSERVATION_SCHEMA,
@@ -692,7 +778,11 @@ def fixture_metadata(observations: dict[str, dict]) -> dict:
             "input_per_million_usd": 0.1,
             "output_per_million_usd": 0.4,
         },
-        "http_attempt_budget": {"maximum": 20, "consumed": consumed, "remaining": 20 - consumed},
+        "http_attempt_budget": {
+            "maximum": 20,
+            "consumed": consumed,
+            "remaining": 20 - consumed,
+        },
         "plan": plan,
         "resume_history": [{"resumed_at": STAMP, "from_execution_attempt": 1}],
     }
@@ -703,7 +793,9 @@ def fixture_metadata(observations: dict[str, dict]) -> dict:
 def fixture_summary(observations: dict[str, dict]) -> dict:
     """Build authoritative aggregate metrics from every fixture observation."""
 
-    completed = [v for v in observations.values() if v["execution"]["state"] == "completed"]
+    completed = [
+        v for v in observations.values() if v["execution"]["state"] == "completed"
+    ]
     outcomes = {
         name: 0
         for name in (
@@ -747,7 +839,9 @@ def fixture_summary(observations: dict[str, dict]) -> dict:
         for value in observations.values()
     )
     explanation_denominator = sum(
-        value["deterministic_evaluation"]["deleted_ingredient_explanation"]["denominator"]
+        value["deterministic_evaluation"]["deleted_ingredient_explanation"][
+            "denominator"
+        ]
         for value in observations.values()
     )
     initial_failure_codes: dict[str, int] = {}
@@ -756,13 +850,21 @@ def fixture_summary(observations: dict[str, dict]) -> dict:
         for check in observation_value["checks"]:
             if check["code"] is None or check["result"] == "passed":
                 continue
-            target = initial_failure_codes if check["phase"] == "initial" else final_failure_codes
+            target = (
+                initial_failure_codes
+                if check["phase"] == "initial"
+                else final_failure_codes
+            )
             target[check["code"]] = target.get(check["code"], 0) + 1
 
     case_summaries = []
     for case_id in dict.fromkeys(value["case_id"] for value in observations.values()):
-        attempts = [value for value in observations.values() if value["case_id"] == case_id]
-        selected = [value for value in attempts if value["execution"]["state"] == "completed"]
+        attempts = [
+            value for value in observations.values() if value["case_id"] == case_id
+        ]
+        selected = [
+            value for value in attempts if value["execution"]["state"] == "completed"
+        ]
         case_outcomes = {name: 0 for name in outcomes}
         for selected_value in selected:
             case_outcomes[selected_value["execution"]["terminal_outcome"]] += 1
@@ -783,7 +885,9 @@ def fixture_summary(observations: dict[str, dict]) -> dict:
             if value["telemetry"][name]["applicability"] == "value"
         ]
 
-    aggregate = _aggregate_telemetry([value["telemetry"] for value in observations.values()])
+    aggregate = _aggregate_telemetry(
+        [value["telemetry"] for value in observations.values()]
+    )
     value = {
         "artifact_schema": SUMMARY_SCHEMA,
         "observation_schema": OBSERVATION_SCHEMA,
@@ -859,7 +963,8 @@ def _write(path: Path, value: dict) -> None:
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
     )
 
 
