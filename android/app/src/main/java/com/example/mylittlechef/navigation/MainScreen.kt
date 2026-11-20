@@ -1,3 +1,5 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
+// Photo UI navigation motion assisted by Codex, 2026-11-19; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // AI-generated initial navigation scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
@@ -5,6 +7,11 @@
 package com.example.mylittlechef.navigation
 
 import androidx.annotation.DrawableRes // drawable 리소스 ID 파라미터 표시
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.padding // 안쪽 여백 (탭 바에 화면이 안 가려지게)
@@ -15,6 +22,11 @@ import androidx.compose.material3.NavigationBarItem // 탭 하나
 import androidx.compose.material3.NavigationBarItemDefaults // 탭 색상 지정
 import androidx.compose.material3.Scaffold // 본문 + 하단바 뼈대
 import androidx.compose.material3.Text // 탭 이름 글자
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import com.example.mylittlechef.data.local.localDataStore
+import com.example.mylittlechef.data.local.SectionTourRepository
+import com.example.mylittlechef.ui.help.SectionTourHost
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue // `by` 문법으로 상태 읽기
 import androidx.compose.ui.Modifier
@@ -63,7 +75,8 @@ fun MainScreen(
     onRecipeCardClick: (Recipe) -> Unit,
     modifier: Modifier = Modifier,
     ingredientSuggestions: IngredientSuggestionViewModel? = null,
-    onEditPantryClick: () -> Unit = {}
+    onEditPantryClick: () -> Unit = {},
+    onManualAddClick: () -> Unit = onAddIngredientClick
 ) {
     // 탭 전환만 담당하는 NavController (최상위 NavController와 별개)
     val tabNavController = rememberNavController()
@@ -71,6 +84,14 @@ fun MainScreen(
     val backStackEntry by tabNavController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
+    val store=LocalContext.current.applicationContext.localDataStore
+    val tourRepository=remember(store) { SectionTourRepository(store) }
+    SectionTourHost(tourRepository,currentRoute,automaticEnabled=user.onboardingComplete,navigate={route ->
+        tabNavController.navigate(route) {
+            popUpTo(tabNavController.graph.findStartDestination().id) { saveState=true }
+            launchSingleTop=true;restoreState=true
+        }
+    }) {
     Scaffold(
         modifier = modifier,
         bottomBar = {
@@ -103,7 +124,7 @@ fun MainScreen(
                             selectedTextColor = DeepGreen,
                             unselectedIconColor = GreenGray,
                             unselectedTextColor = GreenGray,
-                            indicatorColor = Color.Transparent // Figma처럼 선택 배경(알약 모양) 제거
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer // Figma처럼 선택 배경(알약 모양) 제거
                         )
                     )
                 }
@@ -115,15 +136,16 @@ fun MainScreen(
             navController = tabNavController,
             startDestination = Routes.FRIDGE,
             modifier = Modifier.padding(innerPadding),
-            enterTransition = { EnterTransition.None },
-            exitTransition = { ExitTransition.None }
+            enterTransition = { fadeIn(tween(130)) },
+            exitTransition = { fadeOut(tween(90)) }
         ) {
             composable(Routes.FRIDGE) {
                 FridgeScreen(
                     user = user,
                     fridge = fridge,
                     ingredientSuggestions = ingredientSuggestions,
-                    onAddIngredientClick = onAddIngredientClick
+                    onAddIngredientClick = onAddIngredientClick,
+                    onManualAddClick = onManualAddClick
                 )
             }
             composable(Routes.RECIPE) {
@@ -146,6 +168,7 @@ fun MainScreen(
                 )
             }
         }
+    }
     }
 }
  

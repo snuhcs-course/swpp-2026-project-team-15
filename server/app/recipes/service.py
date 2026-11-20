@@ -1,3 +1,4 @@
+# HE naming/exploration changes assisted by Codex, 2026-11-10; human review pending.
 # AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 
 # Modified with Codex (GPT-6.1 Sol), 2026-10-17; reviewed by Soohyun An.
@@ -16,7 +17,8 @@ from sqlalchemy import Engine, case, func, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, col, select
 
-from app.recipes.constants import STAPLE_SEASONINGS, with_synonyms
+from app.recipes.constants import STAPLE_SEASONINGS, normalize_name, with_synonyms
+from app.recipes.exclusions import is_supported_recipe
 from app.recipes.models import Ingredient, Recipe, RecipeIngredient, RecipeStep
 from app.recipes.schemas import IngredientSuggestion, RecipeRecommendation
 from recipe_revision.models import InventoryIngredient, SourceIngredient, SourceRecipe, SourceStep
@@ -82,7 +84,7 @@ class RecipeRepository:
         self, fridge: list[str], min_recipe_count: int = 5, limit: int = 5
     ) -> list[IngredientSuggestion]:
         """Rank one-ingredient additions by newly ready meals, then source recipe frequency."""
-        staples = set(self._staples)
+        staples = with_synonyms(self._staples)
         available = with_synonyms(fridge) | staples
         owned_anchors = available - staples
 
@@ -97,7 +99,9 @@ class RecipeRepository:
         required_by_recipe: dict[int, set[str]] = {}
         recipe_ids_by_name: dict[str, set[int]] = {}
         for recipe_id, name in ingredient_rows:
-            required_by_recipe.setdefault(recipe_id, set()).add(name)
+            if not is_supported_recipe(recipe_names[recipe_id]):
+                continue
+            required_by_recipe.setdefault(recipe_id, set()).add(normalize_name(name))
             recipe_ids_by_name.setdefault(name, set()).add(recipe_id)
 
         groups = {frozenset(with_synonyms([name])) for name in recipe_ids_by_name}
@@ -105,15 +109,13 @@ class RecipeRepository:
         for group in groups:
             if group <= available or any(group < other for other in groups):
                 continue
-            covered_ids = set().union(*(recipe_ids_by_name.get(name, set()) for name in group))
+            covered_ids = set().union(
+                *(ids for name, ids in recipe_ids_by_name.items() if normalize_name(name) in group)
+            )
             if len(covered_ids) < min_recipe_count:
                 continue
             display_name = min(
-                (
-                    name
-                    for name in group
-                    if name in recipe_ids_by_name and frozenset(with_synonyms([name])) == group
-                ),
+                (name for name in recipe_ids_by_name if frozenset(with_synonyms([name])) == group),
                 key=lambda name: (-len(recipe_ids_by_name[name]), len(name), name),
             )
             anchors_after = owned_anchors | (set(group) - staples)
@@ -156,10 +158,21 @@ class RecipeRepository:
                     raise UnknownIngredients("Inventory contains unregistered ingredient IDs")
                 if water_id not in catalog:
                     raise SourceUnavailable("Required water ingredient is unavailable")
-                inventory = tuple(
-                    InventoryIngredient(key, catalog[key])
-                    for key in dict.fromkeys([*ingredient_ids, water_id])
+                expanded_names = with_synonyms([catalog[key] for key in ingredient_ids])
+                effective_ids = list(
+                    dict.fromkeys(
+                        [
+                            *ingredient_ids,
+                            *(
+                                key
+                                for key, name in catalog.items()
+                                if normalize_name(name) in expanded_names
+                            ),
+                            water_id,
+                        ]
+                    )
                 )
+                inventory = tuple(InventoryIngredient(key, catalog[key]) for key in effective_ids)
                 rows = session.exec(select(Recipe).order_by(Recipe.recipe_id)).all()
                 recipe_ids = {row.recipe_id for row in rows}
                 ingredients = defaultdict(list)
@@ -190,6 +203,8 @@ class RecipeRepository:
                     )
                 sources = []
                 for row in rows:
+                    if not is_supported_recipe(row.name):
+                        continue
                     if not ingredients[row.recipe_id] or not steps[row.recipe_id]:
                         raise SourceUnavailable("Recipe source is incomplete")
                     sources.append(
@@ -221,14 +236,14 @@ class RecipeRepository:
     def recommend(
         self, fridge: list[str], max_missing: int, limit: int
     ) -> list[RecipeRecommendation]:
-        staples = set(self._staples)
+        staples = with_synonyms(self._staples)
         fridge_names = with_synonyms(fridge) - staples
-        available_names = fridge_names | staples
-
-        fridge_ids = select(Ingredient.ingredient_id).where(col(Ingredient.name).in_(fridge_names))
-        available_ids = select(Ingredient.ingredient_id).where(
-            col(Ingredient.name).in_(available_names)
-        )
+        catalog = self.ingredient_catalog()
+        available_names = {
+            name for name in catalog.values() if normalize_name(name) in fridge_names | staples
+        }
+        fridge_ids = [key for key, name in catalog.items() if normalize_name(name) in fridge_names]
+        available_ids = [key for key, name in catalog.items() if name in available_names]
         needs = (
             select(RecipeIngredient.recipe_id, RecipeIngredient.ingredient_id).distinct().subquery()
         )
@@ -240,12 +255,16 @@ class RecipeRepository:
             .group_by(needs.c.recipe_id)
             .having(fridge_count >= 1, missing_count <= max_missing)
             .order_by(missing_count, fridge_count.desc(), needs.c.recipe_id)
-            .limit(limit)
         )
 
         with Session(self._engine) as session:
             recipe_ids = session.exec(ranked).all()
-            return [self._load(session, recipe_id, available_names) for recipe_id in recipe_ids]
+            supported = [
+                key for key in recipe_ids if is_supported_recipe(session.get_one(Recipe, key).name)
+            ]
+            return [
+                self._load(session, recipe_id, available_names) for recipe_id in supported[:limit]
+            ]
 
     @staticmethod
     def _load(session: Session, recipe_id: int, available_names: set[str]) -> RecipeRecommendation:

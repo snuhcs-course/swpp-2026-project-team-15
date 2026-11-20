@@ -1,3 +1,4 @@
+// HE ingredient/exploration changes assisted by Codex, 2026-11-10; human review pending.
 // Deployed main API wiring assisted by Codex, 2026-11-03; human review pending.
 // Restored and integrated with Codex, 2026-10-29; human review pending.
 // AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
@@ -7,6 +8,7 @@ package com.example.mylittlechef.data.remote
 import com.example.mylittlechef.BuildConfig
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
+import okhttp3.ConnectionPool
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
@@ -65,4 +67,14 @@ object ApiClient {
     val api: DeployedRecipeApi by lazy { retrofit.create(DeployedRecipeApi::class.java) }
 
     val multiImageApi: MultiImageApi by lazy { retrofit.create(MultiImageApi::class.java) }
+    val recognitionReviewApi: RecognitionReviewApi by lazy { retrofit.create(RecognitionReviewApi::class.java) }
+    val recipeExploreApi: RecipeExploreApi by lazy { retrofit.create(RecipeExploreApi::class.java) }
+    val selectedRecipeApi: SelectedRecipeApi by lazy {
+        // Explicit selected requests must not reuse a server-closed idle socket or retry a paid POST.
+        val transport = (retrofit.callFactory() as OkHttpClient).newBuilder()
+            .connectionPool(ConnectionPool(0, 1, TimeUnit.SECONDS))
+            .retryOnConnectionFailure(false)
+            .build()
+        retrofit.newBuilder().client(transport).build().create(SelectedRecipeApi::class.java)
+    }
 }

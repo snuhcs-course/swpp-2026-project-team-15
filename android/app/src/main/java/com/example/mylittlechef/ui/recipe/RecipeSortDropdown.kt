@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,9 +29,10 @@ fun RecipeSortDropdown(
     Box(modifier) {
         OutlinedButton(
             onClick = { expanded = true },
-            modifier = Modifier.testTag("recipe-sort-trigger")
+            shape=RoundedCornerShape(10.dp),
+            modifier = Modifier.heightIn(min=48.dp).testTag("recipe-sort-trigger")
         ) {
-            Text("정렬: ${selected.label} ⌄")
+            Text("정렬: ${selected.label} ⌄", style=MaterialTheme.typography.labelMedium)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             RecipeSortType.entries.forEach { type ->
@@ -37,7 +42,7 @@ fun RecipeSortDropdown(
                         onSelected(type)
                         expanded = false
                     },
-                    modifier = Modifier.testTag("recipe-sort-${type.name}")
+                    modifier = Modifier.heightIn(min=48.dp).testTag("recipe-sort-${type.name}")
                 )
             }
         }

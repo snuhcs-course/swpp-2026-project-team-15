@@ -1,3 +1,4 @@
+# HE naming/exploration changes assisted by Codex, 2026-11-10; human review pending.
 # AI-generated with Claude Code (Opus 5.5), 2026-10-11 to 2026-10-14; reviewed by Jaehyuk Choi.
 
 # Modified with Codex (GPT-6.1 Sol), 2026-10-17; reviewed by Soohyun An.
@@ -26,6 +27,7 @@ from google.genai import types
 
 from app.config import Settings
 from app.database import recipe_engine
+from app.recipes.exploration import router as recipe_exploration_router
 from app.recipes.policy import RecommendationPolicy
 from app.recipes.providers import revision_factory
 from app.recipes.recommendations import RecommendationService
@@ -37,9 +39,11 @@ from app.recipes.seasonings import (
     validate_against_catalog,
 )
 from app.recipes.service import RecipeRepository, SourceUnavailable
+from app.recipes.single_revision import router as single_revision_router
 from app.vision.gemini import REQUEST_TIMEOUT_MS, GeminiVisionProvider
 from app.vision.openrouter import OpenRouterVisionProvider
 from app.vision.providers import FixtureVisionProvider, VisionProvider
+from app.vision.review import router as vision_review_router
 from app.vision.router import router as vision_router
 
 RECIPE_IMAGE_DIR = Path(__file__).resolve().parents[1] / "static" / "images" / "recipes"
@@ -50,6 +54,7 @@ def create_app(
     recipes: RecipeRepository,
     *,
     recommendations: RecommendationService | None = None,
+    revision_mode: str = "unknown",
 ) -> FastAPI:
     app = FastAPI(
         title="My Little Chef API",
@@ -63,11 +68,15 @@ def create_app(
     )
     app.state.vision_provider = vision
     app.state.recipe_repository = recipes
+    app.state.revision_mode = revision_mode if revision_mode in {"mock", "live"} else "unknown"
     app.state.recommendation_service = (
         recommendations if recommendations is not None else RecommendationService(recipes)
     )
     app.include_router(vision_router)
+    app.include_router(vision_review_router)
     app.include_router(recipes_router)
+    app.include_router(recipe_exploration_router)
+    app.include_router(single_revision_router)
 
     @app.get("/health", tags=["health"], summary="Liveness check")
     def health() -> dict[str, str]:
@@ -107,6 +116,7 @@ def create_app_from_env() -> FastAPI:
             policy=RecommendationPolicy.from_env(os.environ, seasonings=seasonings),
             llm_factory=revision_factory(settings),
         ),
+        revision_mode=settings.revision_provider,
     )
 
 
