@@ -1,0 +1,79 @@
+{
+  "name": "dish_pipeline",
+  "version": 1,
+  "frozen": "2026-11-16, before any model call of the token and pipeline studies",
+  "structure": "The phone sends its ingredients. The server gives the model the ingredient list and the dish-name list and gets dishes and YouTube video-id candidates per dish. The server only checks, with one batched videos.list call, that each id exists and is embeddable and public; it keeps the model's order and applies no title filter, no view sorting and no fixed number of cards or links.",
+  "question": "Which way of running the model calls inside this structure is the cheapest while the cards appear quickly and most dishes keep at least one embeddable video?",
+  "inputs": {
+    "seed": 20261116,
+    "inputs_from": "research/experiments/dish_naive/criteria.json",
+    "input_ids": [
+      "S01",
+      "S07",
+      "S11",
+      "S13",
+      "S17",
+      "S19",
+      "S21",
+      "S22",
+      "S23",
+      "S25",
+      "S26",
+      "S30"
+    ],
+    "selection": "12 of the 27 well-formed inputs, random.Random(seed).sample over the sorted ids, fixed before any run of this study"
+  },
+  "models": {
+    "selection": "the winner of the dish_tokens study (settings read from its result)",
+    "discovery": "google/gemini-2.5-flash-lite:online (OpenRouter web search plugin)",
+    "judge": "google/gemini-2.5-flash-lite (no web), temperature 0"
+  },
+  "variants": {
+    "P1": "serial: call 1 selects dishes (no web); then one discovery call per selected dish, in parallel, web model, output = ids. Measured on one dish per input (seeded, 12 dishes); cost per request = selection cost + N x mean unit cost with N the real number of selected dishes (modelled, marked as such); videos latency = selection latency + p95 unit latency",
+    "P2": "serial: call 1 selects dishes; call 2 ONE batched discovery call for all selected dishes (ids per dish). Measured completely on all 12 inputs",
+    "P3": "single call with the web model doing selection and links together. Measured completely on all 12 inputs",
+    "P4": "as P1 but discovery only when the user opens a card's video list (on demand). Same unit measurements as P1; request cost = selection cost, plus unit cost per opened card (reported for 1 and for 3 opened cards as scenarios, not as a fixed card count)"
+  },
+  "discovery_output_and_links": {
+    "P1": [
+      "ids3",
+      "ids5",
+      "idsTitles3"
+    ],
+    "P2": [
+      "ids3",
+      "ids5",
+      "idsTitles3"
+    ],
+    "P3": [
+      "ids3",
+      "idsTitles3"
+    ],
+    "P4": "same as P1"
+  },
+  "rule_check": "one videos.list call per request or per batch of 50 ids (1 quota unit each); an id is kept when it exists, is public and embeddable; the model's order is kept; no search.list is used",
+  "metrics": [
+    "input_tokens",
+    "output_tokens",
+    "reasoning_tokens",
+    "cost_usd_per_request",
+    "cards_latency_s",
+    "videos_latency_s",
+    "dishes_with_at_least_one_embeddable_link_share",
+    "links_per_dish_after_check",
+    "id_existence_rate",
+    "failure_or_timeout_rate",
+    "judged_relevance_share"
+  ],
+  "relevance_judge": "A language-agnostic LLM judge is given the dish name and, for each kept link, the YouTube title, channel and the first 200 characters of the description (from videos.list), and answers whether the video is a cooking video for that dish. The judge is unvalidated against humans; its share is reported, not used in the decision rule.",
+  "decision_rule": "Among P1, P2 and P3 variants with at least one embeddable link for at least 90% of the dishes and p50 cards latency at most 6 s, choose the lowest cost per request; p95 latencies are reported. P4 is reported next to the winner with its costs for the two scenarios; choosing eager (P1-P3) or lazy (P4) loading is a product decision and is not made by the rule.",
+  "max_additional_model_calls": 200,
+  "max_cost_usd": 1.0,
+  "limits": [
+    "P1 and P4 cost per request is modelled from 12 unit measurements",
+    "12 inputs and one run: latency and cost vary between runs",
+    "the web search plugin is not Google grounding and returns a handful of results per request",
+    "the judge is unvalidated; relevance is by title, channel and description only",
+    "only YouTube; search.list is never called"
+  ]
+}

@@ -1,0 +1,112 @@
+{
+ "version": 1,
+ "frozen_on": "2026-11-16",
+ "question": "Which discovery method gives the most relevant, embeddable, popular YouTube videos per dish at an acceptable cost, without using the YouTube search quota?",
+ "methods": {
+  "A": "YouTube search.list (order=relevance, 25 results, query '<dish> 레시피'), then videos.list; keep embeddable public videos whose title contains the dish name; top 3 by views.",
+  "B": "OpenRouter google/gemini-2.5-flash-lite:online asked for YouTube watch URLs for '<dish> 레시피'; ids from the answer text and url citations; one batched videos.list verifies them; same filter and ranking as A.",
+  "C": "B plus a second query '<dish> 만들기' to the same model; ids merged; one batched videos.list; same filter and ranking."
+ },
+ "sample": {
+  "seed": 20261116,
+  "extra_count": 30,
+  "rule": "10 dishes already cached for method A, plus 30 drawn per category (largest-remainder quotas over the other dishes, random.Random(seed).sample, then shuffled with the same generator); see sampling.py",
+  "live_search_dishes": "the first 20 of 'extra' (order as listed)",
+  "cached": [
+   "kimchi-fried-rice",
+   "egg-fried-rice",
+   "pork-kimchi-fried-rice",
+   "ham-fried-rice",
+   "tuna-fried-rice",
+   "shrimp-fried-rice",
+   "kimchi-tuna-fried-rice",
+   "bacon-fried-rice",
+   "garlic-fried-rice",
+   "mushroom-fried-rice"
+  ],
+  "extra": [
+   "pork-stir",
+   "ramyeon-egg",
+   "ham-cheese-sandwich",
+   "french-toast",
+   "omurice",
+   "tuna-porridge",
+   "cabbage-salad",
+   "kimchi-pancake",
+   "bibim-noodle",
+   "kimchi-stir",
+   "potato-soup",
+   "sausage-stir",
+   "janchi-noodle",
+   "pork-lettuce",
+   "steamed-egg-microwave",
+   "tofu-braise",
+   "spam-kimchi-stew",
+   "hotdog-pan",
+   "tuna-pasta",
+   "seaweed-soup",
+   "tuna-gimbap",
+   "tofu-soup",
+   "potato-stir",
+   "spam-bean-sprout",
+   "pork-bowl",
+   "cream-pasta",
+   "egg-boiled",
+   "dumpling-stew",
+   "doenjang-stew",
+   "bibimbap"
+  ],
+  "quota": {
+   "간식": 0,
+   "계란": 2,
+   "구이": 1,
+   "국": 3,
+   "덮밥": 3,
+   "면": 3,
+   "무침": 1,
+   "볶음": 4,
+   "분식": 2,
+   "빵": 2,
+   "샐러드": 1,
+   "전": 1,
+   "조림": 1,
+   "주먹밥": 1,
+   "죽": 1,
+   "찌개": 2,
+   "파스타": 2
+  }
+ },
+ "normalisation": "lower-case, keep letters and digits only (so spaces and punctuation are ignored)",
+ "metrics": {
+  "relevance_strict": "verified embeddable candidates whose normalised title contains the normalised dish name / all verified embeddable candidates, pooled over dishes",
+  "relevance_loose": "the same with the dish name or any alias",
+  "embeddable_share": "verified existing videos that are embeddable and public / verified existing videos (before the filter); kept videos are 100% by construction",
+  "existence_rate": "ids returned by videos.list / distinct ids extracted from the model answer (B, C)",
+  "coverage": "dishes with 3 kept videos (title names the dish) / dishes with a run of that method",
+  "median_views": "median view count of kept videos",
+  "cost": "OpenRouter-reported USD per dish; YouTube quota units (search.list 100 in its own bucket of about 100 calls per day, videos.list 1)",
+  "latency": "median wall seconds per discovery call"
+ },
+ "method_a_notes": [
+  "The 10 cached dishes reuse the stored top 3 of an earlier run (no new search call). Those 3 are the most viewed named videos filled up with relevance order, so coverage is exact for them (3 named videos stored means 3 exist) but candidate relevance is not comparable and is excluded from relevance_strict of A.",
+  "Relevance and the decision rule compare methods on the dishes where A ran live (paired); coverage compares on all dishes where A has a result.",
+  "A runs live on at most 20 dishes with at most 25 extra search.list calls; the rest are reported as pending."
+ ],
+ "no_human_check": "Relevance is a title string match, not a human judgement; a title can name the dish and still be a poor recipe video, or omit the name and be a good one.",
+ "budget": {
+  "openrouter_calls_max": 90,
+  "openrouter_usd_max": 0.8,
+  "search_list_calls_max": 25
+ },
+ "decision_rule": {
+  "prefer_model_discovery_if_all": {
+   "relevance_strict_min_delta_vs_A": -0.05,
+   "coverage_min_delta_vs_A": -0.05,
+   "kept_embeddable_share": 1.0,
+   "existence_rate_min": 0.95,
+   "cost_usd_per_dish_max": 0.02
+  },
+  "otherwise": "keep A",
+  "if_both_B_and_C_pass": "choose B (cheaper)"
+ }
+}

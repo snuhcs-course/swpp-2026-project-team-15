@@ -1,4 +1,5 @@
 // AI-assisted with Codex (GPT-6.1 Sol), 2026-10-14; human review pending.
+// Restored on the YouTube-based dishes with Claude Code (Opus 5.5), 2026-11-20: the dish sorts.
 package com.example.mylittlechef.ui.recipe
 
 import androidx.compose.foundation.layout.Box
@@ -17,12 +18,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import com.example.mylittlechef.domain.RecipeSortType
+import com.example.mylittlechef.domain.DishSort
 
 @Composable
 fun RecipeSortDropdown(
-    selected: RecipeSortType,
-    onSelected: (RecipeSortType) -> Unit,
+    selected: DishSort,
+    onSelected: (DishSort) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -35,7 +36,7 @@ fun RecipeSortDropdown(
             Text("정렬: ${selected.label} ⌄", style=MaterialTheme.typography.labelMedium)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            RecipeSortType.entries.forEach { type ->
+            DishSort.entries.forEach { type ->
                 DropdownMenuItem(
                     text = { Text(type.label) },
                     onClick = {

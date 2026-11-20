@@ -36,6 +36,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -340,9 +342,14 @@ fun IngredientRow(
         }
 
         if (isEditing && suggestions.isNotEmpty()) {
+            // Scroll the whole list into view: the phone test (2026-11-19) found the third
+            // suggestion hidden behind the bottom button while the keyboard was open.
+            val shown = remember { BringIntoViewRequester() }
+            LaunchedEffect(suggestions) { shown.bringIntoView() }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .bringIntoViewRequester(shown)
                     .padding(top = 4.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)

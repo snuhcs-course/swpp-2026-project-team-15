@@ -75,7 +75,7 @@ def validate_image(data: bytes, mime_type: str) -> None:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
             with Image.open(io.BytesIO(data)) as picture:
-                if FORMAT_MIME_TYPES.get(picture.format) != mime_type:
+                if FORMAT_MIME_TYPES.get(picture.format or "") != mime_type:
                     raise HTTPException(415, "Photo format does not match its declared media type")
                 if picture.width * picture.height > MAX_REVIEW_PIXELS:
                     raise HTTPException(413, "Image dimensions exceed the review limit")

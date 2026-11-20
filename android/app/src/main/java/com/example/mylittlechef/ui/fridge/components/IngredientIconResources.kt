@@ -10,6 +10,8 @@ fun ingredientIconResource(key: String): Int = when (key) {
     "potato" -> R.drawable.ic_ingredient_potato
     "chili" -> R.drawable.ic_ingredient_chili
     "root" -> R.drawable.ic_ingredient_root
+    "potato" -> R.drawable.ic_ingredient_potato
+    "chili" -> R.drawable.ic_ingredient_chili
     "fruit_vegetable" -> R.drawable.ic_ingredient_fruit_vegetable
     "onion" -> R.drawable.ic_ingredient_onion
     "scallion" -> R.drawable.ic_ingredient_scallion

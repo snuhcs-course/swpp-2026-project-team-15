@@ -60,7 +60,7 @@ fun AnalyzeScreen(
     val review = reviewModel ?: viewModel<PhotoAnalysisViewModel>(factory = factory)
     LaunchedEffect(review, imageUri, entryToken) { if(entryToken==null) review.start(imageUri) else review.startEntry(imageUri, entryToken) }
     LaunchedEffect(ingredientCatalog) { ingredientCatalog.load() }
-    val save = rememberIngredientSave(fridge, onSaveClick)
+    val save = rememberIngredientSave(fridge, onSaveClick, source = "photo")
     val sheet = LocalEntrySheet.current
     // Read snapshots in this composition, not inside SideEffect, so typing updates the guard.
     val hasDraft = review.editor.ingredients.any { it.name.isNotBlank() }
@@ -68,6 +68,18 @@ fun AnalyzeScreen(
     SideEffect { sheet?.busy = saveBusy; sheet?.draft = hasDraft }
     BackHandler(enabled = save.busy) { }
     val state = review.state
+    // Usage data: one recognition event per finished attempt (count, or null when it failed).
+    var recognitionStarted by remember(review) { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(state) {
+        val elapsed = System.currentTimeMillis() - recognitionStarted
+        when (state) {
+            PhotoAnalysisState.Loading -> recognitionStarted = System.currentTimeMillis()
+            is PhotoAnalysisState.Ready -> fridge.onRecognition(state.result.candidates.size, elapsed)
+            is PhotoAnalysisState.Empty -> fridge.onRecognition(0, elapsed)
+            is PhotoAnalysisState.Failed -> fridge.onRecognition(null, elapsed)
+            PhotoAnalysisState.Cancelled -> Unit
+        }
+    }
     val ready = (state as? PhotoAnalysisState.Ready)?.result
     val result = ready ?: (state as? PhotoAnalysisState.Empty)?.result
     fun leave(action: () -> Unit) {

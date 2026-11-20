@@ -17,8 +17,8 @@ import sqlite3
 import statistics
 import sys
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
@@ -26,21 +26,23 @@ if str(REPO_ROOT) not in sys.path:
 
 from server.recipe_filtering.metrics import (  # noqa: E402
     MAIN,
-    SECONDARY,
     SEASONING,
+    SECONDARY,
     Recipe,
     RecipeMetrics,
     _resolved_type,
     calculate_metrics,
 )
-from server.recipe_filtering.rules import Rule, build_rules, evaluate_rule  # noqa: E402
-
+from server.recipe_filtering.rules import build_rules, evaluate_rule  # noqa: E402
 
 TYPE_CODES = {"3060001": MAIN, "3060002": SECONDARY, "3060003": SEASONING}
 TYPE_ALIASES = {
-    "주재료": MAIN, "main": MAIN,
-    "부재료": SECONDARY, "secondary": SECONDARY,
-    "양념": SEASONING, "seasoning": SEASONING,
+    "주재료": MAIN,
+    "main": MAIN,
+    "부재료": SECONDARY,
+    "secondary": SECONDARY,
+    "양념": SEASONING,
+    "seasoning": SEASONING,
 }
 
 
@@ -82,7 +84,12 @@ def load_recipes(connection: sqlite3.Connection) -> tuple[Recipe, ...]:
         recipe_id = int(row["recipe_id"])
         item = grouped.setdefault(
             recipe_id,
-            {"name": row["recipe_name"], "types": defaultdict(set), "names": {}, "original_names": defaultdict(set)},
+            {
+                "name": row["recipe_name"],
+                "types": defaultdict(set),
+                "names": {},
+                "original_names": defaultdict(set),
+            },
         )
         if row["ingredient_id"] is None:
             continue
@@ -112,7 +119,7 @@ def load_recipes(connection: sqlite3.Connection) -> tuple[Recipe, ...]:
                 ingredient_original_names={
                     ingredient_id: tuple(sorted(names))
                     for ingredient_id, names in item["original_names"].items()
-                }
+                },
             )
         )
     return tuple(recipes)
@@ -215,11 +222,13 @@ def _format_ingredients(recipe: Recipe, ingredient_ids: Iterable[int]) -> str:
     ingredients = []
     for ingredient_id in sorted(set(ingredient_ids)):
         name = (recipe.ingredient_names.get(ingredient_id) or "").strip()
-        originals = sorted({
-            original.strip()
-            for original in recipe.ingredient_original_names.get(ingredient_id, ())
-            if original.strip() and original.strip() != name
-        })
+        originals = sorted(
+            {
+                original.strip()
+                for original in recipe.ingredient_original_names.get(ingredient_id, ())
+                if original.strip() and original.strip() != name
+            }
+        )
         parts = [name] if name else []
         if originals:
             parts.append(f"[원본: {', '.join(originals)}]")
@@ -264,18 +273,20 @@ def run(args: argparse.Namespace) -> None:
             for recipe_id in metrics_by_id
             if decisions[recipe_id][rule.rule_id][0]
         ]
-        summary.append({
-            "rule": rule.rule_id,
-            "criterion": rule.description,
-            "candidate_count": len(candidates),
-            "candidate_fraction": len(candidates) / len(recipes) if recipes else None,
-            "mean_total_coverage": _mean(item.total_coverage for item in candidates),
-            "median_total_coverage": _median(item.total_coverage for item in candidates),
-            "mean_general_coverage": _mean(item.general_coverage for item in candidates),
-            "median_general_coverage": _median(item.general_coverage for item in candidates),
-            "mean_main_coverage": _mean(item.main_coverage for item in candidates),
-            "median_main_coverage": _median(item.main_coverage for item in candidates),
-        })
+        summary.append(
+            {
+                "rule": rule.rule_id,
+                "criterion": rule.description,
+                "candidate_count": len(candidates),
+                "candidate_fraction": len(candidates) / len(recipes) if recipes else None,
+                "mean_total_coverage": _mean(item.total_coverage for item in candidates),
+                "median_total_coverage": _median(item.total_coverage for item in candidates),
+                "mean_general_coverage": _mean(item.general_coverage for item in candidates),
+                "median_general_coverage": _median(item.general_coverage for item in candidates),
+                "mean_main_coverage": _mean(item.main_coverage for item in candidates),
+                "median_main_coverage": _median(item.main_coverage for item in candidates),
+            }
+        )
     _write_csv(args.output_dir / "candidate_summary.csv", summary)
 
     detail_rows = []
@@ -285,19 +296,34 @@ def run(args: argparse.Namespace) -> None:
             row[f"pass_{rule.rule_id}"] = decisions[recipe_id][rule.rule_id][0]
             row[f"reason_{rule.rule_id}"] = decisions[recipe_id][rule.rule_id][1]
         detail_rows.append(row)
-    metric_fields = list(_metrics_row(next(iter(metrics_by_id.values())))) if metrics_by_id else [
-        "recipe_id", "recipe_name", "total_ingredients", "total_matches", "total_coverage",
-        "general_ingredients", "general_matches", "general_coverage", "main_ingredients",
-        "main_matches", "main_coverage", "seasoning_ingredients", "seasoning_matches",
-        "type_conflict_ids", "main_seasoning_conflict_ids",
-    ]
+    metric_fields = (
+        list(_metrics_row(next(iter(metrics_by_id.values()))))
+        if metrics_by_id
+        else [
+            "recipe_id",
+            "recipe_name",
+            "total_ingredients",
+            "total_matches",
+            "total_coverage",
+            "general_ingredients",
+            "general_matches",
+            "general_coverage",
+            "main_ingredients",
+            "main_matches",
+            "main_coverage",
+            "seasoning_ingredients",
+            "seasoning_matches",
+            "type_conflict_ids",
+            "main_seasoning_conflict_ids",
+        ]
+    )
     for rule in rules:
         metric_fields.extend([f"pass_{rule.rule_id}", f"reason_{rule.rule_id}"])
     _write_csv(args.output_dir / "recipe_metrics.csv", detail_rows, metric_fields)
 
     difference_rows: list[dict[str, object]] = []
     for left_index, left in enumerate(rules):
-        for right in rules[left_index + 1:]:
+        for right in rules[left_index + 1 :]:
             for recipe_id, metrics in metrics_by_id.items():
                 left_pass, left_reason = decisions[recipe_id][left.rule_id]
                 right_pass, right_reason = decisions[recipe_id][right.rule_id]
@@ -309,25 +335,45 @@ def run(args: argparse.Namespace) -> None:
                     present_main_ids,
                     absent_main_ids,
                 ) = _ingredient_match_details(recipes_by_id[recipe_id], available_ids)
-                difference_rows.append({
-                    "rule_left": left.rule_id,
-                    "rule_right": right.rule_id,
-                    "direction": f"{left.rule_id}_pass_{right.rule_id}_fail" if left_pass else f"{right.rule_id}_pass_{left.rule_id}_fail",
-                    "recipe_id": recipe_id,
-                    "recipe_name": metrics.name,
-                    "left_reason": left_reason,
-                    "right_reason": right_reason,
-                    "matched_ingredients": _format_ingredients(recipes_by_id[recipe_id], present_ids),
-                    "missing_ingredients": _format_ingredients(recipes_by_id[recipe_id], absent_ids),
-                    "matched_main_ingredients": _format_ingredients(recipes_by_id[recipe_id], present_main_ids),
-                    "missing_main_ingredients": _format_ingredients(recipes_by_id[recipe_id], absent_main_ids),
-                    **_metrics_row(metrics),
-                })
+                difference_rows.append(
+                    {
+                        "rule_left": left.rule_id,
+                        "rule_right": right.rule_id,
+                        "direction": f"{left.rule_id}_pass_{right.rule_id}_fail"
+                        if left_pass
+                        else f"{right.rule_id}_pass_{left.rule_id}_fail",
+                        "recipe_id": recipe_id,
+                        "recipe_name": metrics.name,
+                        "left_reason": left_reason,
+                        "right_reason": right_reason,
+                        "matched_ingredients": _format_ingredients(
+                            recipes_by_id[recipe_id], present_ids
+                        ),
+                        "missing_ingredients": _format_ingredients(
+                            recipes_by_id[recipe_id], absent_ids
+                        ),
+                        "matched_main_ingredients": _format_ingredients(
+                            recipes_by_id[recipe_id], present_main_ids
+                        ),
+                        "missing_main_ingredients": _format_ingredients(
+                            recipes_by_id[recipe_id], absent_main_ids
+                        ),
+                        **_metrics_row(metrics),
+                    }
+                )
     difference_fields = [
-        "rule_left", "rule_right", "direction", "recipe_id", "recipe_name",
-        "left_reason", "right_reason", *metric_fields[:15],
-        "matched_ingredients", "missing_ingredients",
-        "matched_main_ingredients", "missing_main_ingredients",
+        "rule_left",
+        "rule_right",
+        "direction",
+        "recipe_id",
+        "recipe_name",
+        "left_reason",
+        "right_reason",
+        *metric_fields[:15],
+        "matched_ingredients",
+        "missing_ingredients",
+        "matched_main_ingredients",
+        "missing_main_ingredients",
     ]
     _write_csv(args.output_dir / "rule_differences.csv", difference_rows, difference_fields)
 
@@ -336,32 +382,54 @@ def run(args: argparse.Namespace) -> None:
     for recipe in recipes:
         for ingredient_id, raw_types in recipe.ingredient_types.items():
             if len(raw_types) > 1:
-                conflict_rows.append({
-                    "recipe_id": recipe.recipe_id,
-                    "recipe_name": recipe.name,
-                    "ingredient_id": ingredient_id,
-                    "ingredient_name": recipe.ingredient_names.get(ingredient_id, ""),
-                    "source_types": ";".join(sorted(raw_types)),
-                    "priority_resolution": min(raw_types, key=lambda item: {MAIN: 0, SECONDARY: 1, SEASONING: 2}[item]),
-                    "includes_main_and_seasoning": MAIN in raw_types and SEASONING in raw_types,
-                })
+                conflict_rows.append(
+                    {
+                        "recipe_id": recipe.recipe_id,
+                        "recipe_name": recipe.name,
+                        "ingredient_id": ingredient_id,
+                        "ingredient_name": recipe.ingredient_names.get(ingredient_id, ""),
+                        "source_types": ";".join(sorted(raw_types)),
+                        "priority_resolution": min(
+                            raw_types, key=lambda item: {MAIN: 0, SECONDARY: 1, SEASONING: 2}[item]
+                        ),
+                        "includes_main_and_seasoning": MAIN in raw_types and SEASONING in raw_types,
+                    }
+                )
             if ingredient_id in annotations:
                 semantic_type, reason = annotations[ingredient_id]
-                source_type = min(raw_types, key=lambda item: {MAIN: 0, SECONDARY: 1, SEASONING: 2}[item]) if raw_types else None
-                semantic_rows.append({
-                    "recipe_id": recipe.recipe_id,
-                    "recipe_name": recipe.name,
-                    "ingredient_id": ingredient_id,
-                    "ingredient_name": recipe.ingredient_names.get(ingredient_id, ""),
-                    "source_types": ";".join(sorted(raw_types)),
-                    "reviewed_semantic_type": semantic_type,
-                    "review_reason": reason,
-                    "source_conflict": len(raw_types) > 1,
-                    "source_effective_type": source_type or "",
-                    "explicit_semantic_mismatch": source_type is not None and source_type != semantic_type,
-                })
-    _write_csv(args.output_dir / "type_conflicts.csv", conflict_rows,
-               ["recipe_id", "recipe_name", "ingredient_id", "ingredient_name", "source_types", "priority_resolution", "includes_main_and_seasoning"])
+                source_type = (
+                    min(raw_types, key=lambda item: {MAIN: 0, SECONDARY: 1, SEASONING: 2}[item])
+                    if raw_types
+                    else None
+                )
+                semantic_rows.append(
+                    {
+                        "recipe_id": recipe.recipe_id,
+                        "recipe_name": recipe.name,
+                        "ingredient_id": ingredient_id,
+                        "ingredient_name": recipe.ingredient_names.get(ingredient_id, ""),
+                        "source_types": ";".join(sorted(raw_types)),
+                        "reviewed_semantic_type": semantic_type,
+                        "review_reason": reason,
+                        "source_conflict": len(raw_types) > 1,
+                        "source_effective_type": source_type or "",
+                        "explicit_semantic_mismatch": source_type is not None
+                        and source_type != semantic_type,
+                    }
+                )
+    _write_csv(
+        args.output_dir / "type_conflicts.csv",
+        conflict_rows,
+        [
+            "recipe_id",
+            "recipe_name",
+            "ingredient_id",
+            "ingredient_name",
+            "source_types",
+            "priority_resolution",
+            "includes_main_and_seasoning",
+        ],
+    )
 
     types_by_ingredient: dict[int, set[str]] = defaultdict(set)
     recipes_by_ingredient: dict[int, set[int]] = defaultdict(set)
@@ -382,11 +450,34 @@ def run(args: argparse.Namespace) -> None:
         for ingredient_id, types in sorted(types_by_ingredient.items())
         if len(types) > 1
     ]
-    _write_csv(args.output_dir / "type_variations_across_recipes.csv", variation_rows,
-               ["ingredient_id", "ingredient_name", "source_types_across_recipes", "recipe_count", "variation_kind"])
+    _write_csv(
+        args.output_dir / "type_variations_across_recipes.csv",
+        variation_rows,
+        [
+            "ingredient_id",
+            "ingredient_name",
+            "source_types_across_recipes",
+            "recipe_count",
+            "variation_kind",
+        ],
+    )
 
-    _write_csv(args.output_dir / "semantic_reviews.csv", semantic_rows,
-               ["recipe_id", "recipe_name", "ingredient_id", "ingredient_name", "source_types", "reviewed_semantic_type", "review_reason", "source_conflict", "source_effective_type", "explicit_semantic_mismatch"])
+    _write_csv(
+        args.output_dir / "semantic_reviews.csv",
+        semantic_rows,
+        [
+            "recipe_id",
+            "recipe_name",
+            "ingredient_id",
+            "ingredient_name",
+            "source_types",
+            "reviewed_semantic_type",
+            "review_reason",
+            "source_conflict",
+            "source_effective_type",
+            "explicit_semantic_mismatch",
+        ],
+    )
 
     # Conflict sensitivity is explicitly counterfactual: when a recipe+ID has
     # both main and seasoning rows, recalculate as seasoning and report changes.
@@ -394,7 +485,8 @@ def run(args: argparse.Namespace) -> None:
     semantic_impact_rows: list[dict[str, object]] = []
     for recipe in recipes:
         main_seasoning_ids = tuple(
-            ingredient_id for ingredient_id, types in recipe.ingredient_types.items()
+            ingredient_id
+            for ingredient_id, types in recipe.ingredient_types.items()
             if MAIN in types and SEASONING in types
         )
         if main_seasoning_ids:
@@ -403,28 +495,38 @@ def run(args: argparse.Namespace) -> None:
                 changed_types[ingredient_id] = frozenset(
                     recipe.ingredient_types[ingredient_id] - {MAIN}
                 )
-            alternate = Recipe(recipe.recipe_id, recipe.name, changed_types, recipe.ingredient_names)
+            alternate = Recipe(
+                recipe.recipe_id, recipe.name, changed_types, recipe.ingredient_names
+            )
             alternate_metrics = calculate_metrics(alternate, available_ids, excluded_match_ids)
             for rule in rules:
                 before = decisions[recipe.recipe_id][rule.rule_id]
                 after = evaluate_rule(rule, alternate_metrics)
-                conflict_sensitivity_rows.append({
-                    "recipe_id": recipe.recipe_id,
-                    "recipe_name": recipe.name,
-                    "ingredient_ids_reclassified_for_sensitivity_only": ";".join(map(str, main_seasoning_ids)),
-                    "rule": rule.rule_id,
-                    "default_pass": before[0],
-                    "counterfactual_pass": after[0],
-                    "decision_changed": before[0] != after[0],
-                    "default_reason": before[1],
-                    "counterfactual_reason": after[1],
-                    "default_main_matches": metrics_by_id[recipe.recipe_id].main_matches,
-                    "counterfactual_main_matches": alternate_metrics.main_matches,
-                    "default_general_matches": metrics_by_id[recipe.recipe_id].general_matches,
-                    "counterfactual_general_matches": alternate_metrics.general_matches,
-                })
+                conflict_sensitivity_rows.append(
+                    {
+                        "recipe_id": recipe.recipe_id,
+                        "recipe_name": recipe.name,
+                        "ingredient_ids_reclassified_for_sensitivity_only": ";".join(
+                            map(str, main_seasoning_ids)
+                        ),
+                        "rule": rule.rule_id,
+                        "default_pass": before[0],
+                        "counterfactual_pass": after[0],
+                        "decision_changed": before[0] != after[0],
+                        "default_reason": before[1],
+                        "counterfactual_reason": after[1],
+                        "default_main_matches": metrics_by_id[recipe.recipe_id].main_matches,
+                        "counterfactual_main_matches": alternate_metrics.main_matches,
+                        "default_general_matches": metrics_by_id[recipe.recipe_id].general_matches,
+                        "counterfactual_general_matches": alternate_metrics.general_matches,
+                    }
+                )
 
-        reviewed_ids = [ingredient_id for ingredient_id in recipe.ingredient_types if ingredient_id in annotations]
+        reviewed_ids = [
+            ingredient_id
+            for ingredient_id in recipe.ingredient_types
+            if ingredient_id in annotations
+        ]
         if reviewed_ids:
             changed_types = dict(recipe.ingredient_types)
             for ingredient_id in reviewed_ids:
@@ -434,21 +536,55 @@ def run(args: argparse.Namespace) -> None:
             for rule in rules:
                 before = decisions[recipe.recipe_id][rule.rule_id]
                 after = evaluate_rule(rule, reviewed_metrics)
-                semantic_impact_rows.append({
-                    "recipe_id": recipe.recipe_id,
-                    "recipe_name": recipe.name,
-                    "reviewed_ingredient_ids_applied_together": ";".join(map(str, reviewed_ids)),
-                    "rule": rule.rule_id,
-                    "default_pass": before[0],
-                    "reviewed_pass": after[0],
-                    "decision_changed": before[0] != after[0],
-                    "default_reason": before[1],
-                    "reviewed_reason": after[1],
-                })
-    _write_csv(args.output_dir / "type_conflict_sensitivity.csv", conflict_sensitivity_rows,
-               ["recipe_id", "recipe_name", "ingredient_ids_reclassified_for_sensitivity_only", "rule", "default_pass", "counterfactual_pass", "decision_changed", "default_reason", "counterfactual_reason", "default_main_matches", "counterfactual_main_matches", "default_general_matches", "counterfactual_general_matches"])
-    _write_csv(args.output_dir / "semantic_review_impact.csv", semantic_impact_rows,
-               ["recipe_id", "recipe_name", "reviewed_ingredient_ids_applied_together", "rule", "default_pass", "reviewed_pass", "decision_changed", "default_reason", "reviewed_reason"])
+                semantic_impact_rows.append(
+                    {
+                        "recipe_id": recipe.recipe_id,
+                        "recipe_name": recipe.name,
+                        "reviewed_ingredient_ids_applied_together": ";".join(
+                            map(str, reviewed_ids)
+                        ),
+                        "rule": rule.rule_id,
+                        "default_pass": before[0],
+                        "reviewed_pass": after[0],
+                        "decision_changed": before[0] != after[0],
+                        "default_reason": before[1],
+                        "reviewed_reason": after[1],
+                    }
+                )
+    _write_csv(
+        args.output_dir / "type_conflict_sensitivity.csv",
+        conflict_sensitivity_rows,
+        [
+            "recipe_id",
+            "recipe_name",
+            "ingredient_ids_reclassified_for_sensitivity_only",
+            "rule",
+            "default_pass",
+            "counterfactual_pass",
+            "decision_changed",
+            "default_reason",
+            "counterfactual_reason",
+            "default_main_matches",
+            "counterfactual_main_matches",
+            "default_general_matches",
+            "counterfactual_general_matches",
+        ],
+    )
+    _write_csv(
+        args.output_dir / "semantic_review_impact.csv",
+        semantic_impact_rows,
+        [
+            "recipe_id",
+            "recipe_name",
+            "reviewed_ingredient_ids_applied_together",
+            "rule",
+            "default_pass",
+            "reviewed_pass",
+            "decision_changed",
+            "default_reason",
+            "reviewed_reason",
+        ],
+    )
 
     metadata = {
         "database": str(args.db.resolve()),
@@ -456,10 +592,23 @@ def run(args: argparse.Namespace) -> None:
         "d_thresholds": list(thresholds),
         "recipe_count": len(recipes),
         "semantic_annotation_count": len(annotations),
-        "type_assignment_policy": "per recipe+ingredient, main > secondary > seasoning; unknown types count only in total metrics",
-        "semantic_policy": "no semantic reclassification is inferred; semantic_reviews.csv contains only explicit annotations",
-        "type_conflict_policy": "type_conflicts.csv identifies within-recipe same-ID conflicts; type_variations_across_recipes.csv separately shows cross-recipe variation; sensitivity output is counterfactual only",
-        "b_and_e_note": "B (general_matches >= 1) equals an OR rule adding general_coverage > 0 when denominator is nonzero; no separate E rule is run",
+        "type_assignment_policy": (
+            "per recipe+ingredient, main > secondary > seasoning; "
+            "unknown types count only in total metrics"
+        ),
+        "semantic_policy": (
+            "no semantic reclassification is inferred; "
+            "semantic_reviews.csv contains only explicit annotations"
+        ),
+        "type_conflict_policy": (
+            "type_conflicts.csv identifies within-recipe same-ID conflicts; "
+            "type_variations_across_recipes.csv separately shows cross-recipe variation; "
+            "sensitivity output is counterfactual only"
+        ),
+        "b_and_e_note": (
+            "B (general_matches >= 1) equals an OR rule adding general_coverage > 0 "
+            "when denominator is nonzero; no separate E rule is run"
+        ),
     }
     if excluded_match_ids:
         metadata["excluded_match_ids"] = sorted(excluded_match_ids)
@@ -467,7 +616,9 @@ def run(args: argparse.Namespace) -> None:
             "exclude IDs from all match numerators only; preserve denominators "
             "and inventory availability, including matched/missing ingredient display"
         )
-    (args.output_dir / "metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (args.output_dir / "metadata.json").write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     print(f"Wrote experiment outputs to {args.output_dir.resolve()}")
 
 
@@ -498,12 +649,22 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", type=Path, default=REPO_ROOT / "data/recipes/recipes.sqlite3")
     parser.add_argument("--fridge-ids", type=_positive_id, nargs="+", required=True)
-    parser.add_argument("--excluded-match-ids", type=_positive_id, nargs="+", default=(),
-                        help="experimental IDs excluded from match numerators only")
+    parser.add_argument(
+        "--excluded-match-ids",
+        type=_positive_id,
+        nargs="+",
+        default=(),
+        help="experimental IDs excluded from match numerators only",
+    )
     parser.add_argument("--d-thresholds", type=_threshold, nargs="+", default=(0.25, 0.5, 0.75))
-    parser.add_argument("--output-dir", type=Path, default=REPO_ROOT / "data/recipes/filtering-experiments")
-    parser.add_argument("--semantic-review", type=Path,
-                        help="optional human-reviewed CSV: ingredient_id,semantic_type,reason")
+    parser.add_argument(
+        "--output-dir", type=Path, default=REPO_ROOT / "data/recipes/filtering-experiments"
+    )
+    parser.add_argument(
+        "--semantic-review",
+        type=Path,
+        help="optional human-reviewed CSV: ingredient_id,semantic_type,reason",
+    )
     args = parser.parse_args()
     if not args.db.is_file():
         parser.error(f"SQLite database does not exist: {args.db}")

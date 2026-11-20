@@ -1,0 +1,40 @@
+{
+  "study": "Recipes from the video itself",
+  "frozen_at": "2026-11-19, before any study call (two feasibility calls on 김치볶음밥 Lf44Fk7H24s and 계란말이 kN89ewZjOR8 with gemini-2.5-flash-lite came first and are reported separately)",
+  "question": "Can a Gemini model that watches the public YouTube video write a structured recipe as good as, or better than, the one restructured from the same video's captions, and which model should build the stored recipe file?",
+  "inputs": {
+    "dishes": "the 16 dishes that have a caption-based recipe (artifacts copy of the caption recipes, not in git)",
+    "video_per_dish": "the same video the caption-based recipe was written from",
+    "reference": "the caption-based recipe (an AI restructuring of auto or manual captions; not a human label)"
+  },
+  "variants": {
+    "lite": "google/gemini-2.5-flash-lite",
+    "flash": "google/gemini-2.5-flash"
+  },
+  "fixed_settings": {
+    "route": "OpenRouter chat completions, video_url part with the YouTube watch URL, provider pinned to Google AI Studio without fallbacks",
+    "temperature": 0,
+    "max_tokens": 4096,
+    "answer_format": "strict JSON schema of video_recipes.ANSWER_SCHEMA",
+    "prompt": "video_recipes.SYSTEM; user text 'Requested dish: <name>'",
+    "media_resolution": "provider default (OpenRouter documents no media-resolution parameter)",
+    "retries": "HTTP 429 retried after 3 s and 8 s, as the server does"
+  },
+  "metrics": [
+    "answer received and recipe valid against schema.json and the form rules of validate_recipe",
+    "identity: the model's is_requested_dish and cooked_dish per dish",
+    "ingredient agreement with the caption-based recipe: precision and recall on names after spaces are removed and synonym groups are merged",
+    "ingredients in the video recipe whose name is not in the captions, each reviewed by hand as seen-on-screen plausible, invented, or unclear (from the title, description and caption context); the model's own evidence label (heard, seen, both) is reported next to it",
+    "share of ingredients with an amount; servings given or not",
+    "number of steps",
+    "role labels: counts of main, secondary, seasoning, and main-label agreement with the caption-based recipe on shared ingredients",
+    "prompt and completion tokens, cost (OpenRouter usage.cost), latency"
+  ],
+  "analysis_plan": "Per dish, paired lite vs flash and each vs captions; report every number in tables with the per-dish values, medians and the full ranges; add a side-by-side reading of 6 dishes (Korean notes). No pass/fail thresholds: the choice of source and model for the stored file is a judgement written next to the numbers, with its limits.",
+  "budget": "at most 40 model calls and $2 for this study (one run per variant per dish)",
+  "limits_known_before_running": [
+    "the reference is itself AI-made from captions, so disagreement does not say which side is wrong",
+    "one run per variant; the hand review is one reviewer (the AI that wrote the study)",
+    "the model sees about one frame per second and the audio; quick on-screen text may be missed"
+  ]
+}

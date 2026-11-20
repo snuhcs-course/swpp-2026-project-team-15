@@ -1,4 +1,6 @@
 // AI-assisted HE cooking completion, 2026-11-10; human review pending.
+// Restored on the YouTube-based recipes with Claude Code (Opus 5.5), 2026-11-20: the choices come from the
+// stored recipe's rows the fridge holds; only what the user ticks is removed.
 package com.example.mylittlechef.ui.recipe
 
 import androidx.compose.foundation.layout.*
@@ -13,14 +15,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import com.example.mylittlechef.domain.IngredientNames
-import com.example.mylittlechef.model.Recipe
+import com.example.mylittlechef.domain.Availability
+import com.example.mylittlechef.domain.DishRecipe
+import com.example.mylittlechef.model.Preset
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 
+/**
+ * Fridge items the recipe used: an owned row with the same name is ticked to start with, except pantry seasonings; a fridge name that only
+ * contains a row name, or the other way round (청양고추 for 고추), is offered unticked, since it may be another item.
+ */
+internal fun usedFridgeItems(recipe: DishRecipe, fridgeNames: List<String>): Pair<List<String>, Set<String>> {
+    val owned = recipe.ingredients.filter { it.availability == Availability.OWNED }.map { it.name.replace(" ", "") }
+    val exact = fridgeNames.filter { name -> owned.any { it == name.replace(" ", "") } }
+    val related = fridgeNames.filter { name ->
+        val key = name.replace(" ", "")
+        name !in exact && key.length >= 2 && owned.any { row -> row.length >= 2 && (row.contains(key) || key.contains(row)) }
+    }
+    // Pantry seasonings are used a little at a time, so they are offered but never ticked to start with.
+    val seasonings = Preset.pantrySeasonings.map { it.replace(" ", "") }.toSet()
+    return (exact + related) to exact.filterNot { it.replace(" ", "") in seasonings }.toSet()
+}
+
 @Composable
-fun CookingCompletionDialog(recipe: Recipe, fridge: FridgeViewModel, onClose: () -> Unit) {
-    val choices = IngredientNames.usedOwnedNames(recipe, fridge.ingredients)
-    var selected by rememberSaveable(recipe.id) { mutableStateOf(emptyList<String>()) }
+fun CookingCompletionDialog(dishId: String, recipe: DishRecipe, fridge: FridgeViewModel, onClose: () -> Unit) {
+    val (choices, ticked) = remember(recipe, fridge.ingredients) { usedFridgeItems(recipe, fridge.ingredients.map { it.name }) }
+    var selected by rememberSaveable(dishId) { mutableStateOf(ticked.toList()) }
     val before = rememberSaveable { fridge.pendingRemoval?.id ?: -1L }
     var requested by rememberSaveable { mutableStateOf(false) }
     var completed by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -55,7 +74,7 @@ fun CookingCompletionDialog(recipe: Recipe, fridge: FridgeViewModel, onClose: ()
             if(completed == null) TextButton(enabled = !busy && selected.any { it in choices }, onClick = {
                 requested = true
                 fridge.removeIngredients(selected.filter { it in choices }.toSet())
-            }) { Text(if(busy) "저장 중" else "선택한 재료 삭제") }
+            }, modifier = Modifier.testTag("consumed-confirm")) { Text(if(busy) "저장 중" else "선택한 재료 삭제") }
             else if(receipt?.id == completed) TextButton(enabled = !busy, onClick = { receipt?.let { fridge.undoRemoval(it.id) } }) { Text("실행 취소") }
         },
         dismissButton = { TextButton(enabled = !busy, onClick = onClose) { Text(if(completed == null) "그대로 두기" else "닫기") } })

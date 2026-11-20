@@ -1,0 +1,144 @@
+{
+  "name": "dish_output_formats",
+  "version": 1,
+  "frozen": "2026-11-18, before any model call of this study",
+  "question": "If the model's answer is constrained to the closed vocabularies of the service (the 130 dish names, the user's own ingredients for `have`, and the ingredient vocabulary of the dish list for `missing`) through structured-output features, which format is the cheapest and the most reliable, and does a helper library such as LangChain change the behaviour or only add code?",
+  "inputs": "the 27 well-formed suggestion inputs of ../dish_naive/criteria.json (expect_status 200), in that order; the same scorer (../dish_naive/scoring.py) and the same rule-made reference set; no fixed card count",
+  "vocabularies": {
+    "dish_names": "the 130 `name` values of server/app/dishes/dishes.json",
+    "ingredient_vocabulary": "the distinct `key_ingredients` of dishes.json; each synonym group of server/app/dishes/synonyms.py is reduced to the member that appears most often in the list (ties: the smaller string), so the vocabulary has one spelling per ingredient; its size is reported in the results",
+    "owned_enum": "the user's ingredient strings of the request, trimmed, duplicates removed, in the given order (a per-request enum for `have`)"
+  },
+  "settings": {
+    "model": "google/gemini-2.5-flash-lite",
+    "temperature": 0,
+    "max_tokens": 4096,
+    "provider": "{\"require_parameters\": true} unless the variant says otherwise",
+    "pacing": "1 s pause between two logical calls; HTTP 429 is repeated at most twice after 5 s and 15 s; every attempt counts toward the call cap and is recorded; a 429 that persists is a failed call, not a result of the variant",
+    "recorded_per_call": [
+      "finish_reason",
+      "input tokens",
+      "output tokens",
+      "cost reported by the provider (if any)",
+      "cost computed from tokens at 0.10/0.40 USD per million",
+      "latency",
+      "attempts",
+      "serving provider (the `provider` field of the response)",
+      "raw answer"
+    ]
+  },
+  "prompts": {
+    "S0": "SUGGEST_SYSTEM of server/app/dishes/service.py as of the parent commit, unchanged",
+    "S1": "You help a Korean student living alone decide what to cook from the ingredients they have. Return every dish from the given dish list that can reasonably be cooked with the owned ingredients, best first, as a list of dish names. If no dish fits, return an empty list. Never add dishes just to fill the list.",
+    "S2": "You help a Korean student living alone decide what to cook from the ingredients they have. Return every dish from the given dish list that can reasonably be cooked with the owned ingredients, best first. For each dish, 'have' lists ONLY ingredients that appear in the user's owned list and that this dish uses, and 'missing' lists the main ingredients this dish needs that are not in the owned list; both are chosen from the allowed values of the answer format. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish fits, return an empty list. Never add dishes just to fill the list.",
+    "S3": "You help a Korean student living alone decide what to cook from the ingredients they have. Return every dish from the given dish list that can reasonably be cooked with the owned ingredients, best first. For each dish, 'missing' lists the main ingredients this dish needs that are not in the owned list, chosen from the allowed values of the answer format. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish fits, return an empty list. Never add dishes just to fill the list.",
+    "user_message": "JSON {\"owned\": [...the user's ingredients...], \"dishes\": [...the 130 names...]} exactly as the service builds it (suggest_user_message)"
+  },
+  "variants": {
+    "S0": {
+      "calls": 27,
+      "format": "current naive format: name, have, missing as free strings; response_format json_schema strict without enums (same SUGGEST_SCHEMA as the service)"
+    },
+    "S1": {
+      "calls": 27,
+      "format": "response_format json_schema strict: {dishes: [enum of the 130 names]}; the answer has names only"
+    },
+    "S2": {
+      "calls": 27,
+      "format": "response_format json_schema strict: dishes of {name: enum of the 130 names, have: [enum of the owned items], missing: [enum of the ingredient vocabulary]}"
+    },
+    "S3": {
+      "calls": 27,
+      "format": "as S2 without `have`: dishes of {name: enum, missing: [enum of the vocabulary]}"
+    },
+    "S4": {
+      "calls": 27,
+      "format": "the schema of S2 sent as a forced function call (tools + tool_choice naming the function, strict true) instead of response_format; the answer is read from the tool call arguments"
+    },
+    "S5a": {
+      "calls": 12,
+      "inputs": "the first 12 inputs (S01-S12)",
+      "format": "the schema of S2 built as a pydantic model with Literal fields and sent through LangChain ChatOpenAI (OpenRouter base URL) `with_structured_output(model, method=\"json_schema\", strict=True, include_raw=True)`; temporary environment via uv --with, never installed globally"
+    },
+    "S5b": {
+      "calls": 12,
+      "inputs": "the first 12 inputs (S01-S12)",
+      "format": "as S5a with method=\"function_calling\""
+    },
+    "S2n": {
+      "calls": 6,
+      "inputs": "the first 6 inputs (S01-S06)",
+      "format": "as S2 with `strict` false in the json_schema (enforcement probe)"
+    },
+    "S2r": {
+      "calls": 6,
+      "inputs": "the first 6 inputs (S01-S06)",
+      "format": "as S2 without provider.require_parameters (enforcement probe: is an unsupported feature silently dropped?)"
+    },
+    "S6": {
+      "calls": 0,
+      "format": "rules-assisted comparison point, no extra call: the names answered in S1; `have` and `missing` are computed by the server from the key ingredients of the dish (Catalog.match) and the user's list. Reported separately and never part of the rule."
+    }
+  },
+  "run_order": [
+    "S0",
+    "S1",
+    "S2",
+    "S3",
+    "S4",
+    "S5a",
+    "S5b",
+    "S2n",
+    "S2r"
+  ],
+  "call_cap": 200,
+  "planned_calls": 171,
+  "cost_cap_usd": 0.3,
+  "if_cap_reached": "the unfinished variant is reported as not run for the remaining inputs; no variant is repeated to fill the cap",
+  "constraint_violations": {
+    "names_outside_list": "raw names (before the service's name check) that are not exactly one of the 130 names",
+    "have_outside_owned": "raw `have` items that are not exactly one of the user's items (S0, S2, S4, S5, probes)",
+    "missing_outside_vocabulary": "raw `missing` items that are not exactly one of the vocabulary names (S0, S2, S3, S4, S5, probes)",
+    "reported_also": "repeated names, empty answers, answers cut off by the token limit"
+  },
+  "metrics": [
+    "constraint violations per kind (counts and share of items)",
+    "failed calls (HTTP error, invalid JSON) and cut-off answers (finish_reason length)",
+    "nonempty_when_possible, reference recall and precision, missing_disjoint, have_subset (by the scorer, where the field exists)",
+    "number of dishes returned per input (min, median, max; no threshold)",
+    "input and output tokens, cost per call (computed from tokens; the provider-reported cost beside it)",
+    "latency median and p95 over final attempts",
+    "client lines of code: logical source lines (non-blank, non-comment) of the functions that build and send the structured request and read its answer, raw route against LangChain route; shared schema builders and the retry and scoring wrappers are excluded; counted by formats.client_code_lines()"
+  ],
+  "decision_rule": "Candidates are S1, S2, S3, S4 (full runs of 27 inputs). A candidate qualifies only if ALL hold: zero constraint violations of the kinds that apply to its format; zero cut-off answers; zero failed calls; reference recall >= S0's recall - 0.02 and reference precision >= S0's precision - 0.02 (S0 is the same-day run). Among the qualifying candidates choose the lowest mean cost per call (computed from tokens); a tie within 2% goes to the shorter client code. If none qualifies, say so and name the failed conditions of each candidate. S5a, S5b, S2n, S2r and S6 are compared with S2 or S1 on the same inputs and never enter the rule. Because S1 returns names only (no `have`, no `missing`), the report states which fields each qualifying format delivers; the app needs `have` for the ingredient badges, so a names-only winner is a cost floor and not a drop-in replacement.",
+  "limits": [
+    "one run per variant at temperature 0, one model, 27 inputs (one case moves a share by about 3 points; the LangChain and probe variants use 12 and 6 inputs)",
+    "the reference set is made by rule from the same dish list, not by people; recall and precision measure agreement with that rule",
+    "enum support depends on the provider that serves the request; the serving provider is recorded and a different provider may behave differently",
+    "S0 is run again on the same day because answers and provider routing can change between days",
+    "429 retries are not results of a variant"
+  ],
+  "amendments": [
+    {
+      "date": "2026-11-18",
+      "before": "results of the main run exist (171 calls, one attempt each, no 429)",
+      "note": "Two diagnostic calls (one for S5b input S01, one for S4 input S03) are made only to read the error text that the runner did not store (it kept the error class and status). They are not variants, are excluded from every table, and count toward the cap (173 of 200). No variant is repeated."
+    }
+  ],
+  "client_code_functions": {
+    "raw_response_format": [
+      "formats.response_format_payload",
+      "formats.post_chat"
+    ],
+    "raw_tools": [
+      "formats.tools_payload",
+      "formats.post_chat"
+    ],
+    "langchain": [
+      "formats.langchain_structured",
+      "formats.literal_of",
+      "formats.invoke_langchain"
+    ],
+    "unit": "statements (ast) of each function, docstrings excluded"
+  }
+}

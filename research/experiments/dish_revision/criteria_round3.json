@@ -1,0 +1,46 @@
+{
+  "round": "3",
+  "date": "2026-11-19",
+  "question": "On the phone, (1) recipe rows written from the videos (꽃소금, 진간장) did not match fridge names (소금, 간장), so the recipe showed them as missing and adapting 고추장찌개 failed every time, and 쪽파 showed as owned when only 대파 was in the fridge; (2) a card said nothing was missing while its recipe showed several missing rows; (3) an adapted recipe still said to add a sauce whose step it had removed. Does a reviewed name table remove (1) and shrink (2), and does a prompt rule about references (plus, if needed, one re-ask on a rejected answer) reduce failed and wrong adapted recipes?",
+  "inputs": "every served recipe (artifacts/dish-recipes/recipes.json, 124 recipes, untracked) with the fridge F_card = the dish's key ingredients from server/app/dishes/dishes.json: the ingredients that make the card count nothing missing, the situation the user is in when the card says 'nothing missing' and they open the recipe",
+  "variants": {
+    "N0": "served at 4f09726: availability from the dish list (exact, synonyms, the dish list's stand-ins), served prompt and check",
+    "N1": "availability from the reviewed name table server/app/dishes/recipe_names.json (same ingredient under another name, grade, cut or a form made from it alone; general names covered by one kind; stand-ins are not ownership); prompt and check unchanged",
+    "N2": "N1 plus one rule in the prompt: when a step is removed or changed, every later step and tip that used what it made (a sauce, broth, batter, cooked part) is rewritten or removed; each step and tip may name only ingredients in the revised list or things an earlier step makes",
+    "N3": "N2 plus one re-ask when the check rejects the answer: the same request with the rejected answer's violation message added, the second answer checked the same way and never repaired by the server. Run only if N2 still has failed answers"
+  },
+  "offline_metrics": [
+    "per variant N0/N1 availability without any call: unavailable rows per recipe (distribution, by role), recipes with no unavailable row, recipes whose main row is unavailable although the card counts nothing missing; every name whose status changes is listed and reviewed"
+  ],
+  "metrics": [
+    "served outcome per recipe: no call needed (nothing unavailable), revised, refused (prescreen, model, check), failed (code), provider error",
+    "content errors the check does not see, in served revised recipes: a step or tip that names an ingredient absent from the revised list, or uses something (a sauce, broth, batter) no earlier step makes and the list does not contain. Measured by a judge model (google/gemini-2.5-flash, temperature 0) that is first compared with my own labels on 24 revised recipes sampled with seed 20261119 from N1 before it judges the rest; agreement is reported and my labels are used where both exist",
+    "model calls, re-asks, latency, cost"
+  ],
+  "analysis": "Descriptive; no pass/fail threshold (user rule 2026-11-19). Per-recipe paired tables N0 vs N1, N1 vs N2, N2 vs N3 with counts of outcomes that change in each direction; one run per variant, so changes in both directions are read as run-to-run variation unless one direction clearly dominates. Adoption is a judgement written after the numbers.",
+  "model": "google/gemini-2.5-flash-lite, temperature 0, served Reviser path (prescreen, check, main-ingredient rule)",
+  "budget": {
+    "model_calls": 700,
+    "usd": 1.0,
+    "plan": "N0..N2 at most 124 calls each; N3 at most 124 plus 124 re-asks; judge 24 + up to 4 x 124",
+    "model_calls_amended": 1200
+  },
+  "limits": [
+    "one run per variant at temperature 0",
+    "the fridge is the catalog's key ingredients only; real fridges hold more",
+    "the name table is reviewed by one person; the roles of recipe rows were written by an AI",
+    "the content judge is a model, checked on 24 hand labels only"
+  ],
+  "amendments": [
+    {
+      "date": "2026-11-19",
+      "before_calls": "yes, before the N3 calls",
+      "text": "N2's rule changed no outcome count (N1 vs N2: 9 failed->revised, 10 revised->failed). Because N2 may not be adopted, N3 is run both as registered (N2 + re-ask) and as N3a (N1 + re-ask). The re-ask adds to the user message: 'Your previous answer was rejected by a check: <violation message>. Answer again and follow every rule.' Every attempt's raw answer is stored. 32 diagnostic calls (the 16 bad_reference and 16 mentions_unavailable cases of N1 re-run with raw answers kept, data/dish-revision/round3-diagnosis.json) showed that bad_reference answers cite rows or steps beyond the source (numbers of new rows or of the revised steps, or 0). Added an offline metric on the stored N3/N3a answers: answers rejected only for out-of-range references that pass every other rule once those references are dropped. Budget unchanged."
+    },
+    {
+      "date": "2026-11-19",
+      "before_calls": "no: written after the call count had passed the registered 700 (N0-N2 about 350, 32 diagnostic, the N3/N3a runs, 24 + 188 judge calls)",
+      "text": "The registered call cap (700) did not count the diagnostic calls, the second re-ask variant or the judge on five variants; it was passed before this note. Spending stayed far below the dollar cap (about $0.25 of $1.0 by then). Cap raised to 1,200 calls for the remaining judge calls on N3/N3a; the overrun is reported in the README."
+    }
+  ]
+}

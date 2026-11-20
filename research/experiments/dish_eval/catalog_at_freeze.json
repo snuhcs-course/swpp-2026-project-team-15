@@ -1,0 +1,2168 @@
+{
+ "version": 1,
+ "note": "Self-authored baseline of student-style dishes (names, categories, key ingredients). No recipe text. Edit freely. substitutes/combos are the only substitutions /dishes/adapt will accept (conservative; edit with care).",
+ "equivalents": {
+  "밥": [
+   "쌀",
+   "햇반",
+   "즉석밥",
+   "찬밥",
+   "현미밥"
+  ],
+  "참치캔": [
+   "참치",
+   "참치통조림"
+  ],
+  "햄": [
+   "스팸",
+   "소시지",
+   "런천미트"
+  ],
+  "소시지": [
+   "비엔나소시지",
+   "햄"
+  ],
+  "라면": [
+   "신라면",
+   "진라면",
+   "너구리",
+   "짜파게티",
+   "컵라면"
+  ],
+  "국수": [
+   "소면",
+   "중면",
+   "칼국수면"
+  ],
+  "버섯": [
+   "양송이버섯",
+   "표고버섯",
+   "느타리버섯",
+   "새송이버섯",
+   "팽이버섯"
+  ],
+  "고추": [
+   "청양고추",
+   "풋고추",
+   "홍고추",
+   "청고추"
+  ],
+  "닭고기": [
+   "닭가슴살",
+   "닭다리살",
+   "닭"
+  ],
+  "돼지고기": [
+   "삼겹살",
+   "목살",
+   "앞다리살",
+   "대패삼겹살"
+  ],
+  "소고기": [
+   "불고기용소고기",
+   "차돌박이",
+   "불고기감"
+  ],
+  "계란": [
+   "달걀"
+  ],
+  "김치": [
+   "배추김치",
+   "묵은지",
+   "볶음김치"
+  ],
+  "마늘": [
+   "다진마늘",
+   "깐마늘"
+  ],
+  "대파": [
+   "쪽파",
+   "파",
+   "다진파"
+  ],
+  "스파게티면": [
+   "스파게티",
+   "파스타면",
+   "파스타"
+  ],
+  "옥수수": [
+   "캔옥수수",
+   "옥수수통조림"
+  ],
+  "부침가루": [
+   "튀김가루",
+   "부침개가루"
+  ]
+ },
+ "substitutes": {
+  "대파": [
+   "쪽파",
+   "양파",
+   "부추"
+  ],
+  "양파": [
+   "대파",
+   "양배추"
+  ],
+  "쪽파": [
+   "대파"
+  ],
+  "돼지고기": [
+   "햄",
+   "소시지",
+   "베이컨",
+   "닭고기"
+  ],
+  "소고기": [
+   "돼지고기",
+   "닭고기"
+  ],
+  "닭고기": [
+   "돼지고기",
+   "소고기"
+  ],
+  "햄": [
+   "소시지",
+   "베이컨",
+   "참치캔"
+  ],
+  "소시지": [
+   "햄",
+   "베이컨"
+  ],
+  "베이컨": [
+   "햄"
+  ],
+  "참치캔": [
+   "햄"
+  ],
+  "애호박": [
+   "감자",
+   "양파"
+  ],
+  "감자": [
+   "고구마"
+  ],
+  "당근": [
+   "양파"
+  ],
+  "상추": [
+   "깻잎",
+   "양배추"
+  ],
+  "깻잎": [
+   "상추"
+  ],
+  "양배추": [
+   "상추",
+   "배추"
+  ],
+  "시금치": [
+   "부추"
+  ],
+  "콩나물": [
+   "숙주"
+  ],
+  "우유": [
+   "두유"
+  ],
+  "버터": [
+   "식용유"
+  ],
+  "올리브유": [
+   "식용유"
+  ],
+  "스파게티면": [
+   "국수"
+  ],
+  "국수": [
+   "우동면"
+  ],
+  "우동면": [
+   "국수"
+  ]
+ },
+ "dishes": [
+  {
+   "id": "kimchi-fried-rice",
+   "name": "김치볶음밥",
+   "category": "볶음밥",
+   "key_ingredients": [
+    "밥",
+    "김치",
+    "대파",
+    "계란"
+   ],
+   "optional": [
+    "대파",
+    "계란"
+   ],
+   "aliases": [
+    "김치 볶음밥"
+   ]
+  },
+  {
+   "id": "egg-fried-rice",
+   "name": "계란볶음밥",
+   "category": "볶음밥",
+   "key_ingredients": [
+    "밥",
+    "계란",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": [
+    "달걀볶음밥"
+   ]
+  },
+  {
+   "id": "pork-kimchi-fried-rice",
+   "name": "돼지고기김치볶음밥",
+   "category": "볶음밥",
+   "key_ingredients": [
+    "밥",
+    "김치",
+    "돼지고기",
+    "양파"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": [
+    "돼지김치볶음밥"
+   ]
+  },
+  {
+   "id": "ham-fried-rice",
+   "name": "햄볶음밥",
+   "category": "볶음밥",
+   "key_ingredients": [
+    "밥",
+    "햄",
+    "양파",
+    "당근"
+   ],
+   "optional": [
+    "당근"
+   ],
+   "aliases": [
+    "스팸볶음밥"
+   ]
+  },
+  {
+   "id": "tuna-fried-rice",
+   "name": "참치볶음밥",
+   "category": "볶음밥",
+   "key_ingredients": [
+    "밥",
+    "참치캔",
+    "양파",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": [
+    "참치 볶음밥"
+   ]
+  },
+  {
+   "id": "shrimp-fried-rice",
+   "name": "새우볶음밥",
+   "category": "볶음밥",
+   "key_ingredients": [
+    "밥",
+    "새우",
+    "양파",
+    "당근"
+   ],
+   "optional": [
+    "당근"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "kimchi-tuna-fried-rice",
+   "name": "참치김치볶음밥",
+   "category": "볶음밥",
+   "key_ingredients": [
+    "밥",
+    "김치",
+    "참치캔"
+   ],
+   "optional": [],
+   "aliases": []
+  },
+  {
+   "id": "bacon-fried-rice",
+   "name": "베이컨볶음밥",
+   "category": "볶음밥",
+   "key_ingredients": [
+    "밥",
+    "베이컨",
+    "양파",
+    "계란"
+   ],
+   "optional": [
+    "계란"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "garlic-fried-rice",
+   "name": "마늘볶음밥",
+   "category": "볶음밥",
+   "key_ingredients": [
+    "밥",
+    "마늘",
+    "대파",
+    "계란"
+   ],
+   "optional": [
+    "계란"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "mushroom-fried-rice",
+   "name": "버섯볶음밥",
+   "category": "볶음밥",
+   "key_ingredients": [
+    "밥",
+    "버섯",
+    "양파",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "kimchi-rice-bowl",
+   "name": "김치덮밥",
+   "category": "덮밥",
+   "key_ingredients": [
+    "밥",
+    "김치",
+    "돼지고기",
+    "양파"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "egg-rice-bowl",
+   "name": "계란덮밥",
+   "category": "덮밥",
+   "key_ingredients": [
+    "밥",
+    "계란",
+    "양파",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": [
+    "달걀덮밥"
+   ]
+  },
+  {
+   "id": "spam-egg-bowl",
+   "name": "스팸마요덮밥",
+   "category": "덮밥",
+   "key_ingredients": [
+    "밥",
+    "햄",
+    "계란",
+    "김"
+   ],
+   "optional": [
+    "김"
+   ],
+   "aliases": [
+    "참치마요덮밥"
+   ]
+  },
+  {
+   "id": "tuna-mayo-bowl",
+   "name": "참치마요덮밥",
+   "category": "덮밥",
+   "key_ingredients": [
+    "밥",
+    "참치캔",
+    "마요네즈",
+    "김"
+   ],
+   "optional": [
+    "김"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "pork-bowl",
+   "name": "제육덮밥",
+   "category": "덮밥",
+   "key_ingredients": [
+    "밥",
+    "돼지고기",
+    "양파",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": [
+    "제육볶음덮밥"
+   ]
+  },
+  {
+   "id": "bulgogi-bowl",
+   "name": "불고기덮밥",
+   "category": "덮밥",
+   "key_ingredients": [
+    "밥",
+    "소고기",
+    "양파",
+    "당근"
+   ],
+   "optional": [
+    "당근"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "chicken-mayo-bowl",
+   "name": "치킨마요덮밥",
+   "category": "덮밥",
+   "key_ingredients": [
+    "밥",
+    "닭고기",
+    "마요네즈",
+    "양파"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "tofu-bowl",
+   "name": "두부덮밥",
+   "category": "덮밥",
+   "key_ingredients": [
+    "밥",
+    "두부",
+    "양파",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "curry-rice",
+   "name": "카레라이스",
+   "category": "덮밥",
+   "key_ingredients": [
+    "밥",
+    "카레",
+    "감자",
+    "양파",
+    "당근"
+   ],
+   "optional": [
+    "당근"
+   ],
+   "aliases": [
+    "카레"
+   ]
+  },
+  {
+   "id": "omurice",
+   "name": "오므라이스",
+   "category": "덮밥",
+   "key_ingredients": [
+    "밥",
+    "계란",
+    "양파",
+    "햄"
+   ],
+   "optional": [
+    "햄"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "bibimbap",
+   "name": "비빔밥",
+   "category": "덮밥",
+   "key_ingredients": [
+    "밥",
+    "계란",
+    "고추장",
+    "시금치",
+    "당근"
+   ],
+   "optional": [
+    "시금치",
+    "당근"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "kimchi-bibimbap",
+   "name": "김치비빔밥",
+   "category": "덮밥",
+   "key_ingredients": [
+    "밥",
+    "김치",
+    "계란",
+    "고추장"
+   ],
+   "optional": [
+    "고추장"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "gim-gyeran-rice",
+   "name": "계란간장밥",
+   "category": "덮밥",
+   "key_ingredients": [
+    "밥",
+    "계란",
+    "간장",
+    "김"
+   ],
+   "optional": [
+    "김"
+   ],
+   "aliases": [
+    "간장계란밥"
+   ]
+  },
+  {
+   "id": "kimchi-rolled",
+   "name": "김치주먹밥",
+   "category": "주먹밥",
+   "key_ingredients": [
+    "밥",
+    "김치",
+    "김",
+    "참기름"
+   ],
+   "optional": [
+    "참기름"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "tuna-rice-ball",
+   "name": "참치주먹밥",
+   "category": "주먹밥",
+   "key_ingredients": [
+    "밥",
+    "참치캔",
+    "김",
+    "마요네즈"
+   ],
+   "optional": [
+    "마요네즈"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "rice-ball-egg",
+   "name": "계란주먹밥",
+   "category": "주먹밥",
+   "key_ingredients": [
+    "밥",
+    "계란",
+    "김"
+   ],
+   "optional": [],
+   "aliases": []
+  },
+  {
+   "id": "gimbap",
+   "name": "김밥",
+   "category": "주먹밥",
+   "key_ingredients": [
+    "밥",
+    "김",
+    "계란",
+    "단무지",
+    "당근"
+   ],
+   "optional": [
+    "당근"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "tuna-gimbap",
+   "name": "참치김밥",
+   "category": "주먹밥",
+   "key_ingredients": [
+    "밥",
+    "김",
+    "참치캔",
+    "계란",
+    "단무지"
+   ],
+   "optional": [
+    "단무지"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "kimchi-stew",
+   "name": "김치찌개",
+   "category": "찌개",
+   "key_ingredients": [
+    "김치",
+    "돼지고기",
+    "두부",
+    "대파"
+   ],
+   "optional": [
+    "두부",
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "tuna-kimchi-stew",
+   "name": "참치김치찌개",
+   "category": "찌개",
+   "key_ingredients": [
+    "김치",
+    "참치캔",
+    "두부",
+    "양파"
+   ],
+   "optional": [
+    "두부",
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "doenjang-stew",
+   "name": "된장찌개",
+   "category": "찌개",
+   "key_ingredients": [
+    "된장",
+    "두부",
+    "애호박",
+    "양파",
+    "대파"
+   ],
+   "optional": [
+    "애호박",
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "soft-tofu-stew",
+   "name": "순두부찌개",
+   "category": "찌개",
+   "key_ingredients": [
+    "순두부",
+    "계란",
+    "대파",
+    "양파"
+   ],
+   "optional": [
+    "계란",
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "ham-stew",
+   "name": "부대찌개",
+   "category": "찌개",
+   "key_ingredients": [
+    "햄",
+    "김치",
+    "라면",
+    "두부",
+    "대파"
+   ],
+   "optional": [
+    "두부",
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "spam-kimchi-stew",
+   "name": "햄김치찌개",
+   "category": "찌개",
+   "key_ingredients": [
+    "김치",
+    "햄",
+    "두부",
+    "대파"
+   ],
+   "optional": [
+    "두부",
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "gochujang-stew",
+   "name": "고추장찌개",
+   "category": "찌개",
+   "key_ingredients": [
+    "고추장",
+    "감자",
+    "애호박",
+    "양파",
+    "두부"
+   ],
+   "optional": [
+    "두부"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "egg-stew",
+   "name": "계란찜",
+   "category": "찌개",
+   "key_ingredients": [
+    "계란",
+    "대파",
+    "소금"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": [
+    "달걀찜"
+   ]
+  },
+  {
+   "id": "egg-soup",
+   "name": "계란국",
+   "category": "국",
+   "key_ingredients": [
+    "계란",
+    "대파",
+    "양파"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": [
+    "달걀국"
+   ]
+  },
+  {
+   "id": "tofu-soup",
+   "name": "두부국",
+   "category": "국",
+   "key_ingredients": [
+    "두부",
+    "대파",
+    "양파"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "bean-sprout-soup",
+   "name": "콩나물국",
+   "category": "국",
+   "key_ingredients": [
+    "콩나물",
+    "대파",
+    "마늘"
+   ],
+   "optional": [
+    "마늘"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "seaweed-soup",
+   "name": "미역국",
+   "category": "국",
+   "key_ingredients": [
+    "미역",
+    "소고기",
+    "마늘"
+   ],
+   "optional": [
+    "소고기"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "potato-soup",
+   "name": "감자국",
+   "category": "국",
+   "key_ingredients": [
+    "감자",
+    "양파",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "rice-cake-soup",
+   "name": "떡국",
+   "category": "국",
+   "key_ingredients": [
+    "떡",
+    "계란",
+    "대파",
+    "김"
+   ],
+   "optional": [
+    "김"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "dumpling-soup",
+   "name": "만두국",
+   "category": "국",
+   "key_ingredients": [
+    "만두",
+    "계란",
+    "대파"
+   ],
+   "optional": [
+    "계란"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "radish-soup",
+   "name": "무국",
+   "category": "국",
+   "key_ingredients": [
+    "무",
+    "대파",
+    "마늘"
+   ],
+   "optional": [
+    "마늘"
+   ],
+   "aliases": [
+    "소고기무국"
+   ]
+  },
+  {
+   "id": "kimchi-soup",
+   "name": "김치국",
+   "category": "국",
+   "key_ingredients": [
+    "김치",
+    "대파",
+    "두부"
+   ],
+   "optional": [
+    "두부"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "fish-cake-soup",
+   "name": "어묵탕",
+   "category": "국",
+   "key_ingredients": [
+    "어묵",
+    "무",
+    "대파",
+    "양파"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": [
+    "오뎅탕"
+   ]
+  },
+  {
+   "id": "ramyeon-egg",
+   "name": "계란라면",
+   "category": "면",
+   "key_ingredients": [
+    "라면",
+    "계란",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": [
+    "달걀라면"
+   ]
+  },
+  {
+   "id": "cheese-ramyeon",
+   "name": "치즈라면",
+   "category": "면",
+   "key_ingredients": [
+    "라면",
+    "치즈",
+    "계란"
+   ],
+   "optional": [
+    "계란"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "kimchi-ramyeon",
+   "name": "김치라면",
+   "category": "면",
+   "key_ingredients": [
+    "라면",
+    "김치",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "dumpling-ramyeon",
+   "name": "만두라면",
+   "category": "면",
+   "key_ingredients": [
+    "라면",
+    "만두",
+    "계란",
+    "대파"
+   ],
+   "optional": [
+    "계란",
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "tteok-ramyeon",
+   "name": "떡라면",
+   "category": "면",
+   "key_ingredients": [
+    "라면",
+    "떡",
+    "계란",
+    "대파"
+   ],
+   "optional": [
+    "계란",
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "jjapaghetti-egg",
+   "name": "짜장라면",
+   "category": "면",
+   "key_ingredients": [
+    "라면",
+    "양파",
+    "돼지고기"
+   ],
+   "optional": [
+    "돼지고기"
+   ],
+   "aliases": [
+    "짜파게티"
+   ]
+  },
+  {
+   "id": "bibim-noodle",
+   "name": "비빔국수",
+   "category": "면",
+   "key_ingredients": [
+    "국수",
+    "김치",
+    "오이",
+    "계란"
+   ],
+   "optional": [
+    "오이",
+    "계란"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "janchi-noodle",
+   "name": "잔치국수",
+   "category": "면",
+   "key_ingredients": [
+    "국수",
+    "애호박",
+    "계란",
+    "대파",
+    "어묵"
+   ],
+   "optional": [
+    "어묵"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "kimchi-noodle",
+   "name": "김치말이국수",
+   "category": "면",
+   "key_ingredients": [
+    "국수",
+    "김치",
+    "오이",
+    "계란"
+   ],
+   "optional": [
+    "오이"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "udon-stir",
+   "name": "볶음우동",
+   "category": "면",
+   "key_ingredients": [
+    "우동면",
+    "양배추",
+    "양파",
+    "당근",
+    "어묵"
+   ],
+   "optional": [
+    "당근",
+    "어묵"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "udon-soup",
+   "name": "우동",
+   "category": "면",
+   "key_ingredients": [
+    "우동면",
+    "어묵",
+    "대파",
+    "김"
+   ],
+   "optional": [
+    "김"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "japchae",
+   "name": "잡채",
+   "category": "면",
+   "key_ingredients": [
+    "당면",
+    "양파",
+    "당근",
+    "시금치",
+    "돼지고기"
+   ],
+   "optional": [
+    "시금치",
+    "돼지고기"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "tomato-pasta",
+   "name": "토마토파스타",
+   "category": "파스타",
+   "key_ingredients": [
+    "스파게티면",
+    "토마토",
+    "양파",
+    "마늘"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "oil-pasta",
+   "name": "알리오올리오",
+   "category": "파스타",
+   "key_ingredients": [
+    "스파게티면",
+    "마늘",
+    "올리브유",
+    "고추"
+   ],
+   "optional": [
+    "고추"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "cream-pasta",
+   "name": "크림파스타",
+   "category": "파스타",
+   "key_ingredients": [
+    "스파게티면",
+    "우유",
+    "베이컨",
+    "양파",
+    "마늘"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "bacon-pasta",
+   "name": "베이컨파스타",
+   "category": "파스타",
+   "key_ingredients": [
+    "스파게티면",
+    "베이컨",
+    "양파",
+    "마늘"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "tuna-pasta",
+   "name": "참치파스타",
+   "category": "파스타",
+   "key_ingredients": [
+    "스파게티면",
+    "참치캔",
+    "양파",
+    "마늘"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "kimchi-pasta",
+   "name": "김치파스타",
+   "category": "파스타",
+   "key_ingredients": [
+    "스파게티면",
+    "김치",
+    "베이컨",
+    "마늘"
+   ],
+   "optional": [
+    "베이컨"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "egg-toast",
+   "name": "계란토스트",
+   "category": "빵",
+   "key_ingredients": [
+    "식빵",
+    "계란",
+    "양배추",
+    "햄"
+   ],
+   "optional": [
+    "햄"
+   ],
+   "aliases": [
+    "길거리토스트"
+   ]
+  },
+  {
+   "id": "cheese-toast",
+   "name": "치즈토스트",
+   "category": "빵",
+   "key_ingredients": [
+    "식빵",
+    "치즈",
+    "계란"
+   ],
+   "optional": [
+    "계란"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "french-toast",
+   "name": "프렌치토스트",
+   "category": "빵",
+   "key_ingredients": [
+    "식빵",
+    "계란",
+    "우유",
+    "설탕"
+   ],
+   "optional": [],
+   "aliases": []
+  },
+  {
+   "id": "sandwich-egg",
+   "name": "계란샌드위치",
+   "category": "빵",
+   "key_ingredients": [
+    "식빵",
+    "계란",
+    "마요네즈",
+    "오이"
+   ],
+   "optional": [
+    "오이"
+   ],
+   "aliases": [
+    "에그샌드위치"
+   ]
+  },
+  {
+   "id": "tuna-sandwich",
+   "name": "참치샌드위치",
+   "category": "빵",
+   "key_ingredients": [
+    "식빵",
+    "참치캔",
+    "마요네즈",
+    "양파"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "ham-cheese-sandwich",
+   "name": "햄치즈샌드위치",
+   "category": "빵",
+   "key_ingredients": [
+    "식빵",
+    "햄",
+    "치즈",
+    "상추"
+   ],
+   "optional": [
+    "상추"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "garlic-bread",
+   "name": "마늘빵",
+   "category": "빵",
+   "key_ingredients": [
+    "식빵",
+    "버터",
+    "마늘",
+    "설탕"
+   ],
+   "optional": [],
+   "aliases": []
+  },
+  {
+   "id": "potato-salad",
+   "name": "감자샐러드",
+   "category": "샐러드",
+   "key_ingredients": [
+    "감자",
+    "계란",
+    "오이",
+    "마요네즈"
+   ],
+   "optional": [
+    "오이"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "egg-salad",
+   "name": "계란샐러드",
+   "category": "샐러드",
+   "key_ingredients": [
+    "계란",
+    "마요네즈",
+    "양파"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "tuna-salad",
+   "name": "참치샐러드",
+   "category": "샐러드",
+   "key_ingredients": [
+    "참치캔",
+    "상추",
+    "양파",
+    "토마토"
+   ],
+   "optional": [
+    "양파",
+    "토마토"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "cabbage-salad",
+   "name": "양배추샐러드",
+   "category": "샐러드",
+   "key_ingredients": [
+    "양배추",
+    "당근",
+    "마요네즈"
+   ],
+   "optional": [
+    "당근"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "tomato-egg-stir",
+   "name": "토마토계란볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "토마토",
+    "계란",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": [
+    "토달볶음"
+   ]
+  },
+  {
+   "id": "kimchi-stir",
+   "name": "김치볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "김치",
+    "돼지고기",
+    "양파"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": [
+    "돼지김치볶음"
+   ]
+  },
+  {
+   "id": "pork-stir",
+   "name": "제육볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "돼지고기",
+    "양파",
+    "고추장",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "sausage-stir",
+   "name": "소시지야채볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "소시지",
+    "양파",
+    "양배추",
+    "당근"
+   ],
+   "optional": [
+    "당근"
+   ],
+   "aliases": [
+    "소야"
+   ]
+  },
+  {
+   "id": "spam-stir",
+   "name": "햄야채볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "햄",
+    "양파",
+    "양배추",
+    "당근"
+   ],
+   "optional": [
+    "당근"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "zucchini-stir",
+   "name": "애호박볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "애호박",
+    "양파",
+    "마늘"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "potato-stir",
+   "name": "감자볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "감자",
+    "양파",
+    "당근"
+   ],
+   "optional": [
+    "당근"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "fish-cake-stir",
+   "name": "어묵볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "어묵",
+    "양파",
+    "당근",
+    "간장"
+   ],
+   "optional": [
+    "당근"
+   ],
+   "aliases": [
+    "오뎅볶음"
+   ]
+  },
+  {
+   "id": "anchovy-stir",
+   "name": "멸치볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "멸치",
+    "간장",
+    "설탕"
+   ],
+   "optional": [],
+   "aliases": []
+  },
+  {
+   "id": "tofu-stir",
+   "name": "두부김치",
+   "category": "볶음",
+   "key_ingredients": [
+    "두부",
+    "김치",
+    "돼지고기"
+   ],
+   "optional": [
+    "돼지고기"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "tofu-pan",
+   "name": "두부부침",
+   "category": "전",
+   "key_ingredients": [
+    "두부",
+    "계란",
+    "간장"
+   ],
+   "optional": [
+    "계란"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "tofu-braise",
+   "name": "두부조림",
+   "category": "조림",
+   "key_ingredients": [
+    "두부",
+    "대파",
+    "간장",
+    "고춧가루"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "potato-braise",
+   "name": "감자조림",
+   "category": "조림",
+   "key_ingredients": [
+    "감자",
+    "간장",
+    "설탕"
+   ],
+   "optional": [],
+   "aliases": []
+  },
+  {
+   "id": "egg-braise",
+   "name": "계란장조림",
+   "category": "조림",
+   "key_ingredients": [
+    "계란",
+    "간장",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": [
+    "달걀장조림"
+   ]
+  },
+  {
+   "id": "spam-bean-sprout",
+   "name": "콩나물무침",
+   "category": "무침",
+   "key_ingredients": [
+    "콩나물",
+    "대파",
+    "마늘",
+    "고춧가루"
+   ],
+   "optional": [
+    "고춧가루"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "spinach-side",
+   "name": "시금치나물",
+   "category": "무침",
+   "key_ingredients": [
+    "시금치",
+    "마늘",
+    "참기름"
+   ],
+   "optional": [],
+   "aliases": []
+  },
+  {
+   "id": "cucumber-side",
+   "name": "오이무침",
+   "category": "무침",
+   "key_ingredients": [
+    "오이",
+    "양파",
+    "고춧가루"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "radish-side",
+   "name": "무생채",
+   "category": "무침",
+   "key_ingredients": [
+    "무",
+    "고춧가루",
+    "설탕"
+   ],
+   "optional": [],
+   "aliases": []
+  },
+  {
+   "id": "eggplant-side",
+   "name": "가지볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "가지",
+    "양파",
+    "마늘",
+    "간장"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "squid-stir",
+   "name": "오징어볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "오징어",
+    "양파",
+    "고추장",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "shrimp-garlic",
+   "name": "마늘새우볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "새우",
+    "마늘",
+    "버터"
+   ],
+   "optional": [
+    "버터"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "chicken-stir",
+   "name": "닭볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "닭고기",
+    "감자",
+    "양파",
+    "고추장"
+   ],
+   "optional": [
+    "감자"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "chicken-garlic",
+   "name": "간장닭구이",
+   "category": "구이",
+   "key_ingredients": [
+    "닭고기",
+    "간장",
+    "마늘",
+    "양파"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "chicken-breast-salad",
+   "name": "닭가슴살샐러드",
+   "category": "샐러드",
+   "key_ingredients": [
+    "닭고기",
+    "상추",
+    "토마토",
+    "오이"
+   ],
+   "optional": [
+    "오이"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "beef-stir",
+   "name": "소고기야채볶음",
+   "category": "볶음",
+   "key_ingredients": [
+    "소고기",
+    "양파",
+    "당근",
+    "대파"
+   ],
+   "optional": [
+    "당근",
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "pork-lettuce",
+   "name": "돼지고기상추쌈",
+   "category": "구이",
+   "key_ingredients": [
+    "돼지고기",
+    "상추",
+    "깻잎",
+    "마늘"
+   ],
+   "optional": [
+    "깻잎"
+   ],
+   "aliases": [
+    "삼겹살"
+   ]
+  },
+  {
+   "id": "pork-belly-kimchi",
+   "name": "삼겹살김치구이",
+   "category": "구이",
+   "key_ingredients": [
+    "돼지고기",
+    "김치",
+    "마늘"
+   ],
+   "optional": [
+    "마늘"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "mackerel-grill",
+   "name": "고등어구이",
+   "category": "구이",
+   "key_ingredients": [
+    "고등어",
+    "소금",
+    "무"
+   ],
+   "optional": [
+    "무"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "mackerel-braise",
+   "name": "고등어조림",
+   "category": "조림",
+   "key_ingredients": [
+    "고등어",
+    "무",
+    "김치",
+    "대파"
+   ],
+   "optional": [
+    "김치"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "can-mackerel-stew",
+   "name": "고등어김치찌개",
+   "category": "찌개",
+   "key_ingredients": [
+    "고등어",
+    "김치",
+    "양파",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "sweet-potato-bake",
+   "name": "군고구마",
+   "category": "간식",
+   "key_ingredients": [
+    "고구마"
+   ],
+   "optional": [],
+   "aliases": []
+  },
+  {
+   "id": "potato-pan",
+   "name": "감자전",
+   "category": "전",
+   "key_ingredients": [
+    "감자",
+    "양파",
+    "소금"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "kimchi-pancake",
+   "name": "김치전",
+   "category": "전",
+   "key_ingredients": [
+    "김치",
+    "부침가루",
+    "양파",
+    "대파"
+   ],
+   "optional": [
+    "양파",
+    "대파"
+   ],
+   "aliases": [
+    "김치부침개"
+   ]
+  },
+  {
+   "id": "green-onion-pancake",
+   "name": "파전",
+   "category": "전",
+   "key_ingredients": [
+    "대파",
+    "부침가루",
+    "계란",
+    "오징어"
+   ],
+   "optional": [
+    "오징어",
+    "계란"
+   ],
+   "aliases": [
+    "파부침개"
+   ]
+  },
+  {
+   "id": "zucchini-pancake",
+   "name": "애호박전",
+   "category": "전",
+   "key_ingredients": [
+    "애호박",
+    "계란",
+    "부침가루"
+   ],
+   "optional": [],
+   "aliases": []
+  },
+  {
+   "id": "egg-roll",
+   "name": "계란말이",
+   "category": "계란",
+   "key_ingredients": [
+    "계란",
+    "대파",
+    "당근"
+   ],
+   "optional": [
+    "당근"
+   ],
+   "aliases": [
+    "달걀말이"
+   ]
+  },
+  {
+   "id": "egg-fry",
+   "name": "계란후라이",
+   "category": "계란",
+   "key_ingredients": [
+    "계란",
+    "식용유"
+   ],
+   "optional": [],
+   "aliases": [
+    "달걀후라이"
+   ]
+  },
+  {
+   "id": "egg-scramble",
+   "name": "스크램블에그",
+   "category": "계란",
+   "key_ingredients": [
+    "계란",
+    "우유",
+    "버터"
+   ],
+   "optional": [
+    "우유",
+    "버터"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "egg-boiled",
+   "name": "계란장",
+   "category": "계란",
+   "key_ingredients": [
+    "계란",
+    "간장",
+    "양파",
+    "대파"
+   ],
+   "optional": [
+    "양파",
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "cheese-egg-roll",
+   "name": "치즈계란말이",
+   "category": "계란",
+   "key_ingredients": [
+    "계란",
+    "치즈",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "kimchi-egg-roll",
+   "name": "김치계란말이",
+   "category": "계란",
+   "key_ingredients": [
+    "계란",
+    "김치",
+    "대파"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "steamed-egg-microwave",
+   "name": "전자레인지계란찜",
+   "category": "계란",
+   "key_ingredients": [
+    "계란",
+    "대파",
+    "소금"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "tteokbokki",
+   "name": "떡볶이",
+   "category": "분식",
+   "key_ingredients": [
+    "떡",
+    "어묵",
+    "고추장",
+    "대파"
+   ],
+   "optional": [
+    "어묵",
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "cheese-tteokbokki",
+   "name": "치즈떡볶이",
+   "category": "분식",
+   "key_ingredients": [
+    "떡",
+    "치즈",
+    "고추장",
+    "어묵"
+   ],
+   "optional": [
+    "어묵"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "rabokki",
+   "name": "라볶이",
+   "category": "분식",
+   "key_ingredients": [
+    "떡",
+    "라면",
+    "어묵",
+    "고추장"
+   ],
+   "optional": [
+    "어묵"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "fried-dumpling",
+   "name": "군만두",
+   "category": "분식",
+   "key_ingredients": [
+    "만두",
+    "식용유"
+   ],
+   "optional": [],
+   "aliases": []
+  },
+  {
+   "id": "dumpling-stew",
+   "name": "만두전골",
+   "category": "분식",
+   "key_ingredients": [
+    "만두",
+    "배추",
+    "대파",
+    "버섯"
+   ],
+   "optional": [
+    "버섯"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "hotdog-pan",
+   "name": "소시지부침",
+   "category": "분식",
+   "key_ingredients": [
+    "소시지",
+    "계란",
+    "부침가루"
+   ],
+   "optional": [
+    "부침가루"
+   ],
+   "aliases": [
+    "소시지전"
+   ]
+  },
+  {
+   "id": "corn-cheese",
+   "name": "콘치즈",
+   "category": "분식",
+   "key_ingredients": [
+    "옥수수",
+    "치즈",
+    "마요네즈"
+   ],
+   "optional": [],
+   "aliases": []
+  },
+  {
+   "id": "bulgogi-stir",
+   "name": "불고기",
+   "category": "볶음",
+   "key_ingredients": [
+    "소고기",
+    "양파",
+    "당근",
+    "대파"
+   ],
+   "optional": [
+    "당근",
+    "대파"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "porridge-egg",
+   "name": "계란죽",
+   "category": "죽",
+   "key_ingredients": [
+    "밥",
+    "계란",
+    "대파",
+    "참기름"
+   ],
+   "optional": [
+    "대파"
+   ],
+   "aliases": [
+    "달걀죽"
+   ]
+  },
+  {
+   "id": "vegetable-porridge",
+   "name": "야채죽",
+   "category": "죽",
+   "key_ingredients": [
+    "밥",
+    "당근",
+    "양파",
+    "애호박"
+   ],
+   "optional": [
+    "애호박"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "tuna-porridge",
+   "name": "참치죽",
+   "category": "죽",
+   "key_ingredients": [
+    "밥",
+    "참치캔",
+    "당근",
+    "양파"
+   ],
+   "optional": [
+    "당근"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "kimchi-porridge",
+   "name": "김치죽",
+   "category": "죽",
+   "key_ingredients": [
+    "밥",
+    "김치",
+    "계란",
+    "참기름"
+   ],
+   "optional": [
+    "계란"
+   ],
+   "aliases": []
+  },
+  {
+   "id": "mushroom-porridge",
+   "name": "버섯죽",
+   "category": "죽",
+   "key_ingredients": [
+    "밥",
+    "버섯",
+    "양파",
+    "참기름"
+   ],
+   "optional": [
+    "양파"
+   ],
+   "aliases": []
+  }
+ ],
+ "combos": {
+  "고추장": [
+   [
+    "고춧가루",
+    "간장",
+    "설탕"
+   ]
+  ],
+  "부침가루": [
+   [
+    "밀가루",
+    "소금"
+   ]
+  ]
+ }
+}

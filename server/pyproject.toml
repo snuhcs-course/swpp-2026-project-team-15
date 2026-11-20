@@ -1,44 +1,68 @@
 [project]
 name = "my-little-chef-server"
 version = "0.1.0"
-description = "Local FastAPI backend for My Little Chef: ingredient recognition and recipe recommendation"
+description = "FastAPI backend for My Little Chef: ingredient recognition and dish suggestions"
 requires-python = ">=3.12"
 dependencies = [
+    "cachetools>=5.5,<8",  # matches the types-cachetools 7.x stubs
     "fastapi>=0.143.0",
+    "filetype>=1.2.0",
     "google-genai>=2.29.0",
     "httpx>=0.28.1",
-    "pillow>=11,<13",
-    "psycopg[binary]>=3.2,<4",
+    "openai>=2.54,<3",
+    "opentelemetry-instrumentation-fastapi>=0.66b0,<0.67",
+    "opentelemetry-sdk>=1.45,<1.46",
+    "pillow>=11,<13",  # photo review: decode and size checks (/analyze/review)
+    "pydantic-settings>=2.10",
     "python-multipart>=0.0.32",
-    "sqlmodel>=0.0.48",
+    "tenacity>=9.0",
     "uvicorn>=0.54.0",
 ]
 
 [dependency-groups]
 dev = [
+    "mypy>=2.4.1",
     "pre-commit>=4.7.0",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "python-dotenv>=1.0,<2",
     "ruff>=0.17.0",
+    "scikit-learn>=1.9,<1.10",
+    "statsmodels>=0.15,<0.16",
+    "types-cachetools>=7.0.0.20260713",
 ]
 
 [tool.uv]
 package = false
+# Resolve only releases at least two weeks old at the last lock (2026-11-20); move the date
+# forward when updating, so a fresh release is never picked up the day it appears.
+exclude-newer = "2026-11-06T15:00:00Z"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = [".", "..", "../research"]
 
 [tool.coverage.run]
-source = ["app", "recipe_filtering", "recipe_revision"]
+source = ["app"]
 branch = true
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-# Preserve contributor importer/experiment formatting; their original tests run in pytest.
-extend-exclude = ["db", "tests/experiments"]
+# Only the original contributor tests are left as written: CI pins their content by hash
+# (tests/references/contributor-tests.json, scripts/check_integration_policy.py).
+extend-exclude = [
+    "tests/experiments/filtering/test_metrics_exclusions.py",
+    "tests/experiments/revision/test_adapters.py",
+    "tests/experiments/revision/test_core.py",
+    "tests/experiments/revision/test_loader.py",
+    "tests/experiments/revision/test_runner.py",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+# The service code only; research and tests are checked by ruff and pytest.
+files = ["app"]
+ignore_missing_imports = true

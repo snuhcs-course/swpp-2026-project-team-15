@@ -1,0 +1,62 @@
+{
+ "schema": 1,
+ "frozen_on": "2026-11-19",
+ "study": "revision round 2: refusal before the model call and main-ingredient preservation",
+ "question": "Do a refusal before the call (when an ingredient the dish is named after is unavailable) and a post-check that a main ingredient must stay (or be replaced by an owned ingredient in a change that names it) stop wrong recipes from being accepted, and what do they cost in wrongful refusals and failures?",
+ "model": "google/gemini-2.5-flash-lite",
+ "settings": {
+  "temperature": 0,
+  "max_tokens": 4096,
+  "strict_json_schema": true,
+  "runs": 1,
+  "request": "the server's revise request (prompts.revise_request), unchanged"
+ },
+ "design_note": "One model answer per case is shared by all variants: the variants differ only in deterministic steps before and after the call, so sharing removes run-to-run variation from the comparison and saves calls. The prescreen variants count the calls they would not make.",
+ "variants": {
+  "current": "server as of HEAD: answer check only (revision_check.check)",
+  "prescreen": "refuse without a call when revision_check.identity_missing finds an unavailable ingredient the dish is named after (names of 2+ characters or a synonym occurring in the dish name; a one-character name only at the end of the dish name)",
+  "main-kept": "after check: revision_check.check_main_kept (an unavailable main ingredient dropped without an owned replacement named in a change -> returned as a refusal; an available main ingredient dropped -> failure) and revision_check.check_short_mentions (a removed one-character ingredient named as a word in a step or tip -> failure)",
+  "both": "prescreen, then main-kept"
+ },
+ "inputs": {
+  "synthetic": "cases.json (36 = 12 hand-written fixture recipes x 3 fridges), frozen in round 1, unchanged",
+  "real": "fridges for the 16 recipes made from video captions (an untracked data file, not committed: third-party derived), built by research/experiments/dish_revision/round2.build_real_cases before any call: per recipe (a) all ingredients except the first non-staple main one -> expect refuse, (b) all except the first two non-staple secondary ones -> expect revise (skipped if none). 29 cases.",
+  "real_cases_sha256": "f04782b46587b654dac86eb0b812cd7b85e66bda26d5e363e23a89bbf20a2e08"
+ },
+ "labelling": "One AI labeller; the rule 'refuse when a main ingredient is unavailable' is kept from round 1. For the real recipes the role labels themselves were written by the AI that structured the captions, so some labels are debatable (e.g. potato as a main ingredient of curry rice, one of several mushrooms as the main ingredient of mushroom fried rice).",
+ "metrics": [
+  "wrong recipes accepted: revised and shown although the case expects a refusal (the dangerous outcome)",
+  "accepted answers in which an unavailable source ingredient name still occurs anywhere (plain substring, one-character names included): a screen, every hit reviewed by hand",
+  "refusal recall (refused / expect refuse) and precision (expect refuse / refused)",
+  "wrongful refusals (refused among expect revise)",
+  "failed answers by code, separately for expect refuse and expect revise",
+  "model calls needed per variant (prescreen saves calls)",
+  "change-reason coverage of the raw revising answers (same for all variants)",
+  "median and max latency, total cost"
+ ],
+ "analysis_plan": "Report every count per variant and per input set; list the cases whose outcome changes from current to both with the reason; read the accepted answers flagged by the screen; interpret in words. No pass/fail thresholds and no adoption rule (user instruction 2026-11-19); the variant to implement is a judgement stated with its reasons.",
+ "budget": {
+  "model_calls_max": 200,
+  "cost_max_usd": 0.2,
+  "note": "65 planned; the server retries a 429 twice; retries are counted and recorded"
+ },
+ "limits": [
+  "one run at temperature 0",
+  "one model",
+  "36 synthetic + 29 real cases, 12 + 16 expect refuse",
+  "labels by rule from AI-written roles",
+  "the one-character word rule misses compounds such as 볶음밥 or 흰밥 in a step"
+ ],
+ "amendments": [
+  {
+   "date": "2026-11-19",
+   "before_rerun": true,
+   "what": "The first run (report round2-20261118T153815Z) had a runner defect: for a case where the server needs no model call (nothing unavailable after synonyms and equivalents: mushroom-fried-rice:a, because the other mushrooms count as 새송이버섯), the runner reused the previous case's answer for the variants. The runner now clears the last answer per case, records such a case with the server's own outcome for every variant, and stores the raw answers. The real-recipe set is run again (29 cases); the synthetic results of the first run are kept (all 36 had a call; served and recomputed outcomes agreed)."
+  },
+  {
+   "date": "2026-11-19",
+   "before_rerun": true,
+   "what": "The second run (report round2-20261118T154021Z) still lacked the fix in the variant loop (the edit had not applied): mushroom-fried-rice:a showed 'no answer' instead of the server's own outcome, and raw answers were not stored. The loop is fixed and the real-recipe set is run a third time; the second run's other 28 outcomes are kept in its report for comparison."
+  }
+ ]
+}

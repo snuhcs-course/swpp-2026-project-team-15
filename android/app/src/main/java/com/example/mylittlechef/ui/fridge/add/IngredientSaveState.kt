@@ -1,3 +1,4 @@
+// Usage-data source added with Claude Code (Opus 5.5), 2026-11-20.
 // AI-assisted lifecycle-safe HE save delivery, 2026-11-09; manual review pending.
 package com.example.mylittlechef.ui.fridge.add
 
@@ -14,7 +15,11 @@ internal data class IngredientSaveAction(val busy: Boolean, val submit: (List<In
 
 /** The retained ViewModel owns completion state, never a stale NavController callback. */
 @Composable
-internal fun rememberIngredientSave(fridge: FridgeViewModel, onSaved: () -> Unit): IngredientSaveAction {
+internal fun rememberIngredientSave(
+    fridge: FridgeViewModel,
+    onSaved: () -> Unit,
+    source: String = "manual" // usage data: how the items were entered
+): IngredientSaveAction {
     val ownerId = rememberSaveable { UUID.randomUUID().toString() }
     val currentOnSaved by rememberUpdatedState(onSaved)
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -26,6 +31,6 @@ internal fun rememberIngredientSave(fridge: FridgeViewModel, onSaved: () -> Unit
         }
     }
     return IngredientSaveAction(fridge.isSavingIngredients || completion != null) {
-        fridge.saveIngredients(it, ownerId)
+        fridge.saveIngredients(it, ownerId, source)
     }
 }

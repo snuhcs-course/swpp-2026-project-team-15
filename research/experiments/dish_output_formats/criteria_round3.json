@@ -1,0 +1,55 @@
+{
+ "study": "Round 3 of the answer-format study: list length under the per-request closed choices",
+ "date": "2026-11-19",
+ "question": "With the closed choices now served by the server, suggestion lists became long (two live requests on the demo server: 102 and 94 dishes, about 8 s). Which wording or schema keeps the list to what the user can cook now, without any numeric cutoff or fixed count?",
+ "inputs": "the 27 well-formed frozen suggestion inputs of research/experiments/dish_naive/criteria.json (expect_status 200); dish list and reference sets from the CURRENT catalog server/app/dishes/dishes.json (128 dishes), because the question is about the product as served",
+ "model": {
+  "id": "google/gemini-2.5-flash-lite",
+  "temperature": 0,
+  "max_tokens": 4096,
+  "provider": {
+   "require_parameters": true
+  },
+  "route": "same payload as app.dishes.llm.DishLLM"
+ },
+ "variants": {
+  "P0": "production: app.dishes.prompts.SUGGEST_CLOSED_SYSTEM with app.dishes.prompts.suggest_schema(choices) built by app.dishes.choices.suggest_choices (same day baseline)",
+  "PA": "wording: only dishes cookable now or after a small purchase; leave out dishes that mostly depend on missing ingredients; same schema as P0",
+  "PB": "wording: best first, stop when the next dishes would mostly need ingredients the user lacks; same schema as P0",
+  "PC": "schema: P0's request with a per-dish 'fit' field (now / small_purchase / mostly_missing) written before have and missing; the server would keep every dish and the order",
+  "PD": "reference: the earlier free-text format app.dishes.prompts.SUGGEST_SYSTEM with SUGGEST_SCHEMA (no closed choices)"
+ },
+ "prompts": {
+  "PA": "You help a Korean student living alone decide what to cook from the ingredients they have. The user wants to know what they can cook now. From the given dish list, return only dishes the user can cook now with what they own, or after buying a small part of what the dish needs; leave out dishes that mostly depend on ingredients the user does not own. Order them best first. For each dish, 'have' lists ONLY ingredients that appear in the user's owned list and that this dish uses, and 'missing' lists the main ingredients this dish needs that are not in the owned list; both are chosen from the allowed values of the answer format. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish fits, return an empty list. Never add dishes just to fill the list.",
+  "PB": "You help a Korean student living alone decide what to cook from the ingredients they have. From the given dish list, return dishes ordered from the best fit (cookable with what the user owns) to worse fits, and stop the list as soon as the next dishes would mostly need ingredients the user lacks. For each dish, 'have' lists ONLY ingredients that appear in the user's owned list and that this dish uses, and 'missing' lists the main ingredients this dish needs that are not in the owned list; both are chosen from the allowed values of the answer format. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish fits, return an empty list. Never add dishes just to fill the list.",
+  "PC": "You help a Korean student living alone decide what to cook from the ingredients they have. Return every dish from the given dish list that can reasonably be cooked with the owned ingredients, best first. For each dish first give 'fit': 'now' when the user owns everything the dish needs apart from basic seasonings, 'small_purchase' when the dish is built on what the user owns but needs one or a few ingredients they lack, 'mostly_missing' when the dish mostly depends on ingredients the user lacks. For each dish, 'have' lists ONLY ingredients that appear in the user's owned list and that this dish uses, and 'missing' lists the main ingredients this dish needs that are not in the owned list; both are chosen from the allowed values of the answer format. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish fits, return an empty list. Never add dishes just to fill the list."
+ },
+ "pc_fit_values": [
+  "now",
+  "small_purchase",
+  "mostly_missing"
+ ],
+ "metrics": [
+  "dishes returned per input (distribution: min, median, max, mean) after the same checks the server applies (app.dishes.answers.check_suggest with the request's choices; PD without choices); a cut-off answer is salvaged the way the server does (app.dishes.answers.salvage_list) and counted as truncated",
+  "missing per returned dish as the model wrote it, and as the rules compute it from the catalog's key ingredients (catalog.match) — distribution and shares of 0 / 1 / 2 / 3+",
+  "reference recall and precision against the frozen reference definition (dishes with an owned key ingredient and at most one missing key ingredient, current catalog)",
+  "owned ingredient listed as missing (dishes whose missing contains a vocabulary name the user owns by spelling or synonym group); expected 0 by construction for P0..PC",
+  "PC only: fit distribution, and dishes per fit value against the rules' missing count",
+  "truncated answers (finish_reason length), failed calls",
+  "latency p50 and p95, input and output tokens, cost per call (provider-reported cost when present)"
+ ],
+ "analysis": "Descriptive, no pass/fail thresholds (user rule, 2026-11-19). Report every number per variant; paired per-input differences against P0 (dishes returned, rules-missing mean per dish, recall, precision, latency) with a percentile bootstrap 95% interval over inputs (2,000 resamples, seed 20261119). Interpret which variant best keeps the promise 'what you can cook now' (short lists made of dishes with few rules-missing ingredients) while keeping recall of the reference; a variant is implemented only if the interpretation supports it; no numeric cutoff or count may be added to the product.",
+ "budget": {
+  "model_calls": 150,
+  "usd": 0.2,
+  "planned_calls": 135,
+  "retry": "HTTP 429 repeated after 5 s and 15 s; every attempt counts"
+ },
+ "limits": [
+  "one run per variant at temperature 0",
+  "one model and provider",
+  "27 inputs",
+  "reference sets come from rules over the catalog's key ingredients, not from human labels",
+  "the rules' missing count depends on the catalog's key ingredient lists"
+ ]
+}

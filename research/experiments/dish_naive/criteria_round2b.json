@@ -1,0 +1,34 @@
+{
+  "name": "dish_naive_round2b",
+  "version": 1,
+  "frozen": "2026-11-16, before any model call of round 2b",
+  "question": "At an output cap of 4096 tokens, 2 to 5 of the 27 inputs were cut off in round 2 and counted as empty answers, which confounded the comparison of the production prompt (P0) with the prompt that defines `have` as the user's own items (P1). With the cap raised to 8192 for both, does P1 keep its fix of the invented `have` items without losing answer quality?",
+  "inputs": "the 27 well-formed suggestion inputs of criteria.json (expect_status 200); same scoring (scoring.py), same rule-made reference set; no fixed card count",
+  "settings": {
+    "model": "google/gemini-2.5-flash-lite",
+    "temperature": 0,
+    "max_tokens": 8192,
+    "variants": {
+      "P0": "SUGGEST_SYSTEM and SUGGEST_SCHEMA of the service as of the commit that precedes this file, unchanged",
+      "P1": "the P1 prompt of criteria_round2.json with the unchanged SUGGEST_SCHEMA"
+    },
+    "response_format": "json_schema strict, provider.require_parameters true",
+    "retry": "HTTP 429 is repeated at most twice after 5 s and 15 s; every attempt counts toward the call cap and is recorded"
+  },
+  "recorded_per_call": ["finish_reason", "input tokens", "output tokens", "cost", "latency", "attempts", "number of dishes returned (raw and after the name check)"],
+  "decision_rule": "P1 is adopted (prompt of P1 and server output cap 8192) only if ALL hold: zero truncated (finish_reason length) and zero failed calls for P1; have_subset_share >= 0.99; valid_names_share (raw names) >= P0's; nonempty_when_possible >= P0 - 0.02; reference_recall >= P0 - 0.02; reference_precision >= P0 - 0.02; mean cost per call <= 1.15 x P0's. If a condition fails, the report names it. If P1 is not adopted and P0 has zero truncated calls at 8192, the production prompt stays and only the cap is raised to 8192. If a variant still has truncated calls at 8192, that is reported and its failed inputs count as empty answers as before. Differences below about 2 points are within what one run at temperature 0 can vary; this is reported, not used to relax the rule.",
+  "also_reported_without_threshold": [
+    "distribution of the number of dishes returned per input (min, median, max, per input)",
+    "mean cost per call at 8192, median and maximum latency (the service times out a model call after 30 s)"
+  ],
+  "call_cap": 70,
+  "planned_calls": 54,
+  "cost_cap_usd": 0.1,
+  "limits": [
+    "one run per variant at temperature 0",
+    "27 inputs: one case moves a share by about 3 points",
+    "reference set is rule-made from the dish list, not human-labelled",
+    "recall and precision still depend on how many dishes the model lists, which this study does not constrain"
+  ],
+  "amendments": []
+}

@@ -1,0 +1,107 @@
+{
+ "study": "Round 5 of the answer-format study: why some common inputs give an endless list, and an upper limit on the list length",
+ "date": "2026-11-19",
+ "question": "On the phone, 계란 + 밥 returned 118 dishes in 9.7 s while 달걀 + 밥 (the same ingredients, other spelling) returned 16 dishes in 2.2 s. (A) Is that the spelling or run-to-run variation of the same request? (B) The user now allows an upper limit on the number of dishes (2026-11-19, list length only). Which limit value, and is it better sent in the request (so the answer is short and fast) or applied by the server after ordering?",
+ "part_a": {
+  "pairs": [
+   {
+    "id": "P1",
+    "a": [
+     "계란",
+     "밥"
+    ],
+    "b": [
+     "달걀",
+     "밥"
+    ]
+   },
+   {
+    "id": "P2",
+    "a": [
+     "계란"
+    ],
+    "b": [
+     "달걀"
+    ]
+   },
+   {
+    "id": "P3",
+    "a": [
+     "밥",
+     "계란",
+     "외계인고기"
+    ],
+    "b": [
+     "밥",
+     "달걀",
+     "외계인고기"
+    ]
+   },
+   {
+    "id": "P4",
+    "a": [
+     "계란",
+     "대파"
+    ],
+    "b": [
+     "달걀",
+     "대파"
+    ]
+   }
+  ],
+  "repeats": 5,
+  "variant": "B_served",
+  "order": "for each repeat, every pair's a then b, so that both spellings meet the same provider conditions"
+ },
+ "part_b": {
+  "inputs": "the 27 well-formed frozen suggestion inputs of research/experiments/dish_naive/criteria.json (expect_status 200) plus the demo inputs D1 = 두부 and D2 = 김치, 밥, 간장, 소금 (29 inputs)",
+  "repeats": 2,
+  "limit_values": "derived from the catalog before any call, by a fixed procedure: for each of the 29 inputs count the catalog dishes whose key ingredients the user lacks at most one of (app.dishes.catalog.Catalog.match with the server's owned set; staples count as owned as in the server); K_mid = nearest-rank median and K_high = nearest-rank 90th percentile of those counts over the 29 inputs; if they are equal, K_high = the maximum. These counts say how many dishes are realistically 'cook now' for typical inputs; they are candidates to measure, not the decision.",
+  "variants": {
+   "B_served": "the request the server sends today (app.dishes.prompts.suggest_request over suggest_choices with the staples assumed); no limit",
+   "B_cap_K": "B_served with the answer's dish array limited to K items in the answer format (maxItems K) and one sentence added to the system text: 'Return at most K dishes, choosing those the user can cook with the fewest missing ingredients.' Run for K_mid and K_high.",
+   "B_after_K (no calls)": "B_served answers ordered by the server (fewest missing first) and then cut to the first K; computed from the B_served runs"
+  }
+ },
+ "model": {
+  "id": "google/gemini-2.5-flash-lite",
+  "temperature": 0,
+  "max_tokens": 4096,
+  "provider": {
+   "require_parameters": true
+  },
+  "route": "same body as app.dishes.llm.DishLLM"
+ },
+ "metrics": [
+  "part A: dishes returned, output tokens, latency and cut answers per call; per pair the a/b distributions over the 5 repeats and the spread within each spelling",
+  "part B per call: dishes returned, whether the answer exceeded K (did the provider honour maxItems), cut answers, latency, output tokens, cost",
+  "part B per input after the server's checks and ordering: missing per dish by the rules (0 / 1 / 2 / 3+ shares and mean), share of the first five with at most one rules-missing ingredient, owned ingredient listed as missing (must stay 0), reference recall and precision as in round 4",
+  "B_cap_K against B_after_K on the same input: overlap of the returned dish sets (Jaccard) and the difference in rules-missing mean, to see whether asking for a short list costs quality compared with cutting a long list"
+ ],
+ "analysis": "Descriptive; no pass/fail threshold decides anything (user rule 2026-11-19). Part A: report every run; the spelling effect is read from the a-b difference against the spread among repeats of one spelling. Part B: full tables per variant; paired per-input differences against B_served (run means) with a percentile bootstrap 95% interval (2,000 resamples, seed 20261119). The served limit is chosen by judgement from these numbers (latency and cut answers versus how many 'cook now' dishes are lost) and the reason is written in the README.",
+ "budget": {
+  "model_calls": 420,
+  "usd": 0.5,
+  "planned_calls": 214,
+  "plan": "part A 4 pairs x 2 spellings x 5 repeats = 40; part B 29 inputs x 2 repeats x 3 variants = 174",
+  "retry": "HTTP 429 repeated after 5 s and 15 s; every attempt counts toward the cap"
+ },
+ "limits": [
+  "temperature 0 but the provider is not deterministic; 5 repeats per spelling and 2 per input",
+  "one model and provider",
+  "the 'cook now' counts and the rules-missing numbers come from the catalog's key ingredients, not from people",
+  "whether maxItems is honoured is a property of this provider route on this day"
+ ],
+ "amendments": [
+  {
+   "date": "2026-11-19",
+   "after_calls": "yes, after the 214 planned calls",
+   "text": "Every B_cap_K call (116) was rejected by the provider with HTTP 400. Two diagnostic calls on D1 showed the cause: the answer format with maxItems is rejected on this route, the sentence alone is accepted. Added variants B_say_mid and B_say_high: the B_cap sentence in the system text without maxItems, same 29 inputs x 2 repeats (116 calls), plus the part A runaway inputs P1a (계란, 밥) and P3a/P3b x 2 repeats (6 calls). Because the sentence cannot guarantee the length, the server-side cut (B_after_K) stays the reference. Budget raised to 340 calls, $0.4."
+  },
+  {
+   "date": "2026-11-19",
+   "after_calls": "yes, after the 122 amendment calls",
+   "text": "The sentence made the model fill the list up to K on most inputs and still ran away on 김치 + 밥 (122 dishes, cut); the server-side cut (B_after_K) is always honoured but leaves the 8-9 s of a runaway answer, and 계란 + 밥 is what the app's own preset sends. Added B_tok: the served request with the output limit set to the room for K_high dishes, ceil(K_high x the 95th percentile of output tokens per returned dish in the B_served runs) = ceil(36 x 52.2) = 1880 tokens; a cut answer is salvaged, ordered and cut to K_high as the server would. Same 29 inputs plus P1a, P3a, P3b, 2 repeats (64 calls). Compared with B_after_high (same cut, full limit). Budget raised to 420 calls, $0.5."
+  }
+ ]
+}

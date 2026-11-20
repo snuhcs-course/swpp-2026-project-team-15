@@ -1,0 +1,1514 @@
+{
+ "name": "dish-suggestion-and-substitution",
+ "version": 1,
+ "labelling": "single labeller, draft",
+ "cases": [
+  {
+   "id": "S01",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "김치",
+     "밥"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "kimchi-porridge",
+    "kimchi-rolled",
+    "kimchi-tuna-fried-rice",
+    "pork-belly-kimchi"
+   ],
+   "must_not_include": [
+    "bacon-fried-rice",
+    "bibim-noodle",
+    "bibimbap",
+    "bulgogi-bowl",
+    "can-mackerel-stew",
+    "chicken-mayo-bowl"
+   ],
+   "note": "Two staples of a student fridge; no dish is complete, four need only one more item."
+  },
+  {
+   "id": "S02",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "계란",
+     "대파"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "bean-sprout-soup",
+    "cheese-egg-roll",
+    "dumpling-soup",
+    "egg-boiled",
+    "egg-braise",
+    "egg-fried-rice",
+    "egg-fry",
+    "egg-roll",
+    "egg-soup",
+    "egg-stew",
+    "garlic-fried-rice",
+    "kimchi-egg-roll",
+    "porridge-egg",
+    "radish-soup",
+    "ramyeon-egg",
+    "spam-bean-sprout",
+    "steamed-egg-microwave",
+    "tofu-braise",
+    "tofu-pan",
+    "tomato-egg-stir"
+   ],
+   "must_not_include": [
+    "bacon-fried-rice",
+    "beef-stir",
+    "bibim-noodle",
+    "bibimbap",
+    "bulgogi-stir",
+    "janchi-noodle"
+   ],
+   "note": "Eggs and spring onion go into many soups and rolls; any dish missing at most one key item counts."
+  },
+  {
+   "id": "S03",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "계란",
+     "밥",
+     "대파",
+     "김치"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "bean-sprout-soup",
+    "cheese-egg-roll",
+    "dumpling-soup",
+    "egg-boiled",
+    "egg-braise",
+    "egg-fried-rice",
+    "egg-fry",
+    "egg-rice-bowl",
+    "egg-roll",
+    "egg-soup",
+    "egg-stew",
+    "garlic-fried-rice",
+    "gim-gyeran-rice",
+    "kimchi-bibimbap",
+    "kimchi-egg-roll",
+    "kimchi-fried-rice",
+    "kimchi-porridge",
+    "kimchi-ramyeon",
+    "kimchi-rolled",
+    "kimchi-soup",
+    "kimchi-tuna-fried-rice",
+    "pork-belly-kimchi",
+    "porridge-egg",
+    "radish-soup",
+    "ramyeon-egg",
+    "rice-ball-egg",
+    "spam-bean-sprout",
+    "steamed-egg-microwave",
+    "tofu-braise",
+    "tofu-pan",
+    "tomato-egg-stir"
+   ],
+   "must_not_include": [
+    "beef-stir",
+    "bibimbap",
+    "gimbap",
+    "ham-stew",
+    "janchi-noodle",
+    "tuna-gimbap"
+   ],
+   "note": "Four common items; both rice dishes and soups are reachable."
+  },
+  {
+   "id": "S04",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "달걀",
+     "쌀"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "egg-braise",
+    "egg-fried-rice",
+    "egg-fry",
+    "egg-stew",
+    "garlic-fried-rice",
+    "gim-gyeran-rice",
+    "kimchi-porridge",
+    "porridge-egg",
+    "rice-ball-egg",
+    "steamed-egg-microwave",
+    "tofu-pan"
+   ],
+   "must_not_include": [
+    "bibim-noodle",
+    "bibimbap",
+    "bulgogi-bowl",
+    "chicken-mayo-bowl",
+    "gimbap",
+    "tuna-gimbap"
+   ],
+   "note": "Alias inputs: 달걀 means 계란 and 쌀 stands for 밥; must behave like 계란 + 밥."
+  },
+  {
+   "id": "S05",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "두부"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "tofu-braise",
+    "tofu-pan"
+   ],
+   "must_not_include": [
+    "doenjang-stew",
+    "gochujang-stew",
+    "ham-stew",
+    "kimchi-stew",
+    "spam-kimchi-stew",
+    "tofu-bowl"
+   ],
+   "note": "A single ingredient; few dishes can be finished with one more item."
+  },
+  {
+   "id": "S06",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "고구마"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "sweet-potato-bake"
+   ],
+   "must_not_include": [],
+   "note": "A single ingredient that completes exactly one dish on its own (군고구마)."
+  },
+  {
+   "id": "S07",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "라면",
+     "계란",
+     "대파"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "bean-sprout-soup",
+    "cheese-egg-roll",
+    "cheese-ramyeon",
+    "dumpling-ramyeon",
+    "dumpling-soup",
+    "egg-boiled",
+    "egg-braise",
+    "egg-fried-rice",
+    "egg-fry",
+    "egg-roll",
+    "egg-soup",
+    "egg-stew",
+    "garlic-fried-rice",
+    "kimchi-egg-roll",
+    "kimchi-ramyeon",
+    "porridge-egg",
+    "radish-soup",
+    "ramyeon-egg",
+    "spam-bean-sprout",
+    "steamed-egg-microwave",
+    "tofu-braise",
+    "tofu-pan",
+    "tomato-egg-stir",
+    "tteok-ramyeon"
+   ],
+   "must_not_include": [
+    "bacon-fried-rice",
+    "beef-stir",
+    "bibim-noodle",
+    "bibimbap",
+    "ham-stew",
+    "janchi-noodle"
+   ],
+   "note": "Instant noodle, egg and green onion; noodle dishes should be reachable."
+  },
+  {
+   "id": "S08",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "참치캔",
+     "밥",
+     "김",
+     "마요네즈"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "gim-gyeran-rice",
+    "kimchi-rolled",
+    "kimchi-tuna-fried-rice",
+    "rice-ball-egg",
+    "tuna-mayo-bowl",
+    "tuna-rice-ball"
+   ],
+   "must_not_include": [
+    "bacon-fried-rice",
+    "bibimbap",
+    "bulgogi-bowl",
+    "curry-rice",
+    "egg-rice-bowl",
+    "gimbap"
+   ],
+   "note": "Tuna can with rice, seaweed and mayonnaise: bowls and rice balls."
+  },
+  {
+   "id": "S09",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "소금",
+     "간장",
+     "설탕"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": true,
+   "acceptable_dish_ids": [],
+   "must_not_include": [],
+   "note": "Only basic seasonings (assumed at home); nothing to cook from, the answer must be an empty list."
+  },
+  {
+   "id": "S10",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "양파",
+     "감자",
+     "당근",
+     "카레"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "chicken-garlic",
+    "cucumber-side",
+    "curry-rice",
+    "eggplant-side",
+    "fish-cake-stir",
+    "potato-braise",
+    "potato-pan",
+    "potato-soup",
+    "potato-stir",
+    "zucchini-stir"
+   ],
+   "must_not_include": [
+    "bacon-fried-rice",
+    "bibimbap",
+    "can-mackerel-stew",
+    "gochujang-stew",
+    "japchae",
+    "udon-stir"
+   ],
+   "note": "Curry ingredients without rice; curry rice needs only rice."
+  },
+  {
+   "id": "S11",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "돼지고기",
+     "김치",
+     "두부",
+     "대파"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "bean-sprout-soup",
+    "egg-braise",
+    "egg-stew",
+    "kimchi-egg-roll",
+    "kimchi-ramyeon",
+    "kimchi-soup",
+    "kimchi-stew",
+    "kimchi-stir",
+    "pork-belly-kimchi",
+    "radish-soup",
+    "spam-bean-sprout",
+    "spam-kimchi-stew",
+    "steamed-egg-microwave",
+    "tofu-braise",
+    "tofu-pan",
+    "tofu-soup",
+    "tofu-stir"
+   ],
+   "must_not_include": [
+    "beef-stir",
+    "bibim-noodle",
+    "bulgogi-stir",
+    "doenjang-stew",
+    "dumpling-ramyeon",
+    "dumpling-stew"
+   ],
+   "note": "The kimchi stew set of ingredients."
+  },
+  {
+   "id": "S12",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "떡",
+     "어묵",
+     "고추장",
+     "대파"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "bean-sprout-soup",
+    "cheese-tteokbokki",
+    "egg-braise",
+    "egg-stew",
+    "rabokki",
+    "radish-soup",
+    "spam-bean-sprout",
+    "steamed-egg-microwave",
+    "tofu-braise",
+    "tteokbokki"
+   ],
+   "must_not_include": [
+    "beef-stir",
+    "bibimbap",
+    "bulgogi-stir",
+    "can-mackerel-stew",
+    "chicken-stir",
+    "janchi-noodle"
+   ],
+   "note": "Street-food set; tteokbokki dishes are reachable."
+  },
+  {
+   "id": "S13",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "식빵",
+     "계란",
+     "우유",
+     "설탕"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "cheese-toast",
+    "egg-braise",
+    "egg-fry",
+    "egg-scramble",
+    "egg-stew",
+    "french-toast",
+    "garlic-bread",
+    "steamed-egg-microwave",
+    "tofu-pan"
+   ],
+   "must_not_include": [
+    "bacon-fried-rice",
+    "bibim-noodle",
+    "bibimbap",
+    "cream-pasta",
+    "dumpling-ramyeon",
+    "egg-rice-bowl"
+   ],
+   "note": "Bread, egg, milk and sugar; toast dishes are reachable."
+  },
+  {
+   "id": "S14",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "스파게티면",
+     "마늘",
+     "올리브유",
+     "고추"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "oil-pasta"
+   ],
+   "must_not_include": [
+    "cream-pasta"
+   ],
+   "note": "Completes exactly one dish (알리오올리오) with garlic being an assumed staple."
+  },
+  {
+   "id": "S15",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "김치",
+     "김치",
+     "밥",
+     "밥"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "kimchi-porridge",
+    "kimchi-rolled",
+    "kimchi-tuna-fried-rice",
+    "pork-belly-kimchi"
+   ],
+   "must_not_include": [
+    "bacon-fried-rice",
+    "bibim-noodle",
+    "bibimbap",
+    "bulgogi-bowl",
+    "can-mackerel-stew",
+    "chicken-mayo-bowl"
+   ],
+   "note": "Duplicated entries must behave like the de-duplicated list in S01."
+  },
+  {
+   "id": "S16",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "밥",
+     "계란",
+     "외계인고기"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "egg-braise",
+    "egg-fried-rice",
+    "egg-fry",
+    "egg-stew",
+    "garlic-fried-rice",
+    "gim-gyeran-rice",
+    "kimchi-porridge",
+    "porridge-egg",
+    "rice-ball-egg",
+    "steamed-egg-microwave",
+    "tofu-pan"
+   ],
+   "must_not_include": [
+    "bibim-noodle",
+    "bibimbap",
+    "bulgogi-bowl",
+    "chicken-mayo-bowl",
+    "gimbap",
+    "tuna-gimbap"
+   ],
+   "note": "One unknown item that is not an ingredient the list knows; it must be ignored without error."
+  },
+  {
+   "id": "S17",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "밥",
+     "햄",
+     "양파",
+     "당근",
+     "계란",
+     "대파",
+     "김치",
+     "두부"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "bacon-fried-rice",
+    "bean-sprout-soup",
+    "beef-stir",
+    "bulgogi-bowl",
+    "bulgogi-stir",
+    "can-mackerel-stew",
+    "cheese-egg-roll",
+    "chicken-garlic",
+    "cucumber-side",
+    "dumpling-soup",
+    "egg-boiled",
+    "egg-braise",
+    "egg-fried-rice",
+    "egg-fry",
+    "egg-rice-bowl",
+    "egg-roll",
+    "egg-salad",
+    "egg-soup",
+    "egg-stew",
+    "eggplant-side",
+    "fish-cake-stir",
+    "garlic-fried-rice",
+    "gim-gyeran-rice",
+    "ham-fried-rice",
+    "ham-stew",
+    "hotdog-pan",
+    "kimchi-bibimbap",
+    "kimchi-egg-roll",
+    "kimchi-fried-rice",
+    "kimchi-pancake",
+    "kimchi-porridge",
+    "kimchi-ramyeon",
+    "kimchi-rice-bowl",
+    "kimchi-rolled",
+    "kimchi-soup",
+    "kimchi-stew",
+    "kimchi-stir",
+    "kimchi-tuna-fried-rice",
+    "mushroom-fried-rice",
+    "mushroom-porridge",
+    "omurice",
+    "pork-belly-kimchi",
+    "pork-bowl",
+    "pork-kimchi-fried-rice",
+    "porridge-egg",
+    "potato-pan",
+    "potato-soup",
+    "potato-stir",
+    "radish-soup",
+    "ramyeon-egg",
+    "rice-ball-egg",
+    "sausage-stir",
+    "shrimp-fried-rice",
+    "soft-tofu-stew",
+    "spam-bean-sprout",
+    "spam-egg-bowl",
+    "spam-kimchi-stew",
+    "spam-stir",
+    "steamed-egg-microwave",
+    "tofu-bowl",
+    "tofu-braise",
+    "tofu-pan",
+    "tofu-soup",
+    "tofu-stir",
+    "tomato-egg-stir",
+    "tuna-fried-rice",
+    "tuna-kimchi-stew",
+    "tuna-porridge",
+    "vegetable-porridge",
+    "zucchini-stir"
+   ],
+   "must_not_include": [
+    "chicken-stir",
+    "gochujang-stew",
+    "janchi-noodle",
+    "japchae",
+    "tuna-gimbap",
+    "udon-stir"
+   ],
+   "note": "Eight items; many dishes are complete or nearly complete."
+  },
+  {
+   "id": "S18",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "만두",
+     "계란",
+     "대파"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "bean-sprout-soup",
+    "cheese-egg-roll",
+    "dumpling-ramyeon",
+    "dumpling-soup",
+    "egg-boiled",
+    "egg-braise",
+    "egg-fried-rice",
+    "egg-fry",
+    "egg-roll",
+    "egg-soup",
+    "egg-stew",
+    "fried-dumpling",
+    "garlic-fried-rice",
+    "kimchi-egg-roll",
+    "porridge-egg",
+    "radish-soup",
+    "ramyeon-egg",
+    "spam-bean-sprout",
+    "steamed-egg-microwave",
+    "tofu-braise",
+    "tofu-pan",
+    "tomato-egg-stir"
+   ],
+   "must_not_include": [
+    "bacon-fried-rice",
+    "beef-stir",
+    "bibim-noodle",
+    "bibimbap",
+    "bulgogi-stir",
+    "janchi-noodle"
+   ],
+   "note": "Dumplings with egg and green onion."
+  },
+  {
+   "id": "S19",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "콩나물",
+     "대파"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "bean-sprout-soup",
+    "egg-braise",
+    "egg-stew",
+    "radish-soup",
+    "spam-bean-sprout",
+    "steamed-egg-microwave",
+    "tofu-braise"
+   ],
+   "must_not_include": [
+    "beef-stir",
+    "bulgogi-stir",
+    "can-mackerel-stew",
+    "doenjang-stew",
+    "dumpling-ramyeon",
+    "dumpling-stew"
+   ],
+   "note": "Bean sprouts and green onion: soup and side dishes."
+  },
+  {
+   "id": "S20",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "애호박",
+     "양파",
+     "두부",
+     "된장"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "chicken-garlic",
+    "cucumber-side",
+    "doenjang-stew",
+    "eggplant-side",
+    "potato-pan",
+    "tofu-braise",
+    "tofu-pan",
+    "tofu-soup",
+    "zucchini-stir"
+   ],
+   "must_not_include": [
+    "bacon-fried-rice",
+    "beef-stir",
+    "bulgogi-bowl",
+    "bulgogi-stir",
+    "can-mackerel-stew",
+    "chicken-mayo-bowl"
+   ],
+   "note": "Soybean-paste stew ingredients."
+  },
+  {
+   "id": "S21",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "소고기",
+     "양파",
+     "당근",
+     "대파",
+     "밥"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "bean-sprout-soup",
+    "beef-stir",
+    "bulgogi-bowl",
+    "bulgogi-stir",
+    "chicken-garlic",
+    "cucumber-side",
+    "egg-boiled",
+    "egg-braise",
+    "egg-fried-rice",
+    "egg-rice-bowl",
+    "egg-roll",
+    "egg-soup",
+    "egg-stew",
+    "eggplant-side",
+    "fish-cake-stir",
+    "garlic-fried-rice",
+    "ham-fried-rice",
+    "mushroom-fried-rice",
+    "mushroom-porridge",
+    "pork-bowl",
+    "porridge-egg",
+    "potato-pan",
+    "potato-soup",
+    "potato-stir",
+    "radish-soup",
+    "seaweed-soup",
+    "shrimp-fried-rice",
+    "spam-bean-sprout",
+    "steamed-egg-microwave",
+    "tofu-bowl",
+    "tofu-braise",
+    "tofu-soup",
+    "tuna-fried-rice",
+    "tuna-porridge",
+    "vegetable-porridge",
+    "zucchini-stir"
+   ],
+   "must_not_include": [
+    "bibimbap",
+    "chicken-stir",
+    "doenjang-stew",
+    "gimbap",
+    "japchae",
+    "udon-stir"
+   ],
+   "note": "Beef with vegetables and rice."
+  },
+  {
+   "id": "S22",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "참치",
+     "김치",
+     "밥"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "kimchi-porridge",
+    "kimchi-rolled",
+    "kimchi-tuna-fried-rice",
+    "pork-belly-kimchi"
+   ],
+   "must_not_include": [
+    "bacon-fried-rice",
+    "bibim-noodle",
+    "bibimbap",
+    "bulgogi-bowl",
+    "can-mackerel-stew",
+    "tuna-gimbap"
+   ],
+   "note": "Alias input: 참치 means 참치캔."
+  },
+  {
+   "id": "S23",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "달걀",
+     "달걀",
+     "우유",
+     "버터"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "egg-braise",
+    "egg-fry",
+    "egg-scramble",
+    "egg-stew",
+    "french-toast",
+    "garlic-bread",
+    "shrimp-garlic",
+    "steamed-egg-microwave",
+    "tofu-pan"
+   ],
+   "must_not_include": [
+    "bacon-fried-rice",
+    "bibim-noodle",
+    "bibimbap",
+    "cream-pasta",
+    "dumpling-ramyeon",
+    "egg-rice-bowl"
+   ],
+   "note": "Alias plus duplicate; egg, milk and butter."
+  },
+  {
+   "id": "S24",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "오징어",
+     "대파",
+     "부침가루",
+     "계란"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "bean-sprout-soup",
+    "cheese-egg-roll",
+    "dumpling-soup",
+    "egg-boiled",
+    "egg-braise",
+    "egg-fried-rice",
+    "egg-fry",
+    "egg-roll",
+    "egg-soup",
+    "egg-stew",
+    "garlic-fried-rice",
+    "green-onion-pancake",
+    "hotdog-pan",
+    "kimchi-egg-roll",
+    "porridge-egg",
+    "radish-soup",
+    "ramyeon-egg",
+    "spam-bean-sprout",
+    "steamed-egg-microwave",
+    "tofu-braise",
+    "tofu-pan",
+    "tomato-egg-stir",
+    "zucchini-pancake"
+   ],
+   "must_not_include": [
+    "bacon-fried-rice",
+    "beef-stir",
+    "bibim-noodle",
+    "bibimbap",
+    "bulgogi-stir",
+    "janchi-noodle"
+   ],
+   "note": "Squid pancake set."
+  },
+  {
+   "id": "S25",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "치즈",
+     "라면"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "cheese-ramyeon"
+   ],
+   "must_not_include": [
+    "cheese-tteokbokki",
+    "dumpling-ramyeon",
+    "ham-cheese-sandwich",
+    "ham-stew",
+    "rabokki",
+    "tteok-ramyeon"
+   ],
+   "note": "Two items; cheese ramyeon needs only an egg, other dishes need more."
+  },
+  {
+   "id": "S26",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "오이",
+     "양파",
+     "마요네즈",
+     "계란"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "chicken-garlic",
+    "cucumber-side",
+    "egg-boiled",
+    "egg-braise",
+    "egg-fry",
+    "egg-salad",
+    "egg-soup",
+    "egg-stew",
+    "eggplant-side",
+    "potato-pan",
+    "potato-salad",
+    "sandwich-egg",
+    "steamed-egg-microwave",
+    "tofu-pan",
+    "zucchini-stir"
+   ],
+   "must_not_include": [
+    "beef-stir",
+    "bibimbap",
+    "bulgogi-bowl",
+    "bulgogi-stir",
+    "can-mackerel-stew",
+    "chicken-breast-salad"
+   ],
+   "note": "Cold side dishes and salads."
+  },
+  {
+   "id": "S30",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "김치",
+     " ",
+     "밥"
+    ],
+    "limit": 5
+   },
+   "expect_status": 200,
+   "expect_empty": false,
+   "acceptable_dish_ids": [
+    "kimchi-porridge",
+    "kimchi-rolled",
+    "kimchi-tuna-fried-rice",
+    "pork-belly-kimchi"
+   ],
+   "must_not_include": [
+    "bacon-fried-rice",
+    "bibim-noodle",
+    "bibimbap",
+    "bulgogi-bowl",
+    "can-mackerel-stew",
+    "chicken-mayo-bowl"
+   ],
+   "note": "A blank entry inside the list must be ignored like in S01 (status 200)."
+  },
+  {
+   "id": "S27",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [],
+    "limit": 5
+   },
+   "expect_status": 422,
+   "note": "Empty list is invalid."
+  },
+  {
+   "id": "S28",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "김치",
+     "밥"
+    ],
+    "limit": 0
+   },
+   "expect_status": 422,
+   "note": "limit below 1 is invalid."
+  },
+  {
+   "id": "S29",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "김치",
+     "밥"
+    ],
+    "limit": 9
+   },
+   "expect_status": 422,
+   "note": "limit above 8 is invalid."
+  },
+  {
+   "id": "S31",
+   "endpoint": "suggest",
+   "input": {
+    "ingredients": [
+     "재료0",
+     "재료1",
+     "재료2",
+     "재료3",
+     "재료4",
+     "재료5",
+     "재료6",
+     "재료7",
+     "재료8",
+     "재료9",
+     "재료10",
+     "재료11",
+     "재료12",
+     "재료13",
+     "재료14",
+     "재료15",
+     "재료16",
+     "재료17",
+     "재료18",
+     "재료19",
+     "재료20",
+     "재료21",
+     "재료22",
+     "재료23",
+     "재료24",
+     "재료25",
+     "재료26",
+     "재료27",
+     "재료28",
+     "재료29",
+     "재료30",
+     "재료31",
+     "재료32",
+     "재료33",
+     "재료34",
+     "재료35",
+     "재료36",
+     "재료37",
+     "재료38",
+     "재료39",
+     "재료40",
+     "재료41",
+     "재료42",
+     "재료43",
+     "재료44",
+     "재료45",
+     "재료46",
+     "재료47",
+     "재료48",
+     "재료49",
+     "재료50",
+     "재료51",
+     "재료52",
+     "재료53",
+     "재료54",
+     "재료55",
+     "재료56",
+     "재료57",
+     "재료58",
+     "재료59",
+     "재료60"
+    ],
+    "limit": 5
+   },
+   "expect_status": 422,
+   "note": "More than 60 entries is invalid."
+  },
+  {
+   "id": "A01",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "kimchi-fried-rice",
+    "ingredients": [
+     "밥",
+     "김치",
+     "양파"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "allowed+skip",
+   "allowed_pairs": [
+    {
+     "missing": "대파",
+     "uses": [
+      "양파"
+     ]
+    }
+   ],
+   "expected_skip_ok": [
+    "계란"
+   ],
+   "note": "Green onion can be replaced by onion (table); egg is optional and has no substitute."
+  },
+  {
+   "id": "A02",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "pork-bowl",
+    "ingredients": [
+     "밥",
+     "돼지고기",
+     "양파"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "allowed_substitution",
+   "allowed_pairs": [
+    {
+     "missing": "대파",
+     "uses": [
+      "양파"
+     ]
+    }
+   ],
+   "expected_skip_ok": [],
+   "note": "Only the optional green onion is missing; onion is allowed."
+  },
+  {
+   "id": "A03",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "kimchi-rolled",
+    "ingredients": [
+     "밥",
+     "김치",
+     "간장"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "empty_with_note",
+   "allowed_pairs": [],
+   "expected_skip_ok": [],
+   "note": "Seaweed is a key item without substitute and not optional."
+  },
+  {
+   "id": "A04",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "rice-ball-egg",
+    "ingredients": [
+     "밥",
+     "계란"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "empty_with_note",
+   "allowed_pairs": [],
+   "expected_skip_ok": [],
+   "note": "Seaweed missing, no substitute, not optional."
+  },
+  {
+   "id": "A05",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "tteokbokki",
+    "ingredients": [
+     "떡",
+     "어묵",
+     "고춧가루"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "allowed+skip",
+   "allowed_pairs": [
+    {
+     "missing": "고추장",
+     "uses": [
+      "고춧가루",
+      "간장",
+      "설탕"
+     ]
+    }
+   ],
+   "expected_skip_ok": [
+    "대파"
+   ],
+   "note": "Red-pepper paste can be replaced by the table combination of staples; green onion is optional with no owned substitute."
+  },
+  {
+   "id": "A06",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "pork-stir",
+    "ingredients": [
+     "돼지고기",
+     "양파"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "allowed_substitution",
+   "allowed_pairs": [
+    {
+     "missing": "고추장",
+     "uses": [
+      "고춧가루",
+      "간장",
+      "설탕"
+     ]
+    },
+    {
+     "missing": "대파",
+     "uses": [
+      "양파"
+     ]
+    }
+   ],
+   "expected_skip_ok": [],
+   "note": "Both missing items have table options."
+  },
+  {
+   "id": "A07",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "kimchi-pancake",
+    "ingredients": [
+     "김치",
+     "양파",
+     "대파"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "empty_with_note",
+   "allowed_pairs": [],
+   "expected_skip_ok": [],
+   "note": "Pancake mix is missing; its combination needs flour, which is not owned."
+  },
+  {
+   "id": "A08",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "kimchi-pancake",
+    "ingredients": [
+     "김치",
+     "밀가루",
+     "양파"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "allowed_substitution",
+   "allowed_pairs": [
+    {
+     "missing": "부침가루",
+     "uses": [
+      "밀가루",
+      "소금"
+     ]
+    },
+    {
+     "missing": "대파",
+     "uses": [
+      "양파"
+     ]
+    }
+   ],
+   "expected_skip_ok": [],
+   "note": "Flour covers the pancake mix by the table combination; onion covers the green onion."
+  },
+  {
+   "id": "A09",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "egg-roll",
+    "ingredients": [
+     "계란",
+     "대파"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "skip_ok_only",
+   "allowed_pairs": [],
+   "expected_skip_ok": [
+    "당근"
+   ],
+   "note": "Carrot is optional; onion, its substitute, is not owned."
+  },
+  {
+   "id": "A10",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "cream-pasta",
+    "ingredients": [
+     "스파게티면",
+     "우유",
+     "양파",
+     "마늘"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "empty_with_note",
+   "allowed_pairs": [],
+   "expected_skip_ok": [],
+   "note": "Bacon is missing; its only substitute (ham) is not owned and it is not optional."
+  },
+  {
+   "id": "A11",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "tuna-fried-rice",
+    "ingredients": [
+     "밥",
+     "참치캔",
+     "양파"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "allowed_substitution",
+   "allowed_pairs": [
+    {
+     "missing": "대파",
+     "uses": [
+      "양파"
+     ]
+    }
+   ],
+   "expected_skip_ok": [],
+   "note": "Optional green onion replaced by onion."
+  },
+  {
+   "id": "A12",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "curry-rice",
+    "ingredients": [
+     "밥",
+     "카레",
+     "감자",
+     "양파"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "allowed_substitution",
+   "allowed_pairs": [
+    {
+     "missing": "당근",
+     "uses": [
+      "양파"
+     ]
+    }
+   ],
+   "expected_skip_ok": [],
+   "note": "Carrot is optional and can be replaced by onion."
+  },
+  {
+   "id": "A13",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "kimchi-fried-rice",
+    "ingredients": [
+     "밥",
+     "김치",
+     "대파",
+     "계란"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "nothing_missing",
+   "allowed_pairs": [],
+   "expected_skip_ok": [],
+   "note": "Nothing is missing: empty answer and the note that nothing is missing."
+  },
+  {
+   "id": "A14",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "cream-pasta",
+    "ingredients": [
+     "스파게티면",
+     "두유",
+     "베이컨",
+     "양파",
+     "마늘"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "allowed_substitution",
+   "allowed_pairs": [
+    {
+     "missing": "우유",
+     "uses": [
+      "두유"
+     ]
+    }
+   ],
+   "expected_skip_ok": [],
+   "note": "Milk can be replaced by soy milk (table)."
+  },
+  {
+   "id": "A15",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "egg-scramble",
+    "ingredients": [
+     "계란",
+     "두유",
+     "식용유"
+    ]
+   },
+   "expect_status": 200,
+   "outcome": "allowed_substitution",
+   "allowed_pairs": [
+    {
+     "missing": "우유",
+     "uses": [
+      "두유"
+     ]
+    },
+    {
+     "missing": "버터",
+     "uses": [
+      "식용유"
+     ]
+    }
+   ],
+   "expected_skip_ok": [],
+   "note": "Both optional items have table options with owned items or staples."
+  },
+  {
+   "id": "A16",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "no-such-dish",
+    "ingredients": [
+     "김치"
+    ]
+   },
+   "expect_status": 422,
+   "outcome": "unknown_dish",
+   "note": "An unknown dish id is rejected."
+  },
+  {
+   "id": "A17",
+   "endpoint": "adapt",
+   "input": {
+    "dish_id": "kimchi-stew",
+    "ingredients": []
+   },
+   "expect_status": 422,
+   "outcome": "invalid_input",
+   "note": "An empty ingredient list is invalid."
+  }
+ ]
+}

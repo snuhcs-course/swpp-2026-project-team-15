@@ -35,7 +35,6 @@ class HeRecognitionCompatibilityTest {
         multiCode: Int? = null): IngredientAnalyzer {
         val legacy = object : MyLittleChefApi {
             override suspend fun analyze(image: MultipartBody.Part): AnalyzeResponse { calls.legacy++; return response }
-            override suspend fun recommend(request: RecommendRequest) = error("Not used")
         }
         val multi = object : MultiImageApi {
             override suspend fun analyzeViews(images: List<MultipartBody.Part>): AnalyzeResponse {

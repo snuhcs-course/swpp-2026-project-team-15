@@ -11,6 +11,8 @@ object Routes {
     const val FRIDGE = "fridge"
     const val RECIPE = "recipe"
     const val PROFILE = "profile"
+    const val RECIPE_DETAIL = "recipe_detail"
+    const val ARG_DISH_ID = "dishId"
 
     const val CAPTURE = "capture" // 재료 촬영
     const val ARG_IMAGE_URI = "imageUri"
@@ -22,7 +24,6 @@ object Routes {
     const val EDIT_ALLERGY = "edit_allergy"
     const val EDIT_PANTRY = "edit_pantry"
 
-    const val RECIPE_DETAIL = "recipe_detail" // TODO: recipe 하위 route가 되어야 함
-
+    fun recipeDetailRoute(dishId: String) = "$RECIPE_DETAIL/${Uri.encode(dishId)}"
     fun analyzeRoute(imageUri: String) = "analyze?imageUri=${Uri.encode(imageUri)}"
 }

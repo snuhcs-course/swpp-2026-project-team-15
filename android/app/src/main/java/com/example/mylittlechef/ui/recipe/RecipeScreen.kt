@@ -1,8 +1,10 @@
 // Photo-led list and stable scrolling assisted by Codex, 2026-11-19; human review pending.
 // HE ingredient/exploration changes assisted by Codex, 2026-11-10; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
-// Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
-// AI-assisted with Codex (GPT-6.1 Sol), 2026-10-14; human review pending.
+// Restored on the YouTube-based dishes with Claude Code (Opus 5.5), 2026-11-20: the list shows the
+// server's suggested dishes; search filters this list; bookmarks stay on the phone. The full-catalogue
+// search, "다른 추천 보기", cooking-time labels and the batch "AI 제안" tab needed the recipe database
+// and are left out.
 
 package com.example.mylittlechef.ui.recipe
 
@@ -38,39 +40,37 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mylittlechef.R
-import com.example.mylittlechef.domain.RecipeSortType
-import com.example.mylittlechef.model.Recipe
-import com.example.mylittlechef.viewmodel.*
+import com.example.mylittlechef.domain.Dish
+import com.example.mylittlechef.viewmodel.DishUiState
+import com.example.mylittlechef.viewmodel.DishViewModel
+import com.example.mylittlechef.viewmodel.FridgeViewModel
+
+enum class RecipeTab { RECOMMENDED, LIKE }
 
 @Composable
-fun RecipeScreen(user: UserViewModel, fridge: FridgeViewModel, recipes: RecipeViewModel,
-    onRecipeCardClick: (Recipe) -> Unit, onLikeClick: (Recipe) -> Unit, modifier: Modifier = Modifier) {
-    LaunchedEffect(fridge.ingredients,user.allergies,user.utensils) {
-        recipes.updateUserContext(fridge.ingredients,user.allergies,user.utensils)
-        recipes.refresh(fridge.ingredients)
-    }
-    RecipeContent(user,fridge,recipes,onRecipeCardClick,onLikeClick,modifier)
+fun RecipeScreen(fridge: FridgeViewModel, dishes: DishViewModel, onDishClick: (Dish) -> Unit, modifier: Modifier = Modifier) {
+    val names = fridge.ingredients.map { it.name }
+    LaunchedEffect(names) { dishes.onFridgeChanged(names) }
+    RecipeContent(dishes, onDishClick, modifier)
 }
-enum class RecipeTab { RECOMMENDED, LIKE, AI }
 
 @Composable
-fun RecipeContent(user: UserViewModel, fridge: FridgeViewModel, recipes: RecipeViewModel,
-    onRecipeCardClick: (Recipe) -> Unit, onLikeClick: (Recipe) -> Unit, modifier: Modifier = Modifier) {
+fun RecipeContent(dishes: DishViewModel, onDishClick: (Dish) -> Unit, modifier: Modifier = Modifier) {
     var selectedTab by rememberSaveable { mutableStateOf(RecipeTab.RECOMMENDED) }
     var showInfo by remember { mutableStateOf(false) }
-    var searchText by rememberSaveable(recipes.searchQuery) { mutableStateOf(recipes.searchQuery) }
-    var reviewName by rememberSaveable { mutableStateOf<String?>(null) }
-    var aiUnknownPrompt by remember { mutableStateOf(false) }
+    var searchText by rememberSaveable { mutableStateOf("") }
+    var query by rememberSaveable { mutableStateOf("") }
     val keyboard=LocalSoftwareKeyboardController.current
-    val search={ keyboard?.hide(); recipes.search(searchText,fridge.ingredients) }
+    val search={ keyboard?.hide(); query=searchText }
+    val state=dishes.state
+    val loading=state is DishUiState.Loading
+    val error=(state as? DishUiState.Error)?.message
     val visible=when(selectedTab) {
-        RecipeTab.RECOMMENDED -> recipes.sortedRecommended(fridge.ingredients)
-        RecipeTab.LIKE -> recipes.liked(user.likes,fridge.ingredients)
-        RecipeTab.AI -> recipes.cachedAiRecipes(fridge.ingredients)
+        RecipeTab.RECOMMENDED -> dishes.visibleSuggestions(query)
+        RecipeTab.LIKE -> dishes.favoriteDishes()
     }
     Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(Modifier.fillMaxSize()) {
@@ -85,7 +85,7 @@ fun RecipeContent(user: UserViewModel, fridge: FridgeViewModel, recipes: RecipeV
                 }
             }
             if(selectedTab==RecipeTab.RECOMMENDED) {
-                OutlinedTextField(searchText,{searchText=it.take(100)},singleLine=true,
+                OutlinedTextField(searchText,{searchText=it.take(100); if(it.isBlank()) query=""},singleLine=true,
                     placeholder={Text("레시피 이름 검색",style=MaterialTheme.typography.bodyMedium)},
                     leadingIcon={Icon(painterResource(R.drawable.ic_ui_search),contentDescription=null,modifier=Modifier.size(20.dp))},
                     trailingIcon={IconButton(onClick={search()},modifier=Modifier.testTag("recipe-search-submit")) {
@@ -97,125 +97,109 @@ fun RecipeContent(user: UserViewModel, fridge: FridgeViewModel, recipes: RecipeV
                     keyboardOptions=KeyboardOptions(imeAction=ImeAction.Search),keyboardActions=KeyboardActions(onSearch={search()}))
             }
             Row(Modifier.fillMaxWidth().padding(horizontal=12.dp).horizontalScroll(rememberScrollState())) {
-                listOf(RecipeTab.RECOMMENDED to "추천",RecipeTab.LIKE to "즐겨찾기",RecipeTab.AI to "AI 제안").forEach { (tab,label) ->
-                    if(tab!=RecipeTab.AI||recipes.supportsBatchRevision||recipes.usesSelectedRevision) {
-                        Column(horizontalAlignment=Alignment.CenterHorizontally) {
-                            TextButton(onClick={selectedTab=tab}) { Text(label,style=MaterialTheme.typography.labelMedium,
-                                color=if(selectedTab==tab) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant) }
-                            HorizontalDivider(Modifier.width(if(tab==RecipeTab.LIKE) 64.dp else 48.dp),thickness=2.dp,
-                                color=if(selectedTab==tab) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background)
-                        }
+                listOf(RecipeTab.RECOMMENDED to "추천",RecipeTab.LIKE to "즐겨찾기").forEach { (tab,label) ->
+                    Column(horizontalAlignment=Alignment.CenterHorizontally) {
+                        TextButton(onClick={selectedTab=tab},modifier=Modifier.testTag("recipe-tab-${tab.name}")) { Text(label,style=MaterialTheme.typography.labelMedium,
+                            color=if(selectedTab==tab) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant) }
+                        HorizontalDivider(Modifier.width(if(tab==RecipeTab.LIKE) 64.dp else 48.dp),thickness=2.dp,
+                            color=if(selectedTab==tab) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background)
                     }
                 }
             }
             Row(Modifier.fillMaxWidth().padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically) {
-                if(selectedTab==RecipeTab.RECOMMENDED) TextButton(onClick={recipes.otherRecommendations(fridge.ingredients)},
-                    enabled=recipes.fullSearchSupported&&recipes.hasMoreRecommendations&&!recipes.isLoading) {
-                    Icon(painterResource(R.drawable.ic_ui_refresh),contentDescription=null,modifier=Modifier.size(16.dp))
-                    Spacer(Modifier.width(5.dp)); Text("다른 추천 보기",style=MaterialTheme.typography.labelMedium)
-                }
-                Spacer(Modifier.weight(1f)); RecipeSortDropdown(recipes.sortType,recipes::selectSort)
+                Spacer(Modifier.weight(1f)); RecipeSortDropdown(dishes.sort,dishes::selectSort)
             }
-            AnimatedVisibility(recipes.isLoading,enter=fadeIn(tween(140)),exit=fadeOut(tween(100))) {
+            AnimatedVisibility(loading,enter=fadeIn(tween(140)),exit=fadeOut(tween(100))) {
                 Column { LinearProgressIndicator(Modifier.fillMaxWidth().testTag("recipe-list-progress"))
                     Text("레시피를 불러오고 있어요…",Modifier.padding(horizontal=20.dp,vertical=4.dp),style=MaterialTheme.typography.bodySmall) }
             }
-            recipes.error?.let { message -> Row(Modifier.padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically) {
+            error?.let { message -> Row(Modifier.padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically) {
                 Text(message,Modifier.weight(1f),style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.error)
-                TextButton(onClick={recipes.refresh(fridge.ingredients)}) {Text("다시 시도")}
+                TextButton(onClick=dishes::retry) {Text("다시 시도")}
             } }
             if(selectedTab==RecipeTab.RECOMMENDED) {
-                if(!recipes.fullSearchSupported) Text("불러온 목록에서 검색해요.",Modifier.padding(horizontal=20.dp),style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
-                if(recipes.fullSearchSupported&&!recipes.hasMoreRecommendations&&!recipes.isLoading&&recipes.error==null)
-                    Text("현재 조건의 후보를 모두 봤어요.",Modifier.padding(horizontal=20.dp),style=MaterialTheme.typography.bodySmall)
-                recipes.unregisteredIngredients.take(3).forEach { item -> TextButton(onClick={reviewName=item.name}) {
-                    Text("이름 확인: ${item.name}",maxLines=1,overflow=TextOverflow.Ellipsis)
-                } }
-                if(recipes.lastHiddenRecipe!=null) Row(Modifier.padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically) {
+                if(query.isNotBlank()) Text("불러온 목록에서 검색해요.",Modifier.padding(horizontal=20.dp),style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                if(dishes.lastHidden!=null) Row(Modifier.padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically) {
                     Text("이번 목록에서 숨겼어요.",Modifier.weight(1f),style=MaterialTheme.typography.bodySmall)
-                    TextButton(onClick=recipes::undoHideRecipe) {Text("실행 취소")}
+                    TextButton(onClick=dishes::undoHide) {Text("실행 취소")}
                 }
             }
-            if(!recipes.isLoading&&recipes.error==null&&visible.isEmpty()) Box(Modifier.weight(1f).fillMaxWidth(),contentAlignment=Alignment.Center) {
-                Text(when(selectedTab) {RecipeTab.LIKE->"즐겨찾기한 레시피가 없어요.";RecipeTab.AI->"현재 재료로 받은 AI 제안이 없어요.";else->"검색 조건에 맞는 레시피가 없어요."},
-                    Modifier.padding(24.dp),color=MaterialTheme.colorScheme.onSurfaceVariant)
-            } else Box(Modifier.weight(1f)) {RecipeCardList(user,fridge,visible,recipes.sortType,recipes::selectSort,onRecipeCardClick,onLikeClick,false,
-                if(selectedTab==RecipeTab.RECOMMENDED) ({recipes.hideRecipe(it.id)}) else null)}
-        }
-        if(recipes.supportsBatchRevision&&!recipes.usesSelectedRevision&&selectedTab==RecipeTab.RECOMMENDED) {
-            Button(onClick={recipes.requestBatchRevision();aiUnknownPrompt=recipes.unregisteredForAI.isNotEmpty()},enabled=recipes.canRequestBatchRevision,
-                modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp).heightIn(min=52.dp),shape=RoundedCornerShape(15.dp)) {
-                Text(if(recipes.batchRevisionLoading) "AI 제안을 만들고 있어요…" else "AI 레시피 제안 받기")
-            }
+            if(!loading&&error==null&&visible.isEmpty()) Box(Modifier.weight(1f).fillMaxWidth(),contentAlignment=Alignment.Center) {
+                Text(when {
+                    selectedTab==RecipeTab.LIKE -> "즐겨찾기한 레시피가 없어요."
+                    state is DishUiState.EmptyFridge -> "냉장고에 재료를 넣으면 만들 수 있는 요리를 보여 드려요."
+                    state is DishUiState.NoMatch -> "지금 재료로 만들 수 있는 요리를 찾지 못했어요."
+                    else -> "검색 조건에 맞는 레시피가 없어요."
+                },Modifier.padding(24.dp).testTag("recipe-empty"),color=MaterialTheme.colorScheme.onSurfaceVariant)
+            } else Box(Modifier.weight(1f)) {RecipeCardList(dishes,visible,onDishClick,
+                if(selectedTab==RecipeTab.RECOMMENDED) ({dishes.hide(it.id)}) else null)}
         }
     }
-    reviewName?.let { name -> IngredientNameReviewDialog(name,recipes.unregisteredIngredients.find {it.name==name}?.suggestions.orEmpty(),recipes.catalogNames,fridge) {reviewName=null} }
-    if(aiUnknownPrompt&&recipes.unregisteredForAI.isNotEmpty()) AlertDialog(onDismissRequest={aiUnknownPrompt=false},title={Text("AI에 전달할 재료 확인")},
-        text={Text("연결되지 않은 재료: ${recipes.unregisteredForAI.joinToString(", ")}\n이 항목을 제외하고 요청할까요? 냉장고에서는 삭제하지 않아요.")},
-        confirmButton={TextButton(onClick={aiUnknownPrompt=false;recipes.requestBatchSkippingUnregistered()}) {Text("이 재료 없이 요청")}},
-        dismissButton={TextButton(onClick={aiUnknownPrompt=false}) {Text("취소")}})
     if(showInfo) AlertDialog(onDismissRequest={showInfo=false},title={Text("레시피 안내")},text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        Text("보유 재료를 기준으로 레시피를 골랐어요. 일부 기본 조미료는 보유한 것으로 가정해요. 수량은 직접 확인해 주세요.")
-        Text(if(recipes.usesSelectedRevision) "AI 제안은 상세에서 ‘내 재료로 바꾸기’를 눌렀을 때 요청해요. 원본은 그대로 유지해요." else "AI 제안은 목록 버튼으로 요청해요. 서버가 수정할 레시피를 선택해요.")
-        Text("현재 알레르기·조리도구 조건은 서버 추천에 반영되지 않아요.")
-        Text("받은 AI 제안은 앱 실행 중 같은 재고 조건에서 재사용해요.")
-        recipes.batchRevisionMessage?.let {Text(it)}
+        Text("냉장고 재료로 만들 수 있는 요리를 골랐어요. 카드의 부족한 재료는 요리의 핵심 재료 기준이에요.")
+        Text("카드를 누르면 레시피를 만든 영상과 레시피가 함께 나와요. ‘내 재료로 바꾸기’를 누르면 AI가 레시피를 내 재료에 맞게 고쳐요. 원본은 그대로 남아요.")
+        Text("알레르기·조리도구 조건은 반영되지 않아요. 직접 확인해 주세요.")
+        Text("영상은 YouTube에서 가져온 링크예요. 영상은 올린 사람의 것이에요.")
     }},confirmButton={TextButton(onClick={showInfo=false}) {Text("확인")}})
 }
 
 @Composable
-fun RecipeCardList(user: UserViewModel,fridge: FridgeViewModel,recipes: List<Recipe>,sortType: RecipeSortType,
-    onSortSelected:(RecipeSortType)->Unit,onRecipeCardClick:(Recipe)->Unit,onLikeClick:(Recipe)->Unit,
-    showSort:Boolean=true,onHide:((Recipe)->Unit)?=null) {
+fun RecipeCardList(dishes:DishViewModel,items:List<Dish>,onDishClick:(Dish)->Unit,onHide:((Dish)->Unit)?=null) {
     val listState=rememberLazyListState()
-    Column(Modifier.fillMaxSize()) {
-        if(showSort) RecipeSortDropdown(sortType,onSortSelected,Modifier.align(Alignment.End))
-        LazyColumn(state=listState,contentPadding=PaddingValues(start=20.dp,end=20.dp,top=10.dp,bottom=88.dp),
-            verticalArrangement=Arrangement.spacedBy(18.dp),modifier=Modifier.fillMaxSize().testTag("recipe-list")) {
-            items(recipes,key={it.id}) {recipe ->
-                Box(Modifier.animateItem(fadeInSpec=tween(160),fadeOutSpec=tween(100))) {
-                    if(onHide!=null) {
-                        val dismiss=rememberSwipeToDismissBoxState(confirmValueChange={value->if(value==SwipeToDismissBoxValue.EndToStart){onHide(recipe);true}else false})
-                        SwipeToDismissBox(dismiss,backgroundContent={Box(Modifier.fillMaxSize().clip(RoundedCornerShape(19.dp)).background(MaterialTheme.colorScheme.errorContainer),contentAlignment=Alignment.CenterEnd){Text("이번 목록에서 숨기기",Modifier.padding(20.dp))}},
-                            enableDismissFromStartToEnd=false,modifier=Modifier.clip(RoundedCornerShape(19.dp))) {RecipeCard(user,fridge,recipe,onRecipeCardClick,onLikeClick)}
-                    } else RecipeCard(user,fridge,recipe,onRecipeCardClick,onLikeClick)
-                }
+    // After "실행 취소" the card returns where it was, often above the visible part of the list:
+    // scroll to it so the user sees it come back (emulator E2E, 2026-11-20).
+    val restored=dishes.restored
+    LaunchedEffect(restored) {
+        val index=restored?.let { r -> items.indexOfFirst { it.id==r.id } } ?: -1
+        if(index>=0) listState.animateScrollToItem(index)
+    }
+    LazyColumn(state=listState,contentPadding=PaddingValues(start=20.dp,end=20.dp,top=10.dp,bottom=88.dp),
+        verticalArrangement=Arrangement.spacedBy(18.dp),modifier=Modifier.fillMaxSize().testTag("recipe-list")) {
+        items(items,key={it.id}) {dish ->
+            Box(Modifier.animateItem(fadeInSpec=tween(160),fadeOutSpec=tween(100))) {
+                if(onHide!=null) {
+                    val dismiss=rememberSwipeToDismissBoxState(confirmValueChange={value->if(value==SwipeToDismissBoxValue.EndToStart){onHide(dish);true}else false})
+                    // The swipe state is saved per dish: after "실행 취소" the card comes back swiped away
+                    // unless it is reset when it re-enters the list (found on the emulator, 2026-11-20).
+                    LaunchedEffect(dish.id) { if(dismiss.currentValue!=SwipeToDismissBoxValue.Settled) dismiss.reset() }
+                    SwipeToDismissBox(dismiss,backgroundContent={Box(Modifier.fillMaxSize().clip(RoundedCornerShape(19.dp)).background(MaterialTheme.colorScheme.errorContainer),contentAlignment=Alignment.CenterEnd){Text("이번 목록에서 숨기기",Modifier.padding(20.dp))}},
+                        enableDismissFromStartToEnd=false,modifier=Modifier.clip(RoundedCornerShape(19.dp))) {RecipeCard(dishes,dish,onDishClick)}
+                } else RecipeCard(dishes,dish,onDishClick)
             }
         }
     }
 }
 
 @Composable
-fun RecipeCard(user:UserViewModel,fridge:FridgeViewModel,recipe:Recipe,onRecipeCardClick:(Recipe)->Unit,onLikeClick:(Recipe)->Unit,imageSize:Dp=96.dp) {
-    Surface(Modifier.fillMaxWidth().testTag("recipe-card-${recipe.id}").clickable(role=Role.Button,onClickLabel="레시피 상세 보기"){onRecipeCardClick(recipe)},
+fun RecipeCard(dishes:DishViewModel,dish:Dish,onDishClick:(Dish)->Unit) {
+    val liked=dishes.isFavorite(dish.id)
+    val known=dishes.isSuggested(dish.id)
+    Surface(Modifier.fillMaxWidth().testTag("recipe-card-${dish.id}").clickable(role=Role.Button,onClickLabel="영상과 레시피 보기"){onDishClick(dish)},
         shape=RoundedCornerShape(19.dp),border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant),color=MaterialTheme.colorScheme.surface) {
         Column {
             Box {
-                RecipeImage(recipe,Modifier.fillMaxWidth().aspectRatio(2f).testTag("recipe-image-${recipe.id}"))
+                RecipeImage(dish.name,dish.thumbnailUrl,Modifier.fillMaxWidth().aspectRatio(2f).testTag("recipe-image-${dish.id}"),playMark=true)
                 Surface(shape=RoundedCornerShape(24.dp),color=MaterialTheme.colorScheme.surface.copy(alpha=.94f),modifier=Modifier.align(Alignment.TopEnd).padding(10.dp)) {
-                    IconButton(onClick={if(recipe.id in user.likes)user.removeLikes(recipe.id)else user.addLikes(recipe.id);onLikeClick(recipe)},
-                        modifier=Modifier.testTag("recipe-bookmark-${recipe.id}")) {
-                        Icon(painterResource(if(recipe.id in user.likes)R.drawable.ic_ui_heart_filled else R.drawable.ic_ui_heart),
-                            contentDescription=if(recipe.id in user.likes)"즐겨찾기 해제" else "즐겨찾기 추가",tint=MaterialTheme.colorScheme.primary,modifier=Modifier.size(22.dp))
+                    IconButton(onClick={dishes.toggleFavorite(dish)},modifier=Modifier.testTag("recipe-bookmark-${dish.id}")) {
+                        Icon(painterResource(if(liked)R.drawable.ic_ui_heart_filled else R.drawable.ic_ui_heart),
+                            contentDescription=if(liked)"즐겨찾기 해제" else "즐겨찾기 추가",tint=MaterialTheme.colorScheme.primary,modifier=Modifier.size(22.dp))
                     }
                 }
             }
             Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                    Text(recipe.name,Modifier.weight(1f),fontSize=18.sp,style=MaterialTheme.typography.titleMedium,maxLines=2,overflow=TextOverflow.Ellipsis)
-                    if(recipe.time>0) {Spacer(Modifier.width(10.dp));Icon(painterResource(R.drawable.ic_ui_clock),contentDescription=null,Modifier.size(14.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(Modifier.width(4.dp));Text("${recipe.time}분",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)}
+                    Text(dish.name,Modifier.weight(1f),fontSize=18.sp,style=MaterialTheme.typography.titleMedium,maxLines=2,overflow=TextOverflow.Ellipsis)
+                    if(dish.category.isNotBlank()) {Spacer(Modifier.width(10.dp))
+                        Text(dish.category,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)}
                 }
-                val missing=recipe.missing ?: recipe.ingredients.filter {i->fridge.ingredients.none {it.name==i.name}}
+                val missing=dish.missing
                 Row(verticalAlignment=Alignment.CenterVertically) {
-                Text(if(!recipe.availabilityKnown)"재고 조건을 다시 확인해 주세요" else if(missing.isEmpty())"지금 바로 만들 수 있어요" else {
+                Text(if(!known)"재고 조건을 다시 확인해 주세요" else if(missing.isEmpty())"핵심 재료가 다 있어요" else {
                     val rest=(missing.size-2).coerceAtLeast(0)
-                    "부족한 재료 ${missing.size}개 · ${missing.take(2).joinToString(", "){it.name}}"+if(rest>0)" 외 ${rest}개" else ""
-                },modifier=Modifier.weight(1f),style=MaterialTheme.typography.bodySmall,color=if(recipe.availabilityKnown&&missing.isNotEmpty())MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
-                    IconButton(onClick={onRecipeCardClick(recipe)}) {Icon(painterResource(R.drawable.ic_more),contentDescription="more",modifier=Modifier.size(16.dp))}
+                    "부족한 핵심 재료 ${missing.size}개 · ${missing.take(2).joinToString(", ")}"+if(rest>0)" 외 ${rest}개" else ""
+                },modifier=Modifier.weight(1f).testTag("recipe-missing-${dish.id}"),style=MaterialTheme.typography.bodySmall,color=if(known&&missing.isNotEmpty())MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                    IconButton(onClick={onDishClick(dish)}) {Icon(painterResource(R.drawable.ic_more),contentDescription="more",modifier=Modifier.size(16.dp))}
                 }
-                if(recipe.revisionAvailable) Text("✦ AI 제안 있음",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.tertiary)
-                else if(recipe.revisionCandidate) Text("✦ AI 조정 후보",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

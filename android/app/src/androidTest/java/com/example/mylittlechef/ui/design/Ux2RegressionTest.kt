@@ -137,7 +137,6 @@ class Ux2RegressionTest {
         override suspend fun ingredientNames()=IngredientCatalogResponse(listOf("무","두부"))
         override suspend fun ingredientSuggestions(request: IngredientSuggestionRequest)=error("Not used")
         override suspend fun analyze(image: MultipartBody.Part)=error("Not used")
-        override suspend fun recommend(request: RecommendRequest)=error("Not used")
     })
     @Test fun typingInRealManualScreenUpdatesSheetDismissGuard() {
         val fridge=FridgeViewModel();val catalog=catalog()

@@ -1,0 +1,31 @@
+{
+  "round": "2b",
+  "date": "2026-11-19",
+  "question": "Does stating in the revision prompt that owned and assumed ingredients the revised dish still uses stay in the ingredient list stop answers that drop staples without a reason (served as failed: unexplained_change)?",
+  "trigger": "Phone end-to-end check: 두부부침 with only 두부 owned failed twice with unexplained_change; the model kept only 두부 in the list and dropped the assumed staples (식용유 without a reason).",
+  "inputs": "the 36 frozen synthetic cases (cases.json, fixtures.json) plus the demo case tofu-pan with ['두부'] against the served recipe file (artifacts, untracked)",
+  "variants": {
+    "old": "REVISE_SYSTEM as served at fff9b11",
+    "keep": "the same text with one added sentence in rule 2: keep every owned or assumed source ingredient the revised recipe still uses in the ingredient list, with its source amount; only omitted or replaced ingredients leave the list"
+  },
+  "model": "google/gemini-2.5-flash-lite, temperature 0, one run per variant, served Reviser path (prescreen, check, main-ingredient rule)",
+  "metrics": [
+    "served status per case (revised/refused/failed) and failure code",
+    "cases expected revise that are served revised",
+    "wrong recipes served for expect=refuse cases",
+    "assumed rows dropped from the revised list",
+    "cost, latency"
+  ],
+  "analysis": "per-case paired table old vs keep; counts; no pass/fail thresholds; the decision is a judgement written after the numbers",
+  "budget": {
+    "model_calls": 140,
+    "usd": 0.1
+  },
+  "amendments": [
+    {
+      "date": "2026-11-19",
+      "before_calls": "yes, before the real-sample calls",
+      "text": "The synthetic fixtures have no assumed rows (dropped_assumed was 0 in both variants), so they cannot show the targeted failure. Added: 20 served recipes sampled with seed 20261119, fridge = the recipe's main ingredients only (secondaries unavailable, staples assumed), old vs keep, one run each (40 calls)."
+    }
+  ]
+}

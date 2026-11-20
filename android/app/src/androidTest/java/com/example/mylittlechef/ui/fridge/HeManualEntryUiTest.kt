@@ -19,7 +19,6 @@ class HeManualEntryUiTest {
         override suspend fun ingredientNames() = IngredientCatalogResponse(listOf("두부", "무"))
         override suspend fun ingredientSuggestions(request: IngredientSuggestionRequest) = error("Not used")
         override suspend fun analyze(image: MultipartBody.Part) = error("Not used")
-        override suspend fun recommend(request: RecommendRequest) = error("Not used")
     }
     @Test fun entryFieldIsVisibleBeforeAddAndMultipleRowsCanStillBeSaved() {
         val fridge = FridgeViewModel()

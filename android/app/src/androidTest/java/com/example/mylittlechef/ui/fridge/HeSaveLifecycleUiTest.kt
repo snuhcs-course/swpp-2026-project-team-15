@@ -29,7 +29,6 @@ class HeSaveLifecycleUiTest {
         override suspend fun ingredientNames() = IngredientCatalogResponse(listOf("두부", "무"))
         override suspend fun ingredientSuggestions(request: IngredientSuggestionRequest) = error("Not used")
         override suspend fun analyze(image: MultipartBody.Part) = error("No live calls")
-        override suspend fun recommend(request: RecommendRequest) = error("Not used")
     }
 
     @Test fun saveCompletionWaitsForResumedOwnerAndIsConsumedOnlyOnce() {

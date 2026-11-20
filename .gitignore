@@ -13,6 +13,9 @@ dist/
 
 # Local environment configuration
 .env
+deploy/runtime.env
+deploy/data/
+deploy/telemetry/
 
 # Android
 .gradle/

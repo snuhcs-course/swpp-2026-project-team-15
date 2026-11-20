@@ -57,9 +57,11 @@ class UserViewModel(
         repository?.let { source -> viewModelScope.launch { source.update(transform) } }
     }
 
+    /** A blank name became "님의 냉장고" on screen (phone check, 2026-11-19), so it falls back to a default. */
     fun updateNickname(value: String) {
-        nickname = value.trim()
-        save { it.withNickname(value) }
+        val name = value.trim().ifBlank { DEFAULT_NICKNAME }
+        nickname = name
+        save { it.withNickname(name) }
     }
 
     fun updateUtensils(value: List<String>) {
@@ -85,5 +87,9 @@ class UserViewModel(
     fun completeOnboarding() {
         onboardingComplete = true
         save { it.copy(onboardingComplete = true) }
+    }
+
+    companion object {
+        const val DEFAULT_NICKNAME = "요리사"
     }
 }

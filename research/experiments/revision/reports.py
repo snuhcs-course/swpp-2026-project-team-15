@@ -3,11 +3,11 @@
 # 2026-10-14 to 2026-10-17; reviewed by Soohyun An
 
 import csv
-from collections.abc import Sequence
-from datetime import datetime, timezone
 import json
-from pathlib import Path
 import os
+from collections.abc import Sequence
+from datetime import UTC, datetime
+from pathlib import Path
 from uuid import uuid4
 
 SCORES = ("decision_validity", "ingredient_compliance", "source_fidelity", "cookability")
@@ -28,7 +28,7 @@ def redact(value, secrets: Sequence[str]):
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def write_json(path: Path, value: dict) -> None:
@@ -84,15 +84,26 @@ def write_sheets(directory: Path, records: list[dict]) -> None:
         keys = {key: record[key] for key in ("run_id", "case_id")}
         keys["recipe_name"] = record["original"]["name"]
         model = record["model_result"]
-        results.append({**keys, "status": record["status"],
-                        "reason": model["reason"] if model else record["error"],
-                        "artifact": f"{record['case_id']}.json"})
+        results.append(
+            {
+                **keys,
+                "status": record["status"],
+                "reason": model["reason"] if model else record["error"],
+                "artifact": f"{record['case_id']}.json",
+            }
+        )
         status = record["status"]
-        scores = {key: "" if status == "revised" or
-                  (status == "refused" and key == "decision_validity") else "N/A"
-                  for key in SCORES}
-        evaluation.append({**keys, **scores, "reviewer": "", "rubric_version": "",
-                           "notes": ""})
+        scores = {
+            key: ""
+            if status == "revised" or (status == "refused" and key == "decision_validity")
+            else "N/A"
+            for key in SCORES
+        }
+        evaluation.append({**keys, **scores, "reviewer": "", "rubric_version": "", "notes": ""})
     keys = ("run_id", "case_id", "recipe_name")
     _write_csv(directory / "results.csv", keys + ("status", "reason", "artifact"), results)
-    _write_csv(directory / "evaluation.csv", keys + SCORES + ("reviewer", "rubric_version", "notes"), evaluation)
+    _write_csv(
+        directory / "evaluation.csv",
+        keys + SCORES + ("reviewer", "rubric_version", "notes"),
+        evaluation,
+    )

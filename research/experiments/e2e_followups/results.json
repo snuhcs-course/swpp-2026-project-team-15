@@ -1,0 +1,442 @@
+{
+ "item": 1,
+ "model": "google/gemini-2.5-flash-lite (served) unless noted",
+ "files": {
+  "suggest-head-flash": {
+   "sha256": "f79dff1fc852389da0043c88aa1ab2adfb476b3f8cdced754c224fa3deb4e776",
+   "calls": 36
+  },
+  "suggest-head-noassumed": {
+   "sha256": "454f9badc1602aeac6e6ee26662f5d35a398c86e8172be542c7bc4404af37022",
+   "calls": 36
+  },
+  "suggest-head": {
+   "sha256": "55970cc5340cba1a56f541bd8a87472173e96cfc413709dffd1fe55f24fa8081",
+   "calls": 36
+  },
+  "suggest-4f09726": {
+   "sha256": "d44a8443a07bc54233f51bd0a34072d4d66e2b587d373b91fe359e5b9548b0fe",
+   "calls": 12
+  },
+  "suggest-fixed": {
+   "sha256": "f26ea6367128d82fbf769fbe1c8769426db4346574a575953f153e9691a04ef5",
+   "calls": 12
+  }
+ },
+ "by_input": {
+  "초콜릿": {
+   "suggest-head-flash": {
+    "dishes": 0,
+    "uses_none": 0,
+    "seconds": 0.98
+   },
+   "suggest-head-noassumed": {
+    "dishes": 0,
+    "uses_none": 0,
+    "seconds": 0.74
+   },
+   "suggest-head": {
+    "dishes": 35,
+    "uses_none": 25,
+    "seconds": 4.87
+   },
+   "suggest-4f09726": {
+    "dishes": 35,
+    "uses_none": 35,
+    "seconds": 9.02
+   },
+   "suggest-fixed": {
+    "dishes": 0,
+    "uses_none": 0,
+    "seconds": 4.52
+   }
+  },
+  "우유": {
+   "suggest-head-flash": {
+    "dishes": 0,
+    "uses_none": 0,
+    "seconds": 1.11
+   },
+   "suggest-head-noassumed": {
+    "dishes": 17,
+    "uses_none": 10,
+    "seconds": 1.97
+   },
+   "suggest-head": {
+    "dishes": 36,
+    "uses_none": 23,
+    "seconds": 4.37
+   },
+   "suggest-4f09726": {
+    "dishes": 71,
+    "uses_none": 68,
+    "seconds": 5.47
+   },
+   "suggest-fixed": {
+    "dishes": 2,
+    "uses_none": 0,
+    "seconds": 3.95
+   }
+  },
+  "사과": {
+   "suggest-head-flash": {
+    "dishes": 0,
+    "uses_none": 0,
+    "seconds": 0.97
+   },
+   "suggest-head-noassumed": {
+    "dishes": 36,
+    "uses_none": 25,
+    "seconds": 4.57
+   },
+   "suggest-head": {
+    "dishes": 36,
+    "uses_none": 26,
+    "seconds": 4.01
+   },
+   "suggest-4f09726": {
+    "dishes": 80,
+    "uses_none": 80,
+    "seconds": 6.16
+   },
+   "suggest-fixed": {
+    "dishes": 0,
+    "uses_none": 0,
+    "seconds": 4.25
+   }
+  },
+  "콜라": {
+   "suggest-head-flash": {
+    "dishes": 0,
+    "uses_none": 0,
+    "seconds": 0.91
+   },
+   "suggest-head-noassumed": {
+    "dishes": 36,
+    "uses_none": 25,
+    "seconds": 4.59
+   },
+   "suggest-head": {
+    "dishes": 36,
+    "uses_none": 25,
+    "seconds": 4.29
+   },
+   "suggest-4f09726": {
+    "dishes": 81,
+    "uses_none": 81,
+    "seconds": 6.41
+   },
+   "suggest-fixed": {
+    "dishes": 0,
+    "uses_none": 0,
+    "seconds": 4.07
+   }
+  },
+  "과자": {
+   "suggest-head-flash": {
+    "dishes": 0,
+    "uses_none": 0,
+    "seconds": 0.85
+   },
+   "suggest-head-noassumed": {
+    "dishes": 36,
+    "uses_none": 26,
+    "seconds": 4.62
+   },
+   "suggest-head": {
+    "dishes": 36,
+    "uses_none": 21,
+    "seconds": 4.57
+   },
+   "suggest-4f09726": {
+    "dishes": 68,
+    "uses_none": 68,
+    "seconds": 4.94
+   },
+   "suggest-fixed": {
+    "dishes": 0,
+    "uses_none": 0,
+    "seconds": 4.36
+   }
+  },
+  "바나나": {
+   "suggest-head-flash": {
+    "dishes": 0,
+    "uses_none": 0,
+    "seconds": 0.82
+   },
+   "suggest-head-noassumed": {
+    "dishes": 19,
+    "uses_none": 12,
+    "seconds": 2.2
+   },
+   "suggest-head": {
+    "dishes": 17,
+    "uses_none": 11,
+    "seconds": 2.2
+   },
+   "suggest-4f09726": {
+    "dishes": 17,
+    "uses_none": 17,
+    "seconds": 1.82
+   },
+   "suggest-fixed": {
+    "dishes": 0,
+    "uses_none": 0,
+    "seconds": 2.06
+   }
+  },
+  "계란 + 밥": {
+   "suggest-head-flash": {
+    "dishes": 13,
+    "uses_none": 0,
+    "seconds": 2.28
+   },
+   "suggest-head-noassumed": {
+    "dishes": 14,
+    "uses_none": 0,
+    "seconds": 1.8
+   },
+   "suggest-head": {
+    "dishes": 36,
+    "uses_none": 7,
+    "seconds": 4.17
+   },
+   "suggest-4f09726": {
+    "dishes": 118,
+    "uses_none": 74,
+    "seconds": 8.79
+   },
+   "suggest-fixed": {
+    "dishes": 34,
+    "uses_none": 0,
+    "seconds": 4.66
+   }
+  },
+  "김치 + 밥": {
+   "suggest-head-flash": {
+    "dishes": 19,
+    "uses_none": 0,
+    "seconds": 2.71
+   },
+   "suggest-head-noassumed": {
+    "dishes": 36,
+    "uses_none": 9,
+    "seconds": 4.48
+   },
+   "suggest-head": {
+    "dishes": 12,
+    "uses_none": 0,
+    "seconds": 2.37
+   },
+   "suggest-4f09726": {
+    "dishes": 12,
+    "uses_none": 0,
+    "seconds": 2.37
+   },
+   "suggest-fixed": {
+    "dishes": 12,
+    "uses_none": 0,
+    "seconds": 2.62
+   }
+  },
+  "두부": {
+   "suggest-head-flash": {
+    "dishes": 5,
+    "uses_none": 0,
+    "seconds": 1.3
+   },
+   "suggest-head-noassumed": {
+    "dishes": 7,
+    "uses_none": 2,
+    "seconds": 4.5
+   },
+   "suggest-head": {
+    "dishes": 11,
+    "uses_none": 5,
+    "seconds": 1.74
+   },
+   "suggest-4f09726": {
+    "dishes": 11,
+    "uses_none": 6,
+    "seconds": 1.69
+   },
+   "suggest-fixed": {
+    "dishes": 5,
+    "uses_none": 0,
+    "seconds": 1.74
+   }
+  },
+  "양파 + 대파 + 감자": {
+   "suggest-head-flash": {
+    "dishes": 6,
+    "uses_none": 0,
+    "seconds": 1.46
+   },
+   "suggest-head-noassumed": {
+    "dishes": 31,
+    "uses_none": 16,
+    "seconds": 4.32
+   },
+   "suggest-head": {
+    "dishes": 28,
+    "uses_none": 12,
+    "seconds": 4.49
+   },
+   "suggest-4f09726": {
+    "dishes": 28,
+    "uses_none": 18,
+    "seconds": 8.05
+   },
+   "suggest-fixed": {
+    "dishes": 21,
+    "uses_none": 0,
+    "seconds": 4.41
+   }
+  },
+  "햇반 + 계란": {
+   "suggest-head-flash": {
+    "dishes": 12,
+    "uses_none": 0,
+    "seconds": 2.03
+   },
+   "suggest-head-noassumed": {
+    "dishes": 18,
+    "uses_none": 0,
+    "seconds": 2.12
+   },
+   "suggest-head": {
+    "dishes": 18,
+    "uses_none": 0,
+    "seconds": 2.15
+   },
+   "suggest-4f09726": {
+    "dishes": 18,
+    "uses_none": 0,
+    "seconds": 1.81
+   },
+   "suggest-fixed": {
+    "dishes": 18,
+    "uses_none": 0,
+    "seconds": 1.88
+   }
+  },
+  "참치캔 + 김": {
+   "suggest-head-flash": {
+    "dishes": 9,
+    "uses_none": 0,
+    "seconds": 2.15
+   },
+   "suggest-head-noassumed": {
+    "dishes": 9,
+    "uses_none": 0,
+    "seconds": 1.73
+   },
+   "suggest-head": {
+    "dishes": 9,
+    "uses_none": 0,
+    "seconds": 4.53
+   },
+   "suggest-4f09726": {
+    "dishes": 9,
+    "uses_none": 0,
+    "seconds": 8.21
+   },
+   "suggest-fixed": {
+    "dishes": 9,
+    "uses_none": 0,
+    "seconds": 4.25
+   }
+  }
+ },
+ "item5_revise_refs": {
+  "sha256": "d3cb8c185a643c707fed972161cc2cf9a740737c73d05dfb2524651b1d4602a7",
+  "recipes_sha256": "0670822b63bddc4b1e1fb33c76900eef0c778ab906ec5500a2e11d3b43438eda",
+  "summary": {
+   "V0": {
+    "recipes": 124,
+    "status": {
+     "revised": 96,
+     "refused": 1,
+     "failed": 24,
+     "error": 3
+    },
+    "failed_codes": {
+     "mentions_unavailable": 12,
+     "bad_reference": 5,
+     "unavailable_ingredient": 2,
+     "unexplained_change": 4,
+     "main_dropped": 1,
+     "DishLLMError": 3
+    },
+    "first_out_of_range": 18,
+    "final_out_of_range": 8,
+    "revised_with_mirrored_change": 24,
+    "calls": 157,
+    "median_seconds": 2.77
+   },
+   "V1": {
+    "recipes": 124,
+    "status": {
+     "revised": 97,
+     "error": 5,
+     "failed": 22
+    },
+    "failed_codes": {
+     "DishLLMError": 5,
+     "mentions_unavailable": 13,
+     "unavailable_ingredient": 3,
+     "unexplained_change": 4,
+     "main_dropped": 2
+    },
+    "first_out_of_range": 0,
+    "final_out_of_range": 0,
+    "revised_with_mirrored_change": 27,
+    "calls": 140,
+    "median_seconds": 2.59
+   },
+   "V2": {
+    "recipes": 124,
+    "status": {
+     "revised": 99,
+     "refused": 1,
+     "failed": 23,
+     "error": 1
+    },
+    "failed_codes": {
+     "mentions_unavailable": 12,
+     "unavailable_ingredient": 3,
+     "unexplained_change": 4,
+     "bad_reference": 3,
+     "main_dropped": 1,
+     "DishLLMError": 1
+    },
+    "first_out_of_range": 18,
+    "final_out_of_range": 4,
+    "revised_with_mirrored_change": 24,
+    "calls": 159,
+    "median_seconds": 2.58
+   },
+   "V3": {
+    "recipes": 124,
+    "status": {
+     "revised": 97,
+     "error": 5,
+     "failed": 22
+    },
+    "failed_codes": {
+     "DishLLMError": 5,
+     "mentions_unavailable": 13,
+     "unavailable_ingredient": 3,
+     "unexplained_change": 4,
+     "main_dropped": 2
+    },
+    "first_out_of_range": 0,
+    "final_out_of_range": 0,
+    "revised_with_mirrored_change": 27,
+    "calls": 140,
+    "median_seconds": 2.37
+   }
+  }
+ }
+}

@@ -1,11 +1,10 @@
+// Modified with Claude Code (Opus 5.5), 2026-11-20: dropped the client name-rule case (see below).
 // AI-assisted HE regressions, 2026-11-10; human review pending.
 package com.example.mylittlechef.viewmodel
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.example.mylittlechef.data.local.PreferencesFridgeRepository
-import com.example.mylittlechef.domain.IngredientNames
 import com.example.mylittlechef.model.Ingredient
-import com.example.mylittlechef.model.Recipe
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.*
@@ -26,11 +25,8 @@ class HeNameCorrectionTest {
             assertEquals(listOf("두부","우유"),vm.ingredients.map { it.name })
         } finally { Dispatchers.resetMain() }
     }
-    @Test fun completionConnectsForwardFormsButNeverSelectsUnrelatedOrReverseForms() {
-        val recipe=Recipe(1,"요리",10,1,listOf(Ingredient("다진 마늘"),Ingredient("달걀"),Ingredient("대파")),emptyList())
-        assertEquals(listOf("마늘","계란"),IngredientNames.usedOwnedNames(recipe,
-            listOf(Ingredient("마늘"),Ingredient("계란"),Ingredient("다진파"),Ingredient("우유"))))
-    }
+    // Removed 2026-11-20 (merge into the YouTube-based branch): the client-side name rules it tested
+    // (IngredientNames, recipe-DB Recipe) are gone; the server's reviewed name table decides ownership.
     @Test fun atomicCorrectionPersistsAfterReopeningTheStoreWithoutLosingOtherNames() = runBlocking {
         val directory=Files.createTempDirectory("he-name-correction")
         val file=directory.resolve("fridge.preferences_pb").toFile()

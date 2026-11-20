@@ -6,6 +6,8 @@
 // Codex-assisted changes (GPT-6.1 Sol), 2026-10-14; human review pending.
 // Pantry edit route added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 // Ingredient catalog wiring added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
+// Merged with Claude Code (Opus 5.5), 2026-11-20: this navigation shell (#23/#24) with the YouTube-based
+// dish data, usage data (sessions, screen views incl. the entry sheets), data reset and the usage notice.
 package com.example.mylittlechef.navigation
 
 import androidx.compose.animation.fadeIn
@@ -50,7 +52,6 @@ import com.example.mylittlechef.ui.profile.EditAllergyScreen
 import com.example.mylittlechef.ui.profile.EditPantryScreen
 import com.example.mylittlechef.ui.profile.EditNicknameScreen
 import com.example.mylittlechef.ui.profile.EditUtensilScreen
-import com.example.mylittlechef.ui.recipe.RecipeDetailScreen
 import com.example.mylittlechef.data.local.PreferencesFridgeRepository
 import com.example.mylittlechef.data.local.IngredientPresentationProvider
 import com.example.mylittlechef.data.local.PreferencesUserRepository
@@ -58,8 +59,25 @@ import com.example.mylittlechef.data.local.localDataStore
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.IngredientCatalogViewModel
 import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
-import com.example.mylittlechef.viewmodel.RecipeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
+import androidx.activity.compose.LocalActivity
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import com.example.mylittlechef.data.local.PreferencesAppDataReset
+import com.example.mylittlechef.data.local.PreferencesUsageDataSettings
+import com.example.mylittlechef.data.telemetry.AppUsage
+import com.example.mylittlechef.domain.Telemetry
+import com.example.mylittlechef.domain.Usage
+import com.example.mylittlechef.domain.UsageEvent
+import com.example.mylittlechef.ui.profile.UsageDataNotice
+import com.example.mylittlechef.viewmodel.DataResetViewModel
+import com.example.mylittlechef.viewmodel.UsageDataViewModel
+import com.example.mylittlechef.data.local.PreferencesFavoriteDishes
+import com.example.mylittlechef.ui.recipe.RecipeDetailScreen
+import com.example.mylittlechef.viewmodel.DishViewModel
 
 @Composable
 fun AppNavHost(
@@ -70,6 +88,18 @@ fun AppNavHost(
     val store = LocalContext.current.applicationContext.localDataStore
     val userRepository = remember(store) { PreferencesUserRepository(store) }
     val fridgeRepository = remember(store) { PreferencesFridgeRepository(store) }
+    // Usage data for the beta week: one Telemetry for the app process, handed to the ViewModels that emit events.
+    val usageSettings = remember(store) { PreferencesUsageDataSettings(store) }
+    val context = LocalContext.current
+    val telemetry: Telemetry = remember { AppUsage.telemetry(context) }
+    val usageFactory = remember(usageSettings) {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T = UsageDataViewModel(usageSettings) as T
+        }
+    }
+    val usageData: UsageDataViewModel = viewModel(factory = usageFactory)
+    SessionEvents(telemetry)
     val userFactory = remember(userRepository) {
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -81,28 +111,34 @@ fun AppNavHost(
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                FridgeViewModel(repository = fridgeRepository) as T
+                FridgeViewModel(repository = fridgeRepository, telemetry = telemetry) as T
         }
     }
     val user: UserViewModel = viewModel(factory = userFactory)
     val fridge: FridgeViewModel = viewModel(factory = fridgeFactory)
     val applicationContext = LocalContext.current.applicationContext
-    val recipeFactory = remember(applicationContext) {
+    val ingredientSuggestions: IngredientSuggestionViewModel = viewModel()
+    val ingredientCatalog: IngredientCatalogViewModel = viewModel()
+    val dataResetFactory = remember(store, applicationContext) {
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                RecipeViewModel(ingredientIds = IngredientPresentationProvider.get(applicationContext).ingredientIds) as T
+                DataResetViewModel(PreferencesAppDataReset(store, applicationContext.cacheDir)) as T
         }
     }
-    val recipes: RecipeViewModel = viewModel(factory = recipeFactory)
-    val ingredientSuggestions: IngredientSuggestionViewModel = viewModel()
-    val ingredientCatalog: IngredientCatalogViewModel = viewModel()
+    val dataReset: DataResetViewModel = viewModel(factory = dataResetFactory)
+    // The dish list and the detail route share one: the detail shows the dish the list holds.
+    val dishFactory = remember(store, telemetry) {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                DishViewModel(telemetry = telemetry, favoriteStore = PreferencesFavoriteDishes(store)) as T
+        }
+    }
+    val dishes: DishViewModel = viewModel(factory = dishFactory)
 
     // Wait for persisted data before choosing the first screen or fetching recommendations.
     if (!user.isLoaded || !fridge.isLoaded) return
-    LaunchedEffect(fridge.ingredients, user.allergies, user.utensils) {
-        recipes.updateUserContext(fridge.ingredients, user.allergies, user.utensils)
-    }
     val startDestination = remember { if (user.onboardingComplete) Routes.MAIN else Routes.ONBOARDING }
     var entrySheet by rememberSaveable { mutableStateOf<String?>(null) }
     var photoUri by rememberSaveable { mutableStateOf<String?>(null) }
@@ -116,6 +152,22 @@ fun AppNavHost(
     } }
     val photoReview: PhotoAnalysisViewModel = viewModel(factory=photoFactory)
     fun closeEntry() { if(entrySheet=="photo") photoReview.cancel(); entrySheet=null }
+    UsageDataNotice(usageData)
+    val topEntry by navController.currentBackStackEntryAsState()
+    val topRoute = topEntry?.destination?.route
+    // Screen views: the full-screen routes and the entry sheets that open above the main screen.
+    LaunchedEffect(topRoute, entrySheet) {
+        val screen = when {
+            entrySheet == "manual" -> "manual_add"
+            entrySheet == "photo" -> "analyze"
+            topRoute == Routes.ONBOARDING -> "onboarding"
+            topRoute == Routes.CAPTURE -> "capture"
+            topRoute == Routes.ANALYZE -> "analyze"
+            topRoute == Routes.MANUAL_ADD -> "manual_add"
+            else -> null // the main screen reports its own tabs
+        }
+        if (screen != null) telemetry.track(Usage(UsageEvent.SCREEN_VIEW, screen = screen))
+    }
 
 
     NavHost(
@@ -144,8 +196,19 @@ fun AppNavHost(
             MainScreen(
                 user = user,
                 fridge = fridge,
-                recipes = recipes,
                 ingredientSuggestions = ingredientSuggestions,
+                dataReset = dataReset,
+                telemetry = telemetry,
+                usageData = usageData,
+                dishViewModel = dishes,
+                onDishClick = { id -> navController.navigate(Routes.recipeDetailRoute(id)) },
+                onDataResetDone = {
+                    // Like a fresh install: the first screen again, and Back cannot return to the old data.
+                    navController.navigate(Routes.ONBOARDING) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
                 onAddIngredientClick = {
                     navController.navigate(Routes.CAPTURE)
                 },
@@ -161,10 +224,6 @@ fun AppNavHost(
                 },
                 onEditPantryClick = {
                     navController.navigate(Routes.EDIT_PANTRY)
-                },
-                onRecipeCardClick = {
-                    recipe ->
-                    navController.navigate("${Routes.RECIPE_DETAIL}/${recipe.id}")
                 }
             )
         }
@@ -225,6 +284,40 @@ fun AppNavHost(
             )
         }
 
+        composable(
+            route = "${Routes.RECIPE_DETAIL}/{${Routes.ARG_DISH_ID}}",
+            arguments = listOf(navArgument(Routes.ARG_DISH_ID) { type = NavType.StringType })
+        ) { entry ->
+            val id = entry.arguments?.getString(Routes.ARG_DISH_ID).orEmpty()
+            val dish = dishes.dishById(id)
+            if (dish == null) {
+                LaunchedEffect(id) { navController.popBackStack() }
+                return@composable
+            }
+            DisposableEffect(id) {
+                dishes.selectDish(id)
+                onDispose { dishes.selectDish(null) }
+            }
+            LaunchedEffect(id) {
+                dishes.requestVideos(dish)
+                if (dish.hasRecipe) dishes.recipes.requestRecipe(id)
+            }
+            RecipeDetailScreen(
+                dish = dish,
+                liked = dishes.isFavorite(id),
+                recipe = dishes.recipes.recipeState(id),
+                revision = dishes.recipes.reviseState(id),
+                videos = dishes.videoState(id),
+                fridge = fridge,
+                onBackClick = { navController.popBackStack() },
+                onLikeClick = { dishes.toggleFavorite(dish) },
+                onRetryRecipe = { dishes.recipes.requestRecipe(id) },
+                onRevise = { dishes.recipes.requestRevision(id) },
+                onRetryVideos = { dishes.requestVideos(dish) },
+                onPlayerError = { dishes.onPlayerError(id) }
+            )
+        }
+
         composable(Routes.EDIT_NICKNAME) {
             EditNicknameScreen(
                 user = user,
@@ -269,44 +362,6 @@ fun AppNavHost(
             )
         }
 
-        composable(
-            route = "${Routes.RECIPE_DETAIL}/{recipeId}"
-        ) { backStackEntry ->
-
-            val recipeId = backStackEntry.arguments
-                ?.getString("recipeId")
-                ?.toLongOrNull()
-
-            val recipe = recipes.find(recipeId)
-
-            if (recipe != null) {
-                RecipeDetailScreen(
-                    user = user,
-                    recipe = recipe,
-                    onBackClick = {
-                        navController.popBackStack()
-                    },
-                    onLikeClick = {},
-                    revisionState = recipes.revisionState(recipe.id),
-                    fridge = fridge,
-                    selectedState = recipes.selectedRevisionState(recipe.id),
-                    onCancelRevision = { recipes.cancelRevision(recipe.id) },
-                    onReviewIngredients = {
-                        navController.navigate(Routes.MAIN) { popUpTo(Routes.MAIN) { inclusive=true }; launchSingleTop=true }
-                    },
-                    onIgnoreUnknown = {
-                        recipes.updateUserContext(fridge.ingredients,user.allergies,user.utensils)
-                        recipes.requestRevision(recipe.id,ignoreUnknown=true)
-                    },
-                    onReloadRecipes = { recipes.search(recipes.searchQuery,fridge.ingredients);navController.popBackStack() },
-                    batchRevision = recipes.supportsBatchRevision,
-                    onRequestRevision = if (recipes.supportsRevision) ({
-                        recipes.updateUserContext(fridge.ingredients, user.allergies, user.utensils)
-                        recipes.requestRevision(recipe.id)
-                    }) else null
-                )
-            }
-        }
     }
     entrySheet?.let { kind ->
         key(kind, photoToken) {
@@ -324,4 +379,23 @@ fun AppNavHost(
         }
     }
 
+}
+
+/** A session is the time the app is in the foreground; its events are sent when it goes to the background. */
+@Composable
+private fun SessionEvents(telemetry: Telemetry) {
+    val owner = LocalLifecycleOwner.current
+    val activity = LocalActivity.current
+    DisposableEffect(owner, telemetry) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> AppUsage.sessions.onStart(telemetry)
+                Lifecycle.Event.ON_STOP ->
+                    AppUsage.sessions.onStop(telemetry, activity?.isChangingConfigurations == true)
+                else -> Unit
+            }
+        }
+        owner.lifecycle.addObserver(observer)
+        onDispose { owner.lifecycle.removeObserver(observer) }
+    }
 }

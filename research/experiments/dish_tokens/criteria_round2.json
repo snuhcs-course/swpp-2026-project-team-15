@@ -1,0 +1,34 @@
+{
+  "name": "dish_tokens_round2",
+  "version": 1,
+  "frozen": "2026-11-16, before any model call of round 2",
+  "question": "With the prompt chosen in dish_naive round 2 (or the production prompt if none was adopted), does asking for less output reduce the cost per call without losing quality?",
+  "inputs": "the same 12 inputs as criteria.json of this directory",
+  "baseline": {
+    "O0": "the adopted variant of dish_naive round 2 (or P0); its round-2 answers on these 12 inputs are reused, no new calls"
+  },
+  "variants": {
+    "O1": {
+      "what": "names and missing only (no `have`)",
+      "how": "reuse the P3 answers of dish_naive round 2 on these 12 inputs when the adopted prompt is P1 or P2 (P3 differs from P1 only by the omission of `have`); if no variant was adopted, run it fresh with the production prompt without `have` (12 calls)",
+      "eligible_for_adoption": false,
+      "why_not_eligible": "Android needs `have` (see dish_naive/criteria_round2.json)"
+    },
+    "O2": {
+      "what": "qualitative stop",
+      "how": "the adopted prompt plus: 'Order the dishes best first and stop listing as soon as the next dish would be a poor fit; fewer good dishes are better than a long list.' No number is given."
+    },
+    "O3": {
+      "what": "missing as one string",
+      "how": "the adopted prompt and schema, except each dish's `missing` is a single string of comma-separated ingredient names (empty string if none); the checker splits on commas and trims. No rule matching."
+    }
+  },
+  "decision_rule": "Quality metrics as in the earlier rule (have_subset_share where present, missing_disjoint_share, reference_recall, reference_precision, reference_le2_missing_share): a variant qualifies if none is more than 2 points below O0 and there is no truncated or failed call at max_tokens 4096. Among the qualifying adoptable variants (O2, O3) adopt the one with the lowest mean cost per call; O0 stays if none qualifies or none is cheaper. O1 is reported with its saving but cannot be adopted.",
+  "call_cap": 80,
+  "planned_calls": 24,
+  "cost_cap_usd": 0.05,
+  "limits": [
+    "12 inputs, one run: differences below about 2 points or $0.00003 per call are noise",
+    "O0 and O1 answers come from the 27-input run of another call batch, not from a fresh run on the 12 inputs"
+  ]
+}

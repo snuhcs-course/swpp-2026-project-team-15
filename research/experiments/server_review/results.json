@@ -1,0 +1,485 @@
+{
+ "finding_1": {
+  "answers_replayed": 374,
+  "before": {
+   "candidate_flags_a_passed_answer": 2,
+   "current:bad_reference": 61,
+   "current:main_dropped": 10,
+   "current:mentions_unavailable": 67,
+   "current:pass": 185,
+   "current:refusal": 19,
+   "current:unavailable_ingredient": 15,
+   "current:unexplained_change": 17,
+   "kind:synonym": 2
+  },
+  "after": {
+   "current:bad_reference": 61,
+   "current:main_dropped": 10,
+   "current:mentions_unavailable": 69,
+   "current:pass": 183,
+   "current:refusal": 19,
+   "current:unavailable_ingredient": 15,
+   "current:unexplained_change": 17
+  },
+  "changed_verdicts": [
+   {
+    "run": "N3a",
+    "dish_id": "kimchi-bibimbap",
+    "before": "pass",
+    "after": "mentions_unavailable",
+    "read": "true miss: removed 참치캔 named as 참치"
+   },
+   {
+    "run": "N1 (before rebuild)",
+    "dish_id": "kimchi-bibimbap",
+    "before": "pass",
+    "after": "mentions_unavailable",
+    "read": "true miss: same"
+   }
+  ],
+  "kinds_in_recorded_answers": {
+   "synonym": 2,
+   "one_character_with_two_syllable_particle": 0,
+   "inside_kept_name": 0
+  },
+  "regression_found_and_fixed_during_study": "a first candidate blanked every kept name, so a kept 오일 hid a removed 올리브 오일 (bacon-pasta N3a answer 1 would have passed); final version blanks only kept names that contain the removed name"
+ },
+ "finding_2": {
+  "reproduced": true,
+  "longest_real_names": {
+   "dish_key_and_optional": 5,
+   "dish_names": 9,
+   "name_table": 9,
+   "stored_recipe_rows": 20,
+   "app_ingredient_table": 8,
+   "autocomplete": 7
+  },
+  "longest_real_name_example": "a recipe row with a parenthesised list (20 characters)",
+  "suggest_prompt_characters_by_name_length": {
+   "1": 2998,
+   "1000": 4996,
+   "10000": 22996,
+   "100000": 202996
+  },
+  "paid_calls": {
+   "suggest_1_char": {
+    "status": 200,
+    "prompt_tokens": 1008,
+    "cost_usd": 0.0001752
+   },
+   "suggest_10000_chars": {
+    "status": 400,
+    "note": "provider rejected the request (name also enters the answer schema)"
+   },
+   "revise_1_char": {
+    "status": 200,
+    "prompt_tokens": 1070,
+    "cost_usd": 0.0001218
+   },
+   "revise_10000_chars": {
+    "status": 200,
+    "prompt_tokens": 6069,
+    "cost_usd": 0.0006217
+   }
+  },
+  "fix": "each ingredient name at most 20 characters (the longest name in any of our tables); the addition-suggestion list at most 60 like the others; refused with 422 before any model call",
+  "after": "21-character name -> 422 on suggest, adapt, recipe, revise and ingredient-suggestions; 61 names -> 422; the 20-character real name -> 200"
+ },
+ "finding_3": {
+  "reproduced": true,
+  "repeats": 10,
+  "before": {
+   "stored_and_playable": {
+    "youtube_calls": 10,
+    "model_calls": 0
+   },
+   "nothing_stored_model_finds_nothing_playable": {
+    "youtube_calls": 10,
+    "model_calls": 10
+   },
+   "nothing_stored_model_finds_one": {
+    "youtube_calls": 1,
+    "model_calls": 1
+   }
+  },
+  "after": {
+   "stored_and_playable": {
+    "youtube_calls": 1,
+    "model_calls": 0
+   },
+   "nothing_stored_model_finds_nothing_playable": {
+    "youtube_calls": 1,
+    "model_calls": 1
+   },
+   "nothing_stored_model_finds_one": {
+    "youtube_calls": 1,
+    "model_calls": 1
+   }
+  },
+  "check_reuse_seconds": 1119.8,
+  "derivation": "reuse a check of stored videos for dishes*86400/(10000 - recipe videos) seconds: checking all 128 dishes once per period plus one credit lookup per recipe video a day stays within the default 10,000 daily units",
+  "cost_of_the_fix": "a video removed or made private can still be listed for up to about 19 minutes after the last check (the player then shows its own error notice); before, every tap re-checked",
+  "not_done": "a per-minute cap on paid searches: with the empty finding cached, paid searches are at most one per dish per day (128)"
+ },
+ "finding_4": {
+  "reproduced": true,
+  "names": 50,
+  "before": {
+   "names": 50,
+   "card_vs_addition": 23,
+   "card_vs_recipe": 23,
+   "addition_vs_recipe": 7
+  },
+  "after": {
+   "names": 50,
+   "card_vs_addition": 0,
+   "card_vs_recipe": 0,
+   "addition_vs_recipe": 0
+  },
+  "before_disagreements": [
+   {
+    "name": "햇반",
+    "card": [],
+    "addition": [
+     "밥"
+    ],
+    "recipe": [
+     "밥"
+    ]
+   },
+   {
+    "name": "즉석밥",
+    "card": [],
+    "addition": [
+     "밥"
+    ],
+    "recipe": [
+     "밥"
+    ]
+   },
+   {
+    "name": "찬밥",
+    "card": [],
+    "addition": [
+     "밥"
+    ],
+    "recipe": [
+     "밥"
+    ]
+   },
+   {
+    "name": "현미밥",
+    "card": [],
+    "addition": [
+     "밥"
+    ],
+    "recipe": [
+     "밥"
+    ]
+   },
+   {
+    "name": "삼겹살",
+    "card": [],
+    "addition": [
+     "돼지고기"
+    ],
+    "recipe": [
+     "돼지고기"
+    ]
+   },
+   {
+    "name": "목살",
+    "card": [],
+    "addition": [
+     "돼지고기"
+    ],
+    "recipe": [
+     "돼지고기"
+    ]
+   },
+   {
+    "name": "대패삼겹살",
+    "card": [],
+    "addition": [
+     "돼지고기"
+    ],
+    "recipe": [
+     "돼지고기"
+    ]
+   },
+   {
+    "name": "닭가슴살",
+    "card": [],
+    "addition": [
+     "닭고기"
+    ],
+    "recipe": [
+     "닭고기"
+    ]
+   },
+   {
+    "name": "불고기감",
+    "card": [],
+    "addition": [
+     "소고기"
+    ],
+    "recipe": [
+     "소고기"
+    ]
+   },
+   {
+    "name": "차돌박이",
+    "card": [],
+    "addition": [
+     "소고기"
+    ],
+    "recipe": [
+     "소고기"
+    ]
+   },
+   {
+    "name": "스팸",
+    "card": [],
+    "addition": [
+     "소시지",
+     "햄"
+    ],
+    "recipe": [
+     "햄"
+    ]
+   },
+   {
+    "name": "비엔나소시지",
+    "card": [],
+    "addition": [
+     "소시지",
+     "햄"
+    ],
+    "recipe": [
+     "소시지"
+    ]
+   },
+   {
+    "name": "런천미트",
+    "card": [],
+    "addition": [
+     "소시지",
+     "햄"
+    ],
+    "recipe": [
+     "햄"
+    ]
+   },
+   {
+    "name": "청양고추",
+    "card": [],
+    "addition": [
+     "고추"
+    ],
+    "recipe": [
+     "고추"
+    ]
+   },
+   {
+    "name": "풋고추",
+    "card": [],
+    "addition": [
+     "고추"
+    ],
+    "recipe": [
+     "고추"
+    ]
+   },
+   {
+    "name": "슬라이스치즈",
+    "card": [],
+    "addition": [],
+    "recipe": [
+     "치즈"
+    ]
+   },
+   {
+    "name": "모짜렐라치즈",
+    "card": [],
+    "addition": [],
+    "recipe": [
+     "치즈"
+    ]
+   },
+   {
+    "name": "묵은지",
+    "card": [],
+    "addition": [
+     "김치"
+    ],
+    "recipe": [
+     "김치"
+    ]
+   },
+   {
+    "name": "쪽파",
+    "card": [],
+    "addition": [
+     "대파"
+    ],
+    "recipe": []
+   },
+   {
+    "name": "소면",
+    "card": [],
+    "addition": [
+     "국수"
+    ],
+    "recipe": [
+     "국수"
+    ]
+   },
+   {
+    "name": "신라면",
+    "card": [],
+    "addition": [
+     "라면"
+    ],
+    "recipe": [
+     "라면"
+    ]
+   },
+   {
+    "name": "팽이버섯",
+    "card": [],
+    "addition": [
+     "버섯"
+    ],
+    "recipe": [
+     "버섯"
+    ]
+   },
+   {
+    "name": "파스타",
+    "card": [],
+    "addition": [
+     "스파게티면"
+    ],
+    "recipe": [
+     "스파게티면"
+    ]
+   },
+   {
+    "name": "캔옥수수",
+    "card": [],
+    "addition": [
+     "옥수수"
+    ],
+    "recipe": [
+     "옥수수"
+    ]
+   },
+   {
+    "name": "튀김가루",
+    "card": [],
+    "addition": [
+     "부침가루"
+    ],
+    "recipe": []
+   }
+  ],
+  "fix": "one rule for who owns what: the reviewed name table (recipe_names.json) now decides on the cards (closed missing choices), in the addition suggestions and in the recipe view; 불고기감, 찬밥, 런천미트 added to it",
+  "behaviour_change": "a stand-in is no longer ownership in the addition suggestions either (쪽파 does not own 대파, 튀김가루 does not own 부침가루), as already in the recipe view; the dish list's equivalents table is kept for autocomplete and the research replays"
+ },
+ "finding_5": {
+  "reproduced": true,
+  "before": {
+   "name_null": "crash:AttributeError",
+   "name_number": "crash:AttributeError",
+   "amount_number": "crash:AttributeError",
+   "amount_list": "crash:AttributeError",
+   "row_string": "violation:incomplete",
+   "changes_string": "violation:unexplained_change"
+  },
+  "after": "each crash case is a failure with code 'incomplete' (no 500)",
+  "also_probed": "the suggestion and substitution checks with null, numbers and strings in place of lists: none crashed"
+ },
+ "finding_9": {
+  "reproduced": true,
+  "before": "two tests replaced app.dishes.http.RETRY_WAITS with monkeypatch (one autouse fixture for the whole test module)",
+  "fix": "post_with_retry takes waits and sleep; the model client and the video search take retry_waits; tests pass (0, 0) and no test patches a module",
+  "after": "0 tests patch the module; a new test checks the default waits are used in order"
+ },
+ "finding_6": {
+  "reproduced": "by arithmetic from the code (a 429 answer is fast, so the realistic worst case is lower than the reviewer's figure, but a slow provider can still make every attempt take its full read timeout)",
+  "app_wait_seconds": 90,
+  "nginx_proxy_read_timeout_seconds": 210,
+  "before_worst_seconds": {
+   "one_model_call": "3 attempts x 30 s + 3 s + 8 s waits = 101",
+   "revise": "credit lookup 20 + two calls 2 x 101 = 222",
+   "videos": "stored check 20 + search 3 x 60 + 11 + check 20 = 231",
+   "recipe_view": "20 per view during a YouTube outage, every view"
+  },
+  "measured_durations_used": {
+   "slowest_recorded_video_search_s": 22.7,
+   "median_video_search_s": 3.5,
+   "source": "data/youtube-discovery-v2 (136 timed calls)"
+  },
+  "fix": "budget = the app's 90 s wait; a model call (retries and waits included) gets (90 - 20 s YouTube timeout) / 2 = 35 s; a revision asks again only if 35 s still fit; a video search gets 90 - 2 x 20 = 50 s (over twice the slowest recorded search); each attempt may take only the time left; a failed YouTube credit lookup is not retried for the quota-derived check period (about 19 min)",
+  "after_worst_seconds": {
+   "one_model_call": 35,
+   "revise": 90,
+   "videos": 90,
+   "recipe_view": "20 once per check period during an outage"
+  },
+  "limit": "httpx timeouts bound the gap between bytes, not the whole transfer, so a provider that trickles bytes can still exceed an attempt's timeout"
+ },
+ "finding_7": {
+  "reproduced": true,
+  "before": "DishService stored reviser and index without using them; the router took them from it",
+  "fix": "a DishParts bundle (service, reviser, index) built by the composition root; each route depends on its own part; DishService no longer has reviser or index",
+  "after": "DishService constructor has no reviser or index; a composition test checks it",
+  "not_changed": "the 404 'No recipe for this dish' when no reviser is built is kept (the app shows it as 'not prepared yet'); in production a reviser is always built"
+ },
+ "finding_10": {
+  "reproduced": true,
+  "before": "'DISH_LLM_API_KEY, else the general key' written in build_chat_model and again in the composition root for the video search",
+  "fix": "one function dish_model_key used by both",
+  "after": "a composition test checks the model and the search get the same key in both cases"
+ },
+ "finding_8": {
+  "reproduced": true,
+  "names_compared": 123,
+  "copies_before": {
+   "synonym_expansion": 3,
+   "spelling_normalisation": 4
+  },
+  "disagreements_before": {
+   "synonym_expansion": "대파 (only synonyms.py adds the prepared form 다진파)",
+   "spelling_normalisation": "names with a note in parentheses (only the recipe name table drops it; intended)"
+  },
+  "fix": "one compact() and one with_synonyms(prepared=...) in synonyms.py; the cards and the recipe name table call it with prepared=False, which keeps their behaviour; the parentheses rule stays in the recipe name table on top of compact()",
+  "after": "1 copy of each; finding 1 and finding 4 measures give the same numbers as before the merge; all tests pass"
+ },
+ "finding_11": {
+  "reproduced": "partly",
+  "unused_by_the_running_app": {
+   "SUGGEST_SYSTEM, SUGGEST_SCHEMA, SUGGEST_CLOSED_SYSTEM_ROUND2": "used by 7 research scripts and 1 research test only",
+   "Catalog.rank": "used by tests and by research/experiments/dish_naive/run_naive.py (not dead for the research replays)",
+   "AdaptResponse.skip_ok": "always an empty list; the app reads the field"
+  },
+  "fix": "the three old wordings moved, text unchanged (checked equal), to research/experiments/legacy_prompts.py and the research imports updated; Catalog.rank kept",
+  "proposal_not_done": "drop skip_ok from the substitution answer in a later app version: removing it now would change a response the submitted app reads"
+ },
+ "finding_12": {
+  "reproduced": true,
+  "before": "a verifier that always returns [] passed all 3 verifier contract tests",
+  "after": "it fails the order test (expects both known usable ids, in the order asked); the fake and the real YouTube verifier pass",
+  "also_seen": "the chat model contract only checks that an answer is a dict; an always-{} model passes it, but the services check every answer's shape themselves, so it was left as is"
+ },
+ "finding_13": {
+  "reproduced": true,
+  "fix": "tests added with findings 1-12 (particles, synonyms, names inside kept names, non-text values, overlong names, repeated video taps, retry budget, second-call budget, credit outage, one owned rule, key rule, verifier contract)",
+  "proposal_not_done": "tests/dishes/test_deploy_modes.py asserts nginx has no rate limit. After this work every paid route is bounded per request and searches per dish per day, but a client can still repeat suggestions or revisions; a per-client nginx limit would need the app's real request pattern to set, which is not measured, so it is left to the owner"
+ },
+ "paid_calls": {
+  "count": 4,
+  "cost_usd": 0.0009187,
+  "note": "one suggestion call was rejected by the provider (no charge reported)"
+ }
+}

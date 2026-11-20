@@ -1,4 +1,5 @@
 import java.net.URI
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -14,6 +15,13 @@ require(serverEndpoint.scheme in listOf("http", "https") && serverEndpoint.host 
     "serverBaseUrl must be an HTTP(S) URL ending in /, without credentials, query or fragment"
 }
 
+// Release signing: -PreleaseSigning=/path/to/file.properties with storeFile, storePassword,
+// keyAlias and keyPassword. The file and the key stay outside the repository; without the
+// property the release build is unsigned.
+val releaseSigning: Properties? = providers.gradleProperty("releaseSigning").orNull?.let { path ->
+    Properties().apply { file(path).inputStream().use { load(it) } }
+}
+
 android {
     namespace = "com.example.mylittlechef"
     compileSdk {
@@ -25,13 +33,22 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
         buildConfigField("String", "SERVER_BASE_URL", "\"$serverBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     testBuildType = if (providers.gradleProperty("cloudDeviceTest").isPresent) "cloudTest" else "debug"
+
+    if (releaseSigning != null) {
+        signingConfigs.create("release") {
+            storeFile = file(releaseSigning.getProperty("storeFile"))
+            storePassword = releaseSigning.getProperty("storePassword")
+            keyAlias = releaseSigning.getProperty("keyAlias")
+            keyPassword = releaseSigning.getProperty("keyPassword")
+        }
+    }
 
     buildTypes {
         debug {
@@ -54,7 +71,11 @@ android {
             resValue("string", "app_name", "MyLittleChef UI Preview")
         }
         release {
-            buildConfigField("String", "SERVER_BASE_URL", "\"${providers.gradleProperty("releaseServerBaseUrl").orElse("https://localhost/").get()}\"")
+            // Defaults to the team server; HTTP is allowed only for that IP (src/release network config).
+            // Code shrinking stays off: Retrofit/Gson read models by reflection and the store build was
+            // verified without it (ONE Store does not require it).
+            buildConfigField("String", "SERVER_BASE_URL", "\"${providers.gradleProperty("releaseServerBaseUrl").orElse(serverBaseUrl).get()}\"")
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             optimization {
                 enable = false
             }
@@ -98,7 +119,16 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.android.youtube.player)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.androidx.datastore.preferences)
+}
+
+// The store build gets its own identity: com.example.* is a placeholder stores may refuse. Debug and
+// cloud-test builds keep com.example.mylittlechef, which a protected contributor test asserts.
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.applicationId.set("kr.ac.snu.swpp15.mylittlechef")
+    }
 }

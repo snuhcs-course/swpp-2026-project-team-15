@@ -41,7 +41,7 @@ private data class TourStep(val route:String,val anchor:String,val title:String,
 private val steps=listOf(
     TourStep(Routes.FRIDGE,"fridge-add","재료부터 담아볼까요?","직접 입력하거나 사진으로 추가해요. 사진 결과는 확인한 뒤 저장해요."),
     TourStep(Routes.FRIDGE,"fridge-manage","냉장고를 가볍게 정리해요","관리를 누르거나 재료를 길게 눌러 여러 개를 선택해요. 삭제 후 실행 취소도 할 수 있어요."),
-    TourStep(Routes.RECIPE,"recipe-browse","오늘의 한 끼를 찾아요","이름으로 찾고 카드를 눌러 재료와 조리 순서를 확인해요. AI 제안은 원본을 내 재료에 맞게 조정해요."),
+    TourStep(Routes.RECIPE,"recipe-browse","오늘의 한 끼를 찾아요","받은 목록에서 이름으로 찾고, 카드를 눌러 영상과 재료·조리 순서를 확인해요. ‘내 재료로 바꾸기’는 원본을 내 재료에 맞게 조정해요."),
     TourStep(Routes.PROFILE,"profile-pantry","내게 맞는 설정을 모아뒀어요","기본 재료·조미료와 조리도구, 알레르기를 수정해요. 사용 안내에서 다시 둘러볼 수 있어요.")
 )
 @Composable

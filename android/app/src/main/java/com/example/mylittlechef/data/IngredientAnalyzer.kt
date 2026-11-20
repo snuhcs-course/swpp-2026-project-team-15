@@ -10,6 +10,7 @@ import com.example.mylittlechef.data.remote.ApiClient
 import com.example.mylittlechef.data.remote.MultiImageApi
 import com.example.mylittlechef.data.remote.MyLittleChefApi
 import com.example.mylittlechef.data.remote.toIngredient
+import com.example.mylittlechef.data.remote.RecognitionCapabilitiesDto
 import com.example.mylittlechef.data.remote.RecognitionReviewApi
 import com.example.mylittlechef.data.remote.toPhotoAnalysis
 import com.example.mylittlechef.domain.PhotoAnalysis
@@ -45,11 +46,7 @@ class IngredientAnalyzer(
 
     /** Capabilities are a free GET. Never retry a provider failure through another endpoint. */
     suspend fun review(imageUri: Uri): PhotoAnalysis {
-        val capabilities = try {
-            withTimeoutOrNull(3_000) { reviewApi?.capabilities() }
-        } catch (error: HttpException) {
-            if (error.code() in setOf(404, 405)) null else throw error
-        }
+        val capabilities = optionalCapabilities(reviewApi)
         val frames = sweepFrames(imageUri)
         val uris = frames?.map { Uri.fromFile(it).toString() } ?: listOf(imageUri.toString())
         val parts = if (frames == null) listOf(singlePart(imageUri)) else viewParts(frames)
@@ -127,3 +124,15 @@ class IngredientAnalyzer(
         val LEGACY_IMAGE_TYPES = REVIEW_IMAGE_TYPES + setOf("image/heic", "image/heif")
     }
 }
+
+/**
+ * The free capability GET is optional: a network failure, a timeout or a missing route means
+ * "unknown", and the photo then goes to the plain /analyze route. A network failure here used to
+ * end the whole pick with "연결을 확인하고 다시 시도해 주세요" before any photo was sent.
+ */
+internal suspend fun optionalCapabilities(api: RecognitionReviewApi?): RecognitionCapabilitiesDto? = try {
+    withTimeoutOrNull(3_000) { api?.capabilities() }
+} catch (cancelled: CancellationException) { throw cancelled }
+catch (error: HttpException) {
+    if (error.code() in setOf(404, 405)) null else throw error
+} catch (_: java.io.IOException) { null }

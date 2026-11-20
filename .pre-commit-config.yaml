@@ -3,16 +3,22 @@ repos:
     hooks:
       - id: python-lint
         name: Python runtime lint
-        entry: uv run --directory server --locked ruff check . ../scripts ../research/evaluation
+        entry: uv run --directory server --locked ruff check . ../scripts ../research
         language: system
         pass_filenames: false
         files: ^(server/|scripts/|research/).*\.py$
       - id: python-format
         name: Python runtime format
-        entry: uv run --directory server --locked ruff format --check . ../scripts ../research/evaluation
+        entry: uv run --directory server --locked ruff format --check . ../scripts ../research
         language: system
         pass_filenames: false
         files: ^(server/|scripts/|research/).*\.py$
+      - id: python-types
+        name: Python type check (server app)
+        entry: uv run --directory server --locked mypy
+        language: system
+        pass_filenames: false
+        files: ^server/app/.*\.py$
       - id: integration-policy
         name: Preserve acceptance references and existing tests
         entry: python3 scripts/check_integration_policy.py

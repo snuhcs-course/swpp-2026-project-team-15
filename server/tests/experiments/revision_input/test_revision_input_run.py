@@ -7,7 +7,6 @@ import socket
 import pytest
 from experiments.revision_input import run_experiment as rx
 from experiments.revision_input.offline_llm import OfflineLLM
-
 from recipe_revision.models import SourceIngredient, SourceRecipe, SourceStep
 
 NAMES = {32: "계란", 99: "대파", 284: "소금", 554: "후추", 345: "양파", 204: "물"}

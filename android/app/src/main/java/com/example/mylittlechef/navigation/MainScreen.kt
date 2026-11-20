@@ -4,6 +4,8 @@
 // AI-generated initial navigation scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 // Backend data wiring added with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
 // Pantry edit navigation added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
+// Merged with Claude Code (Opus 5.5), 2026-11-20: the recipe tab shows dishes from the YouTube-based
+// server; usage data (screen views), data reset and the usage switch are wired underneath this UI.
 package com.example.mylittlechef.navigation
 
 import androidx.annotation.DrawableRes // drawable 리소스 ID 파라미터 표시
@@ -22,7 +24,18 @@ import androidx.compose.material3.NavigationBarItem // 탭 하나
 import androidx.compose.material3.NavigationBarItemDefaults // 탭 색상 지정
 import androidx.compose.material3.Scaffold // 본문 + 하단바 뼈대
 import androidx.compose.material3.Text // 탭 이름 글자
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mylittlechef.domain.NoTelemetry
+import com.example.mylittlechef.domain.Telemetry
+import com.example.mylittlechef.domain.Usage
+import com.example.mylittlechef.domain.UsageEvent
+import com.example.mylittlechef.viewmodel.DataResetViewModel
+import com.example.mylittlechef.viewmodel.DishViewModel
+import com.example.mylittlechef.viewmodel.UsageDataViewModel
 import androidx.compose.ui.platform.LocalContext
 import com.example.mylittlechef.data.local.localDataStore
 import com.example.mylittlechef.data.local.SectionTourRepository
@@ -38,7 +51,6 @@ import androidx.navigation.compose.composable // 경로에 화면 등록
 import androidx.navigation.compose.currentBackStackEntryAsState // 현재 경로를 상태로 관찰
 import androidx.navigation.compose.rememberNavController // 탭용 NavController 생성
 import com.example.mylittlechef.R
-import com.example.mylittlechef.model.Recipe
 import com.example.mylittlechef.ui.components.NavTabText
 import com.example.mylittlechef.ui.fridge.FridgeScreen
 import com.example.mylittlechef.ui.profile.ProfileScreen
@@ -48,7 +60,6 @@ import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.ui.theme.DeepGreen
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
-import com.example.mylittlechef.viewmodel.RecipeViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
 
 // 하단 탭 정의. 탭을 추가/변경할 때 이 enum만 고치면 된다
@@ -67,22 +78,44 @@ enum class BottomTab(
 fun MainScreen(
     user: UserViewModel,
     fridge: FridgeViewModel,
-    recipes: RecipeViewModel,
     onAddIngredientClick: () -> Unit,
     onEditNicknameClick: () -> Unit,
     onEditUtensilClick: () -> Unit,
     onEditAllergyClick: () -> Unit,
-    onRecipeCardClick: (Recipe) -> Unit,
     modifier: Modifier = Modifier,
     ingredientSuggestions: IngredientSuggestionViewModel? = null,
     onEditPantryClick: () -> Unit = {},
-    onManualAddClick: () -> Unit = onAddIngredientClick
+    onManualAddClick: () -> Unit = onAddIngredientClick,
+    dataReset: DataResetViewModel? = null,
+    onDataResetDone: () -> Unit = {},
+    telemetry: Telemetry = NoTelemetry,
+    usageData: UsageDataViewModel? = null,
+    dishViewModel: DishViewModel? = null,
+    onDishClick: (String) -> Unit = {}
 ) {
+    // 요리 추천 탭의 상태. 탭을 오가거나 화면을 돌려도 유지되도록 이 화면 단위로 만든다
+    val dishFactory = remember(telemetry) {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T = DishViewModel(telemetry = telemetry) as T
+        }
+    }
+    // The app passes its own (the detail route reads the same one); previews and tests get their own here.
+    val dishes: DishViewModel = dishViewModel ?: viewModel(factory = dishFactory)
     // 탭 전환만 담당하는 NavController (최상위 NavController와 별개)
     val tabNavController = rememberNavController()
     // 현재 보고 있는 탭의 경로. 바뀔 때마다 탭 바가 다시 그려진다
     val backStackEntry by tabNavController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+    LaunchedEffect(currentRoute) {
+        val screen = when (currentRoute) {
+            Routes.FRIDGE -> "fridge"
+            Routes.RECIPE -> "dishes"
+            Routes.PROFILE -> "profile"
+            else -> null
+        }
+        if (screen != null) telemetry.track(Usage(UsageEvent.SCREEN_VIEW, screen = screen))
+    }
 
     val store=LocalContext.current.applicationContext.localDataStore
     val tourRepository=remember(store) { SectionTourRepository(store) }
@@ -120,7 +153,7 @@ fun MainScreen(
                             )
                         },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = DeepGreen,
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer, // readable on the pill in dark mode
                             selectedTextColor = DeepGreen,
                             unselectedIconColor = GreenGray,
                             unselectedTextColor = GreenGray,
@@ -149,13 +182,7 @@ fun MainScreen(
                 )
             }
             composable(Routes.RECIPE) {
-                RecipeScreen(
-                    user = user,
-                    fridge = fridge,
-                    recipes = recipes,
-                    onRecipeCardClick = onRecipeCardClick,
-                    onLikeClick = {}
-                )
+                RecipeScreen(fridge = fridge, dishes = dishes, onDishClick = { onDishClick(it.id) })
             }
             composable(Routes.PROFILE) {
                 ProfileScreen(
@@ -164,7 +191,13 @@ fun MainScreen(
                     onEditNicknameClick = onEditNicknameClick,
                     onEditUtensilClick = onEditUtensilClick,
                     onEditAllergyClick = onEditAllergyClick,
-                    onEditPantryClick = onEditPantryClick
+                    onEditPantryClick = onEditPantryClick,
+                    dataReset = dataReset,
+                    usageData = usageData,
+                    onDataResetDone = {
+                        dishes.resetState()
+                        onDataResetDone()
+                    }
                 )
             }
         }

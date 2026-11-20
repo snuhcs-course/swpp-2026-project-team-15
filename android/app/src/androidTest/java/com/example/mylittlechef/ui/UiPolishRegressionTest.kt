@@ -22,7 +22,6 @@ import com.example.mylittlechef.ui.theme.MyLittleChefTheme
 import com.example.mylittlechef.ui.theme.AppearanceSettings
 import com.example.mylittlechef.ui.theme.LocalAppearanceSettings
 import com.example.mylittlechef.domain.ThemeMode
-import com.example.mylittlechef.ui.recipe.RecipeIngredients
 import com.example.mylittlechef.model.Ingredient
 import com.example.mylittlechef.viewmodel.*
 import org.junit.Assert.*
@@ -72,16 +71,6 @@ class UiPolishRegressionTest {
         rule.onNodeWithContentDescription("화면 모드 설정: 라이트 모드").performClick()
         rule.onNodeWithText("시스템 설정").performClick()
         rule.runOnIdle { assertEquals(ThemeMode.SYSTEM,mode) }
-    }
-
-    @Test fun recipeIngredientsReuseCatalogIconsAndKeepMissingQuantityText() {
-        rule.setContent { MyLittleChefTheme(darkTheme=true) {
-            RecipeIngredients(listOf(Ingredient("소금"),Ingredient("마늘")),listOf("1작은술","2쪽"),setOf("소금"))
-        } }
-        rule.onNodeWithContentDescription("소금").assertIsDisplayed()
-        rule.onNodeWithContentDescription("마늘").assertIsDisplayed()
-        rule.onNodeWithText("소금 1작은술 · 부족").assertIsDisplayed()
-        rule.onNodeWithText("마늘 2쪽").assertIsDisplayed()
     }
 
     @Test fun darkProfileSaveLabelHasReadableContrast() {

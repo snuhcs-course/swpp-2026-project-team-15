@@ -1,0 +1,69 @@
+{
+  "name": "dish_naive_round2",
+  "version": 1,
+  "frozen": "2026-11-16, before any model call of round 2",
+  "question": "The naive call lists as `have` ingredients the user did not enter (5.4% of dishes in round 1; 'have' is read as 'usually in this dish'). Does defining `have` in the prompt, or restricting it by the schema, fix this without losing answer quality?",
+  "inputs": "the 27 well-formed suggestion inputs of research/experiments/dish_naive/criteria.json (expect_status 200); same scoring (scoring.py), same reference set; no fixed card count",
+  "settings": {
+    "model": "google/gemini-2.5-flash-lite",
+    "temperature": 0,
+    "max_tokens": 4096,
+    "user_message": "JSON {\"owned\": [...], \"dishes\": [names]} as in the service",
+    "response_format": "json_schema strict, provider.require_parameters true"
+  },
+  "variants": {
+    "P0": {
+      "prompt": "unchanged production prompt (the system prompt as of commit b463812 (SUGGEST_SYSTEM in server/app/dishes/service.py), unchanged)",
+      "schema": "unchanged SUGGEST_SCHEMA",
+      "role": "same-day baseline"
+    },
+    "P1": {
+      "prompt": "You help a Korean student living alone decide what to cook from the ingredients they have. Return every dish from the given dish list that can reasonably be cooked with the owned ingredients, best first. Use the dish names exactly as written in the list. For each dish, 'have' lists ONLY ingredients that appear in the user's owned list and that this dish uses: copy the user's wording exactly and never write an ingredient the user did not list. 'missing' lists the main ingredients this dish usually needs that are not in the owned list. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish fits, return an empty list. Never add dishes just to fill the list.",
+      "schema": "unchanged SUGGEST_SCHEMA"
+    },
+    "P2": {
+      "prompt": "You help a Korean student living alone decide what to cook from the ingredients they have. Return every dish from the given dish list that can reasonably be cooked with the owned ingredients, best first. Use the dish names exactly as written in the list. For each dish, 'have' lists ONLY ingredients that appear in the user's owned list and that this dish uses: copy the user's wording exactly and never write an ingredient the user did not list. 'missing' lists the main ingredients this dish usually needs that are not in the owned list. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish fits, return an empty list. Never add dishes just to fill the list.",
+      "schema": "SUGGEST_SCHEMA with `have` items restricted by an enum to the user's own ingredients, built per request (the enum lists the user's strings exactly as sent)"
+    },
+    "P3": {
+      "prompt": "You help a Korean student living alone decide what to cook from the ingredients they have. Return every dish from the given dish list that can reasonably be cooked with the owned ingredients, best first. Use the dish names exactly as written in the list. For each dish, do not list the ingredients the user owns. 'missing' lists the main ingredients this dish usually needs that are not in the owned list. Basic seasonings and oil at home (salt, soy sauce, sugar, pepper, cooking oil, sesame oil, water) are not listed. If no dish fits, return an empty list. Never add dishes just to fill the list.",
+      "schema": "schema without `have` (name, missing only)",
+      "eligible_for_adoption": false,
+      "why_not_eligible": "The Android app needs `have`: DishScreen.kt builds the ingredient badges from dish.have + dish.missing (line 211), the accessibility text (line 301) and the thumbnail ingredient (line 361); Dish.kt sorts by have.size. The server must not derive `have` by rule matching in this design. P3 is measured for information only."
+    }
+  },
+  "metrics": [
+    "have_subset_share (per dish, scoring.have_subset, staples not allowed)",
+    "valid_names_share (raw names)",
+    "missing_disjoint_share",
+    "nonempty_when_possible",
+    "reference_recall",
+    "reference_precision",
+    "reference_le2_missing_share",
+    "truncated and failed calls",
+    "mean input/output tokens",
+    "mean cost per call (usage.cost) and median latency"
+  ],
+  "decision_rule": "Eligible variants are P1 and P2. A variant is adopted only if ALL hold: have_subset_share >= 0.99; valid_names_share == 1.0 (raw names); nonempty_when_possible >= P0 - 0.02; reference_recall >= P0 - 0.02; reference_precision >= P0 - 0.02; zero truncated or failed calls at max_tokens 4096. Among the variants that hold, adopt the one with the lowest mean cost per call (ties: P1). If none holds, nothing is adopted and the production prompt stays. Differences below about 2 points are within what one run at temperature 0 can vary; this is reported, not used to relax the rule.",
+  "call_cap": 250,
+  "planned_calls": 108,
+  "cost_cap_usd": 0.2,
+  "limits": [
+    "one run per variant at temperature 0",
+    "27 inputs: one case moves a share by about 3 points",
+    "reference set is rule-made from the dish list, not human-labelled",
+    "P2 depends on the provider honouring enum constraints in strict schemas; a rejection is recorded as unsupported"
+  ],
+  "amendments": [
+    {
+      "date": "2026-11-16",
+      "before_rerun": true,
+      "reason": "The first run (108 calls) was contaminated by provider rate limits: 15 of the 108 calls returned HTTP 429 (P0 8, P1 4, P2 3, P3 0) and produced no answer, and 1 to 4 answers per variant were cut off at 4096 output tokens. The adoption rule requires zero failed calls, so the 429s decide the outcome without saying anything about the variants. The first run is kept and reported as run A.",
+      "changes": [
+        "Run B repeats all four variants on the same 27 inputs with the same prompts, schemas and settings. Only the runner changes: a call that gets HTTP 429 is repeated up to two more times after a 5 s and a 15 s wait; every attempt counts toward the call cap. Raw answers are stored this time so that metrics can be recomputed.",
+        "The call cap is raised from 120 to 250 (first run 108, repeat 108 plus up to 34 retries) and the cost cap to $0.20; no other number of the frozen rule changes. The decision uses run B; run A is reported next to it, including the differences between the two runs on inputs that succeeded in both (a measure of run-to-run variation)."
+      ]
+    }
+  ],
+  "calls_already_made": 108
+}

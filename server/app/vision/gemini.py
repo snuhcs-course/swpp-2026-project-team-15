@@ -67,12 +67,13 @@ class GeminiVisionProvider:
 
     def _generate(self, images: Sequence[ImageInput], prompt: str) -> list[DetectedItem]:
         try:
+            parts: list[types.PartUnionDict] = [
+                *(types.Part.from_bytes(data=i.data, mime_type=i.mime_type) for i in images),
+                prompt,
+            ]
             response = self._client.models.generate_content(
                 model=self._model,
-                contents=[
-                    *(types.Part.from_bytes(data=i.data, mime_type=i.mime_type) for i in images),
-                    prompt,
-                ],
+                contents=parts,  # typed: with pillow installed the SDK also accepts PIL images
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     response_schema=self._response_schema,

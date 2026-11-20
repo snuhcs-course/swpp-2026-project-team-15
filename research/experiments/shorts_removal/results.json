@@ -1,0 +1,303 @@
+{
+ "date": "2026-11-19",
+ "links": {
+  "before": {
+   "links": 365,
+   "by_orientation": {
+    "horizontal": 270,
+    "vertical": 94,
+    "square": 1
+   },
+   "dishes_by_link_count": {
+    "1": 26,
+    "2": 36,
+    "3": 24,
+    "4": 15,
+    "5": 27
+   }
+  },
+  "landscape_only_before_refill": {
+   "links": 271,
+   "dishes_by_link_count": {
+    "0": 12,
+    "1": 35,
+    "2": 38,
+    "3": 22,
+    "4": 11,
+    "5": 10
+   }
+  },
+  "after": {
+   "links": 439,
+   "by_orientation": {
+    "horizontal": 430,
+    "square": 9
+   },
+   "dishes_by_link_count": {
+    "1": 4,
+    "2": 39,
+    "3": 26,
+    "4": 16,
+    "5": 43
+   },
+   "dishes_first_link_vertical": 0
+  }
+ },
+ "refill": {
+  "target_dishes": {
+   "no_link": 12,
+   "one_link": 35
+  },
+  "new_ids": 1064,
+  "dropped": {
+   "not_playable": 14,
+   "vertical": 634,
+   "gone": 37
+  },
+  "landscape_playable_candidates": 379,
+  "discovery_model_proposals": 179,
+  "reviewed": 227,
+  "review_decisions": {
+   "irrelevant": 30,
+   "relevant": 168,
+   "unsure": 9,
+   "not": 20
+  },
+  "judges_vs_review": {
+   "NN:irrelevant": 17,
+   "NN:not": 4,
+   "NN:relevant": 1,
+   "NY:irrelevant": 5,
+   "NY:not": 1,
+   "NY:relevant": 1,
+   "NY:unsure": 1,
+   "YN:irrelevant": 3,
+   "YN:relevant": 10,
+   "YN:unsure": 2,
+   "YY:irrelevant": 5,
+   "YY:not": 15,
+   "YY:relevant": 156,
+   "YY:unsure": 6
+  },
+  "kept_from_discovery_model": 7,
+  "added_links": 168
+ },
+ "recipes": {
+  "vertical_source": 24,
+  "main_mismatch_before": 32,
+  "union": 47,
+  "outcome": {
+   "kept_old_no_suitable_video": 14,
+   "matched": 31,
+   "landscape_main_gap_remains": 2
+  },
+  "build_calls": 92,
+  "offline_main_unavailable_recipes": {
+   "before": 32,
+   "after": 16
+  },
+  "revise_key_ingredients_only_33_changed": {
+   "before": {
+    "revised": 19,
+    "refused": 5,
+    "failed": 7,
+    "provider_error": 2
+   },
+   "after": {
+    "revised": 22,
+    "refused": 3,
+    "failed": 6,
+    "provider_error": 2
+   },
+   "paired": {
+    "revised_to_revised": 12,
+    "to_revised_from_other": 10,
+    "revised_to_other": 7,
+    "other_to_other": 4
+   }
+  },
+  "recipes_from_vertical_after": 0
+ },
+ "cost": {
+  "youtube_units": 4061,
+  "openrouter": {
+   "discovery_and_judges": {
+    "calls": 201,
+    "usd": 3.189
+   },
+   "recipe_build_first": {
+    "calls": 24,
+    "usd": 0.985
+   },
+   "recipe_build_second": {
+    "calls": 68,
+    "usd": 3.187
+   },
+   "revise_measure": {
+    "calls": 87,
+    "usd_estimated_from_tokens": 0.044
+   }
+  },
+  "local_agy": {
+   "calls": 1,
+   "note": "capability check only; cannot take video input"
+  }
+ },
+ "followup_8_dishes": {
+  "date": "2026-11-19",
+  "rule": "a version with the extra ingredient and one without are different recipes (user); roles not relabelled; recipe kept when no stored video fits",
+  "dishes_checked": 8,
+  "stored_videos_checked": 24,
+  "new_build_calls": 0,
+  "cost_usd": 0.0,
+  "changed": 0,
+  "main_gap_dishes_before": 8,
+  "main_gap_dishes_after": 8,
+  "per_dish": {
+   "불고기덮밥": "other video uses 돼지불고기",
+   "카레라이스": "all other videos use meat",
+   "비빔밥": "sheet-pan video needs an oven and uses neither 시금치 nor 당근 (not taken); others use beef or tuna",
+   "햄김치찌개": "other video uses pork",
+   "고추장찌개": "all five use pork",
+   "무국": "other video uses beef",
+   "떡국": "others use 김치 or 굴",
+   "참치김밥": "other video uses 치마살"
+  }
+ },
+ "amendment_8_dishes_new_videos": {
+  "date": "2026-11-19",
+  "protocol": "yrd_search.py docstring, written before the first call; README section written after the calls",
+  "labelled_by": "the AI agent (Claude Code); no person reviewed the labels",
+  "searches": {
+   "bulgogi-bowl": "소불고기덮밥 만들기",
+   "curry-rice": "야채카레 만들기",
+   "bibimbap": "야채비빔밥 만들기",
+   "spam-kimchi-stew": "햄 김치찌개 만들기",
+   "gochujang-stew": "감자 애호박 고추장찌개",
+   "radish-soup": "멸치 무국 끓이는법",
+   "rice-cake-soup": "멸치육수 떡국 끓이는법",
+   "tuna-gimbap": "참치김밥 만들기"
+  },
+  "ids": {
+   "returned": 196,
+   "not_stored_or_judged": 192,
+   "landscape_playable_judged": 84
+  },
+  "builds": {
+   "bulgogi-bowl": {
+    "tried": 2,
+    "valid": 2,
+    "main_gap_rows": [
+     "불고기용 등심"
+    ]
+   },
+   "curry-rice": {
+    "tried": 3,
+    "valid": 3,
+    "main_gap_rows": [
+     "카레 가루",
+     "카레가루",
+     "고형 카레",
+     "현미밥"
+    ]
+   },
+   "bibimbap": {
+    "tried": 2,
+    "valid": 2,
+    "main_gap_rows": [
+     "잡곡밥"
+    ]
+   },
+   "spam-kimchi-stew": {
+    "tried": 1,
+    "valid": 1,
+    "main_gap_rows": []
+   },
+   "gochujang-stew": {
+    "tried": 1,
+    "valid": 1,
+    "main_gap_rows": []
+   },
+   "radish-soup": {
+    "tried": 1,
+    "valid": 1,
+    "main_gap_rows": []
+   },
+   "rice-cake-soup": {
+    "tried": 3,
+    "valid": 3,
+    "main_gap_rows": [
+     "떡국 떡",
+     "떡국떡",
+     "떡국떡"
+    ]
+   },
+   "tuna-gimbap": {
+    "tried": 2,
+    "valid": 2,
+    "main_gap_rows": [
+     "김밥용 김"
+    ]
+   }
+  },
+  "accepted": [
+   "bibimbap",
+   "bulgogi-bowl",
+   "gochujang-stew",
+   "radish-soup",
+   "spam-kimchi-stew",
+   "tuna-gimbap"
+  ],
+  "not_accepted_name_only_gap": {
+   "curry-rice": [
+    "카레 가루"
+   ],
+   "rice-cake-soup": [
+    "떡국 떡"
+   ]
+  },
+  "links_added": {
+   "bulgogi-bowl": 3,
+   "bibimbap": 1,
+   "spam-kimchi-stew": 3,
+   "gochujang-stew": 1,
+   "radish-soup": 3,
+   "rice-cake-soup": 2,
+   "tuna-gimbap": 3
+  },
+  "main_unavailable_8_dishes": {
+   "before": 8,
+   "after": 2,
+   "after_dishes": [
+    "카레라이스",
+    "떡국"
+   ]
+  },
+  "stored_links": {
+   "before": 439,
+   "after": 453
+  },
+  "cost": {
+   "youtube_units": 808,
+   "model_calls": 49,
+   "judge_calls": 34,
+   "build_calls": 15,
+   "usd": 0.9338
+  },
+  "files_sha256": {
+   "inputs": {
+    "recipes.pre-yrd-search.json": "97ca6e463e077728e436d7f95f1fe95d5f890fe520ca046676e751f925c740af",
+    "link-data/dish-videos.verified.pre-yrd-search.json": "d97c6d872159e424bffc09b185dd00a9b926335a41a60d049ccea4ab79cd35a4"
+   },
+   "outputs": {
+    "recipes.json": "0728e2fa8f0182ddfecf04dbf24f28e9e2c60cffa7cdbe1e9e86a312f4eb3cdc",
+    "link-data/dish-videos.verified.json": "93d74a71f65306f787d5d4e6ca1b136407aa6fdb1b88e7773260f0854379abed"
+   }
+  }
+ },
+ "input_files_sha256": {
+  "recipes.pre-shorts.json": "f8c84d04887e809be5bb965baf1f459e85ff5102d3bfe594a56b9f0af0642407",
+  "link-data/dish-videos.verified.pre-shorts.json": "0a104e4a54104ce0884b15b82c2dd23cabd6a120b5fd59d2961e9e68e76c0460",
+  "orientation.json": "37ba919a604c404b579f8c934aa19d932dfe130abd218e1ddc60b79a7a88da01"
+ }
+}

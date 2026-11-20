@@ -81,7 +81,6 @@ class RestoredFeaturesUiTest {
                 return IngredientSuggestionResponse(listOf(IngredientSuggestionDto("계란", 2, 10, listOf("계란밥"))))
             }
             override suspend fun analyze(image: MultipartBody.Part): AnalyzeResponse = error("Not used")
-            override suspend fun recommend(request: RecommendRequest): RecommendResponse = error("Not used")
         }
         val fridge = FridgeViewModel().apply { addIngredients(listOf(Ingredient("두부"))) }
         val user = UserViewModel()

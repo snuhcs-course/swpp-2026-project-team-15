@@ -7,8 +7,8 @@ package com.example.mylittlechef.data.remote
 
 import com.example.mylittlechef.BuildConfig
 import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
 import okhttp3.ConnectionPool
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
@@ -22,10 +22,6 @@ interface MyLittleChefApi {
     @Multipart
     @POST("analyze")
     suspend fun analyze(@Part image: MultipartBody.Part): AnalyzeResponse
-
-    @POST("recipes/recommend")
-    suspend fun recommend(@Body request: RecommendRequest): RecommendResponse
-
 }
 
 /** Several views of the same fridge in one request. Kept apart so existing API fakes stay valid. */
@@ -46,15 +42,23 @@ interface IngredientSupportApi : MyLittleChefApi {
     ): IngredientSuggestionResponse
 }
 
+/**
+ * nginx on the team server closes an idle keep-alive connection after 65 s; OkHttp keeps one for
+ * 5 min and these clients never retry, so the first request after a pause went out on a closed
+ * socket and failed as a network error (first gallery pick, emulator E2E 2026-11-20). Idle
+ * connections are dropped well before the server's limit instead.
+ */
+internal const val IDLE_CONNECTION_SECONDS = 30L
+
 object ApiClient {
     // Photo and revision clients share this build-time endpoint; local builds use adb reverse.
     private const val BASE_URL = BuildConfig.SERVER_BASE_URL
 
     private val retrofit: Retrofit by lazy {
         val http = OkHttpClient.Builder()
-            // Revision may include two 60-second provider attempts when server retry is enabled.
             .readTimeout(150, TimeUnit.SECONDS)
             .retryOnConnectionFailure(false)
+            .connectionPool(ConnectionPool(5, IDLE_CONNECTION_SECONDS, TimeUnit.SECONDS))
             .build()
         Retrofit.Builder()
             .baseUrl(BASE_URL)
@@ -63,18 +67,8 @@ object ApiClient {
             .build()
     }
 
-    // The default app never requires the unpublished local on-demand routes.
-    val api: DeployedRecipeApi by lazy { retrofit.create(DeployedRecipeApi::class.java) }
+    val api: IngredientSupportApi by lazy { retrofit.create(IngredientSupportApi::class.java) }
 
     val multiImageApi: MultiImageApi by lazy { retrofit.create(MultiImageApi::class.java) }
     val recognitionReviewApi: RecognitionReviewApi by lazy { retrofit.create(RecognitionReviewApi::class.java) }
-    val recipeExploreApi: RecipeExploreApi by lazy { retrofit.create(RecipeExploreApi::class.java) }
-    val selectedRecipeApi: SelectedRecipeApi by lazy {
-        // Explicit selected requests must not reuse a server-closed idle socket or retry a paid POST.
-        val transport = (retrofit.callFactory() as OkHttpClient).newBuilder()
-            .connectionPool(ConnectionPool(0, 1, TimeUnit.SECONDS))
-            .retryOnConnectionFailure(false)
-            .build()
-        retrofit.newBuilder().client(transport).build().create(SelectedRecipeApi::class.java)
-    }
 }

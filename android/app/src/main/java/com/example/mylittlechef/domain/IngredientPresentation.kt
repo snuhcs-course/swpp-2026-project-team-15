@@ -47,7 +47,7 @@ class IngredientPresentationCatalog private constructor(
         private val FALLBACK = IngredientAppearance("other", "generic", "#E2E5E7")
         private val DISPLAY_ALIASES = mapOf("달걀" to "계란", "후춧가루" to "후추")
         val iconKeys: Set<String> = setOf(
-            "leafy", "root", "fruit_vegetable", "onion", "scallion", "garlic", "sprouts",
+            "leafy", "root", "potato", "chili", "fruit_vegetable", "onion", "scallion", "garlic", "sprouts",
             "mushroom", "fruit", "meat", "chicken", "fish", "shrimp", "squid", "seaweed",
             "egg", "milk", "cheese", "tofu", "beans", "rice", "noodles", "bread", "rice_cake",
             "kimchi", "seasoning", "stock", "generic"

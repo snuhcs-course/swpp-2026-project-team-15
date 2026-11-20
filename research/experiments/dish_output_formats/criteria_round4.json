@@ -1,0 +1,53 @@
+{
+ "study": "Round 4 of the answer-format study: bounding the suggestion answer by its structure",
+ "date": "2026-11-19",
+ "question": "On the demo server both suggestion requests ran into the 4,096-token output limit (about 8 s), the model walks the dish list in the given order, and the missing lists name seasonings because they are allowed values. Which request structure ends the cut-off answers and keeps latency and cost reasonable, with no numeric cutoff or fixed count in the product?",
+ "inputs": {
+  "all": "the 27 well-formed frozen suggestion inputs of research/experiments/dish_naive/criteria.json (expect_status 200) plus the two demo inputs below; catalog server/app/dishes/dishes.json as served (128 dishes, 18 categories)",
+  "split_subset": "the split variants and S_names run on the two demo inputs plus split_sample_size inputs drawn from the 27 with random.Random(split_sample_seed).sample (fixed before any call), to stay within the call budget"
+ },
+ "demo_inputs": [
+  {"id": "D1", "ingredients": ["두부"]},
+  {"id": "D2", "ingredients": ["김치", "밥", "간장", "소금"]}
+ ],
+ "split_sample_seed": 20261119,
+ "split_sample_size": 6,
+ "shuffle_seed": 20261119,
+ "model": {
+  "id": "google/gemini-2.5-flash-lite",
+  "temperature": 0,
+  "max_tokens": 4096,
+  "provider": {"require_parameters": true},
+  "route": "same body as app.dishes.llm.DishLLM"
+ },
+ "variants": {
+  "S_now": "production: app.dishes.prompts.SUGGEST_CLOSED_SYSTEM with suggest_schema(suggest_choices(...)) over the whole dish list (same-day baseline)",
+  "S_noseason": "S_now with the assumed staples (server/app/dishes/staples.json plus water, with their synonym spellings) removed from the allowed missing values; the prompt text is unchanged (it already says basic seasonings are not listed)",
+  "S_shuffle": "S_now with the dish list (enum and user message) in a seeded random order per input, to test whether the walk in list order decides what gets listed",
+  "S_names": "names only (closed to the 128 names, prompt S1 of criteria.json); a cost reference only, cards would have no missing",
+  "S_split": "one S_now request per catalog category (the dish list's own category field; 18 groups), names closed to the group, all groups sent concurrently; answers merged, checked and ordered like the server (check_suggest, fewest_missing_first)",
+  "S_split_noseason": "S_split with the staples removed from the missing choices as in S_noseason"
+ },
+ "metrics": [
+  "per request: truncated calls (finish_reason length; salvaged with app.dishes.answers.salvage_list), failed calls, HTTP 429 retries",
+  "per input after merging and the server's checks and ordering: dishes returned (distribution); missing per dish as written and by the rules (catalog.match) with shares 0 / 1 / 2 / 3+; share of the first five dishes with at most one rules-missing ingredient; owned ingredient listed as missing (must stay 0); share of missing items that are staples",
+  "reference recall and precision against the frozen reference definition (current catalog)",
+  "wall latency per input: single variants the call latency; split variants the measured wall time of the concurrent calls (and the slowest call); p50 and p95",
+  "input and output tokens and cost per input (sum over calls for split variants)"
+ ],
+ "analysis": "Descriptive, no pass/fail thresholds and no counts imposed (user rule, 2026-11-19). Report every number per variant; paired per-input differences against S_now on the inputs both ran (dishes, rules-missing mean, top-five share, recall, precision, wall latency, cost) with a percentile bootstrap 95% interval over inputs (2,000 resamples, seed 20261119). Interpret which structure removes cut-off answers while keeping latency and cost reasonable and the list close to 'what you can cook now'; implement it only if the interpretation supports it. A split by the catalog's own category field is a structural boundary, not a number.",
+ "budget": {
+  "model_calls": 400,
+  "usd": 0.4,
+  "planned_calls": 383,
+  "plan": "S_now, S_noseason, S_shuffle on 29 inputs (87); S_names on the 8-input subset (8); S_split and S_split_noseason on the 8-input subset x 18 groups (288)",
+  "retry": "HTTP 429 repeated after 5 s and 15 s; every attempt counts toward the cap"
+ },
+ "limits": [
+  "one run per variant at temperature 0",
+  "one model and provider",
+  "29 inputs for single requests, 8 for the split variants",
+  "reference sets and rules' missing counts come from the catalog's key ingredients, not from people",
+  "concurrent calls may meet provider rate limits that a sequential run does not"
+ ]
+}

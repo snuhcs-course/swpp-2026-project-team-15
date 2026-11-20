@@ -1,0 +1,785 @@
+{
+ "schema": 1,
+ "recipes": {
+  "kimchi-fried-rice": {
+   "dish_id": "kimchi-fried-rice",
+   "video": null,
+   "source": "hand_written_fixture",
+   "generated_at": "2026-11-18",
+   "servings": 2,
+   "ingredients": [
+    {
+     "name": "밥",
+     "amount": "2공기",
+     "role": "main"
+    },
+    {
+     "name": "김치",
+     "amount": "1컵",
+     "role": "main"
+    },
+    {
+     "name": "대파",
+     "amount": "1대",
+     "role": "secondary"
+    },
+    {
+     "name": "계란",
+     "amount": "2개",
+     "role": "secondary"
+    },
+    {
+     "name": "식용유",
+     "amount": "2큰술",
+     "role": "seasoning"
+    },
+    {
+     "name": "간장",
+     "amount": "1작은술",
+     "role": "seasoning"
+    },
+    {
+     "name": "참기름",
+     "amount": "1작은술",
+     "role": "seasoning"
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "대파를 송송 썰고 김치를 잘게 썬다."
+    },
+    {
+     "n": 2,
+     "text": "팬에 식용유를 두르고 대파를 볶아 향을 낸다."
+    },
+    {
+     "n": 3,
+     "text": "김치를 넣어 2분 볶고 간장을 둘러 볶는다."
+    },
+    {
+     "n": 4,
+     "text": "밥을 넣고 고루 섞어 볶는다."
+    },
+    {
+     "n": 5,
+     "text": "계란 프라이를 올리고 참기름을 두른다."
+    }
+   ],
+   "tips": [
+    "신 김치를 쓰면 더 맛있다."
+   ],
+   "uncertain": [],
+   "caption_gaps": false
+  },
+  "egg-roll": {
+   "dish_id": "egg-roll",
+   "video": null,
+   "source": "hand_written_fixture",
+   "generated_at": "2026-11-18",
+   "servings": 2,
+   "ingredients": [
+    {
+     "name": "계란",
+     "amount": "4개",
+     "role": "main"
+    },
+    {
+     "name": "대파",
+     "amount": "1/2대",
+     "role": "secondary"
+    },
+    {
+     "name": "당근",
+     "amount": "1/4개",
+     "role": "secondary"
+    },
+    {
+     "name": "소금",
+     "amount": "1꼬집",
+     "role": "seasoning"
+    },
+    {
+     "name": "식용유",
+     "amount": "1큰술",
+     "role": "seasoning"
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "대파와 당근을 잘게 다진다."
+    },
+    {
+     "n": 2,
+     "text": "계란을 풀고 소금과 다진 채소를 섞는다."
+    },
+    {
+     "n": 3,
+     "text": "팬을 약불로 달구고 식용유를 얇게 바른 뒤 계란물의 일부를 붓는다."
+    },
+    {
+     "n": 4,
+     "text": "반쯤 익으면 돌돌 말고 남은 계란물을 부어 같은 방법으로 말아 준다."
+    },
+    {
+     "n": 5,
+     "text": "한 김 식힌 뒤 먹기 좋게 썬다."
+    }
+   ],
+   "tips": [],
+   "uncertain": [],
+   "caption_gaps": false
+  },
+  "tomato-egg-stir": {
+   "dish_id": "tomato-egg-stir",
+   "video": null,
+   "source": "hand_written_fixture",
+   "generated_at": "2026-11-18",
+   "servings": 2,
+   "ingredients": [
+    {
+     "name": "토마토",
+     "amount": "2개",
+     "role": "main"
+    },
+    {
+     "name": "계란",
+     "amount": "3개",
+     "role": "main"
+    },
+    {
+     "name": "대파",
+     "amount": "1/2대",
+     "role": "secondary"
+    },
+    {
+     "name": "설탕",
+     "amount": "1/2작은술",
+     "role": "seasoning"
+    },
+    {
+     "name": "소금",
+     "amount": "1꼬집",
+     "role": "seasoning"
+    },
+    {
+     "name": "식용유",
+     "amount": "2큰술",
+     "role": "seasoning"
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "토마토는 한입 크기로 썰고 대파는 송송 썬다."
+    },
+    {
+     "n": 2,
+     "text": "계란을 풀어 소금을 넣고 기름 두른 팬에서 크게 저으며 익혀 덜어 둔다."
+    },
+    {
+     "n": 3,
+     "text": "같은 팬에 대파를 볶다가 토마토를 넣고 설탕을 뿌려 볶는다."
+    },
+    {
+     "n": 4,
+     "text": "토마토가 부드러워지면 계란을 다시 넣고 가볍게 섞는다."
+    }
+   ],
+   "tips": [],
+   "uncertain": [],
+   "caption_gaps": false
+  },
+  "kimchi-stew": {
+   "dish_id": "kimchi-stew",
+   "video": null,
+   "source": "hand_written_fixture",
+   "generated_at": "2026-11-18",
+   "servings": 2,
+   "ingredients": [
+    {
+     "name": "김치",
+     "amount": "2컵",
+     "role": "main"
+    },
+    {
+     "name": "돼지고기",
+     "amount": "150g",
+     "role": "secondary"
+    },
+    {
+     "name": "두부",
+     "amount": "1/2모",
+     "role": "secondary"
+    },
+    {
+     "name": "대파",
+     "amount": "1대",
+     "role": "secondary"
+    },
+    {
+     "name": "고춧가루",
+     "amount": "1큰술",
+     "role": "seasoning"
+    },
+    {
+     "name": "다진마늘",
+     "amount": "1작은술",
+     "role": "seasoning"
+    },
+    {
+     "name": "물",
+     "amount": "3컵",
+     "role": "seasoning"
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "돼지고기를 한입 크기로 썰고 김치는 먹기 좋게 자른다."
+    },
+    {
+     "n": 2,
+     "text": "냄비에 돼지고기와 김치를 넣고 5분 볶는다."
+    },
+    {
+     "n": 3,
+     "text": "물을 붓고 고춧가루와 다진마늘을 넣어 끓인다."
+    },
+    {
+     "n": 4,
+     "text": "끓으면 두부와 대파를 넣고 5분 더 끓인다."
+    },
+    {
+     "n": 5,
+     "text": "돼지고기가 완전히 익었는지 확인하고 불을 끈다."
+    }
+   ],
+   "tips": [
+    "고기는 속까지 완전히 익혀 먹는다."
+   ],
+   "uncertain": [],
+   "caption_gaps": false
+  },
+  "tuna-mayo-bowl": {
+   "dish_id": "tuna-mayo-bowl",
+   "video": null,
+   "source": "hand_written_fixture",
+   "generated_at": "2026-11-18",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "밥",
+     "amount": "1공기",
+     "role": "main"
+    },
+    {
+     "name": "참치캔",
+     "amount": "1캔",
+     "role": "main"
+    },
+    {
+     "name": "마요네즈",
+     "amount": "2큰술",
+     "role": "secondary"
+    },
+    {
+     "name": "김",
+     "amount": "1장",
+     "role": "secondary"
+    },
+    {
+     "name": "간장",
+     "amount": "1작은술",
+     "role": "seasoning"
+    },
+    {
+     "name": "깨소금",
+     "amount": "약간",
+     "role": "seasoning"
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "참치의 기름을 빼고 마요네즈, 간장과 섞는다."
+    },
+    {
+     "n": 2,
+     "text": "김을 잘게 부순다."
+    },
+    {
+     "n": 3,
+     "text": "그릇에 밥을 담고 참치마요를 올린다."
+    },
+    {
+     "n": 4,
+     "text": "김과 깨소금을 뿌린다."
+    }
+   ],
+   "tips": [],
+   "uncertain": [],
+   "caption_gaps": false
+  },
+  "egg-fried-rice": {
+   "dish_id": "egg-fried-rice",
+   "video": null,
+   "source": "hand_written_fixture",
+   "generated_at": "2026-11-18",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "밥",
+     "amount": "1공기",
+     "role": "main"
+    },
+    {
+     "name": "계란",
+     "amount": "2개",
+     "role": "main"
+    },
+    {
+     "name": "대파",
+     "amount": "1/2대",
+     "role": "secondary"
+    },
+    {
+     "name": "식용유",
+     "amount": "1큰술",
+     "role": "seasoning"
+    },
+    {
+     "name": "소금",
+     "amount": "1꼬집",
+     "role": "seasoning"
+    },
+    {
+     "name": "간장",
+     "amount": "1작은술",
+     "role": "seasoning"
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "대파를 송송 썰고 계란을 푼다."
+    },
+    {
+     "n": 2,
+     "text": "팬에 식용유를 두르고 대파를 볶다가 계란을 넣어 스크램블한다."
+    },
+    {
+     "n": 3,
+     "text": "밥을 넣고 소금을 뿌려 볶는다."
+    },
+    {
+     "n": 4,
+     "text": "간장을 팬 가장자리에 둘러 향을 내고 섞는다."
+    }
+   ],
+   "tips": [],
+   "uncertain": [],
+   "caption_gaps": false
+  },
+  "doenjang-stew": {
+   "dish_id": "doenjang-stew",
+   "video": null,
+   "source": "hand_written_fixture",
+   "generated_at": "2026-11-18",
+   "servings": 2,
+   "ingredients": [
+    {
+     "name": "된장",
+     "amount": "2큰술",
+     "role": "main"
+    },
+    {
+     "name": "두부",
+     "amount": "1/2모",
+     "role": "secondary"
+    },
+    {
+     "name": "애호박",
+     "amount": "1/3개",
+     "role": "secondary"
+    },
+    {
+     "name": "양파",
+     "amount": "1/2개",
+     "role": "secondary"
+    },
+    {
+     "name": "대파",
+     "amount": "1/2대",
+     "role": "secondary"
+    },
+    {
+     "name": "고춧가루",
+     "amount": "1/2큰술",
+     "role": "seasoning"
+    },
+    {
+     "name": "다진마늘",
+     "amount": "1작은술",
+     "role": "seasoning"
+    },
+    {
+     "name": "물",
+     "amount": "3컵",
+     "role": "seasoning"
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "애호박, 양파, 두부를 깍둑 썰고 대파는 송송 썬다."
+    },
+    {
+     "n": 2,
+     "text": "냄비에 물을 붓고 된장을 풀어 끓인다."
+    },
+    {
+     "n": 3,
+     "text": "끓으면 양파와 애호박을 넣고 5분 끓인다."
+    },
+    {
+     "n": 4,
+     "text": "두부, 다진마늘, 고춧가루를 넣고 3분 더 끓인다."
+    },
+    {
+     "n": 5,
+     "text": "대파를 넣고 불을 끈다."
+    }
+   ],
+   "tips": [],
+   "uncertain": [],
+   "caption_gaps": false
+  },
+  "cheese-toast": {
+   "dish_id": "cheese-toast",
+   "video": null,
+   "source": "hand_written_fixture",
+   "generated_at": "2026-11-18",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "식빵",
+     "amount": "2장",
+     "role": "main"
+    },
+    {
+     "name": "치즈",
+     "amount": "2장",
+     "role": "main"
+    },
+    {
+     "name": "계란",
+     "amount": "1개",
+     "role": "secondary"
+    },
+    {
+     "name": "버터",
+     "amount": "1작은술",
+     "role": "secondary"
+    },
+    {
+     "name": "설탕",
+     "amount": "1/2작은술",
+     "role": "seasoning"
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "팬에 버터를 녹이고 계란을 풀어 얇게 부친다."
+    },
+    {
+     "n": 2,
+     "text": "식빵 한 장에 계란과 치즈를 올리고 설탕을 뿌린다."
+    },
+    {
+     "n": 3,
+     "text": "다른 식빵을 덮고 중약불에서 앞뒤로 노릇하게 굽는다."
+    },
+    {
+     "n": 4,
+     "text": "치즈가 녹으면 반으로 자른다."
+    }
+   ],
+   "tips": [],
+   "uncertain": [],
+   "caption_gaps": false
+  },
+  "tomato-pasta": {
+   "dish_id": "tomato-pasta",
+   "video": null,
+   "source": "hand_written_fixture",
+   "generated_at": "2026-11-18",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "스파게티면",
+     "amount": "100g",
+     "role": "main"
+    },
+    {
+     "name": "토마토",
+     "amount": "2개",
+     "role": "main"
+    },
+    {
+     "name": "양파",
+     "amount": "1/4개",
+     "role": "secondary"
+    },
+    {
+     "name": "올리브유",
+     "amount": "1큰술",
+     "role": "secondary"
+    },
+    {
+     "name": "다진마늘",
+     "amount": "1작은술",
+     "role": "seasoning"
+    },
+    {
+     "name": "소금",
+     "amount": "1/2작은술",
+     "role": "seasoning"
+    },
+    {
+     "name": "후추",
+     "amount": "약간",
+     "role": "seasoning"
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "끓는 물에 소금을 넣고 면을 8분 삶는다."
+    },
+    {
+     "n": 2,
+     "text": "토마토와 양파를 잘게 썬다."
+    },
+    {
+     "n": 3,
+     "text": "팬에 올리브유를 두르고 다진마늘과 양파를 볶는다."
+    },
+    {
+     "n": 4,
+     "text": "토마토를 넣고 으깨며 7분 졸인 뒤 소금과 후추로 간한다."
+    },
+    {
+     "n": 5,
+     "text": "삶은 면을 소스에 넣고 섞는다."
+    }
+   ],
+   "tips": [],
+   "uncertain": [],
+   "caption_gaps": false
+  },
+  "potato-pan": {
+   "dish_id": "potato-pan",
+   "video": null,
+   "source": "hand_written_fixture",
+   "generated_at": "2026-11-18",
+   "servings": 2,
+   "ingredients": [
+    {
+     "name": "감자",
+     "amount": "2개",
+     "role": "main"
+    },
+    {
+     "name": "양파",
+     "amount": "1/4개",
+     "role": "secondary"
+    },
+    {
+     "name": "부침가루",
+     "amount": "2큰술",
+     "role": "secondary"
+    },
+    {
+     "name": "소금",
+     "amount": "1/2작은술",
+     "role": "seasoning"
+    },
+    {
+     "name": "식용유",
+     "amount": "3큰술",
+     "role": "seasoning"
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "감자와 양파를 곱게 갈거나 강판에 간다."
+    },
+    {
+     "n": 2,
+     "text": "물기를 약간 따라내고 부침가루와 소금을 섞는다."
+    },
+    {
+     "n": 3,
+     "text": "기름 두른 팬에 반죽을 얇게 펴서 중불로 굽는다."
+    },
+    {
+     "n": 4,
+     "text": "한쪽이 노릇해지면 뒤집어 속까지 익힌다."
+    }
+   ],
+   "tips": [],
+   "uncertain": [],
+   "caption_gaps": false
+  },
+  "pork-bowl": {
+   "dish_id": "pork-bowl",
+   "video": null,
+   "source": "hand_written_fixture",
+   "generated_at": "2026-11-18",
+   "servings": 2,
+   "ingredients": [
+    {
+     "name": "밥",
+     "amount": "2공기",
+     "role": "main"
+    },
+    {
+     "name": "돼지고기",
+     "amount": "200g",
+     "role": "main"
+    },
+    {
+     "name": "양파",
+     "amount": "1/2개",
+     "role": "secondary"
+    },
+    {
+     "name": "대파",
+     "amount": "1/2대",
+     "role": "secondary"
+    },
+    {
+     "name": "고추장",
+     "amount": "1큰술",
+     "role": "secondary"
+    },
+    {
+     "name": "설탕",
+     "amount": "1작은술",
+     "role": "seasoning"
+    },
+    {
+     "name": "간장",
+     "amount": "1큰술",
+     "role": "seasoning"
+    },
+    {
+     "name": "다진마늘",
+     "amount": "1작은술",
+     "role": "seasoning"
+    },
+    {
+     "name": "식용유",
+     "amount": "1큰술",
+     "role": "seasoning"
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "돼지고기에 고추장, 설탕, 간장, 다진마늘을 넣어 10분 재운다."
+    },
+    {
+     "n": 2,
+     "text": "양파와 대파를 썬다."
+    },
+    {
+     "n": 3,
+     "text": "팬에 식용유를 두르고 양파와 고기를 넣어 센 불에서 볶는다."
+    },
+    {
+     "n": 4,
+     "text": "고기가 완전히 익으면 대파를 넣고 1분 더 볶는다."
+    },
+    {
+     "n": 5,
+     "text": "밥 위에 올린다."
+    }
+   ],
+   "tips": [
+    "돼지고기는 붉은 부분이 없을 때까지 익힌다."
+   ],
+   "uncertain": [],
+   "caption_gaps": false
+  },
+  "egg-soup": {
+   "dish_id": "egg-soup",
+   "video": null,
+   "source": "hand_written_fixture",
+   "generated_at": "2026-11-18",
+   "servings": 2,
+   "ingredients": [
+    {
+     "name": "계란",
+     "amount": "2개",
+     "role": "main"
+    },
+    {
+     "name": "대파",
+     "amount": "1/2대",
+     "role": "secondary"
+    },
+    {
+     "name": "양파",
+     "amount": "1/4개",
+     "role": "secondary"
+    },
+    {
+     "name": "소금",
+     "amount": "1/2작은술",
+     "role": "seasoning"
+    },
+    {
+     "name": "다진마늘",
+     "amount": "1/2작은술",
+     "role": "seasoning"
+    },
+    {
+     "name": "물",
+     "amount": "3컵",
+     "role": "seasoning"
+    },
+    {
+     "name": "참기름",
+     "amount": "1작은술",
+     "role": "seasoning"
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "양파는 채 썰고 대파는 송송 썬다."
+    },
+    {
+     "n": 2,
+     "text": "냄비에 물, 양파, 다진마늘을 넣고 끓인다."
+    },
+    {
+     "n": 3,
+     "text": "끓으면 소금으로 간하고 풀어 둔 계란을 가늘게 돌려 붓는다."
+    },
+    {
+     "n": 4,
+     "text": "대파를 넣고 참기름을 두른다."
+    }
+   ],
+   "tips": [],
+   "uncertain": [],
+   "caption_gaps": false
+  }
+ }
+}

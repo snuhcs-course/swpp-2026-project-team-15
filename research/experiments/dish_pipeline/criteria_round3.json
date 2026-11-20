@@ -1,0 +1,104 @@
+{
+ "name": "dish_pipeline_round3",
+ "version": 1,
+ "frozen": "2026-11-16, before any model or YouTube call of this round",
+ "question": "How should the request to a web-search model be worded so that the links that survive the embeddable/public check are cooking videos of exactly the requested dish?",
+ "structure": "The server asks the model for links at request time and only checks that a video exists, is public and can be embedded; it keeps the model's order. No title filter, no view sorting, no count cutoff. This round changes only the wording of the request.",
+ "model": {
+  "discovery": "google/gemini-2.5-flash-lite:online",
+  "temperature": 0,
+  "output": "watch?v= urls and titles as a JSON array, up to 8 links; ids are read from the answer text and then from the url citations, first 12 (same extraction as the earlier rounds)"
+ },
+ "dishes": {
+  "list": [
+   "kimchi-fried-rice",
+   "egg-fried-rice",
+   "pork-kimchi-fried-rice",
+   "ham-fried-rice",
+   "tuna-fried-rice",
+   "shrimp-fried-rice",
+   "kimchi-tuna-fried-rice",
+   "garlic-fried-rice",
+   "mushroom-fried-rice",
+   "pork-stir",
+   "ramyeon-egg",
+   "ham-cheese-sandwich",
+   "french-toast",
+   "omurice",
+   "tuna-porridge",
+   "cabbage-salad",
+   "kimchi-pancake",
+   "bibim-noodle",
+   "kimchi-stir",
+   "potato-soup",
+   "sausage-stir",
+   "janchi-noodle",
+   "pork-lettuce",
+   "steamed-egg-microwave",
+   "tofu-braise",
+   "spam-kimchi-stew",
+   "hotdog-pan"
+  ],
+  "source": "the 27 dishes with both judgements in the second YouTube discovery study (bacon-fried-rice had an unparsable judge answer and is excluded)"
+ },
+ "variants": {
+  "OLD": "the earlier request ('the most popular, best-regarded recipe videos of <dish> 레시피, up to 8, any language'): stored outputs and judgements of the second YouTube discovery study (method B), no new call. Reference only, not a candidate: it differs from D0 in two ways (it asks for popular, well-rated videos and does not say 'follow along').",
+  "D0": "request_text('D0', dish) in round3.py: videos to follow along and cook the dish (a how-to recipe video), nothing else.",
+  "D1": "D0 plus the audience as a person: 'a young adult cooking alone for the first time, i.e. a 자취생' (contains the word 자취생).",
+  "D2": "D0 plus observable conditions only: few ingredients, simple tools, steps easy to follow on screen, short running time (no audience word).",
+  "D3": "D2 plus 'exactly this dish, no neighbouring dishes or variants' and 'exclude shorts, vlogs, mukbang, reviews, ads'."
+ },
+ "exact_request_texts": {
+  "D0": "YouTube에서 '<dish>'를 보고 따라 하며 만들 수 있는 요리 영상(만드는 방법을 보여 주는 레시피 영상)을 최대 8개 찾아 주세요. 한국어 영상뿐 아니라 어떤 언어의 영상이든 괜찮습니다. 각 영상의 watch?v= 주소와 제목을 JSON 배열로만 답하고, 검색 결과에서 실제로 확인한 주소만 쓰세요.",
+  "D1": "YouTube에서 '<dish>'를 보고 따라 하며 만들 수 있는 요리 영상(만드는 방법을 보여 주는 레시피 영상)을 최대 8개 찾아 주세요. 혼자 처음 요리해 보는 청년, 즉 자취생이 따라 하기 위한 영상이면 좋습니다. 한국어 영상뿐 아니라 어떤 언어의 영상이든 괜찮습니다. 각 영상의 watch?v= 주소와 제목을 JSON 배열로만 답하고, 검색 결과에서 실제로 확인한 주소만 쓰세요.",
+  "D2": "YouTube에서 '<dish>'를 보고 따라 하며 만들 수 있는 요리 영상(만드는 방법을 보여 주는 레시피 영상)을 최대 8개 찾아 주세요. 재료가 적게 들고, 도구가 간단하며, 화면만 보고도 단계를 따라 하기 쉽고, 길이가 짧은 영상을 찾아 주세요. 한국어 영상뿐 아니라 어떤 언어의 영상이든 괜찮습니다. 각 영상의 watch?v= 주소와 제목을 JSON 배열로만 답하고, 검색 결과에서 실제로 확인한 주소만 쓰세요.",
+  "D3": "YouTube에서 '<dish>'를 보고 따라 하며 만들 수 있는 요리 영상(만드는 방법을 보여 주는 레시피 영상)을 최대 8개 찾아 주세요. 재료가 적게 들고, 도구가 간단하며, 화면만 보고도 단계를 따라 하기 쉽고, 길이가 짧은 영상을 찾아 주세요. 정확히 '<dish>'를 만드는 영상만 고르고 이웃 요리나 변형 요리는 제외하세요. 쇼츠, 브이로그, 먹방, 리뷰, 광고는 제외하세요. 한국어 영상뿐 아니라 어떤 언어의 영상이든 괜찮습니다. 각 영상의 watch?v= 주소와 제목을 JSON 배열로만 답하고, 검색 결과에서 실제로 확인한 주소만 쓰세요."
+ },
+ "per_dish_procedure": "one discovery call per dish and variant (27 x 4 = 108, temperature 0, calls interleaved D0..D3 per dish); one batched videos.list per dish on the union of the ids of its four variants (at most 50, ids are checked for existence, public status, embeddable flag); the usable links of a variant are its ids that pass this check, in the order the model gave them (answer text first, then citations).",
+ "judges": {
+  "E": "google/gemini-2.5-pro, the evaluator of the second study; primary judge for the decision",
+  "J1": "anthropic/claude-haiku-4.5, the selector judge of the second study; reported next to E (agreement and kappa)",
+  "instrument": "the judge prompt, rubric, fields shown (dish names and aliases, title, channel, duration, first 500 characters of the description, up to 8 tags), temperature 0 and strict JSON are copied unchanged from the second study (JUDGE_PROMPT and item_text of run_round3.py). The judges are not edited or tuned here.",
+  "reuse": "a (dish, video) pair already judged in the second study keeps that judgement. The remaining videos of a dish are judged in ONE call per judge with the order of the items shuffled by the seed (so a variant is not recognisable from the position). Reused and new judgements come from batches of different composition; this is a limit.",
+  "validation": "the judges were validated in the second study (kappa 0.61 against 60 one-labeller labels); no new validation. 'Easy to follow for a person living alone' is NOT measured by any judge: it is a human judgement. Running time is reported only as a proxy of simple, and it is a weak one."
+ },
+ "metrics": {
+  "relevant_share": "relevant usable links / usable links, pooled over dishes, under E (primary) and J1; the paired difference to D0 uses the pooled share with a 95% percentile bootstrap over dishes (10,000 resamples, seed 20261116)",
+  "dishes_with_relevant": "dishes with at least one relevant usable link",
+  "usable_per_dish": "usable links per dish after the embeddable/public check",
+  "first_link_relevant": "share of dishes whose first usable link is relevant (dishes with at least one usable link)",
+  "failure_types": "for usable links E calls irrelevant, a pre-set rule type (failure_type in round3.py): short (<= 60 s), vlog_or_show (a keyword in title or tags), neighbour_dish (another dish of the same category is named in the title and this dish is not), other_dish (a dish of another category is named), other. It is a proxy for the neighbour-dish errors and the reasons are not read by a person except for a few examples.",
+  "shorts_share": "usable links of 60 seconds or less / usable links",
+  "running_time": "median and quartiles (25%, 50%, 75%) of the running time of usable links; a proxy only",
+  "jachwi_share": "usable links with 자취 in the title or the tags (keyword effect; compare D1 with D2 and D0)",
+  "agreement": "share of identical labels and Cohen's kappa between E and J1 on the usable links of all variants",
+  "cost_per_request": "OpenRouter reported cost of the discovery call (the judging cost is reported separately)",
+  "latency": "median and maximum wall-clock seconds of the discovery call"
+ },
+ "decision_rule": "Candidates: D0, D1, D2, D3. A variant is eligible if its dishes_with_relevant (under E) is not lower than D0's by more than 1 dish and its usable_per_dish is not lower than D0's by more than 0.5. Among eligible variants choose the highest pooled relevant_share under E; ties go to the lower cost per request. If the winner is not D0 and the 95% interval of its paired difference to D0 contains 0, the result is inconclusive and D0 is kept. J1 gives a sensitivity check only.",
+ "budget": {
+  "discovery_calls": 140,
+  "planned_discovery_calls": 108,
+  "usd_total": 1.8,
+  "judge_stop_usd": 1.75,
+  "youtube": "videos.list only (27 requests, 1 unit each); no search.list",
+  "note": "retries after HTTP 429 (at most two per call, waits of 8 s and 20 s) count as calls. A call that still fails is stored as an error (zero links for that variant and dish) and may be repeated only after an amendment is written here. The judging stops when the spend of this round reaches judge_stop_usd and the analysis then covers only the dishes judged by both judges."
+ },
+ "limits_declared": [
+  "single run, temperature 0, the web search of the model varies from day to day",
+  "27 dishes, many of them fried-rice dishes",
+  "two language models as judges of metadata (title, channel, description, tags), not of the video; one labeller's 60 labels in the validation (kappa 0.61)",
+  "OLD differs from D0 in two ways at once",
+  "the judge sees different batch compositions for reused and new videos",
+  "failure types are a rule-based proxy",
+  "a single request wording per variant"
+ ],
+ "amendments": [
+  {
+   "date": "2026-11-16",
+   "before_any_judge_call": true,
+   "reason": "After 120 discovery calls (12 of them retries after HTTP 429), one call still failed after its two retries: egg-fried-rice, variant D1 (HTTP 429). The failure is kept in the stored data as a failed attempt.",
+   "change": "That single call is repeated once (collect --repeat-failed), which adds at most 3 calls (within the 140 cap). If it fails again it stays an error and counts as zero links for that dish and variant. No other call is repeated and nothing else is changed."
+  }
+ ]
+}
