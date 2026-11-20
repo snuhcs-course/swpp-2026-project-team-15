@@ -109,10 +109,12 @@ def task_revise(app: list[dict[str, Any]]) -> dict[str, Any]:
 def errors(app: list[dict[str, Any]], requests: list[dict[str, Any]]) -> dict[str, Any]:
     by_route: dict[str, Counter] = defaultdict(Counter)
     for r in requests:
-        kind = (
-            "server_error" if r["status"] >= 500 else "client_error" if r["status"] >= 400 else "ok"
-        )
-        by_route[f"{r['method']} {r['route']}"][kind] += 1
+        # OpenTelemetry HTTP names since 2026-11-20; the first beta records used short names.
+        status = r.get("http.response.status_code", r.get("status"))
+        method = r.get("http.request.method", r.get("method"))
+        route = r.get("http.route", r.get("route"))
+        kind = "server_error" if status >= 500 else "client_error" if status >= 400 else "ok"
+        by_route[f"{method} {route}"][kind] += 1
     routes = {
         route: {
             **dict(c),

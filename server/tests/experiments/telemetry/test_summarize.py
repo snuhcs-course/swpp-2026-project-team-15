@@ -33,7 +33,7 @@ RECORDS = [
     app("s2", 2_000, "dish_list", status="error", code=502),
     app("s2", 3_000, "revise", status="refused", duration_ms=100),
     app("s2", 4_000, "player_error", dish_id="tofu-soup"),
-    {
+    {  # a record written before the switch to OpenTelemetry names
         "kind": "request",
         "t": 1,
         "method": "POST",
@@ -44,10 +44,10 @@ RECORDS = [
     {
         "kind": "request",
         "t": 2,
-        "method": "POST",
-        "route": "/dishes/suggest",
-        "status": 502,
-        "ms": 90000,
+        "http.request.method": "POST",
+        "http.route": "/dishes/suggest",
+        "http.response.status_code": 502,
+        "duration_ms": 90000,
     },
 ]
 

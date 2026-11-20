@@ -130,8 +130,17 @@ def test_each_request_is_recorded_by_route_template_without_body():
     client.get("/health")
     client.post("/telemetry/events", json=batch())
     requests = [r for r in sink.records if r["kind"] == "request"]
-    assert [(r["route"], r["status"]) for r in requests] == [
+    assert [(r["http.route"], r["http.response.status_code"]) for r in requests] == [
         ("/dishes/videos", 422),
         ("/dishes/{dish_id}/recipe", 422),
     ]
-    assert all(set(r) == {"kind", "t", "method", "route", "status", "ms"} for r in requests)
+    names = {
+        "kind",
+        "t",
+        "http.request.method",
+        "http.route",
+        "http.response.status_code",
+        "duration_ms",
+    }
+    assert all(set(r) == names for r in requests)
+    assert {r["http.request.method"] for r in requests} == {"POST", "GET"}
