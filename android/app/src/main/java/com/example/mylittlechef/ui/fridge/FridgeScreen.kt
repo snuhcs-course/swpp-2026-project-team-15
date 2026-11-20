@@ -72,7 +72,7 @@ fun FridgeScreen(
             IngredientSuggestionSheet(
                 ingredientSuggestions,
                 onRetry = { ingredientSuggestions.refresh(fridge.ingredients) },
-                onAdd = { name -> fridge.addIngredients(listOf(Ingredient(name))) }
+                onAdd = { name -> fridge.addIngredients(listOf(Ingredient(name)), source = "suggestion") }
             )
         }
     }

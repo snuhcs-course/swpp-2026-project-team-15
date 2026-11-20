@@ -22,6 +22,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.testTag
 import com.example.mylittlechef.viewmodel.DataResetViewModel
+import com.example.mylittlechef.viewmodel.UsageDataViewModel
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -55,10 +56,12 @@ fun ProfileScreen(
     onEditPantryClick: () -> Unit,
     modifier: Modifier = Modifier,
     dataReset: DataResetViewModel? = null,
-    onDataResetDone: () -> Unit = {}
+    onDataResetDone: () -> Unit = {},
+    usageData: UsageDataViewModel? = null
 )
 {
     ProfileContent(
+        usageData = usageData,
         user = user,
         fridge = fridge,
         onEditNicknameClick = onEditNicknameClick,
@@ -82,7 +85,8 @@ fun ProfileContent(
     onEditPantryClick: () -> Unit,
     modifier: Modifier = Modifier,
     dataReset: DataResetViewModel? = null,
-    onDataResetDone: () -> Unit = {}
+    onDataResetDone: () -> Unit = {},
+    usageData: UsageDataViewModel? = null
 )
 {
     Column(
@@ -141,6 +145,11 @@ fun ProfileContent(
                 title = "기본 재료·조미료",
                 contents = listOf(pantrySummary)
             )
+
+            if (usageData != null) {
+                Spacer(Modifier.height(24.dp))
+                UsageDataSwitch(usageData)
+            }
 
             if (dataReset != null) {
                 Spacer(Modifier.height(24.dp))

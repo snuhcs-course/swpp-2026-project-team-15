@@ -74,7 +74,9 @@ fun AnalyzeScreen(
 
     val context = LocalContext.current
     LaunchedEffect(imageUri) {
+        val started = System.currentTimeMillis()
         val candidates = imageUri?.let { IngredientAnalyzer(context).analyze(it.toUri()) }
+        if (imageUri != null) fridge.onRecognition(candidates?.size, System.currentTimeMillis() - started)
         if (candidates.isNullOrEmpty()) {
             uiState = AnalyzeUiState.Failed
         } else {
@@ -140,7 +142,7 @@ private fun AnalyzeContent(
                     onClick = {
                         editor.finishEdit()
                         if (editor.ingredients.isNotEmpty()) {
-                            fridge.addIngredients(editor.ingredients)
+                            fridge.addIngredients(editor.ingredients, source = "photo")
                         }
                         onSaveClick()
                     }

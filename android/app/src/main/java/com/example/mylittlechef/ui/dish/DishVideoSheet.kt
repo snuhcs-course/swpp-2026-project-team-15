@@ -75,6 +75,7 @@ fun DishDetailSheet(
     revision: ReviseUiState?,
     onRetryRecipe: () -> Unit,
     onRevise: () -> Unit,
+    onPlayerError: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val stored = (recipe as? RecipeUiState.Success)?.recipe
@@ -98,7 +99,7 @@ fun DishDetailSheet(
             }
             Spacer(Modifier.height(12.dp))
             if (playing != null) {
-                Player(playing, onClose = if (dish.hasRecipe) null else ({ picked = null }))
+                Player(playing, onClose = if (dish.hasRecipe) null else ({ picked = null }), onError = onPlayerError)
                 if (stored != null && playing.videoId != stored.videoId) {
                     val title = stored.videoTitle ?: "다른 영상"
                     Text(
@@ -131,7 +132,7 @@ fun DishDetailSheet(
 /** The in-app player with its fallback notice and a link to YouTube; [onClose] is null when the player stays. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Player(video: DishVideo, onClose: (() -> Unit)?) {
+private fun Player(video: DishVideo, onClose: (() -> Unit)?, onError: () -> Unit) {
     val context = LocalContext.current
     var failed by remember(video.videoId) { mutableStateOf(false) }
     if (failed) {
@@ -142,7 +143,7 @@ private fun Player(video: DishVideo, onClose: (() -> Unit)?) {
         )
     } else {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            YouTubePlayer(video.videoId, Modifier.widthIn(max = 480.dp), onError = { failed = true })
+            YouTubePlayer(video.videoId, Modifier.widthIn(max = 480.dp), onError = { failed = true; onError() })
         }
     }
     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

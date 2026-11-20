@@ -7,7 +7,23 @@ package com.example.mylittlechef.navigation
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.mylittlechef.BuildConfig
+import com.example.mylittlechef.data.local.PreferencesUsageDataSettings
+import com.example.mylittlechef.data.remote.DishApiClient
+import com.example.mylittlechef.data.telemetry.RemoteTelemetry
+import com.example.mylittlechef.domain.Telemetry
+import com.example.mylittlechef.domain.Usage
+import com.example.mylittlechef.domain.UsageEvent
+import com.example.mylittlechef.ui.profile.UsageDataNotice
+import com.example.mylittlechef.viewmodel.UsageDataViewModel
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -51,6 +67,20 @@ fun AppNavHost(
     val store = LocalContext.current.applicationContext.localDataStore
     val userRepository = remember(store) { PreferencesUserRepository(store) }
     val fridgeRepository = remember(store) { PreferencesFridgeRepository(store) }
+    // Usage data for the beta week: one Telemetry for the whole app, handed to the ViewModels that emit events.
+    val usageSettings = remember(store) { PreferencesUsageDataSettings(store) }
+    val telemetryScope = rememberCoroutineScope()
+    val telemetry: Telemetry = remember(usageSettings) {
+        RemoteTelemetry(DishApiClient.telemetryApi::send, usageSettings, telemetryScope, BuildConfig.VERSION_NAME)
+    }
+    val usageFactory = remember(usageSettings) {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T = UsageDataViewModel(usageSettings) as T
+        }
+    }
+    val usageData: UsageDataViewModel = viewModel(factory = usageFactory)
+    SessionEvents(telemetry)
     val userFactory = remember(userRepository) {
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -62,7 +92,7 @@ fun AppNavHost(
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                FridgeViewModel(repository = fridgeRepository) as T
+                FridgeViewModel(repository = fridgeRepository, telemetry = telemetry) as T
         }
     }
     val user: UserViewModel = viewModel(factory = userFactory)
@@ -82,6 +112,19 @@ fun AppNavHost(
     // Wait for persisted data before choosing the first screen or fetching recommendations.
     if (!user.isLoaded || !fridge.isLoaded) return
     val startDestination = remember { if (user.onboardingComplete) Routes.MAIN else Routes.ONBOARDING }
+    UsageDataNotice(usageData)
+    val topEntry by navController.currentBackStackEntryAsState()
+    val topRoute = topEntry?.destination?.route
+    LaunchedEffect(topRoute) {
+        val screen = when (topRoute) {
+            Routes.ONBOARDING -> "onboarding"
+            Routes.CAPTURE -> "capture"
+            Routes.ANALYZE -> "analyze"
+            Routes.MANUAL_ADD -> "manual_add"
+            else -> null // the main screen reports its own tabs
+        }
+        if (screen != null) telemetry.track(Usage(UsageEvent.SCREEN_VIEW, screen = screen))
+    }
 
     NavHost(
         navController = navController,
@@ -109,6 +152,8 @@ fun AppNavHost(
                 fridge = fridge,
                 ingredientSuggestions = ingredientSuggestions,
                 dataReset = dataReset,
+                telemetry = telemetry,
+                usageData = usageData,
                 onDataResetDone = {
                     // Like a fresh install: the first screen again, and Back cannot return to the old data.
                     navController.navigate(Routes.ONBOARDING) {
@@ -232,5 +277,30 @@ fun AppNavHost(
                 onSaveClick = { navController.popBackStack() }
             )
         }
+    }
+}
+
+/** A session is the time the app is in the foreground; its events are sent when it goes to the background. */
+@Composable
+private fun SessionEvents(telemetry: Telemetry) {
+    val owner = LocalLifecycleOwner.current
+    DisposableEffect(owner, telemetry) {
+        var started = 0L
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> {
+                    started = System.currentTimeMillis()
+                    telemetry.track(Usage(UsageEvent.SESSION_START))
+                }
+                Lifecycle.Event.ON_STOP -> {
+                    val length = if (started > 0) System.currentTimeMillis() - started else null
+                    telemetry.track(Usage(UsageEvent.SESSION_END, durationMs = length))
+                    telemetry.flush()
+                }
+                else -> Unit
+            }
+        }
+        owner.lifecycle.addObserver(observer)
+        onDispose { owner.lifecycle.removeObserver(observer) }
     }
 }

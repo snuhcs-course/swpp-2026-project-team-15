@@ -16,7 +16,16 @@ import androidx.compose.material3.NavigationBarItemDefaults // 탭 색상 지정
 import androidx.compose.material3.Scaffold // 본문 + 하단바 뼈대
 import androidx.compose.material3.Text // 탭 이름 글자
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue // `by` 문법으로 상태 읽기
+import androidx.compose.runtime.remember
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.example.mylittlechef.domain.NoTelemetry
+import com.example.mylittlechef.domain.Telemetry
+import com.example.mylittlechef.domain.Usage
+import com.example.mylittlechef.domain.UsageEvent
+import com.example.mylittlechef.viewmodel.UsageDataViewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color // 투명색 (선택 표시 배경 제거)
 import androidx.compose.ui.res.painterResource // drawable → 그릴 수 있는 형태
@@ -64,15 +73,32 @@ fun MainScreen(
     ingredientSuggestions: IngredientSuggestionViewModel? = null,
     onEditPantryClick: () -> Unit = {},
     dataReset: DataResetViewModel? = null,
-    onDataResetDone: () -> Unit = {}
+    onDataResetDone: () -> Unit = {},
+    telemetry: Telemetry = NoTelemetry,
+    usageData: UsageDataViewModel? = null
 ) {
     // 요리 추천 탭의 상태. 탭을 오가거나 화면을 돌려도 유지되도록 이 화면 단위로 만든다
-    val dishes: DishViewModel = viewModel()
+    val dishFactory = remember(telemetry) {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T = DishViewModel(telemetry = telemetry) as T
+        }
+    }
+    val dishes: DishViewModel = viewModel(factory = dishFactory)
     // 탭 전환만 담당하는 NavController (최상위 NavController와 별개)
     val tabNavController = rememberNavController()
     // 현재 보고 있는 탭의 경로. 바뀔 때마다 탭 바가 다시 그려진다
     val backStackEntry by tabNavController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+    LaunchedEffect(currentRoute) {
+        val screen = when (currentRoute) {
+            Routes.FRIDGE -> "fridge"
+            Routes.RECIPE -> "dishes"
+            Routes.PROFILE -> "profile"
+            else -> null
+        }
+        if (screen != null) telemetry.track(Usage(UsageEvent.SCREEN_VIEW, screen = screen))
+    }
 
     Scaffold(
         modifier = modifier,
@@ -141,6 +167,7 @@ fun MainScreen(
                     onEditAllergyClick = onEditAllergyClick,
                     onEditPantryClick = onEditPantryClick,
                     dataReset = dataReset,
+                    usageData = usageData,
                     onDataResetDone = {
                         dishes.resetState()
                         onDataResetDone()

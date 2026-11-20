@@ -1,6 +1,7 @@
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
 package com.example.mylittlechef.ui.dish
 
+import com.example.mylittlechef.ui.profile.UsageDataCopy
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -153,6 +154,7 @@ fun DishScreen(
             revision = dishes.recipes.reviseState(selected.id),
             onRetryRecipe = { dishes.recipes.requestRecipe(selected.id) },
             onRevise = { dishes.recipes.requestRevision(selected.id) },
+            onPlayerError = { dishes.onPlayerError(selected.id) },
             onDismiss = { dishes.selectDish(null) }
         )
     }
@@ -167,6 +169,7 @@ fun DishScreen(
                     Text("'내 재료로 바꾸기'는 AI가 레시피를 내 냉장고 재료에 맞게 고쳐 써요. 요리 이름에 들어간 재료가 없으면 바꾸지 않아요.")
                     Text("AI 대체 재료는 버튼을 눌렀을 때만 요청해요. 냉장고에 있는 재료만 쓰도록 제안하지만 맛과 알레르기는 직접 확인해 주세요.")
                     Text("영상은 YouTube에서 가져온 링크예요. 영상은 올린 사람의 것이에요.")
+                    Text(UsageDataCopy.WHAT + " " + UsageDataCopy.NOT)
                 }
             },
             confirmButton = { TextButton(onClick = { showInfo = false }) { Text("확인") } }

@@ -1,4 +1,5 @@
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
+// Usage events (dish_list, dish_open, player_error) added with Claude Code (Opus 5.5), 2026-11-20.
 package com.example.mylittlechef.viewmodel
 
 import androidx.compose.runtime.getValue
@@ -15,6 +16,11 @@ import com.example.mylittlechef.data.remote.DishVideosRequest
 import com.example.mylittlechef.domain.Dish
 import com.example.mylittlechef.domain.DishSort
 import com.example.mylittlechef.domain.DishVideo
+import com.example.mylittlechef.domain.NoTelemetry
+import com.example.mylittlechef.domain.Telemetry
+import com.example.mylittlechef.domain.Usage
+import com.example.mylittlechef.domain.UsageEvent
+import com.example.mylittlechef.domain.failureCode
 import com.example.mylittlechef.domain.sortDishes
 import com.example.mylittlechef.domain.toDish
 import com.example.mylittlechef.domain.toVideo
@@ -45,10 +51,11 @@ sealed interface VideoUiState {
 class DishViewModel(
     private val api: DishApi = DishApiClient.api,
     private val debounceMillis: Long = 400L,
-    recipeApi: DishRecipeApi = DishApiClient.recipeApi
+    recipeApi: DishRecipeApi = DishApiClient.recipeApi,
+    private val telemetry: Telemetry = NoTelemetry
 ) : ViewModel() {
     /** The recipe sheet and the revision of a dish; kept next to the dish list it opens from. */
-    val recipes = DishRecipeSession(recipeApi, viewModelScope) { lastNames.orEmpty() }
+    val recipes = DishRecipeSession(recipeApi, viewModelScope, telemetry) { lastNames.orEmpty() }
 
     var state by mutableStateOf<DishUiState>(DishUiState.EmptyFridge)
         private set
@@ -68,7 +75,13 @@ class DishViewModel(
     fun videoState(dishId: String): VideoUiState? = videoStates[dishId]
 
     fun selectDish(id: String?) {
+        if (id != null && id != selectedDishId) telemetry.track(Usage(UsageEvent.DISH_OPEN, dishId = id))
         selectedDishId = id
+    }
+
+    /** The in-app player could not play a video of the dish (usage data only). */
+    fun onPlayerError(dishId: String) {
+        telemetry.track(Usage(UsageEvent.PLAYER_ERROR, dishId = dishId))
     }
 
     fun selectSort(value: DishSort) {
@@ -116,16 +129,28 @@ class DishViewModel(
         job = viewModelScope.launch {
             try {
                 if (wait) delay(debounceMillis)
+                val started = System.currentTimeMillis()
                 val response = api.suggest(DishSuggestRequest(names))
                 if (mine != generation) return@launch
                 rawDishes = response.dishes.orEmpty().mapNotNull { it.toDish() }
                 rawSource = response.source.orEmpty()
+                telemetry.track(
+                    Usage(
+                        UsageEvent.DISH_LIST,
+                        status = if (rawDishes.isEmpty()) "empty" else "ok",
+                        count = rawDishes.size,
+                        durationMs = System.currentTimeMillis() - started
+                    )
+                )
                 state = if (rawDishes.isEmpty()) DishUiState.NoMatch
                 else DishUiState.Success(sortDishes(rawDishes, sort), rawSource)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
-                if (mine == generation) state = DishUiState.Error(failureMessage(failure))
+                if (mine == generation) {
+                    telemetry.track(Usage(UsageEvent.DISH_LIST, status = "error", code = failureCode(failure)))
+                    state = DishUiState.Error(failureMessage(failure))
+                }
             }
         }
     }
