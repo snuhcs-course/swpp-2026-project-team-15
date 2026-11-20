@@ -23,5 +23,6 @@ def test_image_check_accepts_the_supported_formats():
     assert looks_like_image(b"\xff\xd8\xff\xe0rest")
     assert looks_like_image(b"\x89PNG\r\n\x1a\n...\x00\x00\x00\x00IEND\xaeB`\x82")
     assert looks_like_image(b"RIFF\x00\x00\x00\x00WEBPVP8 ")
-    assert looks_like_image(b"\x00\x00\x00\x18ftypheic")
+    assert looks_like_image(b"\x00\x00\x00\x18ftypheic\x00\x00\x00\x00mif1heic" + b"\x00" * 64)
     assert not looks_like_image(b"GIF89a")
+    assert not looks_like_image(b"\xff\xd8fake")  # two bytes are not a JPEG signature

@@ -1,6 +1,7 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-10-11 to 2026-10-14; reviewed by Jaehyuk Choi.
 from typing import Annotated
 
+import filetype
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
 from app.schemas import ErrorResponse
@@ -90,12 +91,9 @@ def _read(upload: UploadFile, limit: int) -> ImageInput:
 
 
 def looks_like_image(data: bytes) -> bool:
-    """A cheap structural check before any model call: the file starts like a JPEG, PNG, WebP or
-    HEIC/HEIF, and a PNG also has its end chunk (a cut-off PNG lacks it). No decoding."""
-    if data.startswith(b"\xff\xd8"):
-        return True
-    if data.startswith(b"\x89PNG\r\n\x1a\n"):
-        return b"IEND" in data[-64:]
-    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
-        return True
-    return data[4:8] == b"ftyp"
+    """A cheap structural check before any model call: the file's signature is a JPEG, PNG, WebP or
+    HEIC/HEIF (filetype), and a PNG also has its end chunk (a cut-off PNG lacks it). No decoding."""
+    kind = filetype.guess(data)
+    if kind is None or kind.mime not in SUPPORTED_IMAGE_TYPES:
+        return False
+    return kind.mime != "image/png" or b"IEND" in data[-64:]
