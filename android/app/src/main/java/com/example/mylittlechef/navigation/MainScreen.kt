@@ -153,7 +153,7 @@ fun MainScreen(
                             )
                         },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = DeepGreen,
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer, // readable on the pill in dark mode
                             selectedTextColor = DeepGreen,
                             unselectedIconColor = GreenGray,
                             unselectedTextColor = GreenGray,

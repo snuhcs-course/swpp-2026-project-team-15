@@ -25,4 +25,14 @@ class CookingCompletionChoicesTest {
         assertEquals(listOf("계란", "청양고추"), choices)
         assertEquals(setOf("계란"), ticked)
     }
+
+    // User choice (2026-11-20): seasonings in the fridge are offered but start unticked.
+    @Test fun ownedPantrySeasoningsStartUnticked() {
+        val (choices, ticked) = usedFridgeItems(
+            recipe("계란" to Availability.OWNED, "소금" to Availability.OWNED, "간장" to Availability.OWNED),
+            listOf("계란", "소금", "간장")
+        )
+        assertEquals(listOf("계란", "소금", "간장"), choices)
+        assertEquals(setOf("계란"), ticked)
+    }
 }

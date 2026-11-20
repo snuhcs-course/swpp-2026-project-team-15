@@ -17,10 +17,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.mylittlechef.domain.Availability
 import com.example.mylittlechef.domain.DishRecipe
+import com.example.mylittlechef.model.Preset
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 
 /**
- * Fridge items the recipe used: an owned row with the same name is ticked to start with; a fridge name that only
+ * Fridge items the recipe used: an owned row with the same name is ticked to start with, except pantry seasonings; a fridge name that only
  * contains a row name, or the other way round (청양고추 for 고추), is offered unticked, since it may be another item.
  */
 internal fun usedFridgeItems(recipe: DishRecipe, fridgeNames: List<String>): Pair<List<String>, Set<String>> {
@@ -30,7 +31,9 @@ internal fun usedFridgeItems(recipe: DishRecipe, fridgeNames: List<String>): Pai
         val key = name.replace(" ", "")
         name !in exact && key.length >= 2 && owned.any { row -> row.length >= 2 && (row.contains(key) || key.contains(row)) }
     }
-    return (exact + related) to exact.toSet()
+    // Pantry seasonings are used a little at a time, so they are offered but never ticked to start with.
+    val seasonings = Preset.pantrySeasonings.map { it.replace(" ", "") }.toSet()
+    return (exact + related) to exact.filterNot { it.replace(" ", "") in seasonings }.toSet()
 }
 
 @Composable
