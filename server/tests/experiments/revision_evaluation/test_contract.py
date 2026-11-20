@@ -227,6 +227,28 @@ def test_api_error_fixture_is_a_transport_failure_without_an_http_response():
     }
 
 
+def test_partial_http_usage_remains_unknown_in_attempt_totals():
+    partial = read_json(
+        fixture_root() / "observations/revised-after-reask-429__r01/attempt-001.json"
+    )
+    complete = read_json(
+        fixture_root() / "observations/check-failed__r01/attempt-001.json"
+    )
+    assert partial["model_calls"][0]["http_attempts"][0]["usage"] is None
+    assert partial["telemetry"]["tokens"] == {
+        "input_tokens": None,
+        "output_tokens": None,
+        "reasoning_tokens": None,
+        "cached_tokens": None,
+    }
+    assert complete["telemetry"]["tokens"] == {
+        "input_tokens": 20,
+        "output_tokens": 40,
+        "reasoning_tokens": 0,
+        "cached_tokens": 0,
+    }
+
+
 def test_checkpoint_and_execution_attempt_numbers_are_positive():
     value = read_json(fixture_root() / "observations/resumed__r03/attempt-001.json")
     for path in (("execution_attempt",), ("execution", "checkpoint_revision")):

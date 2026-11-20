@@ -279,8 +279,12 @@ def _telemetry(calls: list[dict], *, interrupted=False) -> dict:
     attempts = [attempt for call in calls for attempt in call["http_attempts"]]
     received = [attempt for attempt in attempts if attempt["state"] == "response_received"]
     timed = [attempt for attempt in attempts if attempt["provider_round_trip_s"] is not None]
-    input_tokens = sum((a["usage"] or {}).get("input_tokens", 0) for a in received)
-    output_tokens = sum((a["usage"] or {}).get("output_tokens", 0) for a in received)
+    usage = _sum_usage(
+        [
+            attempt["usage"] if attempt["usage"] is not None else _usage()
+            for attempt in attempts
+        ]
+    )
     measured = [a["cost_usd"]["value"] for a in received if a["cost_usd"]["value"] is not None]
     # A partial or interrupted set cannot be labelled as a complete measured total.
     if not attempts:
@@ -301,7 +305,7 @@ def _telemetry(calls: list[dict], *, interrupted=False) -> dict:
         "observed_wall_s": _number(0.82) if not interrupted else _number(),
         "checkpoint_persistence_s": _number(0.02),
         "non_http_remainder_s": _number(0.3) if received and not interrupted else _number(),
-        "tokens": _usage(input_tokens, output_tokens, 0, 0) if received else _usage(),
+        "tokens": usage,
         "cost_usd": cost,
     }
 
@@ -320,6 +324,8 @@ def _sum_optional(values: list[dict]) -> dict:
 def _sum_usage(values: list[dict]) -> dict:
     """Sum each token category only when every attempt-level total supplied it."""
 
+    if not values:
+        return _usage()
     result = {}
     for key in ("input_tokens", "output_tokens", "reasoning_tokens", "cached_tokens"):
         entries = [value[key] for value in values]
