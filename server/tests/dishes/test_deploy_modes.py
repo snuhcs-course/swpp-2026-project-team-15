@@ -21,8 +21,12 @@ def test_runtime_archive_and_image_carry_the_dish_data():
     assert "COPY server/app ./app" in (ROOT / "Dockerfile").read_text().splitlines()
 
 
-def test_nginx_has_one_proxy_location_and_no_rate_limit():
+def test_nginx_limits_only_the_usage_upload():
+    # Model routes stay unlimited (demo); only the usage upload is rate-limited (ADR 007).
     conf = (ROOT / "deploy/nginx.conf").read_text(encoding="utf-8")
-    assert "limit_req" not in conf and "limit_conn" not in conf
-    assert conf.count("location ") == 1
+    assert "limit_conn" not in conf
+    assert conf.count("location ") == 2 and "location = /telemetry/events {" in conf
+    general = conf.split("location / {", 1)[1]
+    assert "limit_req" not in general
+    assert "limit_req zone=telemetry" in conf.split("location = /telemetry/events {", 1)[1]
     assert "client_max_body_size 16m;" in conf and "proxy_read_timeout 210s;" in conf
