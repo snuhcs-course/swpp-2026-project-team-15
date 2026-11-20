@@ -1,6 +1,14 @@
 # My Little Chef — dish suggestion version
 
-SNU SWPP Fall 2026 · Team 15. The Android app recognises the ingredients in a fridge from photos or a short sweep, keeps the fridge and profile on the phone, and suggests **dishes** to cook with them, with YouTube videos and substitutes for what is missing. This version has **no recipe database**: dishes come from one self-authored list on the server, and videos are YouTube embeds that link to YouTube. Other versions (for example the recipe-database version on `main`) are other branches or commits; there are no mode flags.
+SNU SWPP Fall 2026 · Team 15. The Android app recognises the ingredients in a fridge from photos or a short sweep, keeps the fridge and profile on the phone, and suggests dishes to cook with them. It serves structured recipes built from YouTube cooking videos, checks video availability and metadata with the YouTube Data API, and helps adapt recipes to ingredients on hand.
+
+## Iteration 4 demo
+
+[Watch the Iteration 4 demo video](iteration4-demo-video.mp4) (`iteration4-demo-video.mp4` in this repository).
+
+## Recipe database
+
+The project built a structured recipe database from YouTube cooking videos. The YouTube Data API v3 was used to discover and verify public, embeddable videos and to retrieve current video details. Gemini then processed the videos and produced structured recipe records; the current curated set contains recipes for 124 dishes. At runtime, the server loads the recipe JSON configured by `DISH_RECIPES`; recipe data is kept outside the source repository. The server uses the YouTube API to refresh video title and channel credits and to check stored video links. See [recipe data research](research/experiments/dish_recipes/README.md) and [server setup](server/README.md).
 
 ## Source layout
 
@@ -9,7 +17,7 @@ SNU SWPP Fall 2026 · Team 15. The Android app recognises the ingredients in a f
 ├── .github/workflows/      # Server, Android and ARM checks
 ├── android/                # Compose app, DataStore, JVM/device tests
 ├── server/
-│   ├── app/dishes/         # Dish list, model-based suggestion, substitutes and video links
+│   ├── app/dishes/         # Dish catalog, recipe store, suggestions, revision and YouTube videos
 │   ├── app/vision/         # Ingredient recognition providers
 │   ├── fixtures/           # Recorded recognition responses, synthetic demo image
 │   └── tests/              # Automated checks and protected references
@@ -17,7 +25,7 @@ SNU SWPP Fall 2026 · Team 15. The Android app recognises the ingredients in a f
 ├── scripts/                # Android install, integrity check, packaging
 ├── deploy/                 # nginx and the runtime template
 ├── Dockerfile              # Nonroot runtime API image
-└── compose.yaml            # nginx and API (no database)
+└── compose.yaml            # nginx and API
 ```
 
 ## Quick start (app only)
