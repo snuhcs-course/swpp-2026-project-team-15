@@ -142,9 +142,10 @@ def test_a_runaway_answer_is_ordered_and_cut_to_the_list_limit():
 def test_the_running_server_uses_one_owned_rule_for_cards_additions_and_recipes():
     # Server review (2026-11-19): with 햇반 the card could still list 밥 as missing while the
     # addition suggestions and the recipe view counted it as owned (23 of 50 Korean names).
+    from app.config import Settings
     from app.dishes.dependencies import build_dish_parts
 
-    parts = build_dish_parts({})
+    parts = build_dish_parts(Settings.from_env({}))
     service = parts.service
     model = RecordingModel({"dishes": []})
     service.llm = model

@@ -7,13 +7,12 @@ or a store themselves, so a test hands in fakes. There is one model provider tod
 is one more class and one more line in ``build_chat_model``.
 """
 
-import os
-from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request
 
+from app.config import Settings
 from app.dishes.catalog import Catalog
 from app.dishes.llm import DEFAULT_MODEL, DishLLM
 from app.dishes.recipe_names import RecipeNames
@@ -27,32 +26,27 @@ from app.dishes.videos import VideoCache, VideoFinder, check_seconds
 from app.dishes.youtube import YouTubeVerifier
 
 
-def dish_model_key(env: Mapping[str, str], fallback_key: str = "") -> str:
-    """The key for the dish model and the video search: DISH_LLM_API_KEY, else the general one.
-    The one place this rule is written, so both calls always use the same key."""
-    return env.get("DISH_LLM_API_KEY") or fallback_key
-
-
-def build_chat_model(env: Mapping[str, str], fallback_key: str = "") -> ChatModel | None:
+def build_chat_model(settings: Settings) -> ChatModel | None:
     """The dish model, or None when no key is set (suggest and adapt then answer 502)."""
-    key = dish_model_key(env, fallback_key)
-    if not key.strip():
+    key = settings.dish_model_key
+    if not key:
         return None
-    return DishLLM(key, env.get("DISH_LLM_MODEL") or DEFAULT_MODEL)
+    return DishLLM(key, settings.dish_llm_model or DEFAULT_MODEL)
 
 
 def build_video_finder(
-    env: Mapping[str, str], model_key: str = "", *, dishes: int = 0, recipe_videos: int = 0
+    settings: Settings, *, dishes: int = 0, recipe_videos: int = 0
 ) -> VideoFinder | None:
     """None without a YouTube key. Without a model key only stored videos can be served.
     ``dishes`` and ``recipe_videos`` size how long a check of stored videos is reused."""
-    youtube_key = env.get("YOUTUBE_API_KEY", "")
-    if not youtube_key.strip():
+    youtube_key = settings.youtube_api_key.strip()
+    if not youtube_key:
         return None
-    source = WebSearchVideoSource(model_key) if model_key.strip() else None
+    model_key = settings.dish_model_key
+    source = WebSearchVideoSource(model_key) if model_key else None
     return VideoFinder(
         YouTubeVerifier(youtube_key),
-        VideoStore.load(env.get("DISH_VIDEOS")),
+        VideoStore.load(settings.dish_videos or None),
         VideoCache(),
         source,
         checked=VideoCache(ttl=check_seconds(dishes, recipe_videos)),
@@ -69,26 +63,25 @@ class DishParts:
     index: IngredientIndex | None = None
 
 
-def build_dish_parts(env: Mapping[str, str] | None = None, model_key: str = "") -> DishParts:
-    """The parts of the running app. ``model_key`` is the key of the general model settings."""
-    env = os.environ if env is None else env
+def build_dish_parts(settings: Settings | None = None) -> DishParts:
+    """The parts of the running app, from the process environment unless settings are given."""
+    settings = Settings.from_env() if settings is None else settings
     # One rule for who owns what: the reviewed name table decides on the cards, in the addition
     # suggestions and in the recipe view (research/experiments/server_review, finding 4).
     names = RecipeNames.load()
     catalog = Catalog.load(names=names)
-    llm = build_chat_model(env, model_key)
-    stored_recipes = RecipeStore.load(env.get("DISH_RECIPES"))
+    llm = build_chat_model(settings)
+    stored_recipes = RecipeStore.load(settings.dish_recipes or None)
     recipes: RecipeBook = stored_recipes
-    youtube_key = env.get("YOUTUBE_API_KEY", "")
-    if youtube_key.strip():
+    youtube_key = settings.youtube_api_key.strip()
+    if youtube_key:
         retry = check_seconds(len(catalog), len(stored_recipes))
         recipes = CreditedRecipes(recipes, YouTubeVerifier(youtube_key), retry_seconds=retry)
     reviser = Reviser(catalog, names, llm, recipes)
-    key = dish_model_key(env, model_key)
     service = DishService(
         catalog,
         llm,
-        build_video_finder(env, key, dishes=len(catalog), recipe_videos=len(stored_recipes)),
+        build_video_finder(settings, dishes=len(catalog), recipe_videos=len(stored_recipes)),
         recipes,
         assumed=catalog.staples,
         names=names,

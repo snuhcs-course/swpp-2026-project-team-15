@@ -10,7 +10,6 @@ Run: uv run --env-file .env uvicorn app.main:create_app_from_env --factory
 """
 
 import logging
-import os
 
 from fastapi import FastAPI, HTTPException
 from google import genai
@@ -40,7 +39,7 @@ def create_app(
         description="Ingredient recognition and dish suggestions for one-person households.",
     )
     app.state.vision_provider = vision
-    app.state.dishes = dishes if dishes is not None else build_dish_parts({})
+    app.state.dishes = dishes if dishes is not None else build_dish_parts(Settings.from_env({}))
     app.include_router(vision_router)
     app.include_router(dishes_router)
     app.include_router(ingredients_router)
@@ -68,8 +67,8 @@ def create_app_from_env() -> FastAPI:
     settings = Settings.from_env()
     return create_app(
         _build_vision(settings),
-        build_dish_parts(os.environ, settings.openrouter_api_key),
-        build_telemetry_sink(os.environ),
+        build_dish_parts(settings),
+        build_telemetry_sink(settings),
     )
 
 

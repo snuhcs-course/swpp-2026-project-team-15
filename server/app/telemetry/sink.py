@@ -5,9 +5,10 @@ tests hand in a list. Created once in main.py and injected (no module-level inst
 import json
 import os
 import threading
-from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Protocol
+
+from app.config import Settings
 
 
 class TelemetrySink(Protocol):
@@ -40,7 +41,7 @@ class JsonlSink:
             pass  # see the role's contract
 
 
-def build_telemetry_sink(env: Mapping[str, str]) -> TelemetrySink | None:
+def build_telemetry_sink(settings: Settings) -> TelemetrySink | None:
     """None (collection off) unless TELEMETRY_FILE names a file in a writable folder."""
-    path = env.get("TELEMETRY_FILE", "").strip()
+    path = settings.telemetry_file.strip()
     return JsonlSink(path) if path else None

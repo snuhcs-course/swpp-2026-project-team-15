@@ -8,9 +8,9 @@ Needs the dish model key in the environment (OPENROUTER_API_KEY or DISH_LLM_API_
 
 import argparse
 import json
-import os
 from pathlib import Path
 
+from app.config import Settings
 from app.dishes.dependencies import build_dish_parts
 
 
@@ -20,7 +20,7 @@ def main() -> None:
     parser.add_argument("--calls", type=int, default=3)
     parser.add_argument("ingredients", nargs="+")
     args = parser.parse_args()
-    parts = build_dish_parts(dict(os.environ), os.environ.get("OPENROUTER_API_KEY", ""))
+    parts = build_dish_parts(Settings.from_env())
     service = parts.service
     answers = []
     llm = service.llm

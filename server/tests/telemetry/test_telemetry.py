@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from app.config import Settings
 from app.main import create_app
 from app.telemetry.sink import JsonlSink, build_telemetry_sink
 from tests.conftest import StubVision
@@ -115,8 +116,10 @@ def test_batches_are_bounded_and_ids_must_be_uuids():
 def test_collection_off_accepts_and_drops():
     client = TestClient(create_app(StubVision()))
     assert client.post("/telemetry/events", json=batch()).json() == {"accepted": 0}
-    assert build_telemetry_sink({}) is None
-    assert isinstance(build_telemetry_sink({"TELEMETRY_FILE": "/tmp/x.jsonl"}), JsonlSink)
+    assert build_telemetry_sink(Settings.from_env({})) is None
+    assert isinstance(
+        build_telemetry_sink(Settings.from_env({"TELEMETRY_FILE": "/tmp/x.jsonl"})), JsonlSink
+    )
 
 
 def test_each_request_is_recorded_by_route_template_without_body():

@@ -68,9 +68,10 @@ def main() -> None:
     # the app's builder; older trees fall back to their own builder.
     env = {"DISH_LLM_API_KEY": read_key(), "DISH_LLM_MODEL": llm_model}
     try:
+        from app.config import Settings  # noqa: E402
         from app.dishes.dependencies import build_dish_parts  # noqa: E402
 
-        service = build_dish_parts(env).service
+        service = build_dish_parts(Settings.from_env(env)).service
     except ImportError:
         from app.dishes.dependencies import build_dish_service  # noqa: E402
 
