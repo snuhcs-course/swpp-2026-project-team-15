@@ -1,8 +1,8 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-10-14; reviewed by Jaehyuk Choi.
 """Schemas shared across domains."""
 
-from sqlmodel import SQLModel
+from pydantic import BaseModel
 
 
-class ErrorResponse(SQLModel):
+class ErrorResponse(BaseModel):
     detail: str
