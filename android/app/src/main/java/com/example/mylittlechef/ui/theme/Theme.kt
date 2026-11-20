@@ -42,7 +42,14 @@ private val LightColorScheme = lightColorScheme(
     surface = Color(0xFFFFFFFF), onSurface = Color(0xFF1A3028),
     surfaceVariant = Color(0xFFF5F7F2), onSurfaceVariant = Color(0xFF485342),
     outline = Color(0xFF737F6B), outlineVariant = Color(0xFFE3E9E1),
-    errorContainer = Color(0xFFF9E7E2), onErrorContainer = Color(0xFF8A3D32)
+    errorContainer = Color(0xFFF9E7E2), onErrorContainer = Color(0xFF8A3D32),
+    // Same reason as the dark scheme: without these, dialogs, menus and selected chips use
+    // Material's default lavender in light mode (fresh-clone E2E, 2026-11-20).
+    secondaryContainer = Color(0xFFDDEBD5), onSecondaryContainer = Color(0xFF163412),
+    surfaceContainerLowest = Color(0xFFFFFFFF), surfaceContainerLow = Color(0xFFF7F9F5),
+    surfaceContainer = Color(0xFFF1F5EF), surfaceContainerHigh = Color(0xFFEBF0E8),
+    surfaceContainerHighest = Color(0xFFE5EBE2), surfaceBright = Color(0xFFFFFFFF),
+    surfaceDim = Color(0xFFD9DED6)
 )
 
 @Composable
