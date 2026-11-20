@@ -1,0 +1,28 @@
+# ADR 007: Beta-week usage data (telemetry)
+
+- **Status:** Accepted (2026-11-20)
+
+## Context
+
+Iteration 5 asks for a week of beta testing in the wild: "instrument your app to collect basic usage data" and "track meaningful metrics (e.g., task completion, time on task, errors)", read together with short interviews; the evaluation then summarises telemetry and usage data for the Wiki and the poster (Week 2-2 Project Overview, p.28–29, p.31). Week 12-2 shows analytics as the classic thing that spreads through every file (MiniShop `Analytics.kt`, p.4) and recommends separating what varies behind a role, depending on the interface and creating once and injecting instead of a global instance (p.29 and the Singleton slide). The server has no database and the API container's file system is read-only.
+
+## Decision
+
+- **What is sent.** A closed set of ten event names (`session_start`, `session_end`, `screen_view`, `fridge_add`, `recognition`, `dish_list`, `dish_open`, `recipe_view`, `revise`, `player_error`) with narrow fields only: time, dish id, count, duration, status, source of added items, screen, HTTP status. The server schema forbids any other field and checks patterns, so ingredient names, photos, nicknames and free text cannot be sent. Each batch carries a random install id (new after a data reset), a session id and the app version.
+- **Consent.** Nothing is sent until the first-run notice is answered; a switch in 내 정보 turns it off at any time (off: nothing is buffered or sent). The ⓘ dialog repeats what is and is not sent.
+- **App.** `Telemetry` is the role (`track`, `flush`); `RemoteTelemetry` buffers in memory and posts batches of 20 and when the app goes to the background, best effort (a failed post is dropped); `NoTelemetry` is the default for tests. One instance is created in `AppNavHost` and handed to the ViewModels that own the events (fridge, dish list, recipe session); screens only report which screen is shown and player errors through those ViewModels.
+- **Server.** `POST /telemetry/events` appends the events as JSON lines to `TELEMETRY_FILE`; a middleware adds one line per request (route template, status, time; never the body or the query), so server errors count for every app build. The sink is a one-method role (`TelemetrySink`) created once in `main.py`; unset `TELEMETRY_FILE` turns collection off. Compose mounts a writable `TELEMETRY_DIR` at `/telemetry`; the rest stays read-only.
+- **Summary.** `research/experiments/telemetry/summarize.py` turns the file into the task metrics of `research/experiments/telemetry/README.md`, each rate with its counts.
+
+## Consequences
+
+- Task metrics are derived from event order within a session on the server side; the app needs no task bookkeeping, and the definitions can change after the week without a new app build.
+- Usage before the notice is answered (most of onboarding) is not counted.
+- The phone's clock times the events; durations are differences on one phone, so clock offsets cancel, but times across phones are not comparable.
+- No authentication: anyone can post well-formed events to the demo server. Acceptable for a one-week demo; the file can be filtered by install id and app version.
+
+## Not now
+
+- No third-party analytics SDK (another data processor to disclose, and a dependency for ten events).
+- No retry queue or on-device storage of unsent events.
+- No per-screen dwell time or tap-level tracking.
