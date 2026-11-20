@@ -3,6 +3,7 @@ package com.example.mylittlechef.data.remote
 
 import com.example.mylittlechef.BuildConfig
 import com.google.gson.annotations.SerializedName
+import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -166,6 +167,7 @@ object DishApiClient {
         val http = OkHttpClient.Builder()
             .readTimeout(90, TimeUnit.SECONDS) // a suggestion or a video search can take a while
             .retryOnConnectionFailure(false)
+            .connectionPool(ConnectionPool(5, IDLE_CONNECTION_SECONDS, TimeUnit.SECONDS))
             .build()
         Retrofit.Builder()
             .baseUrl(BuildConfig.SERVER_BASE_URL)
