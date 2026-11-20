@@ -212,6 +212,21 @@ def test_prepared_unknown_request_consumes_http_attempt_budget():
     )
 
 
+def test_api_error_fixture_is_a_transport_failure_without_an_http_response():
+    value = read_json(fixture_root() / "observations/api-error__r01/attempt-001.json")
+    attempt = value["model_calls"][0]["http_attempts"][0]
+    assert value["execution"]["terminal_outcome"] == "api_error"
+    assert value["execution"]["outcome_source"] == "transport"
+    assert attempt["state"] == "transport_error"
+    assert attempt["delivery"] == "failed"
+    assert attempt["status_code"] is None
+    assert attempt["safe_response_text"] is None
+    assert value["telemetry"]["provider_round_trip_s"] == {
+        "applicability": "value",
+        "value": 0.25,
+    }
+
+
 def test_checkpoint_and_execution_attempt_numbers_are_positive():
     value = read_json(fixture_root() / "observations/resumed__r03/attempt-001.json")
     for path in (("execution_attempt",), ("execution", "checkpoint_revision")):

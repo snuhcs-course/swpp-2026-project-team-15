@@ -232,7 +232,7 @@
     },
     "provider_round_trip_s": {
       "applicability": "value",
-      "value": 2.0
+      "value": 2.25
     },
     "reasks": 2,
     "revision_s": {

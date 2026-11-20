@@ -234,6 +234,26 @@ def _prepared(index: int) -> dict:
     }
 
 
+def _transport_error(index: int) -> dict:
+    """Build a failed transport attempt without fabricating an HTTP response."""
+
+    return {
+        "index": index,
+        "state": "transport_error",
+        "prepared_at": STAMP,
+        "request_sha256": HASH,
+        "model": "fixture/model",
+        "counts_against_budget": True,
+        "delivery": "failed",
+        "status_code": None,
+        "provider_round_trip_s": 0.25,
+        "finish_reason": None,
+        "safe_response_text": None,
+        "usage": None,
+        "cost_usd": _cost(),
+    }
+
+
 def _call(index: int, purpose: str, attempts: list[dict], answer: Any, *, parsed=True) -> dict:
     """Build one logical call and keep JSON parsing distinct from answer structure."""
 
@@ -258,6 +278,7 @@ def _telemetry(calls: list[dict], *, interrupted=False) -> dict:
 
     attempts = [attempt for call in calls for attempt in call["http_attempts"]]
     received = [attempt for attempt in attempts if attempt["state"] == "response_received"]
+    timed = [attempt for attempt in attempts if attempt["provider_round_trip_s"] is not None]
     input_tokens = sum((a["usage"] or {}).get("input_tokens", 0) for a in received)
     output_tokens = sum((a["usage"] or {}).get("output_tokens", 0) for a in received)
     measured = [a["cost_usd"]["value"] for a in received if a["cost_usd"]["value"] is not None]
@@ -273,8 +294,8 @@ def _telemetry(calls: list[dict], *, interrupted=False) -> dict:
         "reasks": sum(call["purpose"] == "reask" for call in calls),
         "http_attempts": len(attempts),
         "http_429_retries": sum(a["status_code"] == 429 for a in attempts),
-        "provider_round_trip_s": _number(sum(a["provider_round_trip_s"] or 0 for a in received))
-        if received
+        "provider_round_trip_s": _number(sum(a["provider_round_trip_s"] for a in timed))
+        if timed
         else _number(applicability="not_applicable"),
         "revision_s": _number(0.8) if not interrupted else _number(),
         "observed_wall_s": _number(0.82) if not interrupted else _number(),
@@ -480,9 +501,7 @@ def fixture_observations() -> dict[str, dict]:
         [_http(1, text=json.dumps(revised_answer, ensure_ascii=False))],
         revised_answer,
     )
-    api_attempt = _http(1, status=503, cost=0)
-    api_attempt["state"] = "transport_error"
-    api_attempt["delivery"] = "failed"
+    api_attempt = _transport_error(1)
     return {
         "unchanged__r01/attempt-001.json": observation(
             "unchanged",

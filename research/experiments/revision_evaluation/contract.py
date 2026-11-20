@@ -168,6 +168,18 @@ class HttpAttempt(StrictModel):
             )
             if not unavailable:
                 raise ValueError("request_prepared must retain unknown response and cost fields")
+        elif self.state == "transport_error":
+            if not (
+                self.delivery == "failed"
+                and self.status_code is None
+                and self.finish_reason is None
+                and self.safe_response_text is None
+                and self.usage is None
+                and self.cost_usd.provenance == "missing"
+            ):
+                raise ValueError("transport_error cannot contain response-derived fields")
+        elif self.delivery != "confirmed" or self.status_code is None:
+            raise ValueError("response_received requires confirmed delivery and an HTTP status")
         return self
 
 

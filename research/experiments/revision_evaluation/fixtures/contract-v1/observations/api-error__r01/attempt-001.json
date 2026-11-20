@@ -98,7 +98,7 @@
           "request_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "safe_response_text": null,
           "state": "transport_error",
-          "status_code": 503,
+          "status_code": null,
           "usage": null
         }
       ],
@@ -145,8 +145,8 @@
       "value": 0.82
     },
     "provider_round_trip_s": {
-      "applicability": "not_applicable",
-      "value": null
+      "applicability": "value",
+      "value": 0.25
     },
     "reasks": 0,
     "revision_s": {
