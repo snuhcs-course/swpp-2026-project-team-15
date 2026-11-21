@@ -114,6 +114,34 @@ store the source observation identity so a Judge result remains auditable.
 
 ## Regeneration and validation
 
+### Offline command entry point
+
+From the repository root in PowerShell, using the existing server environment:
+
+```powershell
+$env:PYTHONPATH = "$PWD\server;$PWD\research"
+.\server\.venv\Scripts\python.exe -m experiments.revision_evaluation
+.\server\.venv\Scripts\python.exe -m experiments.revision_evaluation --cases R02a R01a --repetitions 3
+.\server\.venv\Scripts\python.exe -m experiments.revision_evaluation --validate-fixtures
+```
+
+Default invocation validates the committed contract bundle and prints a dry-run plan
+for all 36 frozen cases with one repetition each. `--cases` retains explicit input
+order. `--manifest` and `--recipes` accept alternate local schema-1 files; invalid,
+duplicate or unknown selections fail instead of silently filtering the manifest.
+`--fixture-root` selects a local contract bundle. Validation-only mode does not load
+the recipe/catalog configuration.
+
+These commands send no HTTP requests, construct no model, read no API key and
+create no run directory or artifacts. Printed bounds are conservative for a single
+execution of each planned repetition: zero to two logical calls, each with at most
+`1 + len(RETRY_WAITS)` HTTP attempts (currently three). They are not predictions or
+an enforced spending budget, and do not include resumed attempts. No-call branches
+and production time budgets can reduce the actual counts. Live/resume options are
+not enabled in this implementation step and are rejected.
+
+### Contract asset generation
+
 From `research/`:
 
 ```powershell
