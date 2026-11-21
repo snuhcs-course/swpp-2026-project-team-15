@@ -21,9 +21,7 @@ from tests.dishes.test_dishes import STAPLES
 from tests.dishes.test_revision import GOOD, RECIPE
 
 
-def run_execution(
-    *, traced, checkpoint_delay=0, call_duration=0, api_error=False, retry=False
-):
+def run_execution(*, traced, checkpoint_delay=0, call_duration=0, api_error=False, retry=False):
     """Run production call/retry/check code with injected clocks and mock HTTP."""
     now, sends = [0.0], []
 
@@ -100,7 +98,10 @@ def test_api_error_preserves_production_message_and_call_counts():
 def test_real_provider_time_still_exhausts_retry_budget():
     plain = run_execution(traced=False, retry=True, call_duration=CALL_BUDGET + 0.01)
     traced = run_execution(
-        traced=True, retry=True, call_duration=CALL_BUDGET + 0.01, checkpoint_delay=90,
+        traced=True,
+        retry=True,
+        call_duration=CALL_BUDGET + 0.01,
+        checkpoint_delay=90,
     )
     assert plain[0] is traced[0] is None
     assert plain[1] == traced[1] == "The model service is temporarily unavailable"
@@ -128,7 +129,8 @@ def test_slow_checkpoints_preserve_retry_reask_and_timeout_decisions(retry):
     assert traced[4].checkpoint_persistence_s == 2 * len(traced[3]) * APP_READ_SECONDS
     assert all(
         attempt.provider_round_trip_s == 0.25
-        for call in traced[2].calls for attempt in call.http_attempts
+        for call in traced[2].calls
+        for attempt in call.http_attempts
     )
     # Observed wall time includes persistence; policy time retains actual HTTP time.
     assert traced[4].policy_time() == 0.25 * len(traced[3])

@@ -49,9 +49,7 @@ def test_records_one_logical_call_without_changing_the_returned_answer():
 
 
 def test_records_ordered_initial_and_reask_calls():
-    recorder = LogicalModelCallRecorder(
-        FakeModel([("{}", {"n": 1}), ("{}", {"n": 2})])
-    )
+    recorder = LogicalModelCallRecorder(FakeModel([("{}", {"n": 1}), ("{}", {"n": 2})]))
 
     call(recorder, "initial")
     call(recorder, "reask")

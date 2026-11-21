@@ -6,11 +6,6 @@ from copy import deepcopy
 
 import httpx
 import pytest
-from app.dishes.catalog import Catalog
-from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError
-from app.dishes.llm import DishLLM
-from app.dishes.recipes import RecipeStore
-from app.dishes.schemas import ReviseResponse, SourceRecipe
 from experiments.revision_evaluation.checkpointing import (
     AttemptCheckpointer,
     CheckpointModelCallRecorder,
@@ -22,6 +17,12 @@ from experiments.revision_evaluation.generate_contract import fixture_observatio
 from experiments.revision_evaluation.outcomes import classify_terminal, persist_terminal
 from experiments.revision_evaluation.persistence import PersistenceError, RunStore
 from experiments.revision_evaluation.transport import CheckpointError
+
+from app.dishes.catalog import Catalog
+from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError
+from app.dishes.llm import DishLLM
+from app.dishes.recipes import RecipeStore
+from app.dishes.schemas import ReviseResponse, SourceRecipe
 from tests.dishes.test_dishes import STAPLES
 from tests.dishes.test_revision import GOOD, RECIPE
 from tests.experiments.revision_evaluation.test_checkpointing import initial_observation

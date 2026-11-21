@@ -4,15 +4,16 @@
 from dataclasses import FrozenInstanceError
 
 import pytest
+from experiments.revision_evaluation import staples
+from experiments.revision_evaluation.contract import Observation, PlanUnit, RunMetadata
+from experiments.revision_evaluation.generate_contract import fixture_metadata, fixture_observations
+from experiments.revision_evaluation.staples import StaplesRunStore, StaplesSnapshot
+
 from app.dishes import catalog as catalog_module
 from app.dishes import recipe_names
 from app.dishes.recipe_names import RecipeNames
 from app.dishes.revision import Reviser
 from app.dishes.schemas import SourceRecipe
-from experiments.revision_evaluation import staples
-from experiments.revision_evaluation.contract import Observation, PlanUnit, RunMetadata
-from experiments.revision_evaluation.generate_contract import fixture_metadata, fixture_observations
-from experiments.revision_evaluation.staples import StaplesRunStore, StaplesSnapshot
 
 
 def artifacts(snapshot):

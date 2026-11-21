@@ -6,11 +6,6 @@ from copy import deepcopy
 
 import httpx
 import pytest
-from app.dishes.catalog import Catalog
-from app.dishes.errors import DishLLMError
-from app.dishes.llm import DishLLM
-from app.dishes.recipes import RecipeStore
-from app.dishes.schemas import SourceRecipe
 from experiments.revision_evaluation import persistence
 from experiments.revision_evaluation.checkpointing import (
     AttemptCheckpointer,
@@ -21,6 +16,12 @@ from experiments.revision_evaluation.checkpointing import (
 from experiments.revision_evaluation.contract import Observation
 from experiments.revision_evaluation.persistence import RunStore
 from experiments.revision_evaluation.transport import CheckpointError
+
+from app.dishes.catalog import Catalog
+from app.dishes.errors import DishLLMError
+from app.dishes.llm import DishLLM
+from app.dishes.recipes import RecipeStore
+from app.dishes.schemas import SourceRecipe
 from tests.dishes.test_dishes import STAPLES
 from tests.dishes.test_revision import GOOD, RECIPE
 from tests.experiments.revision_evaluation.test_checkpointing import initial_observation
