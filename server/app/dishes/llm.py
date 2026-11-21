@@ -1,4 +1,7 @@
 # AI-generated with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
+
+# Modified by Codex (GPT-6.1 Sol), 2026-11-21; reviewed by Soohyun An
+# Changes: inject clock to exclude checkpoint overhead
 """One bounded OpenRouter text call with a strict JSON schema; no secret-bearing errors."""
 
 import json
