@@ -88,8 +88,9 @@ class RecordingTransport(httpx.BaseTransport):
 
     `checkpoint` receives an isolated call snapshot and must return only after it
     is durably saved, or raise. Atomic file persistence is supplied by the Runner.
-    The injected clock measures provider and checkpoint durations independently;
-    policy-clock isolation is integrated separately before live execution.
+    The injected clock measures provider and checkpoint durations independently.
+    Pass `policy_time` to both DishLLM and Reviser to exclude checkpoint duration
+    from retry, timeout, and re-ask decisions while retaining observed wall time.
     """
 
     def __init__(
@@ -103,6 +104,10 @@ class RecordingTransport(httpx.BaseTransport):
         self._checkpoint = checkpoint
         self._clock = clock
         self.checkpoint_persistence_s = 0.0
+
+    def policy_time(self) -> float:
+        """Return a shared policy clock with completed checkpoint intervals removed."""
+        return self._clock() - self.checkpoint_persistence_s
 
     def _save(self, call: LogicalCallTrace) -> None:
         """Make checkpoint failures escape DishLLM's response/transport error handlers."""

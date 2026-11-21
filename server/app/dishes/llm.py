@@ -4,6 +4,7 @@
 import json
 import logging
 import time
+from collections.abc import Callable
 
 import httpx
 
@@ -30,6 +31,7 @@ class DishLLM:
         *,
         transport=None,
         retry_waits: tuple[float, ...] = RETRY_WAITS,
+        clock: Callable[[], float] = time.monotonic,
     ):
         if not api_key.strip():
             raise ValueError("an API key is required")
@@ -37,6 +39,8 @@ class DishLLM:
         self._model = model
         self._transport = transport
         self._retry_waits = retry_waits
+        # Research tracing can exclude checkpoint I/O from the shared policy clock.
+        self._clock = clock
 
     def complete(
         self, system: str, user: str, name: str, schema: dict, max_tokens: int | None = None
@@ -55,7 +59,7 @@ class DishLLM:
             "max_tokens": max_tokens or MAX_TOKENS,
             "temperature": 0,
         }
-        started = time.monotonic()
+        started = self._clock()
         try:
             with httpx.Client(
                 timeout=CALL_TIMEOUT, transport=self._transport, follow_redirects=False
@@ -68,6 +72,7 @@ class DishLLM:
                     headers,
                     waits=self._retry_waits,
                     budget=CALL_BUDGET,
+                    clock=self._clock,
                 )
             if response.status_code == 429 or response.status_code >= 500:
                 raise DishLLMError("The model service is temporarily unavailable")
@@ -79,7 +84,7 @@ class DishLLM:
             log.info(
                 "dish model call %s: %.1fs, finish=%s, tokens in=%s out=%s",
                 name,
-                time.monotonic() - started,
+                self._clock() - started,
                 choice.get("finish_reason"),
                 usage.get("prompt_tokens"),
                 usage.get("completion_tokens"),
