@@ -1,4 +1,5 @@
 # AI-assisted with Codex, 2026-11-21; reviewed by Soohyun An
+# AI-assisted shared checkpoint-duration refactor with Codex, 2026-11-21; reviewed by Soohyun An
 """HTTP recording around the production model's injectable synchronous transport."""
 
 from __future__ import annotations
@@ -99,11 +100,22 @@ class RecordingTransport(httpx.BaseTransport):
         *,
         checkpoint: Callable[[LogicalCallTrace], None],
         clock: Callable[[], float] = time.monotonic,
+        checkpoint_duration: Callable[[], float] | None = None,
     ) -> None:
         self._transport = transport
         self._checkpoint = checkpoint
         self._clock = clock
-        self.checkpoint_persistence_s = 0.0
+        self._checkpoint_duration = checkpoint_duration
+        self._local_checkpoint_s = 0.0
+
+    @property
+    def checkpoint_persistence_s(self) -> float:
+        """Use the checkpoint owner's duration when integrated; otherwise measure locally."""
+        return (
+            self._checkpoint_duration()
+            if self._checkpoint_duration is not None
+            else self._local_checkpoint_s
+        )
 
     def policy_time(self) -> float:
         """Return a shared policy clock with completed checkpoint intervals removed."""
@@ -111,7 +123,7 @@ class RecordingTransport(httpx.BaseTransport):
 
     def _save(self, call: LogicalCallTrace) -> None:
         """Make checkpoint failures escape DishLLM's response/transport error handlers."""
-        started = self._clock()
+        started = self._clock() if self._checkpoint_duration is None else None
         try:
             self._checkpoint(deepcopy(call))
         except Exception:  # noqa: BLE001 - every persistence failure must stop billing
@@ -119,7 +131,9 @@ class RecordingTransport(httpx.BaseTransport):
             # failure: that would allow the Runner to start another paid request.
             raise CheckpointError("checkpoint persistence failed") from None
         finally:
-            self.checkpoint_persistence_s += self._clock() - started
+            # A connected checkpointer owns accounting, avoiding overlapping timers.
+            if self._checkpoint_duration is None:
+                self._local_checkpoint_s += self._clock() - started
 
     def handle_request(self, request: httpx.Request) -> httpx.Response:
         """Checkpoint intent, delegate unchanged, then checkpoint allowlisted evidence."""

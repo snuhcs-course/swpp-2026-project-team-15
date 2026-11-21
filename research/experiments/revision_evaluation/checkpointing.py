@@ -1,72 +1,25 @@
 # AI-assisted with Codex, 2026-11-21; reviewed by Soohyun An
+# AI-assisted timing/aggregation ownership refactor with Codex, 2026-11-21; reviewed by Soohyun An
 """Connect research trace boundaries to durable, incrementing attempt snapshots."""
 
 import hashlib
 import json
 import time
 from collections.abc import Callable
+from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
 from datetime import UTC, datetime
 
 import httpx
+from app.dishes.errors import DishLLMError
 
-from .contract import CheckEvent, Cost, ModelCall, Observation, OptionalNumber, TokenTotal
+from . import telemetry
+from .contract import CheckEvent, ModelCall, Observation
 from .persistence import RunStore
 from .reviser import TracedReviser
 from .tracing import LogicalCallTrace, LogicalModelCallRecorder, active_logical_call
 from .transport import CheckpointError, RecordingTransport
-
-
-def _refresh_evidence_totals(value: Observation) -> None:
-    """Keep checkpoint counts and known usage auditable; do not estimate absent usage.
-
-    Cumulative run aggregation, pricing estimates and latency accounting belong
-    to the telemetry layer. These totals cover only this checkpoint's evidence.
-    """
-    calls = value.model_calls
-    attempts = [attempt for call in calls for attempt in call.http_attempts]
-    totals = value.telemetry
-    totals.logical_calls = len(calls)
-    totals.reasks = sum(call.purpose == "reask" for call in calls)
-    totals.http_attempts = len(attempts)
-    totals.http_429_responses = sum(attempt.status_code == 429 for attempt in attempts)
-    totals.http_429_retries = sum(
-        attempt.status_code == 429 for call in calls for attempt in call.http_attempts[:-1]
-    )
-    durations = [attempt.provider_round_trip_s for attempt in attempts]
-    timed = bool(durations) and all(duration is not None for duration in durations)
-    totals.provider_round_trip_s = OptionalNumber(
-        applicability="value" if timed else "unavailable" if attempts else "not_applicable",
-        value=sum(durations) if timed else None,
-    )
-    for name in type(totals.tokens).model_fields:
-        entries = [getattr(attempt.usage, name) if attempt.usage else None for attempt in attempts]
-        subtotal = sum(entry for entry in entries if entry is not None)
-        complete = bool(entries) and all(entry is not None for entry in entries)
-        setattr(
-            totals.tokens,
-            name,
-            TokenTotal(
-                applicability="value"
-                if complete
-                else "unavailable"
-                if entries
-                else "not_applicable",
-                value=subtotal if complete else None,
-                confirmed_subtotal=subtotal,
-            ),
-        )
-    costs = [attempt.cost_usd for attempt in attempts]
-    measured = bool(costs) and all(cost.provenance == "measured" for cost in costs)
-    subtotal = sum(cost.confirmed_subtotal for cost in costs)
-    totals.cost_usd = Cost(
-        applicability="value" if measured else "unavailable" if costs else "not_applicable",
-        value=subtotal if measured else None,
-        confirmed_subtotal=subtotal,
-        provenance="measured" if measured else "missing" if costs else "not_applicable",
-        price_inputs=None,
-    )
 
 
 class AttemptCheckpointer:
@@ -79,7 +32,12 @@ class AttemptCheckpointer:
     """
 
     def __init__(
-        self, store: RunStore, initial: Observation, *, clock: Callable[[], float] = time.monotonic
+        self,
+        store: RunStore,
+        initial: Observation,
+        *,
+        clock: Callable[[], float] = time.monotonic,
+        prices: telemetry.TokenPrices | None = None,
     ) -> None:
         value = Observation.model_validate(initial.model_dump(by_alias=True))
         if (
@@ -97,7 +55,10 @@ class AttemptCheckpointer:
             raise ValueError("checkpointer requires a fresh running attempt")
         self.store, self._clock = store, clock
         self.checkpoint_persistence_s = 0.0
-        _refresh_evidence_totals(value)
+        self.prices = prices
+        self._timing = telemetry.RevisionTiming()
+        self._window = None
+        self._measured = False
         self.observation = value
         self.reference = self._publish(value)
 
@@ -106,14 +67,49 @@ class AttemptCheckpointer:
         return self._clock() - self.checkpoint_persistence_s
 
     def _publish(self, value: Observation) -> str:
-        """Fail closed with a safe exception, without promoting an unwritten snapshot."""
+        """Aggregate once and persist, measuring their single enclosing interval."""
         started = self._clock()
         try:
-            return self.store.write_observation(value)
+            timing = self._timing
+            if self._window is not None:
+                timing = telemetry.RevisionTiming(
+                    checkpoint_persistence_s=self.checkpoint_persistence_s - self._window[1]
+                )
+            value.telemetry = telemetry.attempt_telemetry(
+                value.model_calls, timing=timing, prices=self.prices
+            )
+            checked = Observation.model_validate(value.model_dump(by_alias=True))
+            return self.store.write_observation(checked)
         except Exception:  # noqa: BLE001 - persistence errors must escape model error handling
             raise CheckpointError("checkpoint persistence failed") from None
         finally:
             self.checkpoint_persistence_s += self._clock() - started
+
+    @contextmanager
+    def measure_revision(self):
+        """Measure one revise() call; initial/final artifact publication stays outside.
+
+        Successful returns and model errors have complete durations. Operational
+        interruptions retain checkpoint overhead without inventing final latency.
+        """
+        if self._measured:
+            raise ValueError("Revision timing window can only be measured once")
+        self._measured = True
+        self._window = (self._clock(), self.checkpoint_persistence_s)
+        completed = False
+        try:
+            yield
+            completed = True
+        except DishLLMError:
+            completed = True
+            raise
+        finally:
+            started, overhead = self._window
+            self._timing = telemetry.RevisionTiming(
+                observed_wall_s=self._clock() - started if completed else None,
+                checkpoint_persistence_s=self.checkpoint_persistence_s - overhead,
+            )
+            self._window = None
 
     def _save(self, stage: str, *, call=None, checks=None, terminal=None) -> None:
         """Advance one revision on an isolated copy, preserving prior attempt evidence."""
@@ -151,10 +147,9 @@ class AttemptCheckpointer:
                     **terminal,
                 }
             )
-        _refresh_evidence_totals(value)
-        checked = Observation.model_validate(value.model_dump(by_alias=True))
-        self._publish(checked)
-        self.observation = checked
+        # Counts are refreshed by the sole aggregation call before contract validation.
+        self._publish(value)
+        self.observation = value
 
     def record_http(self, call: LogicalCallTrace) -> None:
         """Persist prepared identity or completed HTTP evidence before control returns."""
@@ -200,7 +195,12 @@ class CheckpointTransport(RecordingTransport):
         self, transport: httpx.BaseTransport, *, checkpointer: AttemptCheckpointer
     ) -> None:
         self.checkpointer = checkpointer
-        super().__init__(transport, checkpoint=checkpointer.record_http, clock=checkpointer._clock)
+        super().__init__(
+            transport,
+            checkpoint=checkpointer.record_http,
+            clock=checkpointer._clock,
+            checkpoint_duration=lambda: checkpointer.checkpoint_persistence_s,
+        )
 
     def handle_request(self, request: httpx.Request) -> httpx.Response:
         """Save received usage first, then parse evidence before returning to DishLLM."""
