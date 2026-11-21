@@ -1,4 +1,4 @@
-# AI-assisted with Codex, 2026-11-21; human review pending.
+# AI-assisted with Codex, 2026-11-21; reviewed by Soohyun An
 """Observe production Revision checks without replacing their decisions."""
 
 import time

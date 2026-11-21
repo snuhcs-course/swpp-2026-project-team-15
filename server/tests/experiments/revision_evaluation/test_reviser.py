@@ -1,4 +1,4 @@
-# AI-assisted with Codex, 2026-11-21; human review pending.
+# AI-assisted with Codex, 2026-11-21; reviewed by Soohyun An
 """Behavioral parity of traced and untraced production Revision checks."""
 
 from copy import deepcopy
