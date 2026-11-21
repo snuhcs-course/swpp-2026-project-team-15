@@ -53,6 +53,15 @@ def planned_bounds(plan: ExecutionPlan) -> dict:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Keep existing diagnostics, but never expose an unexpected exception traceback."""
+    try:
+        return _main(argv)
+    except Exception:  # noqa: BLE001 - the console boundary must not echo private exceptions
+        print("evaluation command failed", file=sys.stderr)
+        return 2
+
+
+def _main(argv: Sequence[str] | None = None) -> int:
     """Validate fixtures and print a read-only plan by default, never constructing a model.
 
     Validation-only mode does not require recipe/catalog/availability configuration.

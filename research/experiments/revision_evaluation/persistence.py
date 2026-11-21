@@ -8,7 +8,12 @@ import re
 import tempfile
 from pathlib import Path
 
-from .contract import Observation, RunMetadata, validate_plan_unit_observations
+from .contract import (
+    Observation,
+    RunMetadata,
+    RunSummary,
+    validate_plan_unit_observations,
+)
 from .telemetry import validate_cumulative_telemetry
 
 
@@ -53,6 +58,12 @@ def _redact(value, secrets: tuple[str, ...]):
         for secret in secrets:
             value = value.replace(secret, "[REDACTED]")
     return value
+
+
+def _require_safe(value, secrets: tuple[str, ...]) -> None:
+    """Reject redaction collisions rather than silently changing identity or audit evidence."""
+    if _redact(value, secrets) != value:
+        raise PersistenceError("protected content cannot be recorded faithfully")
 
 
 def _preserve_evidence(previous, current) -> None:
@@ -170,6 +181,7 @@ class RunStore:
         self._secrets = tuple(
             sorted((secret for secret in secrets if secret), key=len, reverse=True)
         )
+        _require_safe(run_id, self._secrets)
 
     @classmethod
     def _open_existing(cls, root: Path, *, run_id: str, secrets: tuple[str, ...] = ()):
@@ -195,8 +207,10 @@ class RunStore:
             raise ValueError("artifact reference must stay inside the run")
         return path
 
-    def _write(self, relative: str, value: dict) -> None:
-        """Flush a same-directory temporary file, then replace the target atomically."""
+    def _write(self, relative: str, value: dict | str) -> None:
+        """Reject unsafe content before a temporary file, then atomically publish JSON or text."""
+        _require_safe(relative, self._secrets)
+        _require_safe(value, self._secrets)
         path = self._path(relative)
         temporary = None
         try:
@@ -207,10 +221,13 @@ class RunStore:
             )
             temporary = Path(name)
             with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
-                json.dump(
-                    value, stream, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False
-                )
-                stream.write("\n")
+                if isinstance(value, str):
+                    stream.write(value)
+                else:
+                    json.dump(
+                        value, stream, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False
+                    )
+                    stream.write("\n")
                 stream.flush()
                 os.fsync(stream.fileno())
             # No truncation of the old target occurs before the replacement.
@@ -227,6 +244,9 @@ class RunStore:
     def write_observation(self, observation: Observation) -> str:
         """Save a new attempt or replace only its still-running checkpoint; return its ref."""
         value = Observation.model_validate(observation.model_dump(by_alias=True))
+        # Errors are presentation-only. All actual source/response/check evidence
+        # is guarded at the atomic boundary instead of rewritten before scoring.
+        value.execution.sanitized_error = _redact(value.execution.sanitized_error, self._secrets)
         if value.run_id != self.run_id:
             raise ValueError("observation belongs to a different run")
         relative = (
@@ -281,8 +301,46 @@ class RunStore:
             if unit.state != expected:
                 raise ValueError("plan state does not match saved attempts")
             validate_cumulative_telemetry(unit, observations)
-        sanitized = _redact(value.model_dump(by_alias=True), self._secrets)
+        original = value.model_dump(by_alias=True)
+        sanitized = _redact(original, self._secrets)
+        # Preserve existing masking of optional configuration notes/credentials,
+        # but never silently alter the identity or plan advertised by metadata.
+        for field in (
+            "artifact_schema", "observation_schema", "run_id", "compatibility_fingerprint",
+            "code_identity", "identities", "effective_assumed_staples", "plan", "pricing",
+            "created_at", "updated_at",
+        ):
+            if sanitized[field] != original[field]:
+                raise PersistenceError("protected content cannot be recorded faithfully")
+        for field in ("id", "temperature", "max_tokens"):
+            if sanitized["model"].get(field) != original["model"].get(field):
+                raise PersistenceError("protected content cannot be recorded faithfully")
         checked = RunMetadata.model_validate(sanitized)
+        # Contract-only legacy metadata may have illustrative fingerprints and
+        # extension notes. A real immutable fingerprint must survive redaction.
+        from .compatibility import compatibility_fingerprint
+
+        if (
+            compatibility_fingerprint(value) == value.compatibility_fingerprint
+            and compatibility_fingerprint(checked) != checked.compatibility_fingerprint
+        ):
+            raise PersistenceError("protected content cannot be recorded faithfully")
         if checked.run_id != self.run_id:
             raise ValueError("redaction cannot change run identity")
         self._write("metadata.json", checked.model_dump(by_alias=True))
+
+    def write_summary(self, summary: RunSummary, *, markdown: bool = False) -> None:
+        """Publish guarded authoritative JSON and optionally its deterministic Markdown view."""
+        from .reporting import render_summary
+
+        value = RunSummary.model_validate(summary.model_dump(by_alias=True))
+        if value.run_id != self.run_id:
+            raise ValueError("summary belongs to a different run")
+        data = value.model_dump(by_alias=True)
+        _require_safe(data, self._secrets)
+        text = render_summary(value) if markdown else None
+        if text is not None:
+            _require_safe(text, self._secrets)
+        self._write("summary.json", data)
+        if text is not None:
+            self._write("summary.md", text)

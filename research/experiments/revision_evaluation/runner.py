@@ -4,6 +4,7 @@
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import wraps
 from pathlib import Path
 
 import httpx
@@ -26,7 +27,7 @@ from .contract import (
 from .evaluation import evaluate_observation
 from .live import LiveSettings, make_live_model, require_live_key
 from .outcomes import persist_terminal
-from .persistence import _case_directory
+from .persistence import PersistenceError, _case_directory, _redact, _require_safe
 from .planning import ExecutionPlan, publish_plan
 from .staples import StaplesSnapshot
 from .summary import summarize_run
@@ -36,6 +37,30 @@ from .telemetry import RevisionTiming, aggregate_telemetry, attempt_telemetry
 def _now() -> str:
     """Use explicit UTC for persisted timestamps, independent of the host timezone."""
     return datetime.now(UTC).isoformat()
+
+
+def _safe_run_errors(function):
+    """Suppress credential-bearing exception text without reclassifying ordinary stops."""
+
+    @wraps(function)
+    def guarded(*args, **kwargs):
+        key = require_live_key(kwargs.get("allow_live_api", False))
+        try:
+            return function(*args, **kwargs)
+        except BaseException as error:
+            if _redact(str(error), (key,)) != str(error):
+                # Preserve callers' existing exception-type handling when its
+                # constructor accepts safe text; never reuse private args/cause.
+                try:
+                    safe = type(error)("evaluation execution failed")
+                    if _redact(str(safe), (key,)) != str(safe):
+                        safe = PersistenceError("evaluation execution failed")
+                except Exception:  # noqa: BLE001 - custom exception constructors may require other args
+                    safe = PersistenceError("evaluation execution failed")
+                raise safe from None
+            raise
+
+    return guarded
 
 
 class _EvaluatedStore(BudgetedRunStore):
@@ -104,7 +129,9 @@ def _reconcile(durable: BudgetState) -> tuple[RunMetadata, dict[str, Observation
     if len(declared) != len(set(declared)):
         raise ValueError("observation references must be unique")
     if not set(declared).issubset(observations):
-        raise ValueError("observation references do not match their execution identities")
+        raise ValueError(
+            "observation references do not match their execution identities"
+        )
     for unit in metadata.plan:
         validate_plan_unit_observations(
             unit, [observations[ref] for ref in unit.observation_refs]
@@ -152,7 +179,7 @@ def _publish_progress(store: _EvaluatedStore, *, state: str) -> RunSummary:
     metadata.updated_at = _now()
     metadata.state = state
     summary = summarize_run(metadata, observations, generated_at=metadata.updated_at)
-    store._write("summary.json", summary.model_dump(by_alias=True))
+    store.write_summary(summary)
     store.write_metadata(metadata)
     return summary
 
@@ -180,6 +207,7 @@ def _validate_inputs(
             raise ValueError("execution inputs no longer match the frozen plan")
 
 
+@_safe_run_errors
 def run_new(
     plan: ExecutionPlan,
     metadata: RunMetadata,
@@ -235,6 +263,11 @@ def run_new(
     # A self-consistent metadata fingerprint does not bind it to the actual
     # execution inputs. Compare the entire map to reject missing/extra cases too.
     _validate_inputs(frozen, seed.identities.input_sha256, snapshot, catalog, recipes)
+    _require_safe(seed.model_dump(by_alias=True), (key,))
+    _require_safe(
+        {case: value.model_dump() for case, value in frozen.inputs.items()}, (key,)
+    )
+    _require_safe([unit.model_dump() for unit in frozen.units], (key,))
     store = _EvaluatedStore(
         parent, seed.run_id, maximum=settings.maximum, snapshot=snapshot, secrets=(key,)
     )
@@ -251,6 +284,7 @@ def run_new(
     )
 
 
+@_safe_run_errors
 def run_resume(
     root: Path,
     plan: ExecutionPlan,
@@ -300,6 +334,9 @@ def run_resume(
     # match the store's existing path policy, so unknown/unindexed evidence cannot
     # be ignored while calculating new attempt identities or budget consumption.
     metadata, observations = _reconcile(durable)
+    _require_safe(metadata.model_dump(by_alias=True), (key,))
+    for item in observations.values():
+        _require_safe(item.model_dump(by_alias=True), (key,))
     for ref, item in observations.items():
         path = root.resolve() / ref
         if not path.resolve().is_relative_to(root.resolve()) or not path.is_file():
