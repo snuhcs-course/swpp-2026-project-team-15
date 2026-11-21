@@ -1,4 +1,4 @@
-# AI-generated with Codex (GPT-5.6 Sol), 2026-11-21; reviewed by Soohyun An
+# AI-generated with Codex (GPT-6.1 Sol), 2026-11-21; reviewed by Soohyun An
 """Research-only tracing adapters for the production dish Revision path."""
 
 from __future__ import annotations
@@ -11,6 +11,8 @@ from typing import Any, Literal
 
 from app.dishes.errors import MODEL_NOT_CONFIGURED, DishLLMError
 from app.dishes.roles import ChatModel
+
+from .contract import HttpAttempt
 
 # Match production's fixed messages exactly: an exception's type alone does not
 # guarantee that a different ChatModel implementation supplied safe text.
@@ -53,6 +55,7 @@ class LogicalCallTrace:
     index: int
     purpose: Literal["initial", "reask"]
     request: RecordedRequest
+    http_attempts: list[HttpAttempt] = field(default_factory=list)
     safe_response_text: str | None = None
     parsing: ParsingTrace = field(default_factory=ParsingTrace)
     decoded_answer: Any = None
@@ -62,6 +65,14 @@ class LogicalCallTrace:
 _active_call: ContextVar[LogicalCallTrace | None] = ContextVar(
     "revision_evaluation_active_call", default=None
 )
+
+
+def active_logical_call() -> LogicalCallTrace:
+    """Return the current call, rejecting uncorrelated HTTP sends before delegation."""
+    call = _active_call.get()
+    if call is None:
+        raise RuntimeError("no logical model call is active")
+    return call
 
 
 def record_safe_response_text(text: str) -> None:
