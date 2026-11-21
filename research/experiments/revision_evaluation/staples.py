@@ -79,6 +79,11 @@ class StaplesRunStore(RunStore):
     def __init__(
         self, parent: Path, run_id: str, *, snapshot: StaplesSnapshot, secrets: tuple[str, ...] = ()
     ) -> None:
+        self._bind_snapshot(snapshot, secrets)
+        super().__init__(parent, run_id, secrets=secrets)
+
+    def _bind_snapshot(self, snapshot: StaplesSnapshot, secrets: tuple[str, ...]) -> None:
+        """Apply the same policy/redaction validation for fresh and reopened stores."""
         self._snapshot = snapshot
         # Redaction must not silently change the policy that the artifacts claim
         # was used. A credential/name collision cannot be represented faithfully.
@@ -86,7 +91,20 @@ class StaplesRunStore(RunStore):
             snapshot.names
         ):
             raise ValueError("redaction would change the assumed-staples snapshot")
-        super().__init__(parent, run_id, secrets=secrets)
+
+    @classmethod
+    def _open_existing(
+        cls,
+        root: Path,
+        *,
+        run_id: str,
+        snapshot: StaplesSnapshot,
+        secrets: tuple[str, ...] = (),
+    ):
+        """Initialize captured policy without invoking the exclusive-creation constructor."""
+        store = super()._open_existing(root, run_id=run_id, secrets=secrets)
+        store._bind_snapshot(snapshot, secrets)
+        return store
 
     @property
     def snapshot(self) -> StaplesSnapshot:

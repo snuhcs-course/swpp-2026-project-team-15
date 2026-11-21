@@ -4,10 +4,10 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from .compatibility import load_resume_metadata
+from .compatibility import compatibility_fingerprint, load_resume_metadata
 from .contract import HttpAttemptBudget, Observation, RunMetadata
 from .persistence import PersistenceError
-from .staples import StaplesRunStore
+from .staples import StaplesRunStore, StaplesSnapshot
 
 
 class BudgetExceeded(RuntimeError):
@@ -93,7 +93,46 @@ class BudgetedRunStore(StaplesRunStore):
         if type(maximum) is not int or maximum < 1:
             raise ValueError("HTTP-attempt maximum must be a positive integer")
         self._maximum = maximum
+        self._preserved_attempts = frozenset()
         super().__init__(parent, run_id, **kwargs)
+
+    @classmethod
+    def open_existing(
+        cls,
+        root: Path,
+        *,
+        snapshot: StaplesSnapshot,
+        maximum: int,
+        secrets: tuple[str, ...] = (),
+    ):
+        """Reopen a structurally valid incomplete run without writing or resetting its cap.
+
+        The runner separately compares current code/input configuration before
+        calling this method. All preexisting attempts, even running checkpoints,
+        are frozen for this store's lifetime; resumed work needs a new identity.
+        """
+        if type(maximum) is not int or maximum < 1:
+            raise ValueError("HTTP-attempt maximum must be a positive integer")
+        state = read_run_budget(root, maximum=maximum)
+        metadata = state.metadata
+        if (
+            metadata.state == "completed"
+            or compatibility_fingerprint(metadata) != metadata.compatibility_fingerprint
+            or tuple(metadata.effective_assumed_staples) != snapshot.names
+            or any(
+                tuple(item.input.effective_assumed_staples) != snapshot.names
+                for item in state.observations
+            )
+        ):
+            raise ValueError("existing run is not compatible with the store policy")
+        store = cls._open_existing(
+            root, run_id=metadata.run_id, snapshot=snapshot, secrets=secrets
+        )
+        store._maximum = metadata.http_attempt_budget.maximum
+        store._preserved_attempts = frozenset(
+            _identity(item) for item in state.observations
+        )
+        return store
 
     @property
     def maximum(self) -> int:
@@ -103,6 +142,8 @@ class BudgetedRunStore(StaplesRunStore):
     def write_observation(self, observation: Observation) -> str:
         """Reject over-budget intent before the inherited durable pre-send write."""
         value = Observation.model_validate(observation.model_dump(by_alias=True))
+        if _identity(value) in self._preserved_attempts:
+            raise ValueError("pre-resume attempts are immutable")
         state = read_run_budget(self.root, maximum=self.maximum)
         if state.metadata.state == "completed":
             raise ValueError("completed runs are immutable")

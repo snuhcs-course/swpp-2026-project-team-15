@@ -1,5 +1,5 @@
 # AI-assisted with Codex, 2026-11-21; reviewed by Soohyun An
-"""Sequential fresh-run assembly; CLI wiring and compatible store reopening are separate."""
+"""Sequential fresh/resumed research runs; CLI wiring remains separate."""
 
 import time
 from collections.abc import Callable
@@ -10,15 +10,18 @@ import httpx
 from app.dishes.errors import DishLLMError
 from app.dishes.roles import DishCatalog, RecipeBook
 
-from .budgeting import BudgetedRunStore, read_run_budget
+from .budgeting import BudgetedRunStore, BudgetExceeded, BudgetState, read_run_budget
 from .checkpointing import AttemptCheckpointer, CheckpointReviser
-from .compatibility import _digest, compatibility_fingerprint
+from .compatibility import _digest, compatibility_fingerprint, validate_resume
 from .contract import (
     OBSERVATION_SCHEMA,
+    CodeIdentity,
+    InputIdentities,
     Observation,
     ObservationInput,
     RunMetadata,
     RunSummary,
+    validate_plan_unit_observations,
 )
 from .evaluation import evaluate_observation
 from .live import LiveSettings, make_live_model, require_live_key
@@ -49,15 +52,20 @@ class _EvaluatedStore(BudgetedRunStore):
 
 
 def _initial(
-    run_id: str, case_id: str, repetition: int, value: ObservationInput
+    run_id: str,
+    case_id: str,
+    repetition: int,
+    value: ObservationInput,
+    *,
+    execution_attempt: int = 1,
 ) -> Observation:
-    """Create an empty first execution with no fabricated latency or model evidence."""
+    """Create a new numbered execution with no fabricated latency or model evidence."""
     return Observation(
         artifact_schema=OBSERVATION_SCHEMA,
         run_id=run_id,
         case_id=case_id,
         repetition=repetition,
-        execution_attempt=1,
+        execution_attempt=execution_attempt,
         input=value.model_copy(deep=True),
         execution={
             "state": "running",
@@ -84,21 +92,23 @@ def _initial(
     )
 
 
-def _publish_progress(store: _EvaluatedStore, *, state: str) -> RunSummary:
-    """Derive the index and summary from durable checkpoints, including a lagging intent.
-
-    A stop never fabricates a terminal observation or rewrites the last checkpoint.
-    Summary publication precedes completed metadata so a summary-write failure
-    cannot leave an immutable completed run with no authoritative summary.
-    """
-    durable = read_run_budget(store.root)
+def _reconcile(durable: BudgetState) -> tuple[RunMetadata, dict[str, Observation]]:
+    """Rebuild progress in memory from evidence; reject conflicting declared selections."""
     metadata = durable.metadata.model_copy(deep=True)
     observations = {
         f"observations/{_case_directory(item.case_id)}__r{item.repetition:02d}/"
         f"attempt-{item.execution_attempt:03d}.json": item
         for item in durable.observations
     }
+    declared = [ref for unit in metadata.plan for ref in unit.observation_refs]
+    if len(declared) != len(set(declared)):
+        raise ValueError("observation references must be unique")
+    if not set(declared).issubset(observations):
+        raise ValueError("observation references do not match their execution identities")
     for unit in metadata.plan:
+        validate_plan_unit_observations(
+            unit, [observations[ref] for ref in unit.observation_refs]
+        )
         refs = [
             ref
             for ref, item in observations.items()
@@ -107,6 +117,15 @@ def _publish_progress(store: _EvaluatedStore, *, state: str) -> RunSummary:
         refs.sort(key=lambda ref: observations[ref].execution_attempt)
         attempts = [observations[ref] for ref in refs]
         completed = [item for item in attempts if item.execution.state == "completed"]
+        if (
+            [item.execution_attempt for item in attempts]
+            != list(range(1, len(attempts) + 1))
+            or len(completed) > 1
+            or (completed and completed[0] is not attempts[-1])
+        ):
+            raise ValueError(
+                "execution attempts must be contiguous with one terminal selection"
+            )
         unit.observation_refs = refs
         unit.state = (
             "completed" if completed else "incomplete" if attempts else "not_started"
@@ -120,12 +139,45 @@ def _publish_progress(store: _EvaluatedStore, *, state: str) -> RunSummary:
             else None
         )
     metadata.http_attempt_budget = durable.budget
+    return metadata, observations
+
+
+def _publish_progress(store: _EvaluatedStore, *, state: str) -> RunSummary:
+    """Publish durable progress without fabricating outcomes or rewriting checkpoints.
+
+    Summary publication precedes completed metadata so a summary-write failure
+    cannot leave an immutable completed run with no authoritative summary.
+    """
+    metadata, observations = _reconcile(read_run_budget(store.root))
     metadata.updated_at = _now()
     metadata.state = state
     summary = summarize_run(metadata, observations, generated_at=metadata.updated_at)
     store._write("summary.json", summary.model_dump(by_alias=True))
     store.write_metadata(metadata)
     return summary
+
+
+def _validate_inputs(
+    plan: ExecutionPlan,
+    hashes: dict[str, str],
+    snapshot: StaplesSnapshot,
+    catalog: DishCatalog,
+    recipes: RecipeBook,
+) -> None:
+    """Bind actual plan contents to identities and unchanged production input policy."""
+    if hashes != {
+        case: _digest(value.model_dump()) for case, value in plan.inputs.items()
+    }:
+        raise ValueError("metadata input hashes do not match the frozen plan")
+    for value in plan.inputs.values():
+        recipe, dish = recipes.get(value.dish_id), catalog.get(value.dish_id)
+        if (
+            recipe is None
+            or dish is None
+            or snapshot.input_snapshot(recipe, dish.name, value.supplied_ingredients)
+            != value
+        ):
+            raise ValueError("execution inputs no longer match the frozen plan")
 
 
 def run_new(
@@ -182,30 +234,144 @@ def run_new(
         raise ValueError("fresh-run compatibility fingerprint does not match")
     # A self-consistent metadata fingerprint does not bind it to the actual
     # execution inputs. Compare the entire map to reject missing/extra cases too.
-    if seed.identities.input_sha256 != {
-        case_id: _digest(value.model_dump()) for case_id, value in frozen.inputs.items()
-    }:
-        raise ValueError("metadata input hashes do not match the frozen plan")
-    for value in frozen.inputs.values():
-        recipe = recipes.get(value.dish_id)
-        dish = catalog.get(value.dish_id)
-        if (
-            recipe is None
-            or dish is None
-            or snapshot.input_snapshot(recipe, dish.name, value.supplied_ingredients)
-            != value
-        ):
-            raise ValueError("execution inputs no longer match the frozen plan")
+    _validate_inputs(frozen, seed.identities.input_sha256, snapshot, catalog, recipes)
     store = _EvaluatedStore(
         parent, seed.run_id, maximum=settings.maximum, snapshot=snapshot, secrets=(key,)
     )
     publish_plan(frozen, store, seed)
+    return _execute(
+        frozen,
+        store,
+        catalog=catalog,
+        recipes=recipes,
+        settings=settings,
+        allow_live_api=allow_live_api,
+        transport_factory=transport_factory,
+        clock=clock,
+    )
+
+
+def run_resume(
+    root: Path,
+    plan: ExecutionPlan,
+    identities: InputIdentities,
+    code_identity: CodeIdentity,
+    *,
+    snapshot: StaplesSnapshot,
+    catalog: DishCatalog,
+    recipes: RecipeBook,
+    settings: LiveSettings,
+    allow_live_api: bool,
+    transport_factory: Callable[[], httpx.BaseTransport] | None = None,
+    clock: Callable[[], float] = time.monotonic,
+) -> RunSummary:
+    """Validate current captured identities read-only, then continue the same run in place.
+
+    The caller supplies freshly captured code/template/fixture identities, just as
+    for the existing compatibility checker. Actual plan input hashes are always
+    recomputed here. No old attempt, including a running checkpoint left by a hard
+    interruption, is rewritten or relabelled as completed/interrupted on resume.
+    """
+    key = require_live_key(allow_live_api)
+    frozen = ExecutionPlan(
+        tuple(unit.model_copy(deep=True) for unit in plan.units),
+        {case: value.model_copy(deep=True) for case, value in plan.inputs.items()},
+        tuple(plan.effective_assumed_staples),
+    )
+    if (
+        not frozen.units
+        or frozen.effective_assumed_staples != snapshot.names
+        or len({(unit.case_id, unit.repetition) for unit in frozen.units})
+        != len(frozen.units)
+        or set(frozen.inputs) != {unit.case_id for unit in frozen.units}
+    ):
+        raise ValueError("resume plan does not match the input policy")
+    _validate_inputs(frozen, identities.input_sha256, snapshot, catalog, recipes)
+    durable = read_run_budget(root, maximum=settings.maximum)
+    validate_resume(
+        durable.metadata,
+        frozen,
+        identities,
+        code_identity,
+        model=settings.model_metadata(),
+        pricing=settings.pricing_metadata(),
+    )
+    # Reconciliation must also be read-only on corrupt progress. Canonical names
+    # match the store's existing path policy, so unknown/unindexed evidence cannot
+    # be ignored while calculating new attempt identities or budget consumption.
+    metadata, observations = _reconcile(durable)
+    for ref, item in observations.items():
+        path = root.resolve() / ref
+        if not path.resolve().is_relative_to(root.resolve()) or not path.is_file():
+            raise ValueError("durable attempt path does not match its identity")
+        if item.input != frozen.inputs[item.case_id]:
+            raise ValueError("durable attempt input differs from the frozen plan")
+    # Validate reconciled states/selections and cumulative totals before any write.
+    summarize_run(metadata, observations, generated_at=_now())
+    pending = [unit for unit in metadata.plan if unit.state != "completed"]
+    if pending and durable.budget.remaining == 0:
+        raise BudgetExceeded("HTTP-attempt budget exhausted")
+    store = _EvaluatedStore.open_existing(
+        root, snapshot=snapshot, maximum=settings.maximum, secrets=(key,)
+    )
+    history = {"resumed_at": _now()}
+    if pending:
+        unit = pending[0]
+        history.update(
+            case_id=unit.case_id,
+            repetition=unit.repetition,
+            from_execution_attempt=len(unit.observation_refs),
+        )
+    metadata.resume_history.append(history)
+    metadata.state, metadata.updated_at = "running", _now()
+    store.write_metadata(metadata)
+    return _execute(
+        frozen,
+        store,
+        catalog=catalog,
+        recipes=recipes,
+        settings=settings,
+        allow_live_api=allow_live_api,
+        transport_factory=transport_factory,
+        clock=clock,
+    )
+
+
+def _execute(
+    plan: ExecutionPlan,
+    store: _EvaluatedStore,
+    *,
+    catalog: DishCatalog,
+    recipes: RecipeBook,
+    settings: LiveSettings,
+    allow_live_api: bool,
+    transport_factory: Callable[[], httpx.BaseTransport] | None,
+    clock: Callable[[], float],
+) -> RunSummary:
+    """Share sequential execution and stop behavior across fresh and resumed runs."""
     try:
-        for unit in frozen.units:
-            value = frozen.inputs[unit.case_id]
+        for unit in plan.units:
+            durable = read_run_budget(store.root)
+            attempts = [
+                item
+                for item in durable.observations
+                if (item.case_id, item.repetition) == (unit.case_id, unit.repetition)
+            ]
+            if any(item.execution.state == "completed" for item in attempts):
+                continue
+            value = plan.inputs[unit.case_id]
             checkpointer = AttemptCheckpointer(
                 store,
-                _initial(seed.run_id, unit.case_id, unit.repetition, value),
+                _initial(
+                    store.run_id,
+                    unit.case_id,
+                    unit.repetition,
+                    value,
+                    execution_attempt=max(
+                        (item.execution_attempt for item in attempts), default=0
+                    )
+                    + 1,
+                ),
                 clock=clock,
                 prices=settings.prices,
             )
@@ -220,7 +386,7 @@ def run_new(
                 else None,
             )
             reviser = CheckpointReviser(
-                catalog, snapshot.index, model, recipes, checkpointer=checkpointer
+                catalog, store.snapshot.index, model, recipes, checkpointer=checkpointer
             )
             response = error = None
             try:

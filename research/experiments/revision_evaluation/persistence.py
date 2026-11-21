@@ -146,26 +146,45 @@ def _validate_evidence_update(previous: Observation, current: Observation) -> No
 
 
 class RunStore:
-    """Own one newly created run directory and atomically replace active JSON files.
+    """Own one run directory and atomically replace active JSON files.
 
-    This sequential store does not implement resume, run orchestration, or HTTP
-    budgeting. The caller supplies contract-valid observations and metadata;
+    This sequential store does not implement resume compatibility, orchestration,
+    or HTTP budgeting. The caller supplies contract-valid observations and metadata;
     metadata references are checked against saved observations before publication.
     """
 
     def __init__(self, parent: Path, run_id: str, *, secrets: tuple[str, ...] = ()) -> None:
-        if not _safe_run_id(run_id):
-            raise ValueError("run ID must be a portable non-device name of at most 64 characters")
-        self.run_id = run_id
-        self.root = parent.resolve() / run_id
-        self._secrets = tuple(
-            sorted((secret for secret in secrets if secret), key=len, reverse=True)
-        )
+        self._bind(parent.resolve() / run_id, run_id, secrets)
         try:
             # An existing run must never be mistaken for a new run and overwritten.
             self.root.mkdir(parents=True, exist_ok=False)
         except OSError:
             raise PersistenceError("could not create a new run directory") from None
+
+    def _bind(self, root: Path, run_id: str, secrets: tuple[str, ...]) -> None:
+        """Initialize shared path/secret state without creating or modifying files."""
+        if not _safe_run_id(run_id):
+            raise ValueError("run ID must be a portable non-device name of at most 64 characters")
+        self.run_id = run_id
+        self.root = root
+        self._secrets = tuple(
+            sorted((secret for secret in secrets if secret), key=len, reverse=True)
+        )
+
+    @classmethod
+    def _open_existing(cls, root: Path, *, run_id: str, secrets: tuple[str, ...] = ()):
+        """Bind an existing directory only; the caller must validate its run metadata.
+
+        Keep reopening separate from construction so new-run callers cannot
+        accidentally disable exclusive creation. Subclasses initialize their own
+        policy state through this same explicit, non-writing path.
+        """
+        root = root.resolve()
+        if not root.is_dir():
+            raise PersistenceError("could not open existing run directory")
+        store = cls.__new__(cls)
+        store._bind(root, run_id, secrets)
+        return store
 
     def _path(self, relative: str) -> Path:
         """Keep reads and writes within this run, including through existing symlinks."""
