@@ -1,4 +1,4 @@
-# AI-assisted with Codex, 2026-11-21; human review pending.
+# AI-assisted with Codex, 2026-11-21; reviewed by Soohyun An
 """Offline structure checks grounded in the served response schema and prompt."""
 
 import json
