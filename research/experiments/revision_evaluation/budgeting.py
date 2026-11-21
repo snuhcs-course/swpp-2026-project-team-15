@@ -125,13 +125,9 @@ class BudgetedRunStore(StaplesRunStore):
             )
         ):
             raise ValueError("existing run is not compatible with the store policy")
-        store = cls._open_existing(
-            root, run_id=metadata.run_id, snapshot=snapshot, secrets=secrets
-        )
+        store = cls._open_existing(root, run_id=metadata.run_id, snapshot=snapshot, secrets=secrets)
         store._maximum = metadata.http_attempt_budget.maximum
-        store._preserved_attempts = frozenset(
-            _identity(item) for item in state.observations
-        )
+        store._preserved_attempts = frozenset(_identity(item) for item in state.observations)
         return store
 
     @property
@@ -177,7 +173,5 @@ class BudgetedRunStore(StaplesRunStore):
         observations = _observations(self.root, value)
         consumed = sum(item.telemetry.http_attempts for item in observations)
         if value.http_attempt_budget.consumed != consumed:
-            raise ValueError(
-                "metadata budget must include every durable prepared identity"
-            )
+            raise ValueError("metadata budget must include every durable prepared identity")
         super().write_metadata(value)

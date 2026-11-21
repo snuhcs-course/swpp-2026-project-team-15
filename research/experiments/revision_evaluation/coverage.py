@@ -1,8 +1,9 @@
 # AI-assisted with Codex, 2026-11-21; reviewed by Soohyun An
 """Synonym-aware explanation-reference coverage for a terminal revising answer."""
 
-from app.dishes.schemas import SourceRecipe
 from experiments.dish_revision.scoring import dropped_ingredients
+
+from app.dishes.schemas import SourceRecipe
 
 from .contract import Rate, SourceRecipeSnapshot
 

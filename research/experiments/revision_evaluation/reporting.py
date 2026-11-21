@@ -22,9 +22,7 @@ def _number(value: float) -> str:
 
 def _optional(value: OptionalNumber) -> str:
     """Keep measured zero, unavailable and N/A visibly distinct."""
-    return (
-        _number(value.value) if value.applicability == "value" else value.applicability
-    )
+    return _number(value.value) if value.applicability == "value" else value.applicability
 
 
 def _rate(value: Rate) -> str:
@@ -80,9 +78,7 @@ def render_summary(summary: RunSummary) -> str:
     semantic = summary.semantic_success
     lines.extend(["", f"Semantic success: {semantic.applicability}."])
     if semantic.definition is not None:
-        lines.append(
-            f"Definition: {_text(semantic.definition)}; rate: {_rate(semantic.rate)}."
-        )
+        lines.append(f"Definition: {_text(semantic.definition)}; rate: {_rate(semantic.rate)}.")
     lines.extend(
         [
             "",
@@ -99,8 +95,7 @@ def render_summary(summary: RunSummary) -> str:
         if not counts:
             lines.append(f"| {phase} | none | 0 |")
         lines.extend(
-            f"| {phase} | {_text(code)} | {count} |"
-            for code, count in sorted(counts.items())
+            f"| {phase} | {_text(code)} | {count} |" for code, count in sorted(counts.items())
         )
     lines.extend(
         [
@@ -113,7 +108,8 @@ def render_summary(summary: RunSummary) -> str:
     )
     for name, value in summary.latency:
         lines.append(
-            f"| {_text(name)} | {value.sample_count} | {_text(value.incomplete_attempt_policy)} | {_optional(value.p50_s)} | {_optional(value.p95_s)} |"
+            f"| {_text(name)} | {value.sample_count} | {_text(value.incomplete_attempt_policy)} | "
+            f"{_optional(value.p50_s)} | {_optional(value.p95_s)} |"
         )
     lines.extend(
         [
@@ -126,11 +122,12 @@ def render_summary(summary: RunSummary) -> str:
     )
     for case in summary.cases:
         outcomes = ", ".join(
-            f"{_text(name)}={count}"
-            for name, count in sorted(case.outcomes.model_dump().items())
+            f"{_text(name)}={count}" for name, count in sorted(case.outcomes.model_dump().items())
         )
         lines.append(
-            f"| {_text(case.case_id)} | {case.planned_repetitions} | {case.completed_repetitions} | {str(case.all_planned_completed).lower()} | {outcomes} |"
+            f"| {_text(case.case_id)} | {case.planned_repetitions} | "
+            f"{case.completed_repetitions} | {str(case.all_planned_completed).lower()} | "
+            f"{outcomes} |"
         )
     lines.extend(
         [
@@ -167,27 +164,41 @@ def render_summary(summary: RunSummary) -> str:
             "",
             "### Cost (USD)",
             "",
-            f"Applicability: {cost.applicability}; provenance: {cost.provenance}; total: {total}; confirmed subtotal: {_number(cost.confirmed_subtotal)}.",
+            f"Applicability: {cost.applicability}; provenance: {cost.provenance}; "
+            f"total: {total}; confirmed subtotal: {_number(cost.confirmed_subtotal)}.",
         ]
     )
     if cost.price_inputs is not None:
-        lines.append(
-            f"Price inputs: {_text(json.dumps(cost.price_inputs, sort_keys=True))}."
-        )
+        lines.append(f"Price inputs: {_text(json.dumps(cost.price_inputs, sort_keys=True))}.")
     lines.extend(
         [
             "",
             "## Metric scope and limitations",
             "",
-            "- Outcomes use selected completed attempts. Incomplete attempts are not extra repetitions; all retained attempts contribute cumulative calls, tokens and costs.",
-            "- JSON parsing uses returned response texts; structure uses parsed answers. Reference validity has its own recorded denominator. No-call and no-response paths do not count as parse failures.",
-            "- Explanation coverage counts explained deleted source-ingredient rows over detected deleted rows in terminal revising answers. A zero denominator is not_applicable, not success.",
-            "- Latency sample counts and incomplete-attempt policies are explicit above. Percentiles are stored values, not recalculated by this report.",
-            "- Revision latency excludes measured checkpoint persistence; observed wall time includes it. Checkpoint overhead covers the measured Revision-call window, not all run setup/final publication I/O.",
-            "- Non-HTTP remainder may include retry waits and unobserved work; it is not pure application processing time.",
-            "- A persisted request_prepared identity consumes HTTP budget even when delivery is unknown. A request may have reached the provider without durable response/usage; unknown in-flight tokens and cost are not zero or assumed free.",
-            "- unavailable means missing measurement; not_applicable means the metric does not apply. Confirmed subtotals are not complete totals. Estimated costs depend on retained price inputs and are not provider-measured costs.",
-            "- Operational completion, JSON validity and deterministic checks do not establish semantic recipe quality. Semantic success is not applicable without a named versioned definition; no Judge usage is included.",
+            "- Outcomes use selected completed attempts. Incomplete attempts are not extra "
+            "repetitions; all retained attempts contribute cumulative calls, tokens and costs.",
+            "- JSON parsing uses returned response texts; structure uses parsed answers. "
+            "Reference validity has its own recorded denominator. No-call and no-response "
+            "paths do not count as parse failures.",
+            "- Explanation coverage counts explained deleted source-ingredient rows over "
+            "detected deleted rows in terminal revising answers. A zero denominator is "
+            "not_applicable, not success.",
+            "- Latency sample counts and incomplete-attempt policies are explicit above. "
+            "Percentiles are stored values, not recalculated by this report.",
+            "- Revision latency excludes measured checkpoint persistence; observed wall time "
+            "includes it. Checkpoint overhead covers the measured Revision-call window, "
+            "not all run setup/final publication I/O.",
+            "- Non-HTTP remainder may include retry waits and unobserved work; "
+            "it is not pure application processing time.",
+            "- A persisted request_prepared identity consumes HTTP budget even when delivery "
+            "is unknown. A request may have reached the provider without durable response/usage; "
+            "unknown in-flight tokens and cost are not zero or assumed free.",
+            "- unavailable means missing measurement; not_applicable means the metric does "
+            "not apply. Confirmed subtotals are not complete totals. Estimated costs depend "
+            "on retained price inputs and are not provider-measured costs.",
+            "- Operational completion, JSON validity and deterministic checks do not establish "
+            "semantic recipe quality. Semantic success is not applicable without a named "
+            "versioned definition; no Judge usage is included.",
             "",
             "## Observation references",
             "",

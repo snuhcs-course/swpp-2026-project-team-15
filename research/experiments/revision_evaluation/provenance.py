@@ -39,12 +39,9 @@ def prepare_metadata(
     if (
         not _safe_run_id(run_id)
         or not plan.units
-        or len({(unit.case_id, unit.repetition) for unit in plan.units})
-        != len(plan.units)
+        or len({(unit.case_id, unit.repetition) for unit in plan.units}) != len(plan.units)
         or set(plan.inputs) != {unit.case_id for unit in plan.units}
-        or any(
-            unit.state != "not_started" or unit.observation_refs for unit in plan.units
-        )
+        or any(unit.state != "not_started" or unit.observation_refs for unit in plan.units)
         or any(
             tuple(value.effective_assumed_staples) != plan.effective_assumed_staples
             for value in plan.inputs.values()

@@ -79,9 +79,7 @@ def summarize_run(
     if set(refs) != set(observations):
         raise ValueError("observations must match the complete planned reference set")
     retained = [observations[ref] for ref in refs]
-    identities = [
-        (item.case_id, item.repetition, item.execution_attempt) for item in retained
-    ]
+    identities = [(item.case_id, item.repetition, item.execution_attempt) for item in retained]
     if len(set(identities)) != len(identities):
         raise ValueError("execution attempt identities must be unique")
     if any(item.run_id != metadata.run_id for item in retained):
@@ -92,13 +90,9 @@ def summarize_run(
         attempts = [observations[ref] for ref in unit.observation_refs]
         validate_plan_unit_observations(unit, attempts)
         completed = [item for item in attempts if item.execution.state == "completed"]
-        expected = (
-            "completed" if completed else "incomplete" if attempts else "not_started"
-        )
+        expected = "completed" if completed else "incomplete" if attempts else "not_started"
         if unit.state != expected or len(completed) > 1:
-            raise ValueError(
-                "plan state must select exactly one completed result when available"
-            )
+            raise ValueError("plan state must select exactly one completed result when available")
         validate_cumulative_telemetry(unit, attempts)
         selected.extend(completed)
     complete = bool(metadata.plan) and len(selected) == len(metadata.plan)
@@ -110,11 +104,7 @@ def summarize_run(
 
     calls = [call for item in retained for call in item.model_calls]
     returned = [call for call in calls if call.parsing.attempted]
-    findings = [
-        finding
-        for item in retained
-        for finding in item.deterministic_evaluation.answers
-    ]
+    findings = [finding for item in retained for finding in item.deterministic_evaluation.answers]
 
     def validity(field: str) -> Rate:
         entries = [getattr(finding, field) for finding in findings]
@@ -129,10 +119,7 @@ def summarize_run(
             if check.result == "violation" and check.code is not None:
                 counts = failures[check.phase]
                 counts[check.code] = counts.get(check.code, 0) + 1
-    coverage = [
-        item.deterministic_evaluation.deleted_ingredient_explanation
-        for item in retained
-    ]
+    coverage = [item.deterministic_evaluation.deleted_ingredient_explanation for item in retained]
     cases = []
     for case_id in dict.fromkeys(unit.case_id for unit in metadata.plan):
         planned = sum(unit.case_id == case_id for unit in metadata.plan)

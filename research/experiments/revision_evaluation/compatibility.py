@@ -40,8 +40,7 @@ def capture_input_identities(
         prompt_sha256=hashlib.sha256(Path(prompts.__file__).read_bytes()).hexdigest(),
         response_schema_sha256=_digest(prompts.REVISE_SCHEMA),
         input_sha256={
-            case_id: _digest(value.model_dump())
-            for case_id, value in plan.inputs.items()
+            case_id: _digest(value.model_dump()) for case_id, value in plan.inputs.items()
         },
         fixture_sha256={
             "manifest": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
@@ -93,9 +92,7 @@ def capture_code_identity(root: Path = REPO_ROOT) -> CodeIdentity:
             if stage != b"0" or mode == b"160000":
                 raise ValueError("unsupported Git index entry")
             modes[name] = mode
-        paths = git(
-            "ls-files", "--cached", "--others", "--exclude-standard", "-z"
-        ).split(b"\0")
+        paths = git("ls-files", "--cached", "--others", "--exclude-standard", "-z").split(b"\0")
         tree = {}
         for name in sorted(set(paths) - {b""}):
             path = root / os.fsdecode(name)

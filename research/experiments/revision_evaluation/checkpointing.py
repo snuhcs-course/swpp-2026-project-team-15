@@ -12,6 +12,7 @@ from dataclasses import asdict
 from datetime import UTC, datetime
 
 import httpx
+
 from app.dishes.errors import DishLLMError
 
 from . import telemetry

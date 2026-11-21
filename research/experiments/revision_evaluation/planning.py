@@ -6,15 +6,14 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.dishes.roles import DishCatalog, RecipeBook
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.dishes.roles import DishCatalog, RecipeBook
 
 from .contract import ObservationInput, PlanUnit, RunMetadata
 from .staples import StaplesRunStore, StaplesSnapshot
 
-FROZEN_MANIFEST = (
-    Path(__file__).resolve().parent.parent / "dish_revision" / "cases.json"
-)
+FROZEN_MANIFEST = Path(__file__).resolve().parent.parent / "dish_revision" / "cases.json"
 
 
 class ManifestCase(BaseModel):
@@ -111,9 +110,7 @@ def build_plan(
     return ExecutionPlan(tuple(units), inputs, snapshot.names)
 
 
-def publish_plan(
-    plan: ExecutionPlan, store: StaplesRunStore, metadata: RunMetadata
-) -> RunMetadata:
+def publish_plan(plan: ExecutionPlan, store: StaplesRunStore, metadata: RunMetadata) -> RunMetadata:
     """Publish an initial plan/policy through existing atomic metadata persistence.
 
     The caller supplies real run identities/configuration; this layer invents no

@@ -8,6 +8,7 @@ from functools import wraps
 from pathlib import Path
 
 import httpx
+
 from app.dishes.errors import DishLLMError
 from app.dishes.roles import DishCatalog, RecipeBook
 
@@ -129,13 +130,9 @@ def _reconcile(durable: BudgetState) -> tuple[RunMetadata, dict[str, Observation
     if len(declared) != len(set(declared)):
         raise ValueError("observation references must be unique")
     if not set(declared).issubset(observations):
-        raise ValueError(
-            "observation references do not match their execution identities"
-        )
+        raise ValueError("observation references do not match their execution identities")
     for unit in metadata.plan:
-        validate_plan_unit_observations(
-            unit, [observations[ref] for ref in unit.observation_refs]
-        )
+        validate_plan_unit_observations(unit, [observations[ref] for ref in unit.observation_refs])
         refs = [
             ref
             for ref, item in observations.items()
@@ -145,25 +142,16 @@ def _reconcile(durable: BudgetState) -> tuple[RunMetadata, dict[str, Observation
         attempts = [observations[ref] for ref in refs]
         completed = [item for item in attempts if item.execution.state == "completed"]
         if (
-            [item.execution_attempt for item in attempts]
-            != list(range(1, len(attempts) + 1))
+            [item.execution_attempt for item in attempts] != list(range(1, len(attempts) + 1))
             or len(completed) > 1
             or (completed and completed[0] is not attempts[-1])
         ):
-            raise ValueError(
-                "execution attempts must be contiguous with one terminal selection"
-            )
+            raise ValueError("execution attempts must be contiguous with one terminal selection")
         unit.observation_refs = refs
-        unit.state = (
-            "completed" if completed else "incomplete" if attempts else "not_started"
-        )
-        unit.selected_completed_attempt = (
-            completed[0].execution_attempt if completed else None
-        )
+        unit.state = "completed" if completed else "incomplete" if attempts else "not_started"
+        unit.selected_completed_attempt = completed[0].execution_attempt if completed else None
         unit.cumulative_telemetry = (
-            aggregate_telemetry([item.telemetry for item in attempts])
-            if attempts
-            else None
+            aggregate_telemetry([item.telemetry for item in attempts]) if attempts else None
         )
     metadata.http_attempt_budget = durable.budget
     return metadata, observations
@@ -192,17 +180,14 @@ def _validate_inputs(
     recipes: RecipeBook,
 ) -> None:
     """Bind actual plan contents to identities and unchanged production input policy."""
-    if hashes != {
-        case: _digest(value.model_dump()) for case, value in plan.inputs.items()
-    }:
+    if hashes != {case: _digest(value.model_dump()) for case, value in plan.inputs.items()}:
         raise ValueError("metadata input hashes do not match the frozen plan")
     for value in plan.inputs.values():
         recipe, dish = recipes.get(value.dish_id), catalog.get(value.dish_id)
         if (
             recipe is None
             or dish is None
-            or snapshot.input_snapshot(recipe, dish.name, value.supplied_ingredients)
-            != value
+            or snapshot.input_snapshot(recipe, dish.name, value.supplied_ingredients) != value
         ):
             raise ValueError("execution inputs no longer match the frozen plan")
 
@@ -238,12 +223,8 @@ def run_new(
     )
     if (
         not frozen.units
-        or len({(unit.case_id, unit.repetition) for unit in frozen.units})
-        != len(frozen.units)
-        or any(
-            unit.state != "not_started" or unit.observation_refs
-            for unit in frozen.units
-        )
+        or len({(unit.case_id, unit.repetition) for unit in frozen.units}) != len(frozen.units)
+        or any(unit.state != "not_started" or unit.observation_refs for unit in frozen.units)
         or set(frozen.inputs) != {unit.case_id for unit in frozen.units}
         or seed.plan
         or seed.state != "running"
@@ -264,9 +245,7 @@ def run_new(
     # execution inputs. Compare the entire map to reject missing/extra cases too.
     _validate_inputs(frozen, seed.identities.input_sha256, snapshot, catalog, recipes)
     _require_safe(seed.model_dump(by_alias=True), (key,))
-    _require_safe(
-        {case: value.model_dump() for case, value in frozen.inputs.items()}, (key,)
-    )
+    _require_safe({case: value.model_dump() for case, value in frozen.inputs.items()}, (key,))
     _require_safe([unit.model_dump() for unit in frozen.units], (key,))
     store = _EvaluatedStore(
         parent, seed.run_id, maximum=settings.maximum, snapshot=snapshot, secrets=(key,)
@@ -315,8 +294,7 @@ def run_resume(
     if (
         not frozen.units
         or frozen.effective_assumed_staples != snapshot.names
-        or len({(unit.case_id, unit.repetition) for unit in frozen.units})
-        != len(frozen.units)
+        or len({(unit.case_id, unit.repetition) for unit in frozen.units}) != len(frozen.units)
         or set(frozen.inputs) != {unit.case_id for unit in frozen.units}
     ):
         raise ValueError("resume plan does not match the input policy")
@@ -404,9 +382,7 @@ def _execute(
                     unit.case_id,
                     unit.repetition,
                     value,
-                    execution_attempt=max(
-                        (item.execution_attempt for item in attempts), default=0
-                    )
+                    execution_attempt=max((item.execution_attempt for item in attempts), default=0)
                     + 1,
                 ),
                 clock=clock,
@@ -418,9 +394,7 @@ def _execute(
                 settings,
                 checkpointer,
                 allow_live_api=allow_live_api,
-                transport=transport_factory()
-                if transport_factory is not None
-                else None,
+                transport=transport_factory() if transport_factory is not None else None,
             )
             reviser = CheckpointReviser(
                 catalog, store.snapshot.index, model, recipes, checkpointer=checkpointer
@@ -428,9 +402,7 @@ def _execute(
             response = error = None
             try:
                 with checkpointer.measure_revision():
-                    response = reviser.revise(
-                        value.dish_id, list(value.supplied_ingredients)
-                    )
+                    response = reviser.revise(value.dish_id, list(value.supplied_ingredients))
             except DishLLMError as failure:
                 error = failure
             if persist_terminal(checkpointer, response=response, error=error) is None:

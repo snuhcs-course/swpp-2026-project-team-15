@@ -5,6 +5,7 @@ import os
 from dataclasses import asdict, dataclass
 
 import httpx
+
 from app.dishes.llm import DEFAULT_MODEL, MAX_TOKENS, DishLLM
 
 from .budgeting import BudgetedRunStore, read_run_budget
@@ -67,9 +68,7 @@ def resolve_live_settings(
     if (input_price is None) != (output_price is None):
         raise ValueError("both input and output token prices must be configured")
     prices = TokenPrices(input_price, output_price) if input_price is not None else None
-    return LiveSettings(
-        DEFAULT_MODEL if model_id is None else model_id, maximum, prices
-    )
+    return LiveSettings(DEFAULT_MODEL if model_id is None else model_id, maximum, prices)
 
 
 def require_live_key(allow_live_api: bool) -> str:
@@ -112,7 +111,5 @@ def make_live_model(
         transport if transport is not None else httpx.HTTPTransport(),
         checkpointer=checkpointer,
     )
-    model = DishLLM(
-        key, settings.model_id, transport=recorded, clock=checkpointer.policy_time
-    )
+    model = DishLLM(key, settings.model_id, transport=recorded, clock=checkpointer.policy_time)
     return CheckpointModelCallRecorder(model, checkpointer=checkpointer)

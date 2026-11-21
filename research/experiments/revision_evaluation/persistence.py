@@ -306,9 +306,17 @@ class RunStore:
         # Preserve existing masking of optional configuration notes/credentials,
         # but never silently alter the identity or plan advertised by metadata.
         for field in (
-            "artifact_schema", "observation_schema", "run_id", "compatibility_fingerprint",
-            "code_identity", "identities", "effective_assumed_staples", "plan", "pricing",
-            "created_at", "updated_at",
+            "artifact_schema",
+            "observation_schema",
+            "run_id",
+            "compatibility_fingerprint",
+            "code_identity",
+            "identities",
+            "effective_assumed_staples",
+            "plan",
+            "pricing",
+            "created_at",
+            "updated_at",
         ):
             if sanitized[field] != original[field]:
                 raise PersistenceError("protected content cannot be recorded faithfully")

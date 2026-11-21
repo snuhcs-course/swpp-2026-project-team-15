@@ -36,9 +36,7 @@ class OptionalNumber(StrictModel):
     @model_validator(mode="after")
     def check_value_matches_applicability(self) -> OptionalNumber:
         if (self.applicability == "value") != (self.value is not None):
-            raise ValueError(
-                "value must be present exactly when applicability is 'value'"
-            )
+            raise ValueError("value must be present exactly when applicability is 'value'")
         return self
 
 
@@ -67,9 +65,7 @@ class Cost(StrictModel):
             or self.value is not None
             or self.confirmed_subtotal != 0
         ):
-            raise ValueError(
-                "inapplicable cost must use not_applicable with a zero subtotal"
-            )
+            raise ValueError("inapplicable cost must use not_applicable with a zero subtotal")
         if self.provenance == "estimated":
             if not self.price_inputs:
                 raise ValueError("estimated cost requires price inputs")
@@ -166,9 +162,7 @@ class TokenTotal(StrictModel):
         """Keep complete, partial, and inapplicable token totals unambiguous."""
         if self.applicability == "value":
             if self.value is None or self.value != self.confirmed_subtotal:
-                raise ValueError(
-                    "complete token total must equal its confirmed subtotal"
-                )
+                raise ValueError("complete token total must equal its confirmed subtotal")
         elif self.value is not None:
             raise ValueError("non-value token totals cannot carry a value")
         elif self.applicability == "not_applicable" and self.confirmed_subtotal != 0:
@@ -214,9 +208,7 @@ class HttpAttempt(StrictModel):
                 and self.cost_usd.applicability == "unavailable"
             )
             if not unavailable:
-                raise ValueError(
-                    "request_prepared must retain unknown response and cost fields"
-                )
+                raise ValueError("request_prepared must retain unknown response and cost fields")
         elif self.state == "transport_error":
             if not (
                 self.delivery == "failed"
@@ -226,13 +218,9 @@ class HttpAttempt(StrictModel):
                 and self.usage is None
                 and self.cost_usd.provenance == "missing"
             ):
-                raise ValueError(
-                    "transport_error cannot contain response-derived fields"
-                )
+                raise ValueError("transport_error cannot contain response-derived fields")
         elif self.delivery != "confirmed" or self.status_code is None:
-            raise ValueError(
-                "response_received requires confirmed delivery and an HTTP status"
-            )
+            raise ValueError("response_received requires confirmed delivery and an HTTP status")
         return self
 
 
@@ -319,9 +307,7 @@ class Execution(StrictModel):
         """Prevent incomplete attempts from receiving fabricated terminal outcomes."""
         if self.state == "completed":
             if self.checkpoint_stage != "terminal" or self.finished_at is None:
-                raise ValueError(
-                    "completed execution must be a finished terminal checkpoint"
-                )
+                raise ValueError("completed execution must be a finished terminal checkpoint")
             if self.terminal_outcome is None or self.outcome_source is None:
                 raise ValueError("completed execution requires an outcome and source")
         elif self.terminal_outcome is not None or self.outcome_source is not None:
@@ -362,12 +348,8 @@ class Observation(StrictModel):
     @model_validator(mode="after")
     def check_attempt_counts(self) -> Observation:
         """Ensure telemetry counts the exact logical calls and durable HTTP identities."""
-        attempts = [
-            attempt for call in self.model_calls for attempt in call.http_attempts
-        ]
-        if [call.index for call in self.model_calls] != list(
-            range(1, len(self.model_calls) + 1)
-        ):
+        attempts = [attempt for call in self.model_calls for attempt in call.http_attempts]
+        if [call.index for call in self.model_calls] != list(range(1, len(self.model_calls) + 1)):
             raise ValueError("logical calls must be one-based and contiguous")
         if self.telemetry.logical_calls != len(self.model_calls):
             raise ValueError("logical-call telemetry does not match model_calls")
@@ -391,9 +373,7 @@ class Observation(StrictModel):
             if [attempt.index for attempt in call.http_attempts] != list(
                 range(1, len(call.http_attempts) + 1)
             ):
-                raise ValueError(
-                    "HTTP attempts must be one-based and contiguous per logical call"
-                )
+                raise ValueError("HTTP attempts must be one-based and contiguous per logical call")
         return self
 
 
@@ -428,10 +408,7 @@ class HttpAttemptBudget(StrictModel):
     @model_validator(mode="after")
     def check_budget(self) -> HttpAttemptBudget:
         """Reject budget totals that could permit overspending after resume."""
-        if (
-            self.consumed > self.maximum
-            or self.remaining != self.maximum - self.consumed
-        ):
+        if self.consumed > self.maximum or self.remaining != self.maximum - self.consumed:
             raise ValueError("HTTP-attempt budget arithmetic is inconsistent")
         return self
 
@@ -519,9 +496,7 @@ class CaseSummary(StrictModel):
         """Keep the completion flag derived from the explicit repetition counts."""
         if self.completed_repetitions > self.planned_repetitions:
             raise ValueError("completed repetitions cannot exceed planned repetitions")
-        if self.all_planned_completed != (
-            self.completed_repetitions == self.planned_repetitions
-        ):
+        if self.all_planned_completed != (self.completed_repetitions == self.planned_repetitions):
             raise ValueError("case completion flag does not match repetition counts")
         return self
 
@@ -540,9 +515,7 @@ class SemanticSuccess(StrictModel):
             if not self.definition or self.rate is None:
                 raise ValueError("semantic success requires a definition and rate")
         elif self.definition is not None or self.rate is not None:
-            raise ValueError(
-                "inapplicable semantic success cannot carry a definition or rate"
-            )
+            raise ValueError("inapplicable semantic success cannot carry a definition or rate")
         return self
 
 
@@ -623,10 +596,7 @@ def schema_document() -> dict[str, Any]:
         "$id": "https://mylittlechef.invalid/schemas/revision-evaluation/v1",
         "title": "Revision evaluation artifact contract v1",
         "description": "Full Runner artifacts; Judge payload selection is a separate contract.",
-        "oneOf": [
-            roots[(model, "validation")]
-            for model in (RunMetadata, Observation, RunSummary)
-        ],
+        "oneOf": [roots[(model, "validation")] for model in (RunMetadata, Observation, RunSummary)],
         "$defs": shared.get("$defs", {}),
     }
 
@@ -636,13 +606,10 @@ def fixture_root() -> Path:
     return Path(__file__).with_name("fixtures") / "contract-v1"
 
 
-def validate_plan_unit_observations(
-    unit: PlanUnit, observations: list[Observation]
-) -> None:
+def validate_plan_unit_observations(unit: PlanUnit, observations: list[Observation]) -> None:
     """Verify that a plan selection identifies its own completed observation."""
     if any(
-        observation.case_id != unit.case_id
-        or observation.repetition != unit.repetition
+        observation.case_id != unit.case_id or observation.repetition != unit.repetition
         for observation in observations
     ):
         raise ValueError("plan unit references a different case or repetition")
@@ -653,9 +620,7 @@ def validate_plan_unit_observations(
             if observation.execution_attempt == unit.selected_completed_attempt
         ]
         if len(selected) != 1 or selected[0].execution.state != "completed":
-            raise ValueError(
-                "selected_completed_attempt must identify one completed observation"
-            )
+            raise ValueError("selected_completed_attempt must identify one completed observation")
 
 
 def validate_fixture_bundle(
@@ -678,23 +643,17 @@ def validate_fixture_bundle(
     observations = [Observation.model_validate(read(reference)) for reference in refs]
     if any(value.run_id != metadata.run_id for value in [summary, *observations]):
         raise ValueError("all bundle artifacts must share one run_id")
-    metadata_refs = [
-        reference for unit in metadata.plan for reference in unit.observation_refs
-    ]
+    metadata_refs = [reference for unit in metadata.plan for reference in unit.observation_refs]
     if set(metadata_refs) != set(refs):
         raise ValueError("metadata and summary observation references differ")
     observations_by_ref = dict(zip(refs, observations, strict=True))
     for unit in metadata.plan:
-        unit_observations = [
-            observations_by_ref[reference] for reference in unit.observation_refs
-        ]
+        unit_observations = [observations_by_ref[reference] for reference in unit.observation_refs]
         validate_plan_unit_observations(unit, unit_observations)
     consumed = sum(value.telemetry.http_attempts for value in observations)
     if (
         metadata.http_attempt_budget.consumed != consumed
         or summary.totals.http_attempts != consumed
     ):
-        raise ValueError(
-            "HTTP-attempt budget must include every stored prepared identity"
-        )
+        raise ValueError("HTTP-attempt budget must include every stored prepared identity")
     return metadata, observations, summary

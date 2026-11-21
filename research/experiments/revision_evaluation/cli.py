@@ -75,9 +75,7 @@ def _main(argv: Sequence[str] | None = None) -> int:
     """
     parser = _SafeParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, default=FROZEN_MANIFEST)
-    parser.add_argument(
-        "--recipes", type=Path, default=FROZEN_MANIFEST.with_name("fixtures.json")
-    )
+    parser.add_argument("--recipes", type=Path, default=FROZEN_MANIFEST.with_name("fixtures.json"))
     parser.add_argument(
         "--cases",
         nargs="+",
@@ -103,9 +101,7 @@ def _main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="explicitly authorize model requests for a new run or --resume",
     )
-    parser.add_argument(
-        "--model", help="production model ID; defaults to production/stored model"
-    )
+    parser.add_argument("--model", help="production model ID; defaults to production/stored model")
     parser.add_argument(
         "--max-http-attempts",
         type=int,
@@ -113,9 +109,7 @@ def _main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--input-per-million-usd", type=float)
     parser.add_argument("--output-per-million-usd", type=float)
-    parser.add_argument(
-        "--run-id", help="new run ID; default: a UTC timestamp-based ID"
-    )
+    parser.add_argument("--run-id", help="new run ID; default: a UTC timestamp-based ID")
     parser.add_argument(
         "--output-parent",
         type=Path,
@@ -172,9 +166,7 @@ def _main(argv: Sequence[str] | None = None) -> int:
             repetitions = args.repetitions
             if repetitions is None:
                 repetitions = (
-                    max((unit.repetition for unit in stored.plan), default=0)
-                    if stored
-                    else 1
+                    max((unit.repetition for unit in stored.plan), default=0) if stored else 1
                 )
             plan = build_plan(
                 manifest,
@@ -233,26 +225,17 @@ def _main(argv: Sequence[str] | None = None) -> int:
                 execution_resumed=False,
             )
         result.update(
-            plan=[
-                {"case_id": unit.case_id, "repetition": unit.repetition}
-                for unit in plan.units
-            ],
+            plan=[{"case_id": unit.case_id, "repetition": unit.repetition} for unit in plan.units],
             effective_assumed_staples=list(plan.effective_assumed_staples),
             planned_bounds=planned_bounds(plan),
         )
         if args.allow_live_api or configured:
             try:
                 if stored is not None:
-                    budget = read_run_budget(
-                        args.resume, maximum=settings.maximum
-                    ).budget
+                    budget = read_run_budget(args.resume, maximum=settings.maximum).budget
                 else:
                     budget = None
-                key = (
-                    require_live_key(args.allow_live_api)
-                    if args.allow_live_api
-                    else None
-                )
+                key = require_live_key(args.allow_live_api) if args.allow_live_api else None
                 if args.allow_live_api and budget is not None and budget.remaining == 0:
                     raise ValueError("HTTP-attempt budget exhausted")
             except (
