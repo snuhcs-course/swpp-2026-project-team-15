@@ -3,7 +3,7 @@
 Compose runs nginx → FastAPI/Uvicorn from a fresh clone. There is no database. Recipe and video files are optional (see below). Docker builds the locked Python dependencies and copies only the server runtime files.
 
 ```bash
-git clone -b feat/youtube-recipe-demo git@github.com:snuhcs-course/swpp-2026-project-team-15.git
+git clone git@github.com:snuhcs-course/swpp-2026-project-team-15.git
 cd swpp-2026-project-team-15
 cp deploy/runtime.env.example deploy/runtime.env && chmod 600 deploy/runtime.env   # then fill in the keys
 docker compose up -d --build                                                       # nginx on port 80 (HTTP_PORT to change)
