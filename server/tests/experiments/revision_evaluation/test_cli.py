@@ -13,6 +13,7 @@ from experiments.revision_evaluation.persistence import RunStore
 
 from app.dishes.http import RETRY_WAITS
 from app.dishes.llm import DishLLM
+from tests.experiments.revision_evaluation.test_compatibility import compatible_run
 
 
 @pytest.fixture(autouse=True)
@@ -105,7 +106,7 @@ def test_invalid_plan_returns_fixed_diagnostic_without_writes(args, capsys, tmp_
         ["--cases"],
         ["--repetitions", "private-value"],
         ["--allow-live-api"],
-        ["--resume", "private-value"],
+        ["--resume", "private-value", "--validate-fixtures"],
     ],
 )
 def test_invalid_or_unimplemented_options_fail_closed(args, capsys):
@@ -153,3 +154,67 @@ def test_help_requires_no_fixture_or_plan_load(monkeypatch, capsys):
         cli.main(["--help"])
     assert exit_info.value.code == 0
     assert "--validate-fixtures" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        None,
+        "plan_order",
+        "repetitions",
+        "model",
+        "pricing",
+        "code",
+        "prompt",
+        "completed",
+        "schema",
+    ],
+)
+def test_resume_cli_checks_compatibility_without_mutating_existing_run(
+    tmp_path, monkeypatch, capsys, change
+):
+    metadata, _, identities, code = compatible_run()
+    root = tmp_path / "existing-run"
+    root.mkdir()
+    if change == "model":
+        metadata.model["id"] = "changed model"
+    elif change == "pricing":
+        metadata.pricing["input_per_million_usd"] = 99
+    elif change == "completed":
+        metadata.state = "completed"
+    elif change == "schema":
+        metadata.artifact_schema = "unsupported/v2"
+    (root / "metadata.json").write_text(metadata.model_dump_json(), encoding="utf-8")
+    (root / "earlier-attempt.json").write_bytes(b"earlier evidence must remain untouched")
+    before = {path: path.read_bytes() for path in root.iterdir()}
+    if change == "code":
+        code.tree = "c" * 40
+    if change == "prompt":
+        identities.prompt_sha256 = "0" * 64
+        monkeypatch.setattr(cli, "capture_input_identities", lambda *args: identities)
+    monkeypatch.setattr(cli, "capture_code_identity", lambda: code)
+    args = ["--resume", str(root)]
+    if change == "plan_order":
+        args += ["--cases", "R01a", "R02a"]
+    elif change == "repetitions":
+        args += ["--repetitions", "3"]
+    status = cli.main(args)
+    output = capsys.readouterr()
+    if change is None:
+        assert status == 0
+        data = json.loads(output.out)
+        assert data["mode"] == "resume_compatibility_check"
+        assert data["compatible"] and not data["execution_resumed"]
+        assert len(data["plan"]) == 4
+    else:
+        assert status == 2
+        assert output.out == ""
+        assert output.err == "resume compatibility check failed\n"
+    assert {path: path.read_bytes() for path in root.iterdir()} == before
+
+
+def test_missing_resume_run_does_not_create_a_directory(tmp_path, capsys):
+    root = tmp_path / "does-not-exist"
+    assert cli.main(["--resume", str(root)]) == 2
+    assert capsys.readouterr().err == "resume compatibility check failed\n"
+    assert not root.exists()

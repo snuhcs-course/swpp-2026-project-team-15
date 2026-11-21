@@ -137,8 +137,47 @@ create no run directory or artifacts. Printed bounds are conservative for a sing
 execution of each planned repetition: zero to two logical calls, each with at most
 `1 + len(RETRY_WAITS)` HTTP attempts (currently three). They are not predictions or
 an enforced spending budget, and do not include resumed attempts. No-call branches
-and production time budgets can reduce the actual counts. Live/resume options are
-not enabled in this implementation step and are rejected.
+and production time budgets can reduce the actual counts. Live execution is not
+enabled in this implementation step and live opt-in options are rejected.
+
+### Read-only resume compatibility check
+
+`--resume <existing-run-directory>` checks compatibility only. It never constructs
+a model, writes metadata, advances a checkpoint or resumes execution. A match
+prints `mode: resume_compatibility_check`, `compatible: true` and
+`execution_resumed: false`; a mismatch returns exit code 2 with a fixed diagnostic
+and leaves the existing run untouched. Completed runs and unsupported artifact
+versions are rejected. `--resume` and `--validate-fixtures` are mutually exclusive.
+
+When `--cases`/`--repetitions` are omitted, the stored selection and repetition
+count are used; explicit selections must match the original ordered plan. Current
+manifest/recipe files and effective availability/staples configuration are still
+recomputed. Stored model/pricing settings are retained as the requested settings
+when no override is supplied (CLI model/pricing overrides belong to the live step).
+
+The internal `revision-evaluation-compatibility/v1` fingerprint uses canonical
+finite JSON and SHA-256. It covers artifact versions, ordered case/repetition
+identities, per-case input snapshots, exact manifest/recipe bytes, production
+prompt-module bytes (including re-ask wording), the canonical Revision response
+schema, ordered effective staples, model settings, prices, code identity and the
+maximum HTTP-attempt budget. Progress states, observation references, consumed
+budget, timestamps and resume history are excluded; changing progress cannot reset
+the original maximum. The check recomputes both the stored immutable settings and
+the current configuration against the original fingerprint.
+
+Code identity includes HEAD plus a Git-format digest of actual tracked and
+nonignored untracked working files, so two dirty checkouts are not treated as the
+same code. This is computed without updating the index or writing Git objects.
+Raw working bytes are used without clean filters; line-ending conversion therefore
+invalidates compatibility too. Keep run outputs ignored (as under `data/`) or
+outside the source repository so outputs do not change code identity. Unmerged
+entries, submodules, Git warnings and unreadable source files fail closed rather
+than publishing a partial identity. No Git fetch or other network operation runs.
+
+The committed contract fixtures use illustrative hashes, not a real Runner
+fingerprint, and are not resumable runs. Actual continuation and attempt selection
+remain later integration tasks; this boundary checks configuration compatibility,
+not the consistency of every saved observation.
 
 ### Contract asset generation
 

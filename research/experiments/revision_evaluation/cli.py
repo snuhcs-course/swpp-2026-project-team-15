@@ -10,6 +10,12 @@ from pathlib import Path
 from app.dishes.http import RETRY_WAITS
 from app.dishes.recipes import RecipeStore
 
+from .compatibility import (
+    capture_code_identity,
+    capture_input_identities,
+    load_resume_metadata,
+    validate_resume,
+)
 from .contract import fixture_root, validate_fixture_bundle
 from .planning import FROZEN_MANIFEST, ExecutionPlan, build_plan, load_manifest
 from .staples import StaplesSnapshot
@@ -60,14 +66,29 @@ def main(argv: Sequence[str] | None = None) -> int:
         nargs="+",
         help="explicit case IDs in execution order; default: all manifest cases",
     )
-    parser.add_argument("--repetitions", type=int, default=1)
     parser.add_argument(
+        "--repetitions", type=int, help="default: 1, or the stored count for --resume"
+    )
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--validate-fixtures",
         action="store_true",
         help="validate fixtures only, without building a plan",
     )
+    mode.add_argument(
+        "--resume",
+        type=Path,
+        help="read-only compatibility check of an existing incomplete run",
+    )
     parser.add_argument("--fixture-root", type=Path, default=fixture_root())
     args = parser.parse_args(argv)
+    stored = None
+    if args.resume is not None:
+        try:
+            stored = load_resume_metadata(args.resume)
+        except (OSError, ValueError, TypeError, KeyError, AttributeError):
+            print("resume compatibility check failed", file=sys.stderr)
+            return 2
     try:
         _, observations, _ = validate_fixture_bundle(args.fixture_root)
     except (OSError, ValueError, TypeError, KeyError, AttributeError):
@@ -82,12 +103,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         try:
             manifest = load_manifest(args.manifest)
             snapshot = StaplesSnapshot()
+            selected = args.cases
+            if selected is None:
+                selected = (
+                    list(dict.fromkeys(unit.case_id for unit in stored.plan))
+                    if stored
+                    else [case.id for case in manifest]
+                )
+            repetitions = args.repetitions
+            if repetitions is None:
+                repetitions = (
+                    max((unit.repetition for unit in stored.plan), default=0)
+                    if stored
+                    else 1
+                )
             plan = build_plan(
                 manifest,
-                args.cases
-                if args.cases is not None
-                else [case.id for case in manifest],
-                args.repetitions,
+                selected,
+                repetitions,
                 recipes=RecipeStore.load(args.recipes),
                 catalog=snapshot.catalog(),
                 snapshot=snapshot,
@@ -95,6 +128,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         except (OSError, ValueError, TypeError, KeyError, AttributeError):
             print("offline plan validation failed", file=sys.stderr)
             return 2
+        if stored is not None:
+            try:
+                validate_resume(
+                    stored,
+                    plan,
+                    capture_input_identities(plan, args.manifest, args.recipes),
+                    capture_code_identity(),
+                )
+            except (OSError, ValueError, TypeError, KeyError, AttributeError):
+                print("resume compatibility check failed", file=sys.stderr)
+                return 2
+            result.update(
+                mode="resume_compatibility_check",
+                compatible=True,
+                execution_resumed=False,
+            )
         result.update(
             plan=[
                 {"case_id": unit.case_id, "repetition": unit.repetition}
