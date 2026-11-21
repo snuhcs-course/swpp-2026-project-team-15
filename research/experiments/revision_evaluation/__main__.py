@@ -1,5 +1,5 @@
 # AI-assisted with Codex, 2026-11-21; reviewed by Soohyun An
-"""Expose the offline CLI through python -m experiments.revision_evaluation."""
+"""Expose the offline-by-default CLI through python -m experiments.revision_evaluation."""
 
 from .cli import main
 

@@ -220,11 +220,42 @@ def test_missing_resume_run_does_not_create_a_directory(tmp_path, capsys):
     assert not root.exists()
 
 
-def test_live_start_preflight_is_explicit_and_does_not_claim_execution(capsys, tmp_path):
+def test_live_start_dispatches_only_after_explicit_authorization(monkeypatch, capsys, tmp_path):
+    from experiments.revision_evaluation.contract import RunSummary
+    from experiments.revision_evaluation.generate_contract import (
+        fixture_observations,
+        fixture_summary,
+    )
+
+    summary = RunSummary.model_validate(fixture_summary(fixture_observations()))
+    summary.run_id = "dispatch-run"
+    calls = []
+
+    def prepare(run_id, plan, settings, **kwargs):
+        assert run_id == "dispatch-run" and settings.maximum == 2
+        assert settings.model_id == "fixture/model"
+        assert settings.pricing_metadata() == {
+            "input_per_million_usd": 0.1,
+            "output_per_million_usd": 0.4,
+        }
+        return summary  # Opaque sentinel: dispatch must forward it unchanged.
+
+    def execute(plan, metadata, **kwargs):
+        assert metadata is summary and kwargs["allow_live_api"] is True
+        assert kwargs["parent"] == tmp_path
+        calls.append(plan)
+        return summary
+
+    monkeypatch.setattr(cli, "prepare_metadata", prepare)
+    monkeypatch.setattr(cli, "run_new", execute)
     assert (
         cli.main(
             [
                 "--allow-live-api",
+                "--run-id",
+                "dispatch-run",
+                "--output-parent",
+                str(tmp_path),
                 "--max-http-attempts",
                 "2",
                 "--model",
@@ -239,12 +270,10 @@ def test_live_start_preflight_is_explicit_and_does_not_claim_execution(capsys, t
     )
     output = capsys.readouterr()
     data = json.loads(output.out)
-    assert data["mode"] == "live_start_preflight"
-    assert not data["execution_started"] and not data["live_execution_available"]
-    assert not data["budget_persisted"]
-    assert data["http_attempt_budget"] == {"maximum": 2, "consumed": 0, "remaining": 2}
-    assert data["model"]["id"] == "fixture/model"
-    assert data["pricing"] == {"input_per_million_usd": 0.1, "output_per_million_usd": 0.4}
+    assert data["mode"] == "live_start" and len(calls) == 1
+    assert data["http_attempts_cumulative"] == summary.totals.http_attempts
+    assert data["output_directory"] == str((tmp_path / "dispatch-run").resolve())
+    assert "network_requests_sent" not in data
     assert "private-configured-key" not in output.out + output.err
     assert not list(tmp_path.iterdir())
 
@@ -281,11 +310,15 @@ def test_live_preflight_requires_configured_key(monkeypatch, capsys):
 
 
 @pytest.mark.parametrize("override", [None, "same", "changed", "exhausted"])
-def test_live_resume_counts_unindexed_prepared_intent_without_mutation(
+def test_live_resume_checks_unindexed_budget_before_dispatch(
     tmp_path, monkeypatch, capsys, override
 ):
     from experiments.revision_evaluation.compatibility import compatibility_fingerprint
-    from experiments.revision_evaluation.generate_contract import fixture_observations
+    from experiments.revision_evaluation.contract import RunSummary
+    from experiments.revision_evaluation.generate_contract import (
+        fixture_observations,
+        fixture_summary,
+    )
 
     metadata, _, _, code = compatible_run()
     if override == "exhausted":
@@ -303,6 +336,16 @@ def test_live_resume_counts_unindexed_prepared_intent_without_mutation(
     (directory / "attempt-001.json").write_text(json.dumps(raw), encoding="utf-8")
     before = {path: path.read_bytes() for path in root.rglob("*.json")}
     monkeypatch.setattr(cli, "capture_code_identity", lambda: code)
+    calls = []
+    summary = RunSummary.model_validate(fixture_summary(fixture_observations()))
+
+    def resume(directory, plan, identities, current_code, **kwargs):
+        assert directory == root and current_code == code
+        assert kwargs["allow_live_api"] is True and kwargs["settings"].maximum == 20
+        calls.append(plan)
+        return summary
+
+    monkeypatch.setattr(cli, "run_resume", resume)
     args = ["--resume", str(root), "--allow-live-api"]
     if override in ("same", "changed"):
         args += ["--max-http-attempts", "20" if override == "same" else "21"]
@@ -311,10 +354,26 @@ def test_live_resume_counts_unindexed_prepared_intent_without_mutation(
     if override in ("changed", "exhausted"):
         assert status == 2 and output.out == ""
         assert output.err == "live configuration or budget validation failed\n"
+        assert not calls
     else:
         assert status == 0
         data = json.loads(output.out)
-        assert data["mode"] == "live_resume_preflight"
-        assert data["http_attempt_budget"] == {"maximum": 20, "consumed": 1, "remaining": 19}
-        assert not data["execution_started"]
+        assert data["mode"] == "live_resume" and len(calls) == 1
+        assert data["http_attempts_cumulative"] == summary.totals.http_attempts
     assert {path: path.read_bytes() for path in root.rglob("*.json")} == before
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["--run-id", "private-value"],
+        ["--output-parent", "private-path"],
+        ["--resume", "existing", "--allow-live-api", "--run-id", "another"],
+    ],
+)
+def test_new_output_settings_cannot_enable_execution_or_redirect_resume(args, capsys, tmp_path):
+    with pytest.raises(SystemExit) as captured:
+        cli.main(args)
+    assert captured.value.code == 2
+    assert capsys.readouterr().err == "invalid command-line arguments; use --help\n"
+    assert not list(tmp_path.iterdir())

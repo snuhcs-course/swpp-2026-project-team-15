@@ -1,9 +1,9 @@
 # Revision Evaluation Artifact Contract
 
-This package freezes the complete Runner artifact contract before live execution code is added.
+This package implements the research Runner against its frozen complete artifact contract.
 The public v1 boundary is [`schema.json`](schema.json) plus the self-contained
 [`fixtures/contract-v1`](fixtures/contract-v1) bundle. A consumer does not need to import this
-package or the future Runner.
+package or the Runner implementation.
 
 ## Artifact files
 
@@ -87,7 +87,8 @@ run names a versioned success definition.
 `reporting.render_summary(RunSummary.model_validate_json(summary_json))` returns
 deterministic Markdown for `summary.md`. It consumes only authoritative summary
 JSON, performs no aggregation, rescoring, model calls or file writes, and does not
-read metadata or observation files. The future Runner owns output publication.
+read metadata or observation files. `RunStore.write_summary(..., markdown=True)`
+owns guarded output publication; CLI execution currently publishes JSON only.
 The fixture bundle remains unchanged; a fixed fixture rendering is regression-tested
 by its UTF-8 digest. Displayed numbers use up to 12 significant digits; JSON retains
 the original precision.
@@ -137,25 +138,45 @@ create no run directory or artifacts. Printed bounds are conservative for a sing
 execution of each planned repetition: zero to two logical calls, each with at most
 `1 + len(RETRY_WAITS)` HTTP attempts (currently three). They are not predictions or
 an enforced spending budget, and do not include resumed attempts. No-call branches
-and production time budgets can reduce the actual counts. Live execution is not
-enabled in this implementation step; the explicit live options below perform
-configuration preflight only.
+and production time budgets can reduce the actual counts. Live execution requires
+the separate explicit opt-in below.
 
 ### Live configuration and durable budget boundary
 
-`--allow-live-api --max-http-attempts N` explicitly opts into live configuration
-preflight and requires a nonempty `OPENROUTER_API_KEY` environment variable. `N`
+`--allow-live-api --max-http-attempts N` explicitly authorizes live execution
+and requires a nonempty `OPENROUTER_API_KEY` environment variable. `N`
 must be a positive integer. `--model` selects a production model ID; optional
 `--input-per-million-usd` and `--output-per-million-usd` must be supplied together
 as finite nonnegative values. Without prices, unavailable provider cost remains
 missing rather than being invented as zero. No credential is printed.
 
-This command currently reports `live_start_preflight` or, with `--resume`,
-`live_resume_preflight`, with `execution_started: false` and
-`live_execution_available: false`. It sends no requests, constructs no model and
-writes no artifacts. A start's displayed cap is not yet persisted. Sequential
-execution and reopening an existing store remain integration tasks 5.5 and 5.6.
-These preflight results must not be treated as an executed or resumed evaluation.
+The following commands can incur provider charges. Set the key in the process
+environment beforehand; the runner does not discover or load `.env` files.
+
+```powershell
+.\server\.venv\Scripts\python.exe -m experiments.revision_evaluation --allow-live-api --max-http-attempts 6 --run-id revision-demo --cases R02a --repetitions 1
+.\server\.venv\Scripts\python.exe -m experiments.revision_evaluation --resume data/dish-revision-evaluation/revision-demo --allow-live-api
+```
+
+A new run writes beneath `--output-parent` (default: repository-relative
+`data/dish-revision-evaluation`) using `--run-id` or a UTC timestamp-based ID.
+Existing run directories are never reused for a start. Resume writes only within
+the original run directory and rejects `--run-id`/`--output-parent` redirection.
+Successful execution reports `live_start` or `live_resume`, the output directory,
+`summary_ref: summary.json`, operational completion and outcome counts. The
+`http_attempts_cumulative` field includes prior attempts and unknown delivery; it
+is not the number of HTTP requests sent by this invocation. Metadata, observations
+and authoritative JSON summary are persisted by the existing sequential runner.
+Markdown publication is a separate reporting operation.
+
+Completed plan units are skipped on resume. An incomplete attempt stays unchanged;
+continuation creates the next attempt number and retains its predecessor's usage,
+including confirmed subtotals when complete usage/cost is unavailable. A request
+whose response never reached durable storage retains unknown delivery/cost rather
+than an invented zero. API/response errors are persisted outcomes and do not stop
+later repetitions. Exit code 0 indicates operational completion, not semantic
+recipe quality; configuration/storage/budget failures return 2, interruption 130.
+Failure diagnostics are fixed messages without raw exception details.
 
 The research `live.make_live_model` factory separately assembles an explicitly
 authorized production model with a fresh logical-call recorder and a
@@ -172,8 +193,9 @@ not a concurrent reservation mechanism.
 
 ### Read-only resume compatibility check
 
-`--resume <existing-run-directory>` checks compatibility only. It never constructs
-a model, writes metadata, advances a checkpoint or resumes execution. A match
+Without `--allow-live-api`, `--resume <existing-run-directory>` checks compatibility
+only. It never constructs a model, writes metadata, advances a checkpoint or
+resumes execution. A match
 prints `mode: resume_compatibility_check`, `compatible: true` and
 `execution_resumed: false`; a mismatch returns exit code 2 with a fixed diagnostic
 and leaves the existing run untouched. Completed runs and unsupported artifact
@@ -185,7 +207,7 @@ manifest/recipe files and effective availability/staples configuration are still
 recomputed. Stored model/pricing settings are retained as the requested settings
 when no override is supplied. Explicit model/pricing overrides must still match
 the original fingerprint. A supplied `--max-http-attempts` must equal the original
-maximum; live resume preflight recomputes consumption from durable observations
+maximum; live resume recomputes consumption from durable observations
 and rejects an exhausted budget without modifying the run.
 
 The internal `revision-evaluation-compatibility/v1` fingerprint uses canonical
@@ -208,9 +230,11 @@ entries, submodules, Git warnings and unreadable source files fail closed rather
 than publishing a partial identity. No Git fetch or other network operation runs.
 
 The committed contract fixtures use illustrative hashes, not a real Runner
-fingerprint, and are not resumable runs. Actual continuation and attempt selection
-remain later integration tasks; this boundary checks configuration compatibility,
-not the consistency of every saved observation.
+fingerprint, and are not resumable runs. The read-only compatibility command checks
+configuration compatibility, not the consistency of every saved observation.
+Opt-in execution additionally delegates durable observation validation and attempt
+selection to `run_resume()`. Mock-run and offline-rescore CLI commands are not yet
+implemented; ordinary tests use mock transports without enabling real networking.
 
 ### Contract asset generation
 

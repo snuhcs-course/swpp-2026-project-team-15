@@ -1,10 +1,11 @@
 # AI-assisted with Codex, 2026-11-21; reviewed by Soohyun An
-"""Offline plan preview and contract-fixture validation; live execution is not enabled."""
+"""Offline by default; explicit opt-in executes or resumes a budgeted Revision run."""
 
 import argparse
 import json
 import sys
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 
 from app.dishes.http import RETRY_WAITS
@@ -12,6 +13,7 @@ from app.dishes.recipes import RecipeStore
 
 from .budgeting import read_run_budget
 from .compatibility import (
+    REPO_ROOT,
     capture_code_identity,
     capture_input_identities,
     load_resume_metadata,
@@ -21,6 +23,8 @@ from .contract import fixture_root, validate_fixture_bundle
 from .live import require_live_key, resolve_live_settings
 from .persistence import PersistenceError, _redact
 from .planning import FROZEN_MANIFEST, ExecutionPlan, build_plan, load_manifest
+from .provenance import prepare_metadata
+from .runner import run_new, run_resume
 from .staples import StaplesSnapshot
 
 
@@ -62,11 +66,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _main(argv: Sequence[str] | None = None) -> int:
-    """Validate fixtures and print a read-only plan by default, never constructing a model.
+    """Validate/preview offline unless explicit authorization selects live execution.
 
     Validation-only mode does not require recipe/catalog/availability configuration.
     Errors are fixed diagnostics rather than raw file/validation exceptions. Output
-    is console JSON only: no run directory, checkpoint or report is published.
+    is console JSON only for offline modes. Live modes delegate publication and
+    all execution decisions to the existing runner, never recreating its policy.
     """
     parser = _SafeParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, default=FROZEN_MANIFEST)
@@ -90,13 +95,13 @@ def _main(argv: Sequence[str] | None = None) -> int:
     mode.add_argument(
         "--resume",
         type=Path,
-        help="read-only compatibility check of an existing incomplete run",
+        help="check compatibility read-only; add --allow-live-api to resume execution",
     )
     parser.add_argument("--fixture-root", type=Path, default=fixture_root())
     parser.add_argument(
         "--allow-live-api",
         action="store_true",
-        help="explicitly authorize live start/resume configuration (preflight only until integration)",
+        help="explicitly authorize model requests for a new run or --resume",
     )
     parser.add_argument(
         "--model", help="production model ID; defaults to production/stored model"
@@ -108,6 +113,14 @@ def _main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--input-per-million-usd", type=float)
     parser.add_argument("--output-per-million-usd", type=float)
+    parser.add_argument(
+        "--run-id", help="new run ID; default: a UTC timestamp-based ID"
+    )
+    parser.add_argument(
+        "--output-parent",
+        type=Path,
+        help="new run parent; default: data/dish-revision-evaluation",
+    )
     args = parser.parse_args(argv)
     configured = any(
         value is not None
@@ -122,6 +135,10 @@ def _main(argv: Sequence[str] | None = None) -> int:
         parser.error("fixture validation cannot configure live access")
     if configured and not args.allow_live_api and args.resume is None:
         parser.error("live settings require opt-in or an existing run")
+    if (args.run_id is not None or args.output_parent is not None) and (
+        not args.allow_live_api or args.resume is not None or args.validate_fixtures
+    ):
+        parser.error("new output settings require live start, not resume or validation")
     stored = None
     if args.resume is not None:
         try:
@@ -143,6 +160,8 @@ def _main(argv: Sequence[str] | None = None) -> int:
         try:
             manifest = load_manifest(args.manifest)
             snapshot = StaplesSnapshot()
+            catalog = snapshot.catalog()
+            recipes = RecipeStore.load(args.recipes)
             selected = args.cases
             if selected is None:
                 selected = (
@@ -161,8 +180,8 @@ def _main(argv: Sequence[str] | None = None) -> int:
                 manifest,
                 selected,
                 repetitions,
-                recipes=RecipeStore.load(args.recipes),
-                catalog=snapshot.catalog(),
+                recipes=recipes,
+                catalog=catalog,
                 snapshot=snapshot,
             )
         except (OSError, ValueError, TypeError, KeyError, AttributeError):
@@ -195,11 +214,13 @@ def _main(argv: Sequence[str] | None = None) -> int:
                 return 2
         if stored is not None:
             try:
+                identities = capture_input_identities(plan, args.manifest, args.recipes)
+                code = capture_code_identity()
                 validate_resume(
                     stored,
                     plan,
-                    capture_input_identities(plan, args.manifest, args.recipes),
-                    capture_code_identity(),
+                    identities,
+                    code,
                     model=requested_model,
                     pricing=requested_prices,
                 )
@@ -256,15 +277,56 @@ def _main(argv: Sequence[str] | None = None) -> int:
                 },
             )
             if args.allow_live_api:
-                # Sequential execution/publication is the next integration unit;
-                # opt-in must never make a preparation result look like a live run.
-                result.update(
-                    mode="live_resume_preflight" if stored else "live_start_preflight",
-                    execution_started=False,
-                    live_execution_available=False,
-                    budget_persisted=stored is not None,
+                try:
+                    common = {
+                        "snapshot": snapshot,
+                        "catalog": catalog,
+                        "recipes": recipes,
+                        "settings": settings,
+                        "allow_live_api": True,
+                    }
+                    if stored is not None:
+                        root = args.resume
+                        summary = run_resume(root, plan, identities, code, **common)
+                    else:
+                        run_id = args.run_id or datetime.now(UTC).strftime(
+                            "revision-%Y%m%dT%H%M%S%fZ"
+                        )
+                        parent = (
+                            args.output_parent
+                            if args.output_parent is not None
+                            else REPO_ROOT / "data/dish-revision-evaluation"
+                        )
+                        metadata = prepare_metadata(
+                            run_id,
+                            plan,
+                            settings,
+                            manifest_path=args.manifest,
+                            recipes_path=args.recipes,
+                            secrets=(key,),
+                        )
+                        root = parent / run_id
+                        summary = run_new(plan, metadata, parent=parent, **common)
+                except KeyboardInterrupt:
+                    print("evaluation execution interrupted", file=sys.stderr)
+                    return 130
+                except Exception:  # noqa: BLE001 - no raw storage/provider/config exception on console
+                    print("evaluation execution failed", file=sys.stderr)
+                    return 2
+                # Prepared identities include unknown delivery and resumed history.
+                # Do not mislabel this cumulative count as requests sent this time.
+                result = _redact(
+                    {
+                        "mode": "live_resume" if stored else "live_start",
+                        "run_id": summary.run_id,
+                        "complete": summary.complete,
+                        "output_directory": str(root.resolve()),
+                        "summary_ref": "summary.json",
+                        "http_attempts_cumulative": summary.totals.http_attempts,
+                        "outcomes": summary.outcomes.model_dump(),
+                    },
+                    (key,),
                 )
-                result = _redact(result, (key,))
     # ASCII JSON keeps console behavior independent of the Windows code page.
     print(json.dumps(result, ensure_ascii=True, sort_keys=True, indent=2))
     return 0
