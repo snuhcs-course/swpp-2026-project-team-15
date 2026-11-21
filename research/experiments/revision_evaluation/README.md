@@ -234,7 +234,70 @@ fingerprint, and are not resumable runs. The read-only compatibility command che
 configuration compatibility, not the consistency of every saved observation.
 Opt-in execution additionally delegates durable observation validation and attempt
 selection to `run_resume()`. Mock-run and offline-rescore CLI commands are not yet
-implemented; ordinary tests use mock transports without enabling real networking.
+implemented as dedicated options; use the existing test/API commands below instead.
+
+### Mock execution without live access
+
+From the repository root, run the end-to-end CLI tests with disposable local Git
+inputs and `httpx.MockTransport`:
+
+```powershell
+.\server\.venv\Scripts\python.exe -m pytest server/tests/experiments/revision_evaluation/test_cli_execution.py -q -p no:cacheprovider
+```
+
+These tests replace only the HTTP transport and source/configuration location;
+the real runner, Revision, checkpoints, budgeting and persistence execute. They
+exercise interruption/resume, immutable earlier attempts, cumulative usage/cost,
+budget exhaustion, changed-source rejection and existing-directory protection.
+Real sockets/DNS are blocked and the key is synthetic. Artifacts are temporary
+pytest data, not a new run in the repository. Passing mocks establish execution
+and artifact behavior, not culinary quality or live provider compatibility.
+
+### Offline deterministic rescore preview
+
+After setting `PYTHONPATH` as above, this PowerShell command prints a fresh JSON
+summary using the current deterministic evaluator and the stored raw observations.
+It does not construct a model, read an API key, run production checks or invoke a
+Judge. The committed bundle provides a reproducible example:
+
+```powershell
+@'
+import json
+import sys
+from pathlib import Path
+
+from experiments.revision_evaluation.contract import validate_fixture_bundle
+from experiments.revision_evaluation.evaluation import evaluate_observation
+from experiments.revision_evaluation.summary import summarize_run
+
+metadata, observations, stored = validate_fixture_bundle(Path(sys.argv[1]))
+refs = list(dict.fromkeys(stored.observation_refs))
+rescored = {
+    ref: evaluate_observation(observation)
+    for ref, observation in zip(refs, observations, strict=True)
+}
+summary = summarize_run(metadata, rescored, generated_at=stored.generated_at)
+print(json.dumps(summary.model_dump(by_alias=True), ensure_ascii=True, indent=2))
+'@ | .\server\.venv\Scripts\python.exe - research/experiments/revision_evaluation/fixtures/contract-v1
+```
+
+Replace the final path with an existing self-contained run directory containing
+metadata, every referenced observation and a matching summary. This validates the
+stored bundle, recomputes parsing/structure/reference/coverage findings on copies,
+and aggregates without replacing any file. Production outcomes, check decisions,
+requests, decoded answers, timing and usage remain historical evidence. All
+retained attempts contribute cumulative metrics, not only completed attempts.
+An index lagging behind durable checkpoints must first be reconciled by compatible
+resume; this preview does not discover, repair or silently discard orphan files.
+
+The preview reuses the stored generation timestamp for deterministic output; it
+does not claim a new execution or change the stored provenance. If evaluator code
+has changed, keep the current code identity alongside any separately saved preview
+for interpretation. It neither overwrites authoritative `summary.json` nor bypasses
+completed-attempt immutability. For Markdown display, the existing pure
+`reporting.render_summary(summary)` can project that returned summary without
+rescoring it again. Unknown in-flight usage/cost stays unknown; only a previously
+recorded confirmed subtotal is retained.
 
 ### Contract asset generation
 
