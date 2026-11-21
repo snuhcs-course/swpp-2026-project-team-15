@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 
 from .contract import Observation, RunMetadata, validate_plan_unit_observations
+from .telemetry import validate_cumulative_telemetry
 
 
 class PersistenceError(RuntimeError):
@@ -240,7 +241,7 @@ class RunStore:
         return relative
 
     def write_metadata(self, metadata: RunMetadata) -> None:
-        """Publish sanitized metadata only when plan states match saved attempts."""
+        """Publish sanitized metadata only when plan states and totals match saved attempts."""
         value = RunMetadata.model_validate(metadata.model_dump(by_alias=True))
         if value.run_id != self.run_id:
             raise ValueError("metadata belongs to a different run")
@@ -260,6 +261,7 @@ class RunStore:
             expected = "completed" if completed else "incomplete" if observations else "not_started"
             if unit.state != expected:
                 raise ValueError("plan state does not match saved attempts")
+            validate_cumulative_telemetry(unit, observations)
         sanitized = _redact(value.model_dump(by_alias=True), self._secrets)
         checked = RunMetadata.model_validate(sanitized)
         if checked.run_id != self.run_id:

@@ -10,6 +10,7 @@ from .contract import (
     ModelCall,
     Observation,
     OptionalNumber,
+    PlanUnit,
     Telemetry,
     TokenTotal,
     TokenTotals,
@@ -225,3 +226,37 @@ def repetition_telemetry(observations: Sequence[Observation]) -> Telemetry:
     if len(identities) > 1 or len(set(attempts)) != len(attempts):
         raise ValueError("expected unique execution attempts of one repetition")
     return aggregate_telemetry([value.telemetry for value in observations])
+
+
+def validate_cumulative_telemetry(unit: PlanUnit, observations: Sequence[Observation]) -> None:
+    """Reject stale plan totals without repairing metadata or retained observations.
+
+    Unstarted units have no cumulative measurement. Otherwise all retained attempts
+    participate, including interrupted ones. Only summed durations and costs tolerate
+    rounding differences (1e-12 relative/absolute); counts, tokens, applicability,
+    provenance and configured price inputs must match exactly.
+    """
+    recorded = unit.cumulative_telemetry
+    if not observations:
+        if recorded is not None:
+            raise ValueError("cumulative telemetry must be absent without observations")
+        return
+    expected = repetition_telemetry(observations)
+    if recorded is None:
+        raise ValueError("cumulative telemetry is required for recorded observations")
+    actual_data, expected_data = recorded.model_dump(), expected.model_dump()
+
+    def same_number(actual: float | None, expected: float | None) -> bool:
+        if actual is None or expected is None:
+            return actual is expected
+        return math.isclose(actual, expected, rel_tol=1e-12, abs_tol=1e-12)
+
+    # Strip only the fields eligible for float tolerance; the remaining serialized
+    # structure is compared exactly, so unknown/N/A states cannot collapse to zero.
+    pairs = []
+    for name in TIME_FIELDS:
+        pairs.append((actual_data[name].pop("value"), expected_data[name].pop("value")))
+    for name in ("value", "confirmed_subtotal"):
+        pairs.append((actual_data["cost_usd"].pop(name), expected_data["cost_usd"].pop(name)))
+    if actual_data != expected_data or not all(same_number(*pair) for pair in pairs):
+        raise ValueError("cumulative telemetry does not match retained observations")
