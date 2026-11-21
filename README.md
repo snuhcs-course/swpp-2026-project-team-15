@@ -1,31 +1,33 @@
-# My Little Chef — dish suggestion version
+# My Little Chef
 
-SNU SWPP Fall 2026 · Team 15. The Android app recognises the ingredients in a fridge from photos or a short sweep, keeps the fridge and profile on the phone, and suggests **dishes** to cook with them, with YouTube videos and substitutes for what is missing. This version has **no recipe database**: dishes come from one self-authored list on the server, and videos are YouTube embeds that link to YouTube. Other versions (for example the recipe-database version on `main`) are other branches or commits; there are no mode flags.
+SNU SWPP Fall 2026 · Team 15. The Android app recognises the ingredients in a fridge from photos or a short sweep, keeps the fridge and profile on the phone, and suggests **dishes** to cook with them, with YouTube videos and substitutes for what is missing. There is **no recipe database**: dishes come from one self-authored list on the server, and videos are YouTube embeds that link to YouTube. The earlier recipe-database version is kept in the history before the merge of #25; there are no mode flags.
 
 ## Source layout
 
 ```text
 .
-├── .github/workflows/      # Server, Android and ARM checks
+├── .github/workflows/      # Server, Android and ARM checks; deploy to the team server after green main pushes
 ├── android/                # Compose app, DataStore, JVM/device tests
 ├── server/
 │   ├── app/dishes/         # Dish list, model-based suggestion, substitutes and video links
-│   ├── app/vision/         # Ingredient recognition providers
+│   ├── app/vision/         # Ingredient recognition providers and the review step
+│   ├── app/telemetry/      # Opt-in usage events, stored only on the server
+│   ├── app/openrouter.py   # Shared OpenRouter client
 │   ├── fixtures/           # Recorded recognition responses, synthetic demo image
 │   └── tests/              # Automated checks and protected references
 ├── research/               # Evaluation tools and experiments (the record of decisions)
 ├── scripts/                # Android install, integrity check, packaging
-├── deploy/                 # nginx and the runtime template
+├── deploy/                 # nginx, the runtime template and release.sh
 ├── Dockerfile              # Nonroot runtime API image
 └── compose.yaml            # nginx and API (no database)
 ```
 
 ## Quick start (app only)
 
-The team server runs this branch at `http://158.101.141.165/` (no login; model calls cost money; only the usage upload is rate-limited). With a phone attached by USB:
+The team server runs `main` at `http://158.101.141.165/` (no login; model calls cost money; only the usage upload is rate-limited). With a phone attached by USB:
 
 ```sh
-git clone -b feat/youtube-recipe-demo git@github.com:snuhcs-course/swpp-2026-project-team-15.git
+git clone git@github.com:snuhcs-course/swpp-2026-project-team-15.git
 cd swpp-2026-project-team-15
 sh scripts/install-android.sh        # builds and installs the isolated .cloudtest app, talking to the team server
 ```
@@ -61,9 +63,11 @@ The app uploads a photo, or the sharpest frames of a 5 s sweep, to `/analyze`; t
 | Endpoint | Purpose |
 | --- | --- |
 | POST `/analyze` | Photo (`image`) or 2–15 views (`images`) → ingredient candidates |
+| POST `/analyze/review`, GET `/vision/capabilities` | Recognition results grouped for the user's review (model scores are not calibrated); whether recognition runs mock or live |
 | GET `/dishes`, POST `/dishes/suggest`, POST `/dishes/adapt` (deprecated) | Dish list, suggestions, substitutes for older installed apps |
 | POST `/dishes/videos`, GET `/dishes/{id}/recipe`, POST `/dishes/recipe`, POST `/dishes/revise` | Videos of a dish (landscape, embeddable), its stored recipe, the recipe with owned rows, the recipe adapted to the fridge |
 | GET `/recipes/ingredients`, POST `/recipes/ingredient-suggestions` | Entry completion and "add this to complete more dishes" |
+| POST `/telemetry/events` | Usage events after the user agrees (ADR 007); off unless `TELEMETRY_FILE` is set |
 | GET `/health`, GET `/ready` | Liveness; dish list loaded |
 
 OpenAPI: <http://127.0.0.1:8000/docs> while running. Details: [server README](server/README.md), [deployment](deploy/README.md).
@@ -72,8 +76,9 @@ OpenAPI: <http://127.0.0.1:8000/docs> while running. Details: [server README](se
 
 ```sh
 cd server && uv sync --locked
-uv run ruff check . ../scripts ../research/evaluation
-uv run ruff format --check . ../scripts ../research/evaluation
+uv run ruff check . ../scripts ../research
+uv run ruff format --check . ../scripts ../research
+uv run mypy
 python3 ../scripts/check_integration_policy.py
 uv run pytest
 cd ../android && sh ./gradlew lintDebug testDebugUnitTest assembleDebug assembleCloudTest
@@ -98,7 +103,7 @@ python3 scripts/package_server.py --output dist/server.tar.gz
 
 ## Demo UAT (2026-11-17)
 
-Run on a phone against the demo server, from fresh clones of this branch (server: `docker compose up`; app: `scripts/install-android.sh`). Evidence is the app's accessibility tree and the server logs; no photos of private scenes were used.
+A record of the build before the UI merge of #25; the screens have changed since. Run on a phone against the team server, from fresh clones of the branch (server: `docker compose up`; app: `scripts/install-android.sh`). Evidence is the app's accessibility tree and the server logs; no photos of private scenes were used.
 
 | # | Story | Result |
 | --- | --- | --- |
@@ -116,4 +121,4 @@ Run on a phone against the demo server, from fresh clones of this branch (server
 | 12 | Given a photo of the fridge, when I add it, then ingredients are recognised | Not run (needs a private photo and the camera permission) |
 | 13 | Given typed Korean text, when I type a name, then completions appear | Not run on the phone (adb cannot type Korean); the name list endpoint and the app's name matching have unit tests |
 
-Observed limits: a common input of four ingredients made the model list so many dishes that the answer was cut at the 4,096-token limit in 3 of 4 calls; the server now keeps the complete dishes before the cut (about 30 cards, 10 s). The model service answered with rate-limit errors several times; calls are retried twice.
+Observed limits at the time: a common input of four ingredients made the model list so many dishes that the answer was cut at the 4,096-token limit in 3 of 4 calls; the server now keeps the complete dishes before the cut and returns at most 36. The model service answered with rate-limit errors several times; calls are retried twice.
