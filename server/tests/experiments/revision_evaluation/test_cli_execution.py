@@ -7,6 +7,7 @@ import socket
 import httpx
 import pytest
 from experiments.revision_evaluation import cli, compatibility, provenance, runner
+from experiments.revision_evaluation.budgeting import read_run_budget
 from experiments.revision_evaluation.contract import Observation, RunMetadata, RunSummary
 
 from tests.experiments.revision_evaluation.test_provenance import KEY, local_source
@@ -149,6 +150,60 @@ def test_exhausted_budget_blocks_retry_and_cannot_be_reset_on_resume(command, ca
         assert cli.main([*resume, "--allow-live-api", *extra]) == 2
         assert capsys.readouterr().err == "live configuration or budget validation failed\n"
     assert len(sends) == 1 and before == {path: path.read_bytes() for path in before}
+
+
+@pytest.mark.parametrize("lagging_index", [False, True])
+def test_zero_budget_resume_finalizes_completed_observations_without_requests(
+    command, monkeypatch, capsys, lagging_index
+):
+    """Reconcile durable completions, not just metadata flags, without spending budget."""
+    root, start, resume, sends, _, _ = command
+    start[start.index("--max-http-attempts") + 1] = "3"
+    publish = runner._publish_progress
+
+    def stop_before_finalization(store, *, state):
+        if lagging_index and state == "interrupted":
+            raise OSError("abrupt stop prevents metadata refresh")
+        durable = read_run_budget(store.root)
+        all_completed = len(durable.observations) == 3 and all(
+            item.execution.state == "completed" for item in durable.observations
+        )
+        if state == "completed" or (lagging_index and all_completed):
+            raise KeyboardInterrupt
+        return publish(store, state=state)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(runner, "_publish_progress", stop_before_finalization)
+        assert cli.main(start) == 130
+    assert capsys.readouterr().err == "evaluation execution interrupted\n"
+    durable = read_run_budget(root)
+    assert durable.budget.remaining == 0 and len(sends) == 3
+    assert durable.metadata.state != "completed"
+    if lagging_index:
+        assert durable.metadata.plan[-1].state == "incomplete"
+        assert durable.metadata.http_attempt_budget.consumed == 2
+    else:
+        assert all(unit.state == "completed" for unit in durable.metadata.plan)
+    before = {path: path.read_bytes() for path in root.glob("observations/*/*.json")}
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("finalization must not construct a model or transport")
+
+    monkeypatch.setattr(runner, "make_live_model", forbidden)
+    monkeypatch.setattr(httpx, "MockTransport", forbidden)
+    assert cli.main([*resume, "--allow-live-api"]) == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["mode"] == "live_resume" and output["complete"]
+    assert output["http_attempts_cumulative"] == 3 and len(sends) == 3
+    metadata, summary, observations = saved(root)
+    assert metadata.state == "completed" and summary.complete
+    assert metadata.http_attempt_budget.maximum == metadata.http_attempt_budget.consumed == 3
+    assert metadata.http_attempt_budget.remaining == 0
+    assert len(metadata.resume_history) == 1 and len(observations) == 3
+    assert summary.totals.cost_usd.value == pytest.approx(0.03)
+    assert summary.totals.tokens.input_tokens.value == 30
+    assert before == {path: path.read_bytes() for path in before}
+    assert set(before) == set(root.glob("observations/*/*.json"))
 
 
 def test_changed_source_rejects_resume_without_any_request_or_write(command, capsys):

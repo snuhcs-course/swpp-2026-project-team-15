@@ -208,7 +208,11 @@ recomputed. Stored model/pricing settings are retained as the requested settings
 when no override is supplied. Explicit model/pricing overrides must still match
 the original fingerprint. A supplied `--max-http-attempts` must equal the original
 maximum; live resume recomputes consumption from durable observations
-and rejects an exhausted budget without modifying the run.
+and rejects an exhausted budget without modifying the run when unfinished plan
+units remain. If every observation is already completed and only run finalization
+was interrupted, opt-in resume can finalize at zero remaining budget without
+constructing a model/transport or sending a request. The runner reconciles durable
+observations even when the metadata index lags behind them; the cap is never reset.
 
 The internal `revision-evaluation-compatibility/v1` fingerprint uses canonical
 finite JSON and SHA-256. It covers artifact versions, ordered case/repetition

@@ -310,7 +310,7 @@ def test_live_preflight_requires_configured_key(monkeypatch, capsys):
 
 
 @pytest.mark.parametrize("override", [None, "same", "changed", "exhausted"])
-def test_live_resume_checks_unindexed_budget_before_dispatch(
+def test_live_resume_preserves_cap_and_delegates_exhaustion_to_runner(
     tmp_path, monkeypatch, capsys, override
 ):
     from experiments.revision_evaluation.compatibility import compatibility_fingerprint
@@ -340,9 +340,15 @@ def test_live_resume_checks_unindexed_budget_before_dispatch(
     summary = RunSummary.model_validate(fixture_summary(fixture_observations()))
 
     def resume(directory, plan, identities, current_code, **kwargs):
+        from experiments.revision_evaluation.budgeting import BudgetExceeded
+
         assert directory == root and current_code == code
-        assert kwargs["allow_live_api"] is True and kwargs["settings"].maximum == 20
+        assert kwargs["allow_live_api"] is True
         calls.append(plan)
+        if override == "exhausted":
+            assert kwargs["settings"].maximum == 1
+            raise BudgetExceeded("HTTP-attempt budget exhausted")
+        assert kwargs["settings"].maximum == 20
         return summary
 
     monkeypatch.setattr(cli, "run_resume", resume)
@@ -354,7 +360,7 @@ def test_live_resume_checks_unindexed_budget_before_dispatch(
     if override in ("changed", "exhausted"):
         assert status == 2 and output.out == ""
         assert output.err == "live configuration or budget validation failed\n"
-        assert not calls
+        assert len(calls) == (1 if override == "exhausted" else 0)
     else:
         assert status == 0
         data = json.loads(output.out)

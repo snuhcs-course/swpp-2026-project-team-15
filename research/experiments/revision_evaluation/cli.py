@@ -11,7 +11,7 @@ from pathlib import Path
 from app.dishes.http import RETRY_WAITS
 from app.dishes.recipes import RecipeStore
 
-from .budgeting import read_run_budget
+from .budgeting import BudgetExceeded, read_run_budget
 from .compatibility import (
     REPO_ROOT,
     capture_code_identity,
@@ -236,8 +236,8 @@ def _main(argv: Sequence[str] | None = None) -> int:
                 else:
                     budget = None
                 key = require_live_key(args.allow_live_api) if args.allow_live_api else None
-                if args.allow_live_api and budget is not None and budget.remaining == 0:
-                    raise ValueError("HTTP-attempt budget exhausted")
+                # The runner reconciles durable completions before deciding whether
+                # zero remaining budget blocks work or permits finalization only.
             except (
                 OSError,
                 ValueError,
@@ -293,6 +293,9 @@ def _main(argv: Sequence[str] | None = None) -> int:
                 except KeyboardInterrupt:
                     print("evaluation execution interrupted", file=sys.stderr)
                     return 130
+                except BudgetExceeded:
+                    print("live configuration or budget validation failed", file=sys.stderr)
+                    return 2
                 except Exception:  # noqa: BLE001 - no raw storage/provider/config exception on console
                     print("evaluation execution failed", file=sys.stderr)
                     return 2
