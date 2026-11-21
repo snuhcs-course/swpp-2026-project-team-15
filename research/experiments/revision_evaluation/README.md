@@ -138,7 +138,37 @@ execution of each planned repetition: zero to two logical calls, each with at mo
 `1 + len(RETRY_WAITS)` HTTP attempts (currently three). They are not predictions or
 an enforced spending budget, and do not include resumed attempts. No-call branches
 and production time budgets can reduce the actual counts. Live execution is not
-enabled in this implementation step and live opt-in options are rejected.
+enabled in this implementation step; the explicit live options below perform
+configuration preflight only.
+
+### Live configuration and durable budget boundary
+
+`--allow-live-api --max-http-attempts N` explicitly opts into live configuration
+preflight and requires a nonempty `OPENROUTER_API_KEY` environment variable. `N`
+must be a positive integer. `--model` selects a production model ID; optional
+`--input-per-million-usd` and `--output-per-million-usd` must be supplied together
+as finite nonnegative values. Without prices, unavailable provider cost remains
+missing rather than being invented as zero. No credential is printed.
+
+This command currently reports `live_start_preflight` or, with `--resume`,
+`live_resume_preflight`, with `execution_started: false` and
+`live_execution_available: false`. It sends no requests, constructs no model and
+writes no artifacts. A start's displayed cap is not yet persisted. Sequential
+execution and reopening an existing store remain integration tasks 5.5 and 5.6.
+These preflight results must not be treated as an executed or resumed evaluation.
+
+The research `live.make_live_model` factory separately assembles an explicitly
+authorized production model with a fresh logical-call recorder and a
+`BudgetedRunStore`. The store requires the original metadata before any attempt;
+every pre-send checkpoint checks the immutable run cap before delegating to atomic
+storage. Scanning includes observations not yet indexed by lagging metadata, so
+unknown delivery consumes a unit and cannot become a new resume allowance.
+Response checkpoint replacement does not count an identity twice. Earlier usage
+and confirmed cost/token subtotals remain retained. A budget or storage failure
+escapes as the existing operational `CheckpointError`, stopping before a send,
+retry or re-ask. Budget scanning stays inside the checkpointer's persistence timing
+interval, excluded from production policy time. This is a sequential boundary,
+not a concurrent reservation mechanism.
 
 ### Read-only resume compatibility check
 
@@ -153,7 +183,10 @@ When `--cases`/`--repetitions` are omitted, the stored selection and repetition
 count are used; explicit selections must match the original ordered plan. Current
 manifest/recipe files and effective availability/staples configuration are still
 recomputed. Stored model/pricing settings are retained as the requested settings
-when no override is supplied (CLI model/pricing overrides belong to the live step).
+when no override is supplied. Explicit model/pricing overrides must still match
+the original fingerprint. A supplied `--max-http-attempts` must equal the original
+maximum; live resume preflight recomputes consumption from durable observations
+and rejects an exhausted budget without modifying the run.
 
 The internal `revision-evaluation-compatibility/v1` fingerprint uses canonical
 finite JSON and SHA-256. It covers artifact versions, ordered case/repetition

@@ -105,7 +105,7 @@ def test_invalid_plan_returns_fixed_diagnostic_without_writes(args, capsys, tmp_
     [
         ["--cases"],
         ["--repetitions", "private-value"],
-        ["--allow-live-api"],
+        ["--allow-live-api", "--validate-fixtures"],
         ["--resume", "private-value", "--validate-fixtures"],
     ],
 )
@@ -218,3 +218,103 @@ def test_missing_resume_run_does_not_create_a_directory(tmp_path, capsys):
     assert cli.main(["--resume", str(root)]) == 2
     assert capsys.readouterr().err == "resume compatibility check failed\n"
     assert not root.exists()
+
+
+def test_live_start_preflight_is_explicit_and_does_not_claim_execution(capsys, tmp_path):
+    assert (
+        cli.main(
+            [
+                "--allow-live-api",
+                "--max-http-attempts",
+                "2",
+                "--model",
+                "fixture/model",
+                "--input-per-million-usd",
+                "0.1",
+                "--output-per-million-usd",
+                "0.4",
+            ]
+        )
+        == 0
+    )
+    output = capsys.readouterr()
+    data = json.loads(output.out)
+    assert data["mode"] == "live_start_preflight"
+    assert not data["execution_started"] and not data["live_execution_available"]
+    assert not data["budget_persisted"]
+    assert data["http_attempt_budget"] == {"maximum": 2, "consumed": 0, "remaining": 2}
+    assert data["model"]["id"] == "fixture/model"
+    assert data["pricing"] == {"input_per_million_usd": 0.1, "output_per_million_usd": 0.4}
+    assert "private-configured-key" not in output.out + output.err
+    assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        [],
+        ["--max-http-attempts", "0"],
+        ["--max-http-attempts", "-1"],
+        ["--max-http-attempts", "1", "--input-per-million-usd", "1"],
+        [
+            "--max-http-attempts",
+            "1",
+            "--input-per-million-usd",
+            "nan",
+            "--output-per-million-usd",
+            "0",
+        ],
+    ],
+)
+def test_live_preflight_rejects_invalid_settings_without_writes(options, capsys, tmp_path):
+    assert cli.main(["--allow-live-api", *options]) == 2
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert output.err == "live configuration or budget validation failed\n"
+    assert not list(tmp_path.iterdir())
+
+
+def test_live_preflight_requires_configured_key(monkeypatch, capsys):
+    monkeypatch.delenv("OPENROUTER_API_KEY")
+    assert cli.main(["--allow-live-api", "--max-http-attempts", "1"]) == 2
+    assert capsys.readouterr().err == "live configuration or budget validation failed\n"
+
+
+@pytest.mark.parametrize("override", [None, "same", "changed", "exhausted"])
+def test_live_resume_counts_unindexed_prepared_intent_without_mutation(
+    tmp_path, monkeypatch, capsys, override
+):
+    from experiments.revision_evaluation.compatibility import compatibility_fingerprint
+    from experiments.revision_evaluation.generate_contract import fixture_observations
+
+    metadata, _, _, code = compatible_run()
+    if override == "exhausted":
+        metadata.http_attempt_budget.maximum = 1
+        metadata.http_attempt_budget.remaining = 1
+        metadata.compatibility_fingerprint = compatibility_fingerprint(metadata)
+    root = tmp_path / "existing"
+    root.mkdir()
+    (root / "metadata.json").write_text(metadata.model_dump_json(), encoding="utf-8")
+    # The durable intent may precede the next metadata publication after a crash.
+    raw = fixture_observations()["resumed__r03/attempt-001.json"]
+    raw.update(run_id=metadata.run_id, case_id="R02a", repetition=1)
+    directory = root / "observations" / "R02a__r01"
+    directory.mkdir(parents=True)
+    (directory / "attempt-001.json").write_text(json.dumps(raw), encoding="utf-8")
+    before = {path: path.read_bytes() for path in root.rglob("*.json")}
+    monkeypatch.setattr(cli, "capture_code_identity", lambda: code)
+    args = ["--resume", str(root), "--allow-live-api"]
+    if override in ("same", "changed"):
+        args += ["--max-http-attempts", "20" if override == "same" else "21"]
+    status = cli.main(args)
+    output = capsys.readouterr()
+    if override in ("changed", "exhausted"):
+        assert status == 2 and output.out == ""
+        assert output.err == "live configuration or budget validation failed\n"
+    else:
+        assert status == 0
+        data = json.loads(output.out)
+        assert data["mode"] == "live_resume_preflight"
+        assert data["http_attempt_budget"] == {"maximum": 20, "consumed": 1, "remaining": 19}
+        assert not data["execution_started"]
+    assert {path: path.read_bytes() for path in root.rglob("*.json")} == before

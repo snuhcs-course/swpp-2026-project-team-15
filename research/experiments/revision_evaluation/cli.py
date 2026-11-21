@@ -10,6 +10,7 @@ from pathlib import Path
 from app.dishes.http import RETRY_WAITS
 from app.dishes.recipes import RecipeStore
 
+from .budgeting import read_run_budget
 from .compatibility import (
     capture_code_identity,
     capture_input_identities,
@@ -17,6 +18,8 @@ from .compatibility import (
     validate_resume,
 )
 from .contract import fixture_root, validate_fixture_bundle
+from .live import require_live_key, resolve_live_settings
+from .persistence import PersistenceError, _redact
 from .planning import FROZEN_MANIFEST, ExecutionPlan, build_plan, load_manifest
 from .staples import StaplesSnapshot
 
@@ -81,7 +84,35 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="read-only compatibility check of an existing incomplete run",
     )
     parser.add_argument("--fixture-root", type=Path, default=fixture_root())
+    parser.add_argument(
+        "--allow-live-api",
+        action="store_true",
+        help="explicitly authorize live start/resume configuration (preflight only until integration)",
+    )
+    parser.add_argument(
+        "--model", help="production model ID; defaults to production/stored model"
+    )
+    parser.add_argument(
+        "--max-http-attempts",
+        type=int,
+        help="required positive run cap for a live start; cannot change on resume",
+    )
+    parser.add_argument("--input-per-million-usd", type=float)
+    parser.add_argument("--output-per-million-usd", type=float)
     args = parser.parse_args(argv)
+    configured = any(
+        value is not None
+        for value in (
+            args.model,
+            args.max_http_attempts,
+            args.input_per_million_usd,
+            args.output_per_million_usd,
+        )
+    )
+    if args.validate_fixtures and (args.allow_live_api or configured):
+        parser.error("fixture validation cannot configure live access")
+    if configured and not args.allow_live_api and args.resume is None:
+        parser.error("live settings require opt-in or an existing run")
     stored = None
     if args.resume is not None:
         try:
@@ -128,6 +159,31 @@ def main(argv: Sequence[str] | None = None) -> int:
         except (OSError, ValueError, TypeError, KeyError, AttributeError):
             print("offline plan validation failed", file=sys.stderr)
             return 2
+        settings = requested_model = requested_prices = None
+        if stored is not None or args.allow_live_api:
+            try:
+                settings = resolve_live_settings(
+                    model_id=args.model,
+                    maximum=args.max_http_attempts,
+                    input_price=args.input_per_million_usd,
+                    output_price=args.output_per_million_usd,
+                    stored=stored,
+                )
+                requested_model = (
+                    {**stored.model, "id": settings.model_id}
+                    if stored
+                    else settings.model_metadata()
+                )
+                requested_prices = (
+                    stored.pricing
+                    if stored
+                    and args.input_per_million_usd is None
+                    and args.output_per_million_usd is None
+                    else settings.pricing_metadata()
+                )
+            except (ValueError, TypeError):
+                print("live configuration or budget validation failed", file=sys.stderr)
+                return 2
         if stored is not None:
             try:
                 validate_resume(
@@ -135,6 +191,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                     plan,
                     capture_input_identities(plan, args.manifest, args.recipes),
                     capture_code_identity(),
+                    model=requested_model,
+                    pricing=requested_prices,
                 )
             except (OSError, ValueError, TypeError, KeyError, AttributeError):
                 print("resume compatibility check failed", file=sys.stderr)
@@ -152,6 +210,52 @@ def main(argv: Sequence[str] | None = None) -> int:
             effective_assumed_staples=list(plan.effective_assumed_staples),
             planned_bounds=planned_bounds(plan),
         )
+        if args.allow_live_api or configured:
+            try:
+                if stored is not None:
+                    budget = read_run_budget(
+                        args.resume, maximum=settings.maximum
+                    ).budget
+                else:
+                    budget = None
+                key = (
+                    require_live_key(args.allow_live_api)
+                    if args.allow_live_api
+                    else None
+                )
+                if args.allow_live_api and budget is not None and budget.remaining == 0:
+                    raise ValueError("HTTP-attempt budget exhausted")
+            except (
+                OSError,
+                ValueError,
+                TypeError,
+                KeyError,
+                AttributeError,
+                PersistenceError,
+            ):
+                print("live configuration or budget validation failed", file=sys.stderr)
+                return 2
+            result.update(
+                model=requested_model,
+                pricing=requested_prices,
+                http_attempt_budget=budget.model_dump()
+                if budget is not None
+                else {
+                    "maximum": settings.maximum,
+                    "consumed": 0,
+                    "remaining": settings.maximum,
+                },
+            )
+            if args.allow_live_api:
+                # Sequential execution/publication is the next integration unit;
+                # opt-in must never make a preparation result look like a live run.
+                result.update(
+                    mode="live_resume_preflight" if stored else "live_start_preflight",
+                    execution_started=False,
+                    live_execution_available=False,
+                    budget_persisted=stored is not None,
+                )
+                result = _redact(result, (key,))
     # ASCII JSON keeps console behavior independent of the Windows code page.
     print(json.dumps(result, ensure_ascii=True, sort_keys=True, indent=2))
     return 0
