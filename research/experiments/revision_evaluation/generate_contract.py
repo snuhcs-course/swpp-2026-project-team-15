@@ -664,6 +664,9 @@ def fixture_observations() -> dict[str, dict]:
                 },
             ],
             final_response=_failed_response("unexplained_change"),
+            # A rejected answer still deleted a source row; lack of explanation
+            # counts as uncovered rather than removing the row from the denominator.
+            deleted_ingredient_explanation=(0, 1),
         ),
         "response-error-json__r01/attempt-001.json": observation(
             "response-error-json",

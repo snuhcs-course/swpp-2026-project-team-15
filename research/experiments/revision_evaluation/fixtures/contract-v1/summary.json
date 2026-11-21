@@ -116,9 +116,9 @@
   ],
   "complete": true,
   "explanation_coverage": {
-    "denominator": 2,
+    "denominator": 3,
     "numerator": 2,
-    "value": 1.0
+    "value": 0.6666666666666666
   },
   "final_failure_codes": {
     "unexplained_change": 1

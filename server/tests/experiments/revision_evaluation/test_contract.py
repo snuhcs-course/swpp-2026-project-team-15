@@ -95,8 +95,8 @@ def test_successful_revision_fixture_contains_a_checked_meaningful_recipe():
     }
     assert read_json(fixture_root() / "summary.json")["explanation_coverage"] == {
         "numerator": 2,
-        "denominator": 2,
-        "value": 1.0,
+        "denominator": 3,
+        "value": 2 / 3,
     }
 
 

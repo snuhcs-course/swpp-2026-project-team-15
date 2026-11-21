@@ -31,9 +31,9 @@
       }
     ],
     "deleted_ingredient_explanation": {
-      "denominator": 0,
+      "denominator": 1,
       "numerator": 0,
-      "value": null
+      "value": 0.0
     }
   },
   "execution": {
