@@ -82,6 +82,29 @@ policy. The summary also retains initial/final failure-code counts, per-case pla
 repetitions and outcome distributions. Semantic success is explicitly `not_applicable` until a
 run names a versioned success definition.
 
+## Markdown summary projection
+
+`reporting.render_summary(RunSummary.model_validate_json(summary_json))` returns
+deterministic Markdown for `summary.md`. It consumes only authoritative summary
+JSON, performs no aggregation, rescoring, model calls or file writes, and does not
+read metadata or observation files. The future Runner owns output publication.
+The fixture bundle remains unchanged; a fixed fixture rendering is regression-tested
+by its UTF-8 digest. Displayed numbers use up to 12 significant digits; JSON retains
+the original precision.
+
+The report preserves independent metric numerators/denominators, percentile sample
+counts and incomplete-attempt policies, outcome distributions, repeat completion,
+token/cost applicability, confirmed subtotals, provenance and estimate price inputs.
+Missing measurements remain unavailable, while N/A and measured zero stay distinct.
+An operational completion or valid JSON answer is not evidence of semantic quality.
+
+Revision latency excludes measured checkpoint persistence; observed wall time includes
+it. Checkpoint overhead covers the measured Revision-call window, not all setup or
+final publication I/O. The non-HTTP remainder can include retry waits and unobserved
+work and must not be interpreted as pure application processing. A prepared request
+may have reached the provider without a durable response, so unknown in-flight usage
+and cost are not zero or assumed free. Confirmed subtotals are not complete totals.
+
 ## Judge boundary
 
 Runner artifacts deliberately preserve the complete source recipe, requests, responses, checks,
