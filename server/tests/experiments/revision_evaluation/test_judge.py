@@ -10,6 +10,7 @@ from pathlib import Path
 
 import httpx
 import pytest
+from experiments.revision_evaluation import judge
 from experiments.revision_evaluation.contract import fixture_root
 from experiments.revision_evaluation.judge import (
     JUDGE_MAX_TOKENS,
@@ -23,6 +24,14 @@ from experiments.revision_evaluation.judge import (
 )
 
 from app.dishes.llm import DishLLM
+
+
+@pytest.fixture(autouse=True)
+def isolated_credentials(monkeypatch, tmp_path):
+    """Redirect dotenv to a disposable file and restore any loaded test key afterward."""
+    monkeypatch.setattr(judge, "SERVER_ENV_FILE", tmp_path / ".env")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "")
+    monkeypatch.delenv("OPENROUTER_API_KEY")
 
 
 def _fixture(name: str) -> Path:
@@ -188,3 +197,73 @@ def test_invalid_live_output_uses_fixed_safe_failure(monkeypatch, capsys):
     assert captured.out == ""
     assert captured.err == "revision Judge rejected the model output\n"
     assert "provider-secret" not in captured.err
+
+
+@pytest.mark.parametrize(
+    "file_key,process_key,expected_key",
+    [("file-key", None, "file-key"), ("file-key", "process-key", "process-key"),
+     (None, "process-key", "process-key"), (None, None, None),
+     ("", None, None), ("   ", None, None),
+     ("file-key", "", None), ("file-key", "   ", None)],
+)
+def test_live_credentials_from_file_or_environment(
+    file_key, process_key, expected_key, monkeypatch, tmp_path, capsys
+):
+    path = _fixture("revised-after-reask-429__r01")
+    prepared = prepare_observation(path)
+    if file_key is not None:
+        judge.SERVER_ENV_FILE.write_text(
+            f'OPENROUTER_API_KEY="{file_key}"\nDISH_LLM_MODEL=file-model\n', encoding="utf-8"
+        )
+    if process_key is not None:
+        monkeypatch.setenv("OPENROUTER_API_KEY", process_key)
+    monkeypatch.setenv("DISH_LLM_MODEL", "process-model")
+    monkeypatch.chdir(tmp_path)
+    calls = []
+
+    class Model:
+        def complete(self, *args):
+            return _judgment(prepared)
+
+    def factory(key, model):
+        calls.append((key, model))
+        return Model()
+
+    code = main([str(path), "--allow-live-api"], model_factory=factory)
+    captured = capsys.readouterr()
+    if expected_key is None:
+        assert code == 2 and calls == [] and captured.out == ""
+        assert captured.err == "revision Judge rejected the input\n"
+    else:
+        assert code == 0 and calls == [(expected_key, judge.DEFAULT_MODEL)]
+        assert json.loads(captured.out)["judge_model"] == judge.DEFAULT_MODEL
+        assert expected_key not in captured.out + captured.err
+
+
+@pytest.mark.parametrize("mode", ["offline", "ineligible", "invalid"])
+def test_non_live_or_invalid_input_never_loads_credentials(mode, monkeypatch, capsys):
+    def forbidden(*args, **kwargs):
+        raise AssertionError("credentials or model accessed before valid live opt-in")
+
+    monkeypatch.setattr(judge, "load_dotenv", forbidden)
+    name = "unchanged__r01" if mode == "ineligible" else "revised-after-reask-429__r01"
+    path = _fixture(name) if mode != "invalid" else judge.SERVER_ENV_FILE
+    args = [str(path)] + ([] if mode == "offline" else ["--allow-live-api"])
+    assert main(args, model_factory=forbidden) == (0 if mode == "offline" else 2)
+    capsys.readouterr()
+
+
+@pytest.mark.parametrize("error", [OSError("private-file-secret"), UnicodeError("private-key")])
+def test_dotenv_read_errors_are_safe(error, monkeypatch, capsys):
+    def fail(*args, **kwargs):
+        raise error
+
+    def forbidden(*args):
+        raise AssertionError("model constructed after credentials failure")
+
+    monkeypatch.setattr(judge, "load_dotenv", fail)
+    path = _fixture("revised-after-reask-429__r01")
+    assert main([str(path), "--allow-live-api"], model_factory=forbidden) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == "revision Judge rejected the input\n"

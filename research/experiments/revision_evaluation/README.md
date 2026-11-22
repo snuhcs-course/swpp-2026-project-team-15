@@ -123,7 +123,24 @@ PYTHONPATH=server:research uv run --project server --locked python \
 ```
 
 Add `--allow-live-api --model <model-id>` to make one logical Judge call through the existing
-`DishLLM` client. Live mode requires `OPENROUTER_API_KEY`; the module never loads `.env` files.
+`DishLLM` client. After validating the observation, live mode automatically loads `server/.env`
+using the module's location, regardless of the working directory. Existing environment variables
+take precedence (`override=False`). Set `OPENROUTER_API_KEY` in that file or the process environment;
+a missing file is allowed, but a missing or blank final key fails before model construction.
+Offline preview does not load the file. Model selection uses `--model` or the existing default;
+`DISH_LLM_MODEL` does not select the Judge model. This research command uses the server dev
+environment, which already includes `python-dotenv`.
+
+For example, with `OPENROUTER_API_KEY` already in `server/.env`, run from the repository root:
+
+```bash
+PYTHONPATH=server:research uv run --project server --locked python \
+  -m experiments.revision_evaluation.judge \
+  research/experiments/revision_evaluation/fixtures/contract-v1/observations/revised-after-reask-429__r01/attempt-001.json \
+  --allow-live-api
+```
+
+This command can incur provider charges and sends the minimized recipe payload to the provider.
 It prints one judgment linked to the exact source-byte hash, rubric, prompt and model, and does not
 modify the observation or publish an aggregate pass/fail result. The client may retry HTTP attempts
 inside that one logical call according to its existing policy.
