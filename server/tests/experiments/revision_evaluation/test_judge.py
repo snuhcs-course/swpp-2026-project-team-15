@@ -169,8 +169,7 @@ def test_compact_output_preserves_deductions_and_missing_information(score):
 
 @pytest.mark.parametrize(
     "state,score,field,content",
-    [("scored", 2, "reason", "잘 반영됨"), ("scored", 2, "evidence", ["일치함"]),
-     ("scored", 0, "reason", None), ("scored", 1, "evidence", None),
+    [("scored", 0, "reason", None), ("scored", 1, "evidence", None),
      ("scored", 1, "evidence", []), ("deferred", None, "reason", " "),
      ("deferred", None, "evidence", ["추가 설명"]),
      ("not_applicable", None, "evidence", ["불필요한 근거"])],
@@ -205,6 +204,51 @@ def test_refused_output_and_strict_nullable_provider_schema():
             validate_judgment(invalid, prepared)
 
 
+@pytest.mark.parametrize("refused", [False, True])
+@pytest.mark.parametrize("reason,evidence", [
+    (None, None), ("All roles met", None), (None, ["omission"]),
+    ("All roles met", ["omission"]), (None, []),
+])
+def test_full_score_explanations_are_accepted_but_omitted(refused, reason, evidence):
+    prepared = prepare_observation(_fixture(
+        "refused-prescreen__r01" if refused else "revised-after-reask-429__r01"
+    ))
+    value = _judgment(prepared)
+    value["criteria"]["A"].update(reason=reason, evidence=evidence)
+    output = validate_judgment(value, prepared)
+    assert output["criteria"]["A"] == {"state": "scored", "score": 2}
+    assert value["criteria"]["A"]["reason"] == reason
+    assert value["criteria"]["A"]["evidence"] == evidence
+
+
+@pytest.mark.parametrize("refused", [False, True])
+def test_not_applicable_accepts_null_reason_from_live_response(refused):
+    prepared = prepare_observation(_fixture(
+        "refused-prescreen__r01" if refused else "revised-after-reask-429__r01"
+    ))
+    value = _judgment(prepared)
+    value["required_adjustments"] = []
+    names = "BCDE" if refused else "C"
+    for name in names:
+        value["criteria"][name] = {
+            "state": "not_applicable", "score": None, "reason": None, "evidence": None
+        }
+    output = validate_judgment(value, prepared)["criteria"]
+    for name in names:
+        assert output[name] == {"state": "not_applicable", "score": None}
+
+
+@pytest.mark.parametrize("score", [0, 1])
+@pytest.mark.parametrize("field", ["reason", "evidence"])
+def test_deductions_still_require_reason_and_evidence(score, field):
+    prepared = prepare_observation(_fixture("revised-after-reask-429__r01"))
+    value = _judgment(prepared)
+    value["criteria"]["B"] = _criterion("scored", score, ["필요한 역할 미충족"])
+    value["criteria"]["B"][field] = None
+    with pytest.raises(JudgeOutputError):
+        validate_judgment(value, prepared)
+
+
 def test_offline_preview_makes_zero_calls_and_preserves_source(capsys):
     path = _fixture("revised-after-reask-429__r01")
     before = path.read_bytes()
@@ -225,9 +269,20 @@ def test_live_mode_calls_existing_client_once_and_links_source(monkeypatch, caps
     prepared, calls = prepare_observation(path), []
 
     def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "openrouter.ai"
         calls.append(json.loads(request.content))
+        # Replay the explanation fields returned for full scores in the live R02a diagnosis.
+        response = _judgment(prepared)
+        response["method_choices"] = ["omission"]
+        response["required_adjustments"] = ["Remove carrot from ingredients and steps."]
+        for name, evidence in {
+            "B": "omission",
+            "C": "Remove carrot from ingredients and steps.",
+            "E": "The omission of carrot is explained as it is unavailable.",
+        }.items():
+            response["criteria"][name]["evidence"] = [evidence]
         answer = {"choices": [{"finish_reason": "stop", "message": {
-            "content": json.dumps(_judgment(prepared))}}]}
+            "content": json.dumps(response)}}]}
         return httpx.Response(200, json=answer)
 
     def factory(key: str, model: str) -> DishLLM:
@@ -240,7 +295,9 @@ def test_live_mode_calls_existing_client_once_and_links_source(monkeypatch, caps
     assert len(calls) == 1 and calls[0]["max_tokens"] == JUDGE_MAX_TOKENS
     assert output["judge_model"] == "judge-model"
     assert output["artifact_schema"] == "revision-evaluation-judgment/v2"
-    assert output["judgment"]["criteria"]["D"] == {"state": "scored", "score": 2}
+    assert output["judgment"]["criteria"] == {
+        name: {"state": "scored", "score": 2} for name in "ABCDE"
+    }
     assert output["source"]["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
 
 
@@ -254,7 +311,11 @@ def test_invalid_live_output_uses_fixed_safe_failure(monkeypatch, capsys):
     assert main([str(path), "--allow-live-api"], model_factory=lambda *_: InvalidModel()) == 2
     captured = capsys.readouterr()
     assert captured.out == ""
-    assert captured.err == "revision Judge rejected the model output\n"
+    assert captured.err.startswith(
+        "revision Judge rejected the model output: judgment shape violates the contract\n"
+    )
+    assert "method_choices: missing" in captured.err
+    assert "private" not in captured.err
     assert "provider-secret" not in captured.err
 
 

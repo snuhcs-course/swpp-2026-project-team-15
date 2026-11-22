@@ -123,9 +123,9 @@ PYTHONPATH=server:research uv run --project server --locked python \
 ```
 
 Add `--allow-live-api --model <model-id>` to make one logical Judge call through the existing
-`DishLLM` client. After validating the observation, live mode automatically loads `server/.env`
+OpenRouter `DishLLM` client. After validating the observation, live mode automatically loads `server/.env`
 using the module's location, regardless of the working directory. Existing environment variables
-take precedence (`override=False`). Set `OPENROUTER_API_KEY` in that file or the process environment;
+take precedence (`override=False`). Set `OPENROUTER_API_KEY` in that file or the environment;
 a missing file is allowed, but a missing or blank final key fails before model construction.
 Offline preview does not load the file. Model selection uses `--model` or the existing default;
 `DISH_LLM_MODEL` does not select the Judge model. This research command uses the server dev
@@ -144,11 +144,16 @@ This command can incur provider charges and sends the minimized recipe payload t
 It prints one judgment linked to the exact source-byte hash, rubric, prompt and model, and does not
 modify the observation or publish an aggregate pass/fail result. The client may retry HTTP attempts
 inside that one logical call according to its existing policy.
+Output rejection includes the fixed local rule and schema field/error types, without echoing
+the model response, unknown field names, or credential values.
 
 Results use `revision-evaluation-judgment/v2` for compact criterion output:
-score 2 contains only `state` and `score`; scores 0/1 include a brief deduction `reason`
+score 2 contains only `state` and `score`, even if the model supplies valid reason/evidence
+(including an empty evidence list); these extra explanations are accepted and omitted.
+Scores 0/1 include a brief deduction `reason`
 and concrete `evidence`. `deferred` retains a null score and records only missing information
-in `reason`; `not_applicable` retains a null score and a short no-subject reason.
+in `reason`; `not_applicable` retains a null score and may include a short no-subject reason.
+Its reason may also be null in the model response, in which case the CLI omits it.
 Neither non-scored state includes evidence. The strict provider schema requires null values
 for unused explanation fields; the CLI omits those fields after validation. Earlier saved v1
 results are not rewritten. The rubric score boundaries remain unchanged; prompt hashes
