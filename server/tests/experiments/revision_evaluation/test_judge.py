@@ -39,7 +39,8 @@ def _fixture(name: str) -> Path:
 
 
 def _criterion(state="scored", score=2, evidence=None) -> dict:
-    return {"state": state, "score": score, "reason": "판단 근거", "evidence": evidence or []}
+    reason = None if state == "scored" and score == 2 else "판단 근거"
+    return {"state": state, "score": score, "reason": reason, "evidence": evidence}
 
 
 def _judgment(prepared) -> dict:
@@ -92,14 +93,15 @@ def test_valid_applicability_and_deferral_variants():
     value["criteria"]["B"] = value["criteria"]["C"] = _criterion("not_applicable", None)
     assert validate_judgment(value, revised)
     value = _judgment(revised)
-    value["criteria"]["B"] = _criterion("deferred", None, ["대체 재료 상태 정보"])
+    value["criteria"]["B"] = _criterion("deferred", None)
+    value["criteria"]["B"]["reason"] = "대체 재료 상태 정보 부족"
     assert validate_judgment(value, revised)
 
 
 @pytest.mark.parametrize(
     "case",
     ["a_na", "b_mismatch", "c_mismatch", "c_single_one", "d_na", "deduction_no_evidence",
-     "deferred_no_evidence", "changed_e_na", "changed_e_deferred", "extra_field",
+     "deferred_no_reason", "changed_e_na", "changed_e_deferred", "extra_field",
      "refused_subject", "refused_b"],
 )
 def test_invalid_score_state_contracts(case):
@@ -120,12 +122,13 @@ def test_invalid_score_state_contracts(case):
         value["criteria"]["D"] = _criterion("not_applicable", None)
     elif case == "deduction_no_evidence":
         value["criteria"]["A"] = _criterion("scored", 1)
-    elif case == "deferred_no_evidence":
+    elif case == "deferred_no_reason":
         value["criteria"]["B"] = _criterion("deferred", None)
+        value["criteria"]["B"]["reason"] = None
     elif case == "changed_e_na":
         value["criteria"]["E"] = _criterion("not_applicable", None)
     elif case == "changed_e_deferred":
-        value["criteria"]["E"] = _criterion("deferred", None, ["변경 설명 판단 근거 부족"])
+        value["criteria"]["E"] = _criterion("deferred", None)
     elif case == "extra_field":
         value["aggregate_pass"] = True
     elif case == "refused_subject":
@@ -146,6 +149,60 @@ def test_e_uses_actual_change_before_explanation_presence():
     assert validate_judgment(zero, unexplained)
     unchanged = replace(source, actual_change=False, has_change_explanation=False)
     assert validate_judgment(_judgment(unchanged), unchanged)
+
+
+@pytest.mark.parametrize("score", [0, 1])
+def test_compact_output_preserves_deductions_and_missing_information(score):
+    prepared = prepare_observation(_fixture("revised-after-reask-429__r01"))
+    value = _judgment(prepared)
+    value["criteria"]["B"] = _criterion("scored", score, ["필요한 역할 미충족"])
+    value["criteria"]["A"] = _criterion("deferred", None)
+    value["criteria"]["A"]["reason"] = "요리 정체성 판단에 필요한 원본 정보 부족"
+    output = validate_judgment(value, prepared)["criteria"]
+    assert output["B"] == value["criteria"]["B"]
+    assert output["A"] == {
+        "state": "deferred", "score": None,
+        "reason": "요리 정체성 판단에 필요한 원본 정보 부족",
+    }
+    assert output["D"] == {"state": "scored", "score": 2}
+
+
+@pytest.mark.parametrize(
+    "state,score,field,content",
+    [("scored", 2, "reason", "잘 반영됨"), ("scored", 2, "evidence", ["일치함"]),
+     ("scored", 0, "reason", None), ("scored", 1, "evidence", None),
+     ("scored", 1, "evidence", []), ("deferred", None, "reason", " "),
+     ("deferred", None, "evidence", ["추가 설명"]),
+     ("not_applicable", None, "evidence", ["불필요한 근거"])],
+)
+def test_invalid_compact_explanation_fields(state, score, field, content):
+    prepared = prepare_observation(_fixture("revised-after-reask-429__r01"))
+    value = _judgment(prepared)
+    value["criteria"]["B"] = _criterion(
+        state, score, ["감점 근거"] if state == "scored" and score != 2 else None
+    )
+    if state == "not_applicable":
+        value["method_choices"] = []
+    value["criteria"]["B"][field] = content
+    with pytest.raises(JudgeOutputError):
+        validate_judgment(value, prepared)
+
+
+def test_refused_output_and_strict_nullable_provider_schema():
+    prepared = prepare_observation(_fixture("refused-prescreen__r01"))
+    output = validate_judgment(_judgment(prepared), prepared)["criteria"]
+    assert output["A"] == {"state": "scored", "score": 2}
+    assert output["B"] == {
+        "state": "not_applicable", "score": None, "reason": "판단 근거"
+    }
+    schema = judge.JUDGMENT_SCHEMA["$defs"]["Criterion"]
+    assert set(schema["required"]) == {"state", "score", "reason", "evidence"}
+    for field in ("reason", "evidence"):
+        assert {"type": "null"} in schema["properties"][field]["anyOf"]
+        invalid = _judgment(prepared)
+        del invalid["criteria"]["A"][field]
+        with pytest.raises(JudgeOutputError):
+            validate_judgment(invalid, prepared)
 
 
 def test_offline_preview_makes_zero_calls_and_preserves_source(capsys):
@@ -182,6 +239,8 @@ def test_live_mode_calls_existing_client_once_and_links_source(monkeypatch, caps
     output = json.loads(capsys.readouterr().out)
     assert len(calls) == 1 and calls[0]["max_tokens"] == JUDGE_MAX_TOKENS
     assert output["judge_model"] == "judge-model"
+    assert output["artifact_schema"] == "revision-evaluation-judgment/v2"
+    assert output["judgment"]["criteria"]["D"] == {"state": "scored", "score": 2}
     assert output["source"]["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
 
 

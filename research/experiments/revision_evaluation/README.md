@@ -145,6 +145,15 @@ It prints one judgment linked to the exact source-byte hash, rubric, prompt and 
 modify the observation or publish an aggregate pass/fail result. The client may retry HTTP attempts
 inside that one logical call according to its existing policy.
 
+Results use `revision-evaluation-judgment/v2` for compact criterion output:
+score 2 contains only `state` and `score`; scores 0/1 include a brief deduction `reason`
+and concrete `evidence`. `deferred` retains a null score and records only missing information
+in `reason`; `not_applicable` retains a null score and a short no-subject reason.
+Neither non-scored state includes evidence. The strict provider schema requires null values
+for unused explanation fields; the CLI omits those fields after validation. Earlier saved v1
+results are not rewritten. The rubric score boundaries remain unchanged; prompt hashes
+distinguish the updated instructions and provider schema.
+
 ## Regeneration and validation
 
 ### Offline command entry point
