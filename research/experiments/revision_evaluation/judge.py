@@ -159,6 +159,8 @@ def _build_payload(observation: Observation) -> tuple[dict[str, Any], bool, bool
             ],
         }
         comparable_revised = revised
+        # "Actual change" is deterministic structural inequality, not a semantic culinary
+        # judgment. Differences in the compared text, list order, or step numbering count.
         actual_change = comparable_original != comparable_revised
         return payload, actual_change, any(change.reason.strip() for change in response.changes)
 
