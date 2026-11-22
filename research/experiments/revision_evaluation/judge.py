@@ -47,8 +47,9 @@ opposite, or unusable; 1 some of multiple adjustments are reflected; 2 all are r
 each required adjustment. C is not_applicable exactly when empty; one item permits only 0 or 2.
 D consistency: 0 material contradiction or missing preparation makes the recipe incoherent;
 1 localized correctable mismatch; 2 ingredients, steps, and preparations agree. Revised only.
-E explanation: 0 actual changes exist but explanation is absent or contradictory; 1 accurate but
-incomplete; 2 all actual changes are accurate. No actual change means not_applicable.
+E explanation: actual changes always require scored, never deferred. Score 0 if their explanation
+is absent or contradictory; 1 if accurate but incomplete; 2 if all are accurate. No actual change
+means not_applicable.
 For refusals score or defer A only; B-E are not_applicable. Return only schema-matching JSON."""
 
 

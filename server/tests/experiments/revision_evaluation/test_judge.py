@@ -90,7 +90,8 @@ def test_valid_applicability_and_deferral_variants():
 @pytest.mark.parametrize(
     "case",
     ["a_na", "b_mismatch", "c_mismatch", "c_single_one", "d_na", "deduction_no_evidence",
-     "deferred_no_evidence", "changed_e_na", "extra_field", "refused_subject", "refused_b"],
+     "deferred_no_evidence", "changed_e_na", "changed_e_deferred", "extra_field",
+     "refused_subject", "refused_b"],
 )
 def test_invalid_score_state_contracts(case):
     refused = case.startswith("refused")
@@ -114,6 +115,8 @@ def test_invalid_score_state_contracts(case):
         value["criteria"]["B"] = _criterion("deferred", None)
     elif case == "changed_e_na":
         value["criteria"]["E"] = _criterion("not_applicable", None)
+    elif case == "changed_e_deferred":
+        value["criteria"]["E"] = _criterion("deferred", None, ["변경 설명 판단 근거 부족"])
     elif case == "extra_field":
         value["aggregate_pass"] = True
     elif case == "refused_subject":
