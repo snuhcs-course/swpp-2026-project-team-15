@@ -1,5 +1,6 @@
 # Revision LLM Judge 파일럿 실험 보고서
 
+후속: [프롬프트 보정 후 동일 저장본 재평가](prompt-comparison.md).
 아래 수치와 raw 결과는 최초 실행 기준을 그대로 유지한다.
 
 ## 1. 요약
