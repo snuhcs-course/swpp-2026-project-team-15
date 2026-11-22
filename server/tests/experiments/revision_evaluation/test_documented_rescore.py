@@ -17,7 +17,12 @@ def test_readme_rescore_preview_is_offline_and_preserves_source(monkeypatch, cap
     readme = (
         Path(__file__).resolve().parents[4] / "research/experiments/revision_evaluation/README.md"
     )
-    body = readme.read_text(encoding="utf-8").split("@'\n", 1)[1].split("\n'@", 1)[0]
+    command = readme.read_text(encoding="utf-8").split(
+        "### Offline deterministic rescore preview", 1
+    )[1]
+    _, opener, heredoc = command.partition("<<'PY'\n")
+    body, closer, _ = heredoc.partition("\nPY\n")
+    assert opener and closer, "Expected a complete Bash heredoc in the rescore example"
     monkeypatch.setattr(sys, "argv", ["-", str(root)])
     exec(compile(body, str(readme), "exec"), {})
     summary = RunSummary.model_validate(json.loads(capsys.readouterr().out))
