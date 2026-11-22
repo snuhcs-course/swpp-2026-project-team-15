@@ -113,6 +113,20 @@ and telemetry. They contain no Judge prompt, score, latency, token, or cost fiel
 owns selection of rubric-relevant fields and construction of its minimized model payload. It should
 store the source observation identity so a Judge result remains auditable.
 
+From the repository root, preview the exact minimized payload for one eligible observation without
+constructing a model or reading a credential:
+
+```powershell
+$env:PYTHONPATH = "$PWD\server;$PWD\research"
+.\server\.venv\Scripts\python.exe -m experiments.revision_evaluation.judge research/experiments/revision_evaluation/fixtures/contract-v1/observations/revised-after-reask-429__r01/attempt-001.json
+```
+
+Add `--allow-live-api --model <model-id>` to make one logical Judge call through the existing
+`DishLLM` client. Live mode requires `OPENROUTER_API_KEY`; the module never loads `.env` files.
+It prints one judgment linked to the exact source-byte hash, rubric, prompt and model, and does not
+modify the observation or publish an aggregate pass/fail result. The client may retry HTTP attempts
+inside that one logical call according to its existing policy.
+
 ## Regeneration and validation
 
 ### Offline command entry point
