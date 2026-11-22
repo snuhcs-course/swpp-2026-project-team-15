@@ -165,9 +165,7 @@ def _build_payload(observation: Observation) -> tuple[dict[str, Any], bool, bool
         payload["result"] = {"status": "revised", "recipe": revised, "changes": changes}
         comparable_original = {
             **original,
-            "ingredients": [
-                {"name": row.name, "amount": row.amount} for row in recipe.ingredients
-            ],
+            "ingredients": [{"name": row.name, "amount": row.amount} for row in recipe.ingredients],
         }
         comparable_revised = revised
         # "Actual change" is deterministic structural inequality, not a semantic culinary
@@ -338,8 +336,15 @@ def main(
         # These messages are fixed local validation rules, never provider exception text.
         print(f"revision Judge rejected the model output: {exc}", file=sys.stderr)
         if isinstance(exc.__cause__, ValidationError):
-            allowed = set("ABCDE") | {"criteria", "state", "score", "reason", "evidence",
-                                        "method_choices", "required_adjustments"}
+            allowed = set("ABCDE") | {
+                "criteria",
+                "state",
+                "score",
+                "reason",
+                "evidence",
+                "method_choices",
+                "required_adjustments",
+            }
             for error in exc.__cause__.errors(include_input=False):
                 path = ".".join(str(p) if p in allowed else "?" for p in error["loc"])
                 print(f"  {path}: {error['type']}", file=sys.stderr)

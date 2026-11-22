@@ -61,10 +61,17 @@ def test_status_specific_payload_is_complete_and_minimal():
     revised = prepare_observation(_fixture("revised-after-reask-429__r01"))
     refused = prepare_observation(_fixture("refused-prescreen__r01"))
     assert set(revised.payload) == {
-        "inventory", "effective_staples", "dish_name", "original", "result"
+        "inventory",
+        "effective_staples",
+        "dish_name",
+        "original",
+        "result",
     }
     assert revised.payload["original"]["ingredients"][1] == {
-        "name": "대파", "amount": "1/4대", "role": "secondary", "availability": "unavailable"
+        "name": "대파",
+        "amount": "1/4대",
+        "role": "secondary",
+        "availability": "unavailable",
     }
     assert revised.payload["result"]["changes"][0]["reason"] == "대파가 없어서 생략했어요."
     assert refused.payload["result"] == {"status": "refused", "reason": "missing identity"}
@@ -75,8 +82,14 @@ def test_status_specific_payload_is_complete_and_minimal():
 
 @pytest.mark.parametrize(
     "name",
-    ["unchanged__r01", "check-failed__r01", "response-error-json__r01",
-     "response-error-structure__r01", "api-error__r01", "resumed__r03"],
+    [
+        "unchanged__r01",
+        "check-failed__r01",
+        "response-error-json__r01",
+        "response-error-structure__r01",
+        "api-error__r01",
+        "resumed__r03",
+    ],
 )
 def test_ineligible_observations_are_rejected(name):
     with pytest.raises(JudgeInputError):
@@ -100,9 +113,20 @@ def test_valid_applicability_and_deferral_variants():
 
 @pytest.mark.parametrize(
     "case",
-    ["a_na", "b_mismatch", "c_mismatch", "c_single_one", "d_na", "deduction_no_evidence",
-     "deferred_no_reason", "changed_e_na", "changed_e_deferred", "extra_field",
-     "refused_subject", "refused_b"],
+    [
+        "a_na",
+        "b_mismatch",
+        "c_mismatch",
+        "c_single_one",
+        "d_na",
+        "deduction_no_evidence",
+        "deferred_no_reason",
+        "changed_e_na",
+        "changed_e_deferred",
+        "extra_field",
+        "refused_subject",
+        "refused_b",
+    ],
 )
 def test_invalid_score_state_contracts(case):
     refused = case.startswith("refused")
@@ -161,7 +185,8 @@ def test_compact_output_preserves_deductions_and_missing_information(score):
     output = validate_judgment(value, prepared)["criteria"]
     assert output["B"] == value["criteria"]["B"]
     assert output["A"] == {
-        "state": "deferred", "score": None,
+        "state": "deferred",
+        "score": None,
         "reason": "요리 정체성 판단에 필요한 원본 정보 부족",
     }
     assert output["D"] == {"state": "scored", "score": 2}
@@ -169,10 +194,14 @@ def test_compact_output_preserves_deductions_and_missing_information(score):
 
 @pytest.mark.parametrize(
     "state,score,field,content",
-    [("scored", 0, "reason", None), ("scored", 1, "evidence", None),
-     ("scored", 1, "evidence", []), ("deferred", None, "reason", " "),
-     ("deferred", None, "evidence", ["추가 설명"]),
-     ("not_applicable", None, "evidence", ["불필요한 근거"])],
+    [
+        ("scored", 0, "reason", None),
+        ("scored", 1, "evidence", None),
+        ("scored", 1, "evidence", []),
+        ("deferred", None, "reason", " "),
+        ("deferred", None, "evidence", ["추가 설명"]),
+        ("not_applicable", None, "evidence", ["불필요한 근거"]),
+    ],
 )
 def test_invalid_compact_explanation_fields(state, score, field, content):
     prepared = prepare_observation(_fixture("revised-after-reask-429__r01"))
@@ -191,9 +220,7 @@ def test_refused_output_and_strict_nullable_provider_schema():
     prepared = prepare_observation(_fixture("refused-prescreen__r01"))
     output = validate_judgment(_judgment(prepared), prepared)["criteria"]
     assert output["A"] == {"state": "scored", "score": 2}
-    assert output["B"] == {
-        "state": "not_applicable", "score": None, "reason": "판단 근거"
-    }
+    assert output["B"] == {"state": "not_applicable", "score": None, "reason": "판단 근거"}
     schema = judge.JUDGMENT_SCHEMA["$defs"]["Criterion"]
     assert set(schema["required"]) == {"state", "score", "reason", "evidence"}
     for field in ("reason", "evidence"):
@@ -205,14 +232,20 @@ def test_refused_output_and_strict_nullable_provider_schema():
 
 
 @pytest.mark.parametrize("refused", [False, True])
-@pytest.mark.parametrize("reason,evidence", [
-    (None, None), ("All roles met", None), (None, ["omission"]),
-    ("All roles met", ["omission"]), (None, []),
-])
+@pytest.mark.parametrize(
+    "reason,evidence",
+    [
+        (None, None),
+        ("All roles met", None),
+        (None, ["omission"]),
+        ("All roles met", ["omission"]),
+        (None, []),
+    ],
+)
 def test_full_score_explanations_are_accepted_but_omitted(refused, reason, evidence):
-    prepared = prepare_observation(_fixture(
-        "refused-prescreen__r01" if refused else "revised-after-reask-429__r01"
-    ))
+    prepared = prepare_observation(
+        _fixture("refused-prescreen__r01" if refused else "revised-after-reask-429__r01")
+    )
     value = _judgment(prepared)
     value["criteria"]["A"].update(reason=reason, evidence=evidence)
     output = validate_judgment(value, prepared)
@@ -223,15 +256,18 @@ def test_full_score_explanations_are_accepted_but_omitted(refused, reason, evide
 
 @pytest.mark.parametrize("refused", [False, True])
 def test_not_applicable_accepts_null_reason_from_live_response(refused):
-    prepared = prepare_observation(_fixture(
-        "refused-prescreen__r01" if refused else "revised-after-reask-429__r01"
-    ))
+    prepared = prepare_observation(
+        _fixture("refused-prescreen__r01" if refused else "revised-after-reask-429__r01")
+    )
     value = _judgment(prepared)
     value["required_adjustments"] = []
     names = "BCDE" if refused else "C"
     for name in names:
         value["criteria"][name] = {
-            "state": "not_applicable", "score": None, "reason": None, "evidence": None
+            "state": "not_applicable",
+            "score": None,
+            "reason": None,
+            "evidence": None,
         }
     output = validate_judgment(value, prepared)["criteria"]
     for name in names:
@@ -259,7 +295,9 @@ def test_offline_preview_makes_zero_calls_and_preserves_source(capsys):
     assert main([str(path)], model_factory=forbidden_factory) == 0
     output = json.loads(capsys.readouterr().out)
     assert (output["judge_calls"], output["rubric_id"], output["prompt_sha256"]) == (
-        0, RUBRIC_ID, PROMPT_SHA256
+        0,
+        RUBRIC_ID,
+        PROMPT_SHA256,
     )
     assert path.read_bytes() == before
 
@@ -281,8 +319,9 @@ def test_live_mode_calls_existing_client_once_and_links_source(monkeypatch, caps
             "E": "The omission of carrot is explained as it is unavailable.",
         }.items():
             response["criteria"][name]["evidence"] = [evidence]
-        answer = {"choices": [{"finish_reason": "stop", "message": {
-            "content": json.dumps(response)}}]}
+        answer = {
+            "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(response)}}]
+        }
         return httpx.Response(200, json=answer)
 
     def factory(key: str, model: str) -> DishLLM:
@@ -321,10 +360,16 @@ def test_invalid_live_output_uses_fixed_safe_failure(monkeypatch, capsys):
 
 @pytest.mark.parametrize(
     "file_key,process_key,expected_key",
-    [("file-key", None, "file-key"), ("file-key", "process-key", "process-key"),
-     (None, "process-key", "process-key"), (None, None, None),
-     ("", None, None), ("   ", None, None),
-     ("file-key", "", None), ("file-key", "   ", None)],
+    [
+        ("file-key", None, "file-key"),
+        ("file-key", "process-key", "process-key"),
+        (None, "process-key", "process-key"),
+        (None, None, None),
+        ("", None, None),
+        ("   ", None, None),
+        ("file-key", "", None),
+        ("file-key", "   ", None),
+    ],
 )
 def test_live_credentials_from_file_or_environment(
     file_key, process_key, expected_key, monkeypatch, tmp_path, capsys
