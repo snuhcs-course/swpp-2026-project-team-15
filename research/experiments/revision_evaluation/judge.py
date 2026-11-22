@@ -1,5 +1,5 @@
+# AI-generated Revision Judge with Codex, 2026-11-22; reviewed by Soohyun An
 """Offline-first semantic Judge for one completed Revision observation."""
-# AI-generated Revision Judge with Codex, 2026-11-22; human review pending.
 
 from __future__ import annotations
 

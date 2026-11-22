@@ -1,5 +1,5 @@
+# AI-generated Judge contract tests with Codex, 2026-11-22; reviewed by Soohyun An
 """Offline contract tests for the minimal single-observation Revision Judge."""
-# AI-generated Judge contract tests with Codex, 2026-11-22; human review pending.
 
 from __future__ import annotations
 
