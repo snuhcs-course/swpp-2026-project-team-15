@@ -14,13 +14,14 @@ import com.google.gson.annotations.SerializedName
 // Field names mirror server/app/{vision,dishes}/schemas.py; a mismatch silently becomes null in Gson.
 
 data class AnalyzeResponse(
-    val candidates: List<IngredientCandidateDto>
+    val candidates: List<IngredientCandidateDto>,
+    val review: AnalysisReviewDto? = null
 )
 
 data class IngredientCandidateDto(
     val name: String,
     @SerializedName("raw_texts") val rawTexts: List<String>,
-    val confidence: Double
+    val confidence: Double? = null
 )
 
 // Ingredient suggestions added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.

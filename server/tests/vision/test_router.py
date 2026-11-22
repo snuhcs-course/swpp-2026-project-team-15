@@ -3,7 +3,7 @@ from app.vision.exceptions import VisionError, VisionUnavailableError
 from app.vision.schemas import DetectedItem
 from tests.conftest import StubVision
 
-JPEG = ("fridge.jpg", b"\xff\xd8fake", "image/jpeg")
+JPEG = ("fridge.jpg", b"\xff\xd8\xfffake", "image/jpeg")
 
 
 def test_analyze_returns_unconfirmed_candidates(make_client):

@@ -5,6 +5,7 @@ import json
 
 import pytest
 
+from app.config import Settings
 from app.dishes.dependencies import build_chat_model, build_dish_parts, build_video_finder
 from app.dishes.llm import DishLLM
 from app.dishes.video_search import WebSearchVideoSource
@@ -12,7 +13,7 @@ from app.dishes.youtube import YouTubeVerifier
 
 
 def test_no_keys_means_no_model_and_no_video_finder():
-    parts = build_dish_parts({})
+    parts = build_dish_parts(Settings.from_env({}))
     assert parts.service.llm is None and parts.service.finder is None
     assert parts.reviser is not None and parts.index is not None
     assert len(parts.service.catalog) > 100
@@ -21,20 +22,24 @@ def test_no_keys_means_no_model_and_no_video_finder():
 
 
 def test_a_model_key_builds_the_model_client_and_the_model_is_shared_with_the_reviser():
-    parts = build_dish_parts({"DISH_LLM_API_KEY": "k"})
+    parts = build_dish_parts(Settings.from_env({"DISH_LLM_API_KEY": "k"}))
     assert isinstance(parts.service.llm, DishLLM) and parts.reviser.llm is parts.service.llm
 
 
 def test_general_model_key_is_the_fallback():
-    assert isinstance(build_chat_model({}, "fallback"), DishLLM)
-    assert build_chat_model({}, "  ") is None
+    assert isinstance(
+        build_chat_model(Settings.from_env({"OPENROUTER_API_KEY": "fallback"})), DishLLM
+    )
+    assert build_chat_model(Settings.from_env({"OPENROUTER_API_KEY": "  "})) is None
 
 
 def test_video_finder_needs_a_youtube_key_and_a_model_key_only_for_discovery():
-    assert build_video_finder({}, "model-key") is None
-    stored_only = build_video_finder({"YOUTUBE_API_KEY": "y"})
+    assert build_video_finder(Settings.from_env({"OPENROUTER_API_KEY": "model-key"})) is None
+    stored_only = build_video_finder(Settings.from_env({"YOUTUBE_API_KEY": "y"}))
     assert isinstance(stored_only._verifier, YouTubeVerifier) and stored_only._source is None
-    full = build_video_finder({"YOUTUBE_API_KEY": "y"}, "model-key")
+    full = build_video_finder(
+        Settings.from_env({"YOUTUBE_API_KEY": "y", "OPENROUTER_API_KEY": "model-key"})
+    )
     assert isinstance(full._source, WebSearchVideoSource)
 
 
@@ -42,13 +47,13 @@ def test_data_files_are_read_at_startup_and_a_bad_one_stops_it(tmp_path):
     bad = tmp_path / "videos.json"
     bad.write_text(json.dumps({"schema": 9}), encoding="utf-8")
     with pytest.raises(ValueError):
-        build_dish_parts({"YOUTUBE_API_KEY": "y", "DISH_VIDEOS": str(bad)})
+        build_dish_parts(Settings.from_env({"YOUTUBE_API_KEY": "y", "DISH_VIDEOS": str(bad)}))
     with pytest.raises(OSError):
-        build_dish_parts({"DISH_RECIPES": str(tmp_path / "missing.json")})
+        build_dish_parts(Settings.from_env({"DISH_RECIPES": str(tmp_path / "missing.json")}))
 
 
 def test_the_built_service_assumes_the_catalog_staples():
-    service = build_dish_parts({}).service
+    service = build_dish_parts(Settings.from_env({})).service
     assert service.assumed == service.catalog.staples and "간장" in service.assumed
 
 
@@ -56,14 +61,20 @@ def test_the_reviser_matches_recipe_rows_with_the_name_table():
     # Phone check 2026-11-19: 꽃소금 in a video recipe was shown missing next to 소금.
     from app.dishes.recipe_names import RecipeNames
 
-    reviser = build_dish_parts({}).reviser
+    reviser = build_dish_parts(Settings.from_env({})).reviser
     assert isinstance(reviser.index, RecipeNames)
     assert reviser.index.status("꽃소금", reviser.index.owned([])) == "assumed"
 
 
 def test_the_dish_model_and_the_video_search_use_the_same_key():
     # Server review (2026-11-19): the fallback rule was written twice.
-    parts = build_dish_parts({"DISH_LLM_API_KEY": "dish", "YOUTUBE_API_KEY": "y"}, "general")
+    parts = build_dish_parts(
+        Settings.from_env(
+            {"DISH_LLM_API_KEY": "dish", "YOUTUBE_API_KEY": "y", "OPENROUTER_API_KEY": "general"}
+        )
+    )
     assert parts.service.llm._api_key == parts.service.finder._source._api_key == "dish"
-    parts = build_dish_parts({"YOUTUBE_API_KEY": "y"}, "general")
+    parts = build_dish_parts(
+        Settings.from_env({"YOUTUBE_API_KEY": "y", "OPENROUTER_API_KEY": "general"})
+    )
     assert parts.service.llm._api_key == parts.service.finder._source._api_key == "general"

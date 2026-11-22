@@ -14,6 +14,7 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from app.config import Settings
 from app.dishes.catalog import Catalog
 from app.dishes.dependencies import build_dish_parts
 from app.dishes.errors import DishLLMError
@@ -40,7 +41,7 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=8)
     args = parser.parse_args()
     env = {**os.environ, "DISH_RECIPES": args.recipes}
-    parts = build_dish_parts(env, os.environ.get("OPENROUTER_API_KEY", ""))
+    parts = build_dish_parts(Settings.from_env(env))
     names = RecipeNames.load()
     catalog = Catalog.load(names=names)
     store = json.loads(Path(args.recipes).read_text(encoding="utf-8"))["recipes"]

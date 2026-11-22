@@ -16,5 +16,5 @@
   "server/tests/test_main.py": "aa6326d83a40f94a5d7e0b708d9c8c47b292410420f68a86c8d339516109c0bb",
   "server/tests/test_vision_benchmark.py": "e7c8e1f1a6392aa534b3fa08489ad3798d8bcaebe61cad148e6fcecdb99c320a",
   "server/tests/vision/test_providers.py": "5d8df91d07523aa8a0faee995cfdaeddf28edbb27aa0f3ffb32a869c4d259856",
-  "server/tests/vision/test_router.py": "16dddf7086ae83bcfc0d180eba0dcfc1e81a7b1d0da29c7a5c3bc0318df6637a"
+  "server/tests/vision/test_router.py": "34febbdc09edafd91f7a8176e7427873993a091096c4d3033159a7f5aff57448"
 }

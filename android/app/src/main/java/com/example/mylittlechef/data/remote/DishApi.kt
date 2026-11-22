@@ -3,6 +3,7 @@ package com.example.mylittlechef.data.remote
 
 import com.example.mylittlechef.BuildConfig
 import com.google.gson.annotations.SerializedName
+import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -133,12 +134,40 @@ interface DishApi {
     suspend fun videos(@Body request: DishVideosRequest): DishVideosResponse
 }
 
+data class TelemetryEventDto(
+    val name: String,
+    val t: Long,
+    @SerializedName("dish_id") val dishId: String? = null,
+    val count: Int? = null,
+    @SerializedName("duration_ms") val durationMs: Long? = null,
+    val status: String? = null,
+    val source: String? = null,
+    val screen: String? = null,
+    val code: Int? = null
+)
+
+data class TelemetryBatchDto(
+    @SerializedName("install_id") val installId: String,
+    @SerializedName("session_id") val sessionId: String,
+    @SerializedName("app_version") val appVersion: String,
+    val events: List<TelemetryEventDto>
+)
+
+data class TelemetryAccepted(val accepted: Int?)
+
+/** Beta-week usage events (research/decisions/adr-007-telemetry.md). */
+interface TelemetryApi {
+    @POST("telemetry/events")
+    suspend fun send(@Body batch: TelemetryBatchDto): TelemetryAccepted
+}
+
 /** Own Retrofit instance so the existing ApiClient and its interfaces stay unchanged. */
 object DishApiClient {
     private val retrofit: Retrofit by lazy {
         val http = OkHttpClient.Builder()
             .readTimeout(90, TimeUnit.SECONDS) // a suggestion or a video search can take a while
             .retryOnConnectionFailure(false)
+            .connectionPool(ConnectionPool(5, IDLE_CONNECTION_SECONDS, TimeUnit.SECONDS))
             .build()
         Retrofit.Builder()
             .baseUrl(BuildConfig.SERVER_BASE_URL)
@@ -148,4 +177,5 @@ object DishApiClient {
     }
     val api: DishApi by lazy { retrofit.create(DishApi::class.java) }
     val recipeApi: DishRecipeApi by lazy { retrofit.create(DishRecipeApi::class.java) }
+    val telemetryApi: TelemetryApi by lazy { retrofit.create(TelemetryApi::class.java) }
 }

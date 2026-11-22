@@ -4,11 +4,18 @@ version = "0.1.0"
 description = "FastAPI backend for My Little Chef: ingredient recognition and dish suggestions"
 requires-python = ">=3.12"
 dependencies = [
+    "cachetools>=5.5,<8",  # matches the types-cachetools 7.x stubs
     "fastapi>=0.143.0",
+    "filetype>=1.2.0",
     "google-genai>=2.29.0",
     "httpx>=0.28.1",
+    "openai>=2.54,<3",
+    "opentelemetry-instrumentation-fastapi>=0.66b0,<0.67",
+    "opentelemetry-sdk>=1.45,<1.46",
+    "pillow>=11,<13",  # photo review: decode and size checks (/analyze/review)
+    "pydantic-settings>=2.10",
     "python-multipart>=0.0.32",
-    "sqlmodel>=0.0.48",
+    "tenacity>=9.0",
     "uvicorn>=0.54.0",
 ]
 
@@ -20,10 +27,16 @@ dev = [
     "pytest-cov>=7.1.0",
     "python-dotenv>=1.0,<2",
     "ruff>=0.17.0",
+    "scikit-learn>=1.9,<1.10",
+    "statsmodels>=0.15,<0.16",
+    "types-cachetools>=7.0.0.20260713",
 ]
 
 [tool.uv]
 package = false
+# Resolve only releases at least two weeks old at the last lock (2026-11-20); move the date
+# forward when updating, so a fresh release is never picked up the day it appears.
+exclude-newer = "2026-11-06T15:00:00Z"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

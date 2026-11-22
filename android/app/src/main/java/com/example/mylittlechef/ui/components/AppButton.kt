@@ -147,14 +147,15 @@ fun DashedButton(
     text: String,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
-    color: Color = Color.Unspecified
+    color: Color = Color.Unspecified,
+    enabled: Boolean = true
 )
 {
     Box(
         modifier = modifier
             .defaultMinSize(minHeight = 48.dp)
             .clip(RoundedCornerShape(15.dp))
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .border(
                 width = 2.dp,
                 color = color,
@@ -172,68 +173,5 @@ fun DashedButton(
                     vertical = 12.dp
                 )
         )
-    }
-}
-
-@Composable
-fun LikeButton(
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-)
-{
-    IconButton(
-        modifier = modifier,
-        onClick = onClick
-    )
-    {
-        Icon(
-            painter =
-                if (selected) painterResource(R.drawable.ic_star_filled)
-                else painterResource(R.drawable.ic_star)
-            ,
-            contentDescription = if (selected) "즐겨찾기 해제" else "즐겨찾기 추가",
-            tint = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-fun RecipeTabButton(
-    text: String,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    buttonColorOn: Color,
-    buttonColorOff: Color,
-    textColorOn: Color,
-    textColorOff: Color,
-    dividerWidth: Dp,
-    onClick: () -> Unit
-)
-{
-    Column(
-        modifier = Modifier.wrapContentWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    )
-    {
-        TextButton(
-            modifier = modifier,
-            onClick = onClick
-        )
-        {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                color = if (selected) textColorOn else textColorOff
-            )
-        }
-
-        HorizontalDivider(
-            thickness = 2.dp,
-            color = if (selected) buttonColorOn else buttonColorOff,
-            modifier = Modifier.width(dividerWidth)
-        )
-
     }
 }

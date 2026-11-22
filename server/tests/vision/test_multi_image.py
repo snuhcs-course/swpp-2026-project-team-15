@@ -17,7 +17,7 @@ from app.vision.schemas import DetectedItem
 FIXTURES = Path(__file__).resolve().parents[2] / "fixtures" / "vision"
 
 
-def jpeg(name: str, body: bytes = b"\xff\xd8fake") -> tuple[str, bytes, str]:
+def jpeg(name: str, body: bytes = b"\xff\xd8\xfffake") -> tuple[str, bytes, str]:
     return (name, body, "image/jpeg")
 
 
@@ -67,12 +67,13 @@ def test_several_views_go_to_the_provider_in_one_call(make_client):
     vision = MultiVision([item("서울우유 1L", "우유"), item("우유", "우유", 0.95)])
 
     response = make_client(vision).post(
-        "/analyze", files=views(jpeg("a.jpg", b"\xff\xd8a"), jpeg("b.jpg", b"\xff\xd8b"))
+        "/analyze", files=views(jpeg("a.jpg", b"\xff\xd8\xffa"), jpeg("b.jpg", b"\xff\xd8\xffb"))
     )
 
     assert response.status_code == 200
     assert vision.single_calls == []
-    assert [[i.data for i in call] for call in vision.many_calls] == [[b"\xff\xd8a", b"\xff\xd8b"]]
+    sent = [[i.data for i in call] for call in vision.many_calls]
+    assert sent == [[b"\xff\xd8\xffa", b"\xff\xd8\xffb"]]
     assert response.json() == {
         "candidates": [
             {"name": "우유", "raw_texts": ["서울우유 1L", "우유"], "confidence": 0.95},
@@ -108,11 +109,11 @@ def test_one_part_named_images_is_handled_like_image(make_client):
 
 def test_provider_without_multi_support_gets_one_request_per_image(make_client):
     vision = SingleOnlyVision(
-        {b"\xff\xd8a": [item("계란", "계란")], b"\xff\xd8b": [item("달걀", "계란")]}
+        {b"\xff\xd8\xffa": [item("계란", "계란")], b"\xff\xd8\xffb": [item("달걀", "계란")]}
     )
 
     response = make_client(vision).post(
-        "/analyze", files=views(jpeg("a.jpg", b"\xff\xd8a"), jpeg("b.jpg", b"\xff\xd8b"))
+        "/analyze", files=views(jpeg("a.jpg", b"\xff\xd8\xffa"), jpeg("b.jpg", b"\xff\xd8\xffb"))
     )
 
     assert vision.calls == 2
@@ -171,7 +172,8 @@ def test_total_size_limit_applies_to_several_views(make_client, monkeypatch):
     vision = MultiVision()
     client = make_client(vision)
 
-    six, five = b"\xff\xd8" + b"x" * 4, b"\xff\xd8" + b"x" * 3  # JPEG starts (images are checked)
+    # JPEG signatures: the uploads are checked as images.
+    six, five = b"\xff\xd8\xff" + b"x" * 3, b"\xff\xd8\xff" + b"x" * 2
     over = client.post("/analyze", files=views(jpeg("a.jpg", six), jpeg("b.jpg", six)))
     within = client.post("/analyze", files=views(jpeg("a.jpg", five), jpeg("b.jpg", five)))
 

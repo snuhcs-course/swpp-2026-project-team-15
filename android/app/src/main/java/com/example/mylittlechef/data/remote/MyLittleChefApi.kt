@@ -1,3 +1,4 @@
+// HE ingredient/exploration changes assisted by Codex, 2026-11-10; human review pending.
 // Deployed main API wiring assisted by Codex, 2026-11-03; human review pending.
 // Restored and integrated with Codex, 2026-10-29; human review pending.
 // AI-generated with Claude Code (Opus 5.5), 2026-10-11; reviewed by Jaehyuk Choi.
@@ -6,6 +7,7 @@ package com.example.mylittlechef.data.remote
 
 import com.example.mylittlechef.BuildConfig
 import okhttp3.MultipartBody
+import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -40,6 +42,14 @@ interface IngredientSupportApi : MyLittleChefApi {
     ): IngredientSuggestionResponse
 }
 
+/**
+ * nginx on the team server closes an idle keep-alive connection after 65 s; OkHttp keeps one for
+ * 5 min and these clients never retry, so the first request after a pause went out on a closed
+ * socket and failed as a network error (first gallery pick, emulator E2E 2026-11-20). Idle
+ * connections are dropped well before the server's limit instead.
+ */
+internal const val IDLE_CONNECTION_SECONDS = 30L
+
 object ApiClient {
     // Photo and revision clients share this build-time endpoint; local builds use adb reverse.
     private const val BASE_URL = BuildConfig.SERVER_BASE_URL
@@ -48,6 +58,7 @@ object ApiClient {
         val http = OkHttpClient.Builder()
             .readTimeout(150, TimeUnit.SECONDS)
             .retryOnConnectionFailure(false)
+            .connectionPool(ConnectionPool(5, IDLE_CONNECTION_SECONDS, TimeUnit.SECONDS))
             .build()
         Retrofit.Builder()
             .baseUrl(BASE_URL)
@@ -59,4 +70,5 @@ object ApiClient {
     val api: IngredientSupportApi by lazy { retrofit.create(IngredientSupportApi::class.java) }
 
     val multiImageApi: MultiImageApi by lazy { retrofit.create(MultiImageApi::class.java) }
+    val recognitionReviewApi: RecognitionReviewApi by lazy { retrofit.create(RecognitionReviewApi::class.java) }
 }

@@ -1,4 +1,5 @@
 # AI-generated with Codex (GPT-6.1 Sol), 2026-11-21; reviewed by Soohyun An
+# AI-assisted SDK checkpoint-error recovery with Codex, 2026-11-22; reviewed by Soohyun An
 """Research-only tracing adapters for the production dish Revision path."""
 
 from __future__ import annotations
@@ -98,8 +99,28 @@ def record_safe_response_text(text: str) -> None:
         call.parsing.error = None
 
 
+def _has_checkpoint_error(error: BaseException) -> bool:
+    """Find typed storage failures in either exception link without looping on cycles."""
+    # Transport imports this module for call correlation; defer the reverse import
+    # until execution so research-only error recovery does not create an import cycle.
+    from .transport import CheckpointError
+
+    pending, seen = [error], set()
+    while pending:
+        current = pending.pop()
+        if id(current) in seen:
+            continue
+        seen.add(id(current))
+        if isinstance(current, CheckpointError):
+            return True
+        pending.extend(
+            linked for linked in (current.__cause__, current.__context__) if linked is not None
+        )
+    return False
+
+
 class LogicalModelCallRecorder:
-    """Wrap a ChatModel without changing its returned value or raised exception."""
+    """Preserve model results/errors, restoring SDK-wrapped research storage failures."""
 
     def __init__(self, model: ChatModel) -> None:
         self._model = model
@@ -131,6 +152,14 @@ class LogicalModelCallRecorder:
         try:
             result = self._model.complete(system, user, name, schema, max_tokens)
         except Exception as error:
+            if isinstance(error, DishLLMError) and _has_checkpoint_error(error):
+                from .transport import CheckpointError
+
+                # The SDK translates transport exceptions into model connection errors.
+                # Restore the operational stop before Runner can finalize and continue;
+                # neither private nested messages nor their traceback should be exposed.
+                call.sanitized_error = "model call failed"
+                raise CheckpointError("checkpoint persistence failed") from None
             message = str(error) if isinstance(error, DishLLMError) else None
             call.sanitized_error = (
                 message if message in SAFE_MODEL_ERROR_MESSAGES else "model call failed"

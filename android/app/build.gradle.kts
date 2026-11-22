@@ -7,7 +7,7 @@ plugins {
 }
 
 val serverBaseUrl = providers.gradleProperty("serverBaseUrl")
-    .orElse("http://158.101.141.165:8080/").get()
+    .orElse("http://158.101.141.165/").get()
 val serverEndpoint = URI(serverBaseUrl)
 require(serverEndpoint.scheme in listOf("http", "https") && serverEndpoint.host != null &&
     serverEndpoint.userInfo == null && serverEndpoint.rawQuery == null &&
@@ -33,7 +33,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
         buildConfigField("String", "SERVER_BASE_URL", "\"$serverBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -63,8 +63,17 @@ android {
             enableUnitTestCoverage = false
             resValue("string", "app_name", "MyLittleChef Cloud Test")
         }
+        create("uiPreview") {
+            initWith(getByName("cloudTest"))
+            applicationIdSuffix = ".uipreview"
+            versionNameSuffix = "-ui-preview"
+            matchingFallbacks += listOf("cloudTest", "debug")
+            resValue("string", "app_name", "MyLittleChef UI Preview")
+        }
         release {
-            // Defaults to the demo server; HTTP is allowed only for that IP (src/release network config).
+            // Defaults to the team server; HTTP is allowed only for that IP (src/release network config).
+            // Code shrinking stays off: Retrofit/Gson read models by reflection and the store build was
+            // verified without it (ONE Store does not require it).
             buildConfigField("String", "SERVER_BASE_URL", "\"${providers.gradleProperty("releaseServerBaseUrl").orElse(serverBaseUrl).get()}\"")
             signingConfigs.findByName("release")?.let { signingConfig = it }
             optimization {
@@ -110,6 +119,7 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.android.youtube.player)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.androidx.datastore.preferences)

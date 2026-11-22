@@ -8,15 +8,18 @@ import json
 import logging
 import time
 from collections.abc import Callable
+from typing import Any
 
 import httpx
+import openai
+from openai.types.chat import ChatCompletion
 
 from app.dishes.errors import DishLLMError
-from app.dishes.http import APP_READ_SECONDS, RETRY_WAITS, post_with_retry
+from app.dishes.http import APP_READ_SECONDS, RETRY_WAITS, retry_while
 from app.dishes.youtube import YOUTUBE_TIMEOUT
 from app.json_lists import salvage_list
+from app.openrouter import json_schema_format, openrouter_client
 
-ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "google/gemini-2.5-flash-lite"
 MAX_TOKENS = 4096
 CALL_TIMEOUT = 30.0  # seconds for one attempt
@@ -32,15 +35,13 @@ class DishLLM:
         api_key: str,
         model: str = DEFAULT_MODEL,
         *,
-        transport=None,
+        transport: httpx.BaseTransport | None = None,
         retry_waits: tuple[float, ...] = RETRY_WAITS,
         clock: Callable[[], float] = time.monotonic,
     ):
-        if not api_key.strip():
-            raise ValueError("an API key is required")
+        self._client = openrouter_client(api_key, timeout=CALL_TIMEOUT, transport=transport)
         self._api_key = api_key
         self._model = model
-        self._transport = transport
         self._retry_waits = retry_waits
         # Research tracing can exclude checkpoint I/O from the shared policy clock.
         self._clock = clock
@@ -48,65 +49,66 @@ class DishLLM:
     def complete(
         self, system: str, user: str, name: str, schema: dict, max_tokens: int | None = None
     ) -> dict:
-        payload = {
-            "model": self._model,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            "response_format": {
-                "type": "json_schema",
-                "json_schema": {"name": name, "strict": True, "schema": schema},
-            },
-            "provider": {"require_parameters": True},
-            "max_tokens": max_tokens or MAX_TOKENS,
-            "temperature": 0,
-        }
-        started = self._clock()
-        try:
-            with httpx.Client(
-                timeout=CALL_TIMEOUT, transport=self._transport, follow_redirects=False
-            ) as client:
-                headers = {"Authorization": f"Bearer {self._api_key}"}
-                response = post_with_retry(
-                    client,
-                    ENDPOINT,
-                    payload,
-                    headers,
-                    waits=self._retry_waits,
-                    budget=CALL_BUDGET,
-                    clock=self._clock,
+        started = time.monotonic()
+
+        def attempt(left: float | None) -> ChatCompletion | None:
+            """None after a rate limit, so the retry waits and tries again."""
+            try:
+                return self._client.chat.completions.create(
+                    model=self._model,
+                    messages=[
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user},
+                    ],
+                    response_format=json_schema_format(name, schema),
+                    max_tokens=max_tokens or MAX_TOKENS,
+                    temperature=0,
+                    extra_body={"provider": {"require_parameters": True}},
+                    timeout=CALL_TIMEOUT if left is None else min(left, CALL_TIMEOUT),
                 )
-            if response.status_code == 429 or response.status_code >= 500:
+            except openai.RateLimitError:
+                return None
+
+        try:
+            completion = retry_while(
+                attempt,
+                lambda r: r is None,
+                waits=self._retry_waits,
+                budget=CALL_BUDGET,
+                clock=self._clock,
+            )
+            if completion is None:
                 raise DishLLMError("The model service is temporarily unavailable")
-            if response.status_code != 200:
-                raise DishLLMError("The model service rejected the request")
-            body = response.json()
-            choice = body["choices"][0]
-            usage = body.get("usage") or {}
+            choice = completion.choices[0]
+            usage = completion.usage
             log.info(
                 "dish model call %s: %.1fs, finish=%s, tokens in=%s out=%s",
                 name,
-                self._clock() - started,
-                choice.get("finish_reason"),
-                usage.get("prompt_tokens"),
-                usage.get("completion_tokens"),
+                time.monotonic() - started,
+                choice.finish_reason,
+                usage.prompt_tokens if usage else None,
+                usage.completion_tokens if usage else None,
             )
-            message = choice["message"]
-            if message.get("refusal"):
+            message = choice.message
+            data: Any
+            if message.refusal:
                 raise DishLLMError("The model returned an incomplete answer")
-            if choice.get("finish_reason") == "length":
-                data = salvage_list(message.get("content") or "")
+            if choice.finish_reason == "length":
+                data = salvage_list(message.content or "")
                 if data is None:
                     raise DishLLMError("The model returned an incomplete answer")
                 log.warning("dish model call %s was cut at the token limit", name)
-            elif choice.get("finish_reason") != "stop":
+            elif choice.finish_reason != "stop":
                 raise DishLLMError("The model returned an incomplete answer")
             else:
-                data = json.loads(message["content"])
-        except (httpx.TimeoutException, httpx.TransportError):
+                data = json.loads(message.content or "")
+        except openai.APIStatusError as exc:
+            if exc.status_code >= 500:
+                raise DishLLMError("The model service is temporarily unavailable") from None
+            raise DishLLMError("The model service rejected the request") from None
+        except (openai.APITimeoutError, openai.APIConnectionError):
             raise DishLLMError("The model service could not be reached") from None
-        except (ValueError, KeyError, TypeError, IndexError):
+        except (ValueError, KeyError, TypeError, IndexError, AttributeError):
             raise DishLLMError("The model returned an invalid answer") from None
         if not isinstance(data, dict):
             raise DishLLMError("The model returned an invalid answer")

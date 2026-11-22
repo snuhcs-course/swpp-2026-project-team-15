@@ -1,93 +1,80 @@
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
+// Modified with Claude Code (Opus 5.5), 2026-11-20: the player is android-youtube-player's view.
 package com.example.mylittlechef.ui.dish
 
-import android.annotation.SuppressLint
-import android.content.Context
-import android.graphics.Color
-import android.util.Log
-import android.os.Handler
-import android.os.Looper
-import android.webkit.ConsoleMessage
-import android.webkit.JavascriptInterface
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceError
-import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.mylittlechef.domain.DishLinks
+import kotlinx.coroutines.delay
+import java.util.concurrent.atomic.AtomicBoolean
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer as Player
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 
 /**
- * Plays one video through YouTube's own embedded player (IFrame API) in a page pinned to the full
- * WebView size. JavaScript is on for this WebView only, the player is shown unchanged at 16:9, any
- * navigation away from the page opens outside, and player errors are reported through [onError].
+ * Plays one video through YouTube's own embedded player (IFrame API) with android-youtube-player,
+ * shown unchanged at 16:9. The player identifies the app as the embedding origin (YouTube refuses
+ * to play without a referrer of its own), and its errors are reported through [onError] with
+ * YouTube's error name (e.g. VIDEO_NOT_FOUND, VIDEO_NOT_PLAYABLE_IN_EMBEDDED_PLAYER).
  */
-@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun YouTubePlayer(videoId: String, modifier: Modifier = Modifier, onError: (String) -> Unit = {}) {
     val context = LocalContext.current
-    val webView = remember(videoId) { createPlayerWebView(context, videoId, onError) }
-    DisposableEffect(webView) {
-        onDispose {
-            webView.stopLoading()
-            webView.loadUrl("about:blank")
-            webView.destroy()
+    val reportError by rememberUpdatedState(onError)
+    // The library passes the id into a JavaScript call: only a well-formed YouTube id gets there.
+    if (!DishLinks.isValidVideoId(videoId)) {
+        LaunchedEffect(videoId) { reportError("INVALID_VIDEO_ID") }
+        return
+    }
+    val ready = remember(videoId) { AtomicBoolean(false) }
+    // The library reports YouTube's errors but not a page that never loads (offline, blocked): without this the
+    // player would just stay blank, where the earlier WebView showed the in-app notice on a load error.
+    LaunchedEffect(videoId) { reportIfNotReady(ready::get, LOAD_TIMEOUT_MS) { reportError("LOAD_TIMEOUT") } }
+    val view = remember(videoId) {
+        YouTubePlayerView(context).apply {
+            enableAutomaticInitialization = false
+            val options = IFramePlayerOptions.Builder()
+                .controls(1)
+                .rel(0)
+                .origin(DishLinks.EMBED_BASE_URL)
+                .build()
+            initialize(object : AbstractYouTubePlayerListener() {
+                override fun onReady(youTubePlayer: Player) {
+                    ready.set(true)
+                    youTubePlayer.cueVideo(videoId, 0f)
+                }
+                override fun onError(youTubePlayer: Player, error: PlayerConstants.PlayerError) = reportError(error.name)
+            }, options)
         }
     }
+    DisposableEffect(view) { onDispose { view.release() } }
     AndroidView(
-        factory = { webView },
+        factory = { view },
         modifier = modifier.fillMaxWidth().aspectRatio(16f / 9f).semantics { contentDescription = "YouTube 영상 플레이어" }
     )
 }
 
-@SuppressLint("SetJavaScriptEnabled")
-private fun createPlayerWebView(context: Context, videoId: String, onError: (String) -> Unit): WebView = WebView(context).apply {
-    setBackgroundColor(Color.BLACK)
-    settings.javaScriptEnabled = true
-    settings.mediaPlaybackRequiresUserGesture = true
-    val main = Handler(Looper.getMainLooper())
-    addJavascriptInterface(object {
-        @JavascriptInterface fun onError(code: String) { main.post { onError(code) } }
-    }, DishLinks.PLAYER_BRIDGE)
-    settings.allowFileAccess = false
-    settings.allowContentAccess = false
-    settings.cacheMode = WebSettings.LOAD_DEFAULT
-    webChromeClient = object : WebChromeClient() {
-        override fun onConsoleMessage(message: ConsoleMessage): Boolean {
-            Log.d("DishPlayer", message.message())
-            return true
-        }
-    }
-    webViewClient = object : WebViewClient() {
-        override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-            Log.d("DishPlayer", "error ${error.errorCode} ${error.description} ${request.url}")
-            if (request.isForMainFrame) main.post { onError("load ${error.errorCode}") }
-        }
+/**
+ * A judgement, not a measurement: long enough for the embed page on a slow mobile connection, short enough that
+ * the notice with the "YouTube에서 열기" button comes before the user gives up on a blank box.
+ */
+const val LOAD_TIMEOUT_MS = 15_000L
 
-        override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, errorResponse: WebResourceResponse) {
-            Log.d("DishPlayer", "http ${errorResponse.statusCode} ${request.url}")
-        }
-
-        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-            val url = request.url.toString()
-            // The embed itself and its assets stay inside; links out of the player go to the YouTube app or browser.
-            if (request.isForMainFrame && url != DishLinks.EMBED_PAGE_URL) {
-                openLink(view.context, url)
-                return true
-            }
-            return false
-        }
-    }
-    loadDataWithBaseURL(DishLinks.EMBED_PAGE_URL, DishLinks.playerHtml(videoId), "text/html", "utf-8", null)
+/** Reports once when the player has not become ready within [timeoutMs]. */
+suspend fun reportIfNotReady(isReady: () -> Boolean, timeoutMs: Long, report: () -> Unit) {
+    delay(timeoutMs)
+    if (!isReady()) report()
 }

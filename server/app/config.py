@@ -2,50 +2,90 @@
 
 # Modified with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
 # Changes: Drop the recipe database and revision settings.
+# Modified with Claude Code (Opus 5.5), 2026-11-20: one pydantic-settings class for every variable.
 
-"""Settings read from environment variables (see server/.env.example)."""
+"""Settings read from environment variables (see server/.env.example and deploy/README.md).
 
-import os
+The running app reads the process environment once (``Settings.from_env()``); a test or a script
+hands in a mapping instead, which is then the only source. Names are the variable names, any case.
+"""
+
 from collections.abc import Mapping
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, cast
+from typing import Any, Literal
+
+from pydantic import model_validator
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 VisionProvider = Literal["mock", "gemini", "openrouter"]
 
 SERVER_DIR = Path(__file__).resolve().parents[1]
 
 
-@dataclass(frozen=True)
-class Settings:
-    vision_provider: VisionProvider
-    vision_fixture_dir: Path
-    gemini_api_key: str
-    gemini_model: str
+class Settings(BaseSettings):
+    # hide_input_in_errors: a validation error would otherwise print part of the values, keys too.
+    model_config = SettingsConfigDict(
+        frozen=True, extra="ignore", case_sensitive=False, hide_input_in_errors=True
+    )
+
+    vision_provider: VisionProvider = "mock"
+    gemini_api_key: str = ""
+    gemini_model: str = ""
     openrouter_api_key: str = ""
     openrouter_vision_model: str = ""
+    # Dish suggestions, revisions and the video search; the key falls back to OPENROUTER_API_KEY.
+    dish_llm_api_key: str = ""
+    dish_llm_model: str = ""
+    youtube_api_key: str = ""
+    dish_videos: str = ""
+    dish_recipes: str = ""
+    # Usage data for the beta week; collection is off when unset.
+    telemetry_file: str = ""
 
-    @classmethod
-    def from_env(cls, env: Mapping[str, str] = os.environ) -> "Settings":
-        provider = env.get("VISION_PROVIDER", "mock")
-        if provider not in ("mock", "gemini", "openrouter"):
-            raise ValueError(
-                f"VISION_PROVIDER must be 'mock', 'gemini' or 'openrouter', got {provider!r}"
-            )
-        settings = cls(
-            vision_provider=cast(VisionProvider, provider),
-            vision_fixture_dir=SERVER_DIR / "fixtures" / "vision",
-            gemini_api_key=env.get("GEMINI_API_KEY", ""),
-            gemini_model=env.get("GEMINI_MODEL", ""),
-            openrouter_api_key=env.get("OPENROUTER_API_KEY", ""),
-            openrouter_vision_model=env.get("OPENROUTER_VISION_MODEL", ""),
-        )
-        if provider == "gemini" and not (settings.gemini_api_key and settings.gemini_model):
+    @property
+    def vision_fixture_dir(self) -> Path:
+        return SERVER_DIR / "fixtures" / "vision"
+
+    @property
+    def dish_model_key(self) -> str:
+        """The key for the dish model and the video search: DISH_LLM_API_KEY, else the general
+        one. The one place this rule is written, so both calls always use the same key."""
+        # A set but blank DISH_LLM_API_KEY turns the model off, as before (no fallback).
+        return (self.dish_llm_api_key or self.openrouter_api_key).strip()
+
+    @model_validator(mode="after")
+    def _provider_has_its_settings(self) -> "Settings":
+        if self.vision_provider == "gemini" and not (self.gemini_api_key and self.gemini_model):
             raise ValueError("VISION_PROVIDER=gemini requires GEMINI_API_KEY and GEMINI_MODEL")
-        if provider == "openrouter" and not (
-            settings.openrouter_api_key and settings.openrouter_vision_model
+        if self.vision_provider == "openrouter" and not (
+            self.openrouter_api_key and self.openrouter_vision_model
         ):
             raise ValueError(
                 "OpenRouter vision requires OPENROUTER_API_KEY and OPENROUTER_VISION_MODEL"
             )
-        return settings
+        return self
+
+    @classmethod
+    def from_env(cls, env: Mapping[str, str] | None = None) -> "Settings":
+        """The process environment, or only ``env`` when one is given. Raises ValueError (a
+        pydantic ValidationError) for an unknown provider or a provider without its keys."""
+        if env is None:
+            return cls()
+        fields = cls.model_fields
+        values: dict[str, Any] = {k.lower(): v for k, v in env.items() if k.lower() in fields}
+        return _FromMapping(**values)
+
+
+class _FromMapping(Settings):
+    """Settings whose only source is the keyword arguments: no process environment."""
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return (init_settings,)

@@ -18,8 +18,9 @@ fun AppearancePicker() {
     Box {
         IconButton(onClick={ expanded=true },enabled=!appearance.saving,
             modifier=Modifier.semantics { contentDescription="화면 모드 설정: ${appearance.mode.label}" }) {
-            Text(if(appearance.mode.isDark(isSystemInDarkTheme())) "☾" else "☀",style=MaterialTheme.typography.headlineSmall,
-                color=MaterialTheme.colorScheme.primary)
+            // onSurface keeps the thin glyph readable in dark mode (dark-mode review, 2026-11-20).
+            Text(if(appearance.mode.isDark(isSystemInDarkTheme())) "☾" else "☀",style=MaterialTheme.typography.headlineMedium,
+                color=MaterialTheme.colorScheme.onSurface)
         }
         DropdownMenu(expanded=expanded,onDismissRequest={expanded=false}) {
             ThemeMode.entries.forEach { option ->

@@ -1,8 +1,13 @@
+// UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // AI-generated initial ingredient-entry layout with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 package com.example.mylittlechef.ui.fridge.components
 
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.*
+import androidx.compose.foundation.layout.*
+import com.example.mylittlechef.ui.fridge.add.LocalEntrySheet
+import androidx.compose.ui.res.painterResource
+import com.example.mylittlechef.R
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -73,6 +78,18 @@ fun AddFlowScaffold(
     content: @Composable BoxScope.() -> Unit
 )
 {
+    if (LocalEntrySheet.current != null) {
+        Column(modifier.fillMaxSize()) {
+            Row(Modifier.fillMaxWidth().padding(start=20.dp,end=8.dp), verticalAlignment=Alignment.CenterVertically) {
+                Text(title.orEmpty(), Modifier.weight(1f), style=MaterialTheme.typography.titleLarge)
+                IconButton(onClick=onBackClick) { Icon(painterResource(R.drawable.ic_ui_close), "닫기") }
+            }
+            Box(Modifier.weight(1f).fillMaxWidth(), content=content)
+            Column(Modifier.fillMaxWidth().padding(bottom=12.dp),
+                horizontalAlignment=Alignment.CenterHorizontally, content=bottomContent)
+        }
+        return
+    }
     Scaffold(
         modifier = modifier.imePadding(),
         containerColor = MaterialTheme.colorScheme.background,

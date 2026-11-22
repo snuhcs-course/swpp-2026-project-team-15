@@ -37,12 +37,11 @@ class FridgeDeletionUiTest {
         composeRule.onNodeWithTag("fridge-ingredient-김치").assertIsDisplayed()
     }
 
-    @Test fun actionMenuEntersEmptySelectionAndSingleConfirmationDeletesSelectedNames() {
+    @Test fun manageEntersEmptySelectionAndSingleConfirmationDeletesSelectedNames() {
         show("마늘", "다진마늘", "두부")
-        composeRule.onNodeWithTag("fridge-actions").performClick()
-        composeRule.onNodeWithText("부족한 재료 추천").assertIsDisplayed()
-        composeRule.onNodeWithText("냉장고 재료 추가").assertIsDisplayed()
-        composeRule.onNodeWithText("냉장고 재료 삭제").performClick()
+        composeRule.onNodeWithText("추가 재료 추천").assertIsDisplayed()
+        composeRule.onNodeWithTag("fridge-manual-add").assertIsDisplayed()
+        composeRule.onNodeWithTag("manage-fridge").performClick()
         composeRule.onNodeWithText("0개 선택").assertIsDisplayed()
         composeRule.onNodeWithTag("delete-selected-ingredients").assertIsNotEnabled()
         composeRule.onNodeWithTag("fridge-ingredient-마늘").performClick()
@@ -59,8 +58,7 @@ class FridgeDeletionUiTest {
 
     @Test fun selectAllAndCancelConfirmationPreserveSelectionUntilFinalConfirm() {
         show("두부", "김치")
-        composeRule.onNodeWithTag("fridge-actions").performClick()
-        composeRule.onNodeWithText("냉장고 재료 삭제").performClick()
+        composeRule.onNodeWithTag("manage-fridge").performClick()
         composeRule.onNodeWithText("전체 선택").performClick()
         composeRule.onNodeWithTag("delete-selected-ingredients").performClick()
         composeRule.onNodeWithTag("cancel-ingredient-delete").performClick()
@@ -68,8 +66,7 @@ class FridgeDeletionUiTest {
         composeRule.onNodeWithTag("delete-selected-ingredients").performClick()
         composeRule.onNodeWithTag("confirm-ingredient-delete").performClick()
         composeRule.onNodeWithText("냉장고가 비었어요").assertIsDisplayed()
-        composeRule.onNodeWithTag("fridge-actions").performClick()
-        composeRule.onNodeWithText("냉장고 재료 추가").assertIsEnabled()
+        composeRule.onNodeWithTag("fridge-manual-add").assertIsEnabled()
     }
 
     @Test fun failedWriteKeepsInventoryAndSelectionForRetry() {

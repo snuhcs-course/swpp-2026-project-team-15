@@ -55,10 +55,11 @@ def main() -> None:
     sys.path.insert(0, str(Path(args.server_dir).resolve()))
     import app.dishes.revision as revision  # noqa: E402
     import app.dishes.revision_check as rc  # noqa: E402
+    from app.config import Settings  # noqa: E402
     from app.dishes.dependencies import build_dish_parts  # noqa: E402
 
     env = {"DISH_LLM_API_KEY": read_key(), "DISH_RECIPES": args.recipes}
-    parts = build_dish_parts(env)
+    parts = build_dish_parts(Settings.from_env(env))
     reviser, catalog = parts.reviser, parts.service.catalog
     served_request, served_changes = revision.revise_request, rc._checked_changes
 

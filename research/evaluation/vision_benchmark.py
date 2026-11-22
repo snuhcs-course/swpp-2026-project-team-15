@@ -26,7 +26,7 @@ from types import SimpleNamespace
 
 import httpx
 from google import genai
-from sqlmodel import Field, SQLModel
+from pydantic import BaseModel, Field
 
 from app.vision.exceptions import VisionError, VisionUnavailableError
 from app.vision.gemini import PROMPT, GeminiVisionProvider
@@ -38,7 +38,7 @@ GROUND_TRUTH = Path(__file__).with_name("ground_truth.json")
 RETRY_WAITS_S = (10, 20, 40)
 
 
-class DetectedItemWithClues(SQLModel):
+class DetectedItemWithClues(BaseModel):
     """Asks for evidence before the category, approximating the 2026-09-30 reasoning output."""
 
     name_raw: str

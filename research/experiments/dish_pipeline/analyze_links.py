@@ -14,6 +14,8 @@ import statistics
 from collections import Counter
 from pathlib import Path
 
+from sklearn.metrics import cohen_kappa_score  # Cohen (1960), the textbook formula
+
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[2]
 DATA = REPO_ROOT / "data" / "youtube-discovery-v2"
@@ -41,10 +43,10 @@ def kappa(a: list[bool], b: list[bool]) -> float | None:
     n = len(a)
     if n == 0:
         return None
-    po = sum(x == y for x, y in zip(a, b, strict=True)) / n
     pa, pb = sum(a) / n, sum(b) / n
-    pe = pa * pb + (1 - pa) * (1 - pb)
-    return None if pe == 1 else (po - pe) / (1 - pe)
+    if pa * pb + (1 - pa) * (1 - pb) == 1:  # chance agreement is total: kappa is undefined
+        return None
+    return float(cohen_kappa_score(a, b))
 
 
 def per_dish(

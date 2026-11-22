@@ -1,6 +1,7 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-10-11 to 2026-10-14; reviewed by Jaehyuk Choi.
 from typing import Annotated
 
+import filetype
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
 from app.schemas import ErrorResponse
@@ -10,6 +11,7 @@ from app.vision.providers import ImageInput
 from app.vision.schemas import AnalyzeResponse
 from app.vision.service import detect_images, to_candidates, unique_raw_texts
 
+HEIF_BRANDS = {b"heic", b"heix", b"hevc", b"hevx", b"heim", b"heis", b"mif1", b"msf1"}
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 MAX_IMAGE_BYTES = 16 * 1024 * 1024
 # Several views are one request body; keep their total below the 16 MiB proxy limit.
@@ -25,7 +27,7 @@ router = APIRouter(tags=["vision"])
     operation_id="analyze_photo",
     responses={
         413: {"model": ErrorResponse, "description": "An image or the total upload is too large"},
-        415: {"model": ErrorResponse, "description": "Not a JPEG, PNG, WebP, HEIC or HEIF image"},
+        415: {"model": ErrorResponse, "description": "Not a JPEG, PNG, WebP, HEIC or HEIF upload"},
         422: {"model": ErrorResponse, "description": "No image, empty image or too many images"},
         502: {"model": ErrorResponse, "description": "Recognition failed or returned bad output"},
         503: {"model": ErrorResponse, "description": "Recognition temporarily unavailable; retry"},
@@ -85,17 +87,24 @@ def _read(upload: UploadFile, limit: int) -> ImageInput:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Empty image")
     if not looks_like_image(data):
         # A broken file used to reach the model and come back as 502 (phone test, 2026-11-19).
-        raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "Not a readable image")
+        # Another image format than the supported ones is 415 (as the photo review route of #23
+        # answers); content that is no readable image is 422. The app shows one message for both.
+        kind = filetype.guess(data)
+        if kind is not None and kind.mime.startswith("image/") and kind.mime != "image/png":
+            raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "Unsupported image format")
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "The uploaded file could not be read as a photo"
+        )
     return ImageInput(data, upload.content_type)
 
 
 def looks_like_image(data: bytes) -> bool:
-    """A cheap structural check before any model call: the file starts like a JPEG, PNG, WebP or
-    HEIC/HEIF, and a PNG also has its end chunk (a cut-off PNG lacks it). No decoding."""
-    if data.startswith(b"\xff\xd8"):
-        return True
-    if data.startswith(b"\x89PNG\r\n\x1a\n"):
-        return b"IEND" in data[-64:]
-    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
-        return True
-    return data[4:8] == b"ftyp"
+    """A cheap structural check before any model call: the file's signature is a JPEG, PNG, WebP or
+    HEIC/HEIF (filetype), and a PNG also has its end chunk (a cut-off PNG lacks it). No decoding."""
+    kind = filetype.guess(data)
+    if kind is None:
+        # filetype knows only some HEIF brands; phones also write these (not mp4 or avif).
+        return data[4:8] == b"ftyp" and data[8:12] in HEIF_BRANDS
+    if kind.mime not in SUPPORTED_IMAGE_TYPES:
+        return False
+    return kind.mime != "image/png" or b"IEND" in data[-64:]

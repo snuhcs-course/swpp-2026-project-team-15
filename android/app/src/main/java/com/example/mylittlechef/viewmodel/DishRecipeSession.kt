@@ -1,4 +1,5 @@
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-18; reviewed by Jaehyuk Choi.
+// Usage events (recipe_view, revise) added with Claude Code (Opus 5.5), 2026-11-20.
 package com.example.mylittlechef.viewmodel
 
 import androidx.compose.runtime.getValue
@@ -9,6 +10,11 @@ import com.example.mylittlechef.data.remote.DishRecipeApi
 import com.example.mylittlechef.data.remote.RecipeViewRequest
 import com.example.mylittlechef.data.remote.ReviseRequest
 import com.example.mylittlechef.domain.DishRecipe
+import com.example.mylittlechef.domain.NoTelemetry
+import com.example.mylittlechef.domain.Telemetry
+import com.example.mylittlechef.domain.Usage
+import com.example.mylittlechef.domain.UsageEvent
+import com.example.mylittlechef.domain.failureCode
 import com.example.mylittlechef.domain.Revision
 import com.example.mylittlechef.domain.toDishRecipe
 import com.example.mylittlechef.domain.toRevision
@@ -37,6 +43,7 @@ sealed interface ReviseUiState {
 class DishRecipeSession(
     private val api: DishRecipeApi,
     private val scope: CoroutineScope,
+    private val telemetry: Telemetry = NoTelemetry,
     private val fridge: () -> List<String>
 ) {
     var openDishId by mutableStateOf<String?>(null)
@@ -75,12 +82,19 @@ class DishRecipeSession(
             try {
                 val recipe = api.recipe(RecipeViewRequest(dishId, fridge())).toDishRecipe()
                 if (mine != generation) return@launch
+                val status = if (recipe != null) "ok" else "error"
+                telemetry.track(Usage(UsageEvent.RECIPE_VIEW, dishId = dishId, status = status))
                 recipes[dishId] = if (recipe != null) RecipeUiState.Success(recipe)
                 else RecipeUiState.Error(UNAVAILABLE_MESSAGE)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
-                if (mine == generation) recipes[dishId] = RecipeUiState.Error(failureMessage(failure))
+                if (mine == generation) {
+                    telemetry.track(
+                        Usage(UsageEvent.RECIPE_VIEW, dishId = dishId, status = "error", code = failureCode(failure))
+                    )
+                    recipes[dishId] = RecipeUiState.Error(failureMessage(failure))
+                }
             }
         }
     }
@@ -91,16 +105,37 @@ class DishRecipeSession(
         if (names.isEmpty()) return
         val mine = generation
         revisions[dishId] = ReviseUiState.Loading
+        val started = System.currentTimeMillis()
         scope.launch {
             try {
                 val revision = api.revise(ReviseRequest(dishId, names)).toRevision()
                 if (mine != generation) return@launch
+                val status = when (revision) {
+                    is Revision.Revised -> "revised"
+                    is Revision.Refused -> "refused"
+                    is Revision.Failed -> "failed"
+                    null -> "error"
+                }
+                telemetry.track(
+                    Usage(UsageEvent.REVISE, dishId = dishId, status = status, durationMs = System.currentTimeMillis() - started)
+                )
                 revisions[dishId] = if (revision != null) ReviseUiState.Done(revision)
                 else ReviseUiState.Error(RETRY_MESSAGE)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
-                if (mine == generation) revisions[dishId] = ReviseUiState.Error(failureMessage(failure))
+                if (mine == generation) {
+                    telemetry.track(
+                        Usage(
+                            UsageEvent.REVISE,
+                            dishId = dishId,
+                            status = "error",
+                            code = failureCode(failure),
+                            durationMs = System.currentTimeMillis() - started
+                        )
+                    )
+                    revisions[dishId] = ReviseUiState.Error(failureMessage(failure))
+                }
             }
         }
     }

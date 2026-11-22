@@ -722,38 +722,72 @@ def test_ties_keep_the_model_order(catalog):
 
 def test_retry_waits_are_handed_in_not_patched():
     # Server review (2026-11-19): tests patched a module global to skip the waits.
-    from app.dishes.http import RETRY_WAITS, post_with_retry
+    from app.dishes.http import RETRY_WAITS, retry_while
 
     slept, answers = [], [429, 429, 200]
-
-    def handler(request):
-        return httpx.Response(answers.pop(0))
-
-    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
-        response = post_with_retry(client, "https://x.test", {}, {}, sleep=slept.append)
-    assert response.status_code == 200 and slept == list(RETRY_WAITS)
+    result = retry_while(lambda left: answers.pop(0), lambda r: r == 429, sleep=slept.append)
+    assert result == 200 and slept == list(RETRY_WAITS)
 
 
 def test_a_retry_is_skipped_when_the_budget_has_no_time_left():
     # Server review (2026-11-19): worst case a revision took about 220 s, the app waits 90 s.
-    from app.dishes.http import post_with_retry
+    from app.dishes.http import retry_while
 
-    now, answers, timeouts = [0.0], [429, 429, 200], []
+    now, answers, lefts = [0.0], [429, 429, 200], []
 
-    def handler(request):
-        timeouts.append(request.extensions["timeout"]["read"])
+    def attempt(left):
+        lefts.append(left)
         now[0] += 10  # each attempt takes 10 s
-        return httpx.Response(answers.pop(0))
+        return answers.pop(0)
 
     def sleep(seconds):
         now[0] += seconds
 
-    with httpx.Client(transport=httpx.MockTransport(handler), timeout=30) as client:
-        response = post_with_retry(
-            client, "https://x.test", {}, {}, sleep=sleep, budget=20, clock=lambda: now[0]
-        )
-    assert response.status_code == 429  # 10 s used, 3 s wait, 7 s left: one retry, then none
-    assert len(timeouts) == 2 and timeouts[0] == 20 and timeouts[1] == 7
+    result = retry_while(attempt, lambda r: r == 429, sleep=sleep, budget=20, clock=lambda: now[0])
+    assert result == 429  # 10 s used, 3 s wait, 7 s left: one retry, then none
+    assert lefts == [20, 7]
+
+
+def test_each_model_attempt_gets_only_the_time_that_is_left():
+    from app.dishes.llm import CALL_BUDGET, CALL_TIMEOUT
+
+    now = [0.0]
+    seen = []
+
+    def handler(request):
+        seen.append(request.extensions["timeout"]["read"])
+        now[0] += 25  # each attempt takes 25 s on the fake clock
+        return httpx.Response(429)
+
+    llm = DishLLM(
+        "test-key",
+        transport=httpx.MockTransport(handler),
+        retry_waits=(0, 0),
+        clock=lambda: now[0],
+    )
+    with pytest.raises(DishLLMError):
+        llm.complete("s", "u", "n", {"type": "object"})
+    # first the full per-call timeout, then only what is left of the budget, then no retry
+    assert seen == [pytest.approx(CALL_TIMEOUT), pytest.approx(CALL_BUDGET - 25)]
+
+
+def test_the_video_search_gets_only_the_time_that_is_left():
+    from app.dishes.video_search import SEARCH_BUDGET
+
+    now = [0.0]
+    seen = []
+
+    def handler(request):
+        seen.append(request.extensions["timeout"]["read"])
+        now[0] += 15
+        return httpx.Response(429)
+
+    source = WebSearchVideoSource(
+        "or-key", transport=httpx.MockTransport(handler), retry_waits=(0, 0), clock=lambda: now[0]
+    )
+    with pytest.raises(VideoError):
+        source.propose("김치볶음밥")
+    assert seen[:2] == [pytest.approx(SEARCH_BUDGET), pytest.approx(SEARCH_BUDGET - 15)]
 
 
 def test_every_route_fits_in_the_apps_wait():
