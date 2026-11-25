@@ -98,7 +98,18 @@ fun RecipeViewResponse.toDishRecipe(): DishRecipe? {
     )
 }
 
-const val REVISION_FAILED_MESSAGE = "바꾼 레시피를 보여 드릴 수 없어요. 다시 시도해 주세요."
+const val REVISION_FAILED_MESSAGE = "AI 수정안을 완성하지 못했어요. 다시 시도하거나 원본을 확인해 주세요."
+
+// Client guidance assisted by Codex, 2026-11-24; human review pending.
+/** Validation failures describe the generated answer, not proof the user lacks a main ingredient. */
+fun revisionFailureMessage(code: String?): String = when(code) {
+    "unavailable_ingredient", "mentions_unavailable" ->
+        "보유하지 않은 재료가 수정안에 포함됐어요. 다시 시도하거나 원본을 확인해 주세요."
+    "main_dropped" -> "수정안에서 필요한 핵심 재료가 빠졌어요. 다시 제안받아 주세요."
+    "bad_reference", "bad_kind", "unexplained_change" ->
+        "AI가 바꾼 내용을 확인하지 못했어요. 다시 시도하거나 원본을 확인해 주세요."
+    else -> REVISION_FAILED_MESSAGE
+}
 
 /** Null when the status is unknown, so the screen shows its error state instead of guessing. */
 fun ReviseResponse.toRevision(): Revision? = when (status) {
@@ -123,6 +134,6 @@ fun ReviseResponse.toRevision(): Revision? = when (status) {
         )
     }
     "refused" -> Revision.Refused(refusalReason?.takeIf { it.isNotBlank() } ?: "이 재료로는 바꾸기 어려워요.")
-    "failed" -> Revision.Failed(error?.message?.takeIf { it.isNotBlank() } ?: REVISION_FAILED_MESSAGE)
+    "failed" -> Revision.Failed(revisionFailureMessage(error?.code))
     else -> null
 }

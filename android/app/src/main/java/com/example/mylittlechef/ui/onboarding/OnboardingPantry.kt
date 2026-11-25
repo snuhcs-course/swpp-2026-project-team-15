@@ -1,7 +1,14 @@
+// UAT stage 2 assisted by Codex, 2026-11-24; human review pending.
 // UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // AI-assisted with Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.ui.onboarding
 
+import com.example.mylittlechef.ui.components.DragSelectionGroup
+import com.example.mylittlechef.ui.components.LocalSelectionTargets
+import com.example.mylittlechef.ui.components.selectionTarget
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.toggleable
@@ -35,22 +42,33 @@ fun OnboardingPantry(
 }
 
 @Composable
-fun PantrySelectionContent(selected: List<String>, onSelectedChange: (List<String>) -> Unit) {
+fun PantrySelectionContent(selected: List<String>, onSelectedChange: (List<String>) -> Unit, enabled: Boolean = true) {
+    DragSelectionGroup(selected.toSet(), {onSelectedChange(it.toList())}, enabled=enabled) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("있는 것만 골라주세요.",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text("조미료", style = MaterialTheme.typography.labelMedium)
-        OnboardingChoiceGrid(Preset.pantrySeasonings, selected, onSelectedChange, showBadges = true)
+        OnboardingChoiceGrid(Preset.pantrySeasonings, selected, onSelectedChange, showBadges = true, enabled=enabled)
         Text("기본 재료", style = MaterialTheme.typography.labelMedium)
-        OnboardingChoiceGrid(Preset.pantryBasics, selected, onSelectedChange, showBadges = true)
+        OnboardingChoiceGrid(Preset.pantryBasics, selected, onSelectedChange, showBadges = true, enabled=enabled)
+    }
     }
 }
 
 @Composable
 internal fun OnboardingChoiceGrid(
     choices: List<String>, selected: List<String>, onSelectedChange: (List<String>) -> Unit,
-    showBadges: Boolean = false
+    showBadges: Boolean = false, enabled: Boolean = true
 ) {
+    if(LocalSelectionTargets.current == null) {
+        DragSelectionGroup(selected.toSet(), {onSelectedChange(it.toList())}, enabled=enabled) {
+            ChoiceGridContent(choices,selected,onSelectedChange,enabled)
+        }
+    } else ChoiceGridContent(choices,selected,onSelectedChange,enabled)
+}
+
+@Composable
+private fun ChoiceGridContent(choices:List<String>,selected:List<String>,onSelectedChange:(List<String>)->Unit,enabled:Boolean) {
     val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val cellWidth = (if (choices == Preset.utensils) 92 else 72) * fontScale
@@ -64,22 +82,21 @@ internal fun OnboardingChoiceGrid(
                         val shape = RoundedCornerShape(14.dp)
                         Surface(
                             modifier = Modifier.weight(1f).heightIn(min = 60.dp)
-                                .border(1.dp, if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, shape)
-                                .toggleable(checked, role = Role.Checkbox, onValueChange = {
+                                .selectionTarget(name).testTag("choice-$name")
+                                .semantics { this.selected = checked }
+                                .toggleable(checked, enabled=enabled, role = Role.Checkbox, onValueChange = {
                                     onSelectedChange(if (checked) selected - name else selected + name)
                                 }),
                             shape = shape,
-                            color = if (checked) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.background,
+                            color = MaterialTheme.colorScheme.background,
                             contentColor = if (checked) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
                         ) {
                             Column(Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center) {
-                                ChoiceBadge(name, Modifier.clearAndSetSemantics { testTag="choice-icon-$name" })
+                                ChoiceBadge(name, Modifier.clearAndSetSemantics { testTag="choice-icon-$name" }, selected=checked)
                                 Row(verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                    Text(if (checked) "✓" else "○", style = MaterialTheme.typography.bodySmall,
-                                        modifier = Modifier.clearAndSetSemantics {})
                                     Text(name, modifier = Modifier.weight(1f, fill = false), textAlign = TextAlign.Center,
                                         style = MaterialTheme.typography.bodySmall)
                                 }

@@ -1,3 +1,4 @@
+// UAT stage 2 assisted by Codex, 2026-11-24; human review pending.
 // AI-assisted with Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.ui.components
 
@@ -21,13 +22,10 @@ import com.example.mylittlechef.ui.fridge.components.ingredientIconResource
 
 /** The fixed pastel disc and dark line art preserve catalog identity in both themes. */
 @Composable
-fun IngredientBadge(name: String, modifier: Modifier = Modifier, size: Dp = 32.dp) {
+fun IngredientBadge(name: String, modifier: Modifier = Modifier, size: Dp = 32.dp, selected: Boolean = false) {
     val context = LocalContext.current
     val catalog = remember(context) { IngredientPresentationProvider.get(context) }
     val appearance = catalog.appearanceFor(name)
-    Box(modifier.size(size).clip(CircleShape).background(Color(appearance.backgroundArgb)),
-        contentAlignment = Alignment.Center) {
-        Icon(painterResource(ingredientIconResource(if(name=="감자") "potato" else if(name in listOf("고추","청고추","홍고추","청양고추")) "chili" else appearance.iconKey)), contentDescription = name,
-            tint = Color(0xFF172C25), modifier = Modifier.size(size * 0.82f))
-    }
+    SelectionBadge(name, ingredientIconResource(if(name=="감자") "potato" else if(name in listOf("고추","청고추","홍고추","청양고추")) "chili" else appearance.iconKey),
+        Color(appearance.backgroundArgb), selected, modifier, size)
 }

@@ -1,3 +1,4 @@
+// UAT stage 3 assisted by Codex, 2026-11-24; human review pending.
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
 // Usage events (dish_list, dish_open, player_error) added with Claude Code (Opus 5.5), 2026-11-20.
 // Bookmarks, hide-for-this-list and in-list search for the #24 recipe UI added with Claude Code (Opus 5.5), 2026-11-20.
@@ -18,6 +19,8 @@ import com.example.mylittlechef.data.remote.DishRecipeApi
 import com.example.mylittlechef.data.remote.DishSuggestRequest
 import com.example.mylittlechef.data.remote.DishVideosRequest
 import com.example.mylittlechef.domain.Dish
+import com.example.mylittlechef.domain.ingredientDishes
+import com.example.mylittlechef.domain.nextDishBatch
 import com.example.mylittlechef.domain.DishSort
 import com.example.mylittlechef.domain.DishVideo
 import com.example.mylittlechef.domain.NoTelemetry
@@ -52,6 +55,8 @@ sealed interface VideoUiState {
     data class Error(val message: String) : VideoUiState
 }
 
+data class DishRefreshFeedback(val id:Long,val changed:Boolean)
+
 class DishViewModel(
     private val api: DishApi = DishApiClient.api,
     private val debounceMillis: Long = 400L,
@@ -73,9 +78,27 @@ class DishViewModel(
     private val videoStates = mutableStateMapOf<String, VideoUiState>()
     private var lastNames: List<String>? = null
     private var generation = 0L
+    // Video lookup is independent of recommendation refreshes; only data reset invalidates it.
+    private var videoEpoch = 0L
     private var job: Job? = null
     private var rawDishes: List<Dish> = emptyList()
     private var rawSource = ""
+    private var batchIds:List<String> = emptyList()
+    private var seenIds:Set<String> = emptySet()
+    var refreshVersion by mutableStateOf(0L)
+        private set
+    private var refreshSequence=0L
+    private var retryRefresh=false
+    var refreshFeedback by mutableStateOf<DishRefreshFeedback?>(null)
+        private set
+    fun consumeRefreshFeedback(id:Long) {if(refreshFeedback?.id==id) refreshFeedback=null}
+    fun relatedToIngredient(name:String):List<Dish> = ingredientDishes(rawDishes.filter {it.id !in hiddenIds},name)
+    fun refreshSuggestions() {
+        val names=lastNames?.takeIf {it.isNotEmpty()} ?: return
+        if(state is DishUiState.Loading) return
+        retryRefresh=true
+        load(names,wait=false,refresh=true)
+    }
 
     fun videoState(dishId: String): VideoUiState? = videoStates[dishId]
 
@@ -122,10 +145,14 @@ class DishViewModel(
 
     /** The suggested dishes to show: not hidden, and whose name contains [query] (search within this list). */
     fun visibleSuggestions(query: String): List<Dish> {
-        val current = (state as? DishUiState.Success)?.dishes.orEmpty()
+        val current = (state as? DishUiState.Success)?.dishes
+            ?: if(state is DishUiState.Loading || state is DishUiState.Error) sortDishes(rawDishes,sort) else emptyList()
         val q = query.trim()
-        return current.filter { it.id !in hiddenIds && (q.isEmpty() || it.name.contains(q, ignoreCase = true)) }
+        return current.filter { it.id !in hiddenIds && (if(q.isEmpty()) it.id in batchIds else it.name.contains(q, ignoreCase = true)) }
     }
+
+    val showingPreviousSuggestions: Boolean
+        get() = (state is DishUiState.Loading || state is DishUiState.Error) && rawDishes.isNotEmpty()
 
     /** Bookmarks as dishes: the current suggestion when it has one, else a card from what was kept. */
     fun favoriteDishes(): List<Dish> {
@@ -164,18 +191,21 @@ class DishViewModel(
         val cleaned = names.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
         if (cleaned == lastNames) return
         lastNames = cleaned
+        rawDishes=emptyList();batchIds=emptyList();seenIds=emptySet();retryRefresh=false;refreshFeedback=null
         load(cleaned, wait = true)
     }
 
     /** Forgets everything (data reset): running requests, answers, the selection and the last fridge. */
     fun resetState() {
         generation++
+        videoEpoch++
         job?.cancel()
         videoStates.clear()
         recipes.reset()
         lastNames = null
         rawDishes = emptyList()
         rawSource = ""
+        batchIds=emptyList();seenIds=emptySet();retryRefresh=false;refreshFeedback=null
         selectedDishId = null
         hiddenIds = emptySet()
         lastHidden = null
@@ -184,15 +214,17 @@ class DishViewModel(
 
     fun retry() {
         val names = lastNames ?: return
-        load(names, wait = false)
+        load(names, wait = false, refresh=retryRefresh)
     }
 
-    private fun load(names: List<String>, wait: Boolean) {
+    private fun load(names: List<String>, wait: Boolean, refresh:Boolean=false) {
         val mine = ++generation
         job?.cancel()
-        recipes.clear()
-        hiddenIds = emptySet()
-        lastHidden = null
+        if(!refresh) {
+            recipes.clear()
+            hiddenIds = emptySet()
+            lastHidden = null
+        }
         if (names.isEmpty()) {
             rawDishes = emptyList()
             state = DishUiState.EmptyFridge
@@ -207,6 +239,17 @@ class DishViewModel(
                 if (mine != generation) return@launch
                 rawDishes = response.dishes.orEmpty().mapNotNull { it.toDish() }
                 rawSource = response.source.orEmpty()
+                val previous=batchIds
+                val sorted=sortDishes(rawDishes,sort)
+                if(refresh && rawDishes.all {it.id in seenIds}) seenIds=previous.toSet()
+                batchIds=nextDishBatch(sorted,if(refresh) previous else emptyList(),if(refresh) seenIds else emptySet())
+                seenIds=seenIds+batchIds
+                if(refresh) {
+                    hiddenIds=emptySet();lastHidden=null
+                    refreshVersion++
+                    refreshFeedback=DishRefreshFeedback(++refreshSequence,previous.toSet()!=batchIds.toSet())
+                }
+                retryRefresh=false
                 telemetry.track(
                     Usage(
                         UsageEvent.DISH_LIST,
@@ -232,18 +275,18 @@ class DishViewModel(
     fun requestVideos(dish: Dish) {
         val current = videoStates[dish.id]
         if (current is VideoUiState.Loading || current is VideoUiState.Success) return
-        val mine = generation
+        val mine = videoEpoch
         videoStates[dish.id] = VideoUiState.Loading
         viewModelScope.launch {
             try {
                 val response = api.videos(DishVideosRequest(dish.id))
-                if (mine == generation) {
+                if (mine == videoEpoch) {
                     videoStates[dish.id] = VideoUiState.Success(response.videos.orEmpty().mapNotNull { it.toVideo() })
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
-                if (mine == generation) videoStates[dish.id] = VideoUiState.Error(videoFailureMessage(failure))
+                if (mine == videoEpoch) videoStates[dish.id] = VideoUiState.Error(videoFailureMessage(failure))
             }
         }
     }

@@ -30,7 +30,7 @@ fun RecipeSortDropdown(
     Box(modifier) {
         OutlinedButton(
             onClick = { expanded = true },
-            shape=RoundedCornerShape(10.dp),
+            shape=RecipeUiDefaults.ButtonShape,
             modifier = Modifier.heightIn(min=48.dp).testTag("recipe-sort-trigger")
         ) {
             Text("정렬: ${selected.label} ⌄", style=MaterialTheme.typography.labelMedium)

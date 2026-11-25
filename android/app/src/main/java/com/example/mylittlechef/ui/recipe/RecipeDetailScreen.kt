@@ -1,3 +1,5 @@
+// UAT stage 4 assisted by Codex, 2026-11-24; human review pending.
+// UAT stage 3 assisted by Codex, 2026-11-24; human review pending.
 // Photo-led detail layout assisted by Codex, 2026-11-19; human review pending.
 // HE selected-recipe state, consent, cancellation and cooking completion retained.
 // Restored on the YouTube-based dishes with Claude Code (Opus 5.5), 2026-11-20: the photo slot plays
@@ -6,6 +8,17 @@
 
 package com.example.mylittlechef.ui.recipe
 
+import com.example.mylittlechef.domain.CookingRun
+import com.example.mylittlechef.domain.startCookingRun
+import com.google.gson.Gson
+import android.content.ClipData
+import android.content.ClipboardManager
+import com.example.mylittlechef.domain.copyRecipeIngredients
+import com.example.mylittlechef.domain.copyRecipeSteps
+import com.example.mylittlechef.ui.components.IngredientLoading
+import com.example.mylittlechef.ui.components.LoadingTask
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -62,6 +75,7 @@ import com.example.mylittlechef.viewmodel.RecipeUiState
 import com.example.mylittlechef.viewmodel.ReviseUiState
 import com.example.mylittlechef.viewmodel.VideoUiState
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 /** One ingredient row as the detail shows it; [availability] is null in the revised recipe. */
 data class RecipeRow(val name: String, val amount: String?, val availability: Availability?)
@@ -95,10 +109,27 @@ fun RecipeDetailScreen(
     onRetryVideos: () -> Unit,
     onPlayerError: () -> Unit = {}
 ) {
+    val context=LocalContext.current
+    val snackbar=remember {SnackbarHostState()}
+    val copyScope=rememberCoroutineScope()
+    var copyFeedback by remember {mutableStateOf<Job?>(null)}
+    fun copyText(label:String,value:String) {
+        val result=runCatching {
+            context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(label,value))
+        }
+        copyFeedback?.cancel()
+        copyFeedback=copyScope.launch {snackbar.showSnackbar(if(result.isSuccess) (if(label=="재료 복사") "재료를 복사했어요" else "조리 방법을 복사했어요") else "복사하지 못했어요. 다시 시도해 주세요.")}
+    }
     val stored = (recipe as? RecipeUiState.Success)?.recipe
     val revised = ((revision as? ReviseUiState.Done)?.revision as? Revision.Revised)
     var showSuggestion by rememberSaveable(dish.id) { mutableStateOf(false) }
     var showCompletion by rememberSaveable(dish.id) { mutableStateOf(false) }
+    var confirmMissing by rememberSaveable(dish.id) { mutableStateOf(false) }
+    var cookingJson by rememberSaveable(dish.id) {mutableStateOf<String?>(null)}
+    var completionJson by rememberSaveable(dish.id) {mutableStateOf<String?>(null)}
+    val gson=remember {Gson()}
+    val cooking=remember(cookingJson) {cookingJson?.let {runCatching {gson.fromJson(it,CookingRun::class.java)}.getOrNull()}}
+    val completedRun=remember(completionJson) {completionJson?.let {runCatching {gson.fromJson(it,CookingRun::class.java)}.getOrNull()}}
     var picked by rememberSaveable(dish.id) { mutableStateOf<String?>(null) }
     val listed = (videos as? VideoUiState.Success)?.videos.orEmpty()
     val playingId = picked ?: stored?.videoId ?: listed.firstOrNull()?.videoId
@@ -106,10 +137,37 @@ fun RecipeDetailScreen(
     val rows = if (showingRevised) revised!!.ingredients.map { RecipeRow(it.name, it.amount, null) }
     else stored?.ingredients?.map { RecipeRow(it.name, it.amount, it.availability) }.orEmpty()
     val scope = rememberCoroutineScope(); val anchor = remember { BringIntoViewRequester() }
+    val revisionAnchor = remember { BringIntoViewRequester() }
     val scroll = rememberScrollState()
     val pinned by remember { derivedStateOf { scroll.value > 180 } }
     val headerColor by animateColorAsState(if (pinned) MaterialTheme.colorScheme.background else Color.Transparent, tween(160), label = "detail-header")
-    if (showCompletion && fridge != null && stored != null) CookingCompletionDialog(dish.id, stored, fridge) { showCompletion = false }
+    val completionRecipe=completedRun?.recipe ?: stored
+    if (showCompletion && fridge != null && completionRecipe != null) CookingCompletionDialog(
+        completedRun?.id ?: dish.id,completionRecipe,fridge) {showCompletion=false;completionJson=null}
+    if(confirmMissing && stored!=null) AlertDialog(
+        onDismissRequest={confirmMissing=false},shape=RecipeUiDefaults.DialogShape,
+        title={Text("부족한 재료가 있어요")},
+        text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            val missing=stored.ingredients.filter {it.availability==Availability.UNAVAILABLE}.map {it.name}
+            Text(missing.take(3).joinToString(", ")+if(missing.size>3) " 외 ${missing.size-3}개" else "")
+            Text("AI 제안을 확인하고 조리할까요?")
+        }},
+        confirmButton={TextButton(enabled=revision !is ReviseUiState.Loading,
+            onClick={
+                confirmMissing=false;showSuggestion=true
+                if(revised==null) onRevise()
+                scope.launch {revisionAnchor.bringIntoView()}
+            },modifier=Modifier.testTag("cooking-show-ai")) {
+                Text(if(revision is ReviseUiState.Loading) "제안 만드는 중" else "AI 제안 보기")
+            }},
+        dismissButton={Row {
+            TextButton(onClick={confirmMissing=false},modifier=Modifier.testTag("cancel-missing-cooking")) {Text("취소")}
+            TextButton(onClick={confirmMissing=false;cookingJson=gson.toJson(startCookingRun(stored,name=dish.name))},
+                modifier=Modifier.testTag("cook-original-anyway")) {Text("원본으로 조리")}
+        }})
+    if(cooking!=null) CookingCards(cooking,
+        onExit={cookingJson=null},
+        onComplete={completionJson=cookingJson;cookingJson=null;showCompletion=true})
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().navigationBarsPadding()) {
         Column(Modifier.fillMaxSize().verticalScroll(scroll).testTag("recipe-detail-scroll")) {
             // The #24 photo slot: the video the recipe was written from (its still image until it is known).
@@ -140,31 +198,37 @@ fun RecipeDetailScreen(
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
                 when (recipe) {
-                    null, RecipeUiState.Loading -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        CircularProgressIndicator(Modifier.size(24.dp), color = MaterialTheme.colorScheme.primary)
-                        Text("레시피를 불러오고 있어요…")
-                    }
+                    null, RecipeUiState.Loading -> IngredientLoading(LoadingTask.RECIPE)
                     is RecipeUiState.Error -> Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(recipe.message, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                         TextButton(onClick = onRetryRecipe, modifier = Modifier.testTag("recipe-retry")) { Text("다시 시도") }
                     }
                     is RecipeUiState.Success -> {
-                        Box(Modifier.bringIntoViewRequester(anchor)) { RecipeIngredients(rows) }
-                        Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(16.dp)) {
-                            Box(Modifier.fillMaxWidth().padding(16.dp)) {
+                        Box(Modifier.bringIntoViewRequester(anchor)) { RecipeIngredients(rows) {
+                            copyText("재료 복사",copyRecipeIngredients(dish.name,showingRevised,rows.map {it.name to it.amount}))
+                        } }
+                        Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RecipeUiDefaults.CardShape) {
+                            Box(Modifier.fillMaxWidth().bringIntoViewRequester(revisionAnchor).padding(16.dp)) {
                                 RevisionPanel(recipe.recipe, revision, showSuggestion,
                                     onRequest = { showSuggestion = true; onRevise() },
                                     onToggle = { showSuggestion = !showSuggestion },
                                     onOriginal = { showSuggestion = false; scope.launch { anchor.bringIntoView() } })
                             }
                         }
-                        RecipeSteps(if (showingRevised) revised!!.steps.map { it.text } else recipe.recipe.steps.map { it.text })
+                        val displayedSteps=if(showingRevised) revised!!.steps.map {it.text} else recipe.recipe.steps.map {it.text}
+                        Button(onClick={
+                            if(!showingRevised && recipe.recipe.hasMissing) confirmMissing=true
+                            else cookingJson=gson.toJson(startCookingRun(recipe.recipe,if(showingRevised) revised else null,dish.name))
+                        },enabled=displayedSteps.isNotEmpty(),shape=RecipeUiDefaults.ButtonShape,
+                            modifier=Modifier.fillMaxWidth().heightIn(min=RecipeUiDefaults.ControlHeight)
+                            .testTag("start-cooking")) {Text("조리 시작")}
+                        RecipeSteps(displayedSteps) {copyText("조리 방법 복사",copyRecipeSteps(dish.name,showingRevised,displayedSteps))}
                         val tips = if (showingRevised) revised!!.tips else recipe.recipe.tips
                         if (tips.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             tips.forEach { Text("· $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         }
                         if (fridge != null) {
-                            Button(onClick = { showCompletion = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("recipe-complete"), shape = RoundedCornerShape(13.dp)) { Text("요리 완료") }
+                            OutlinedButton(onClick = { completionJson=gson.toJson(startCookingRun(recipe.recipe,if(showingRevised) revised else null,dish.name));showCompletion = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("recipe-complete"), shape = RecipeUiDefaults.ButtonShape) { Text("요리 완료") }
                             Text("다 쓴 재료만 골라 냉장고를 정리해요.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -174,6 +238,7 @@ fun RecipeDetailScreen(
                 Spacer(Modifier.height(24.dp))
             }
         }
+        SnackbarHost(snackbar,Modifier.align(Alignment.BottomCenter).padding(16.dp))
         Row(Modifier.fillMaxWidth().background(headerColor).padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface.copy(alpha = .94f)) {
                 IconButton(onClick = onBackClick) { Icon(painterResource(R.drawable.ic_back), contentDescription = "back", modifier = Modifier.size(20.dp)) }
@@ -198,12 +263,13 @@ private fun credit(recipe: DishRecipe): String {
 }
 
 @Composable
-fun RecipeIngredients(rows: List<RecipeRow>) {
+fun RecipeIngredients(rows: List<RecipeRow>,onCopy:(()->Unit)?=null) {
     val missing = rows.count { it.availability == Availability.UNAVAILABLE }
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("재료", Modifier.weight(1f), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             if (missing > 0) Text("부족한 재료 ${missing}개", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if(onCopy!=null) TextButton(onClick=onCopy,modifier=Modifier.testTag("copy-recipe-ingredients")) {Text("재료 복사")}
         }
         Spacer(Modifier.height(10.dp))
         rows.forEach { row ->
@@ -235,19 +301,16 @@ private fun RevisionPanel(recipe: DishRecipe, state: ReviseUiState?, showingSugg
     onRequest: () -> Unit, onToggle: () -> Unit, onOriginal: () -> Unit) {
     var changesExpanded by rememberSaveable(recipe.dishId) { mutableStateOf(false) }
     val revised = (state as? ReviseUiState.Done)?.revision as? Revision.Revised
-    Column(Modifier.animateContentSize(tween(160)).testTag("revision-panel"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.testTag("revision-panel"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(if (showingSuggestion && revised != null) "AI 수정 제안" else "원본 레시피", style = MaterialTheme.typography.titleMedium)
         Text("보유 재료를 고려해 이 요리의 재료와 조리법을 조정해요.", style = MaterialTheme.typography.bodyMedium)
         when {
             state == null -> if (recipe.hasMissing) Button(onClick = onRequest, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("revise-button"),
-                shape = RoundedCornerShape(13.dp)) { Text("내 재료로 바꾸기") }
+                shape = RecipeUiDefaults.ButtonShape) { Text("내 재료로 바꾸기") }
             else Text("지금 재료로 그대로 만들 수 있어요.", color = MaterialTheme.colorScheme.primary)
-            state is ReviseUiState.Loading -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CircularProgressIndicator(Modifier.size(28.dp).testTag("selected-revision-progress"), color = MaterialTheme.colorScheme.primary)
-                Text("이 요리의 제안을 만들고 있어요")
-            }
+            state is ReviseUiState.Loading -> IngredientLoading(LoadingTask.REVISION,Modifier.testTag("selected-revision-progress"))
             revised != null -> {
-                OutlinedButton(onClick = onToggle, modifier = Modifier.heightIn(min = 48.dp).testTag("revision-toggle")) {
+                OutlinedButton(onClick = onToggle, shape=RecipeUiDefaults.ButtonShape, modifier = Modifier.heightIn(min = 48.dp).testTag("revision-toggle")) {
                     Text(if (showingSuggestion) "원본 보기" else "AI 제안 보기")
                 }
                 if (showingSuggestion) {
@@ -256,9 +319,17 @@ private fun RevisionPanel(recipe: DishRecipe, state: ReviseUiState?, showingSugg
                         TextButton(onClick = { changesExpanded = !changesExpanded }, modifier = Modifier.testTag("revision-changes-toggle")) {
                             Text(if (changesExpanded) "변경 내용 접기" else "변경 내용 보기")
                         }
-                        if (changesExpanded) changeGroups(revised.changes).forEach { (title, group) ->
-                            Text(title, style = MaterialTheme.typography.labelLarge)
-                            group.forEach { Text("• ${it.reason}", modifier = Modifier.testTag("recipe-change")) }
+                        AnimatedVisibility(changesExpanded,
+                            enter=expandVertically(tween(200))+fadeIn(tween(160)),
+                            exit=shrinkVertically(tween(180))+fadeOut(tween(120))) {
+                            Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                                changeGroups(revised.changes).forEach { (title,group) ->
+                                    Text(title,style=MaterialTheme.typography.labelLarge)
+                                    group.forEach { change ->
+                                        ConciseRecipeChange(recipe, change)
+                                    }
+                                }
+                            }
                         }
                     }
                     Text("AI 제안은 직접 확인해 주세요.", style = MaterialTheme.typography.bodySmall)
@@ -275,22 +346,74 @@ private fun RevisionPanel(recipe: DishRecipe, state: ReviseUiState?, showingSugg
                     }
                     else -> ""
                 }
-                if (refused != null) Text("지금 재료로는 바꾸기 어려워요", style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag("revise-refused"))
+                if (refused != null) Text(
+                    if(recipe.hasMissing) "재료가 부족해 지금은 수정하기 어려워요" else "이 레시피는 수정하기 어려워요",
+                    style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag("revise-refused"))
                 Text(message.ifBlank { "조정하기 어려워요. 원본 레시피를 확인해 주세요." },
                     color = if (refused != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error)
+                if(refused!=null) MissingOriginalIngredients(recipe)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (refused == null) TextButton(onClick = onRequest, modifier = Modifier.testTag("revise-retry")) { Text("다시 시도") }
                     TextButton(onClick = onOriginal) { Text("원본 보기") }
                 }
             }
         }
-        Text("알레르기·조리도구 조건은 반영되지 않아요. 직접 확인해 주세요.", style = MaterialTheme.typography.bodySmall)
+        Text("재료와 조리법을 직접 확인한 뒤 조리해 주세요.", style = MaterialTheme.typography.bodySmall)
     }
 }
 
-@Composable fun RecipeSteps(steps: List<String>) {
+/** A factual list from the original recipe; it does not promise a successful AI revision. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun MissingOriginalIngredients(recipe: DishRecipe) {
+    val missing=recipe.ingredients.filter {it.availability==Availability.UNAVAILABLE}.map {it.name}.distinct()
+    if(missing.isNotEmpty()) {
+        Text("원본 기준 부족한 재료",style=MaterialTheme.typography.labelMedium)
+        FlowRow(Modifier.fillMaxWidth().testTag("revision-missing-ingredients"),
+            horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            missing.forEach { name ->
+                Surface(shape=RecipeUiDefaults.ButtonShape,color=MaterialTheme.colorScheme.surface) {
+                    Row(Modifier.padding(horizontal=8.dp,vertical=6.dp),verticalAlignment=Alignment.CenterVertically,
+                        horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                        IngredientBadge(name,size=24.dp)
+                        Text(name,style=MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Keep the server's words intact; reveal long explanations only on request. */
+@Composable
+private fun ConciseRecipeChange(recipe: DishRecipe, change: RecipeChange) {
+    var expanded by rememberSaveable(recipe.dishId,change) { mutableStateOf(false) }
+    var reasonOverflow by remember(change) { mutableStateOf(false) }
+    var ingredientsOverflow by remember(change) { mutableStateOf(false) }
+    val related=change.ingredientRefs.mapNotNull {recipe.ingredients.getOrNull(it-1)?.name}.distinct()
+    val steps=change.stepRefs.distinct().filter { it in 1..recipe.steps.size }
+    Column(verticalArrangement=Arrangement.spacedBy(4.dp)) {
+        Text("• ${change.reason}",modifier=Modifier.testTag("recipe-change"),
+            maxLines=if(expanded) Int.MAX_VALUE else 2,overflow=TextOverflow.Ellipsis,
+            onTextLayout={if(!expanded) reasonOverflow=it.hasVisualOverflow})
+        if(related.isNotEmpty()) Text("재료: ${related.joinToString(", ")}",
+            style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines=if(expanded) Int.MAX_VALUE else 1,overflow=TextOverflow.Ellipsis,
+            onTextLayout={if(!expanded) ingredientsOverflow=it.hasVisualOverflow})
+        if(steps.isNotEmpty()) Text("조리 단계: ${steps.joinToString(", ")}",
+            style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+        if(expanded || reasonOverflow || ingredientsOverflow) {
+            TextButton(onClick={expanded=!expanded}) { Text(if(expanded) "간단히" else "자세히") }
+        }
+    }
+}
+
+@Composable fun RecipeSteps(steps: List<String>,onCopy:(()->Unit)?=null) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        Text("조리 방법", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+            Text("조리 방법",Modifier.weight(1f),fontSize=18.sp,fontWeight=FontWeight.SemiBold)
+            if(onCopy!=null) TextButton(onClick=onCopy,modifier=Modifier.testTag("copy-recipe-steps")) {Text("조리 방법 복사")}
+        }
         steps.forEachIndexed { i, step ->
             val numberColor = MaterialTheme.colorScheme.primary
             Text(buildAnnotatedString {
@@ -324,7 +447,7 @@ private fun OtherVideos(dish: Dish, videos: VideoUiState?, playingId: String?, o
 
 @Composable
 private fun VideoCard(video: DishVideo, selected: Boolean, onPlay: () -> Unit) {
-    Surface(Modifier.fillMaxWidth().clickable(role = Role.Button, onClickLabel = "영상 재생", onClick = onPlay), shape = RoundedCornerShape(13.dp),
+    Surface(Modifier.fillMaxWidth().clickable(role = Role.Button, onClickLabel = "영상 재생", onClick = onPlay), shape = RecipeUiDefaults.ButtonShape,
         border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
         color = MaterialTheme.colorScheme.surface) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {

@@ -1,9 +1,11 @@
+// Preview rotation without rebinding assisted by Codex, 2026-11-25; human review pending.
 // AI-generated initial CameraX preview scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 package com.example.mylittlechef.ui.fridge.add
 
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import android.view.View
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
@@ -39,24 +41,32 @@ fun CameraPreview(
         }
     }
 
+    val previewUseCase=remember(previewView) {
+        Preview.Builder().build().also {it.setSurfaceProvider(previewView.surfaceProvider)}
+    }
+
     DisposableEffect(lifecycleOwner, imageCapture, imageAnalysis) {
         val providerFuture = ProcessCameraProvider.getInstance(context)
         var provider: ProcessCameraProvider? = null
+        var disposed=false
+        val rotationListener=View.OnLayoutChangeListener {view,_,_,_,_,_,_,_,_ ->
+            view.display?.rotation?.let {previewUseCase.targetRotation=it}
+        }
+        previewView.addOnLayoutChangeListener(rotationListener)
 
         providerFuture.addListener({
+            if(disposed) return@addListener
             val cameraProvider = providerFuture.get()
             provider = cameraProvider
 
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
-            }
+            previewView.display?.rotation?.let {previewUseCase.targetRotation=it}
 
             try {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(
                     lifecycleOwner,
                     CameraSelector.DEFAULT_BACK_CAMERA,
-                    preview,
+                    previewUseCase,
                     imageAnalysis ?: imageCapture
                 )
             } catch (e: Exception) {
@@ -64,7 +74,11 @@ fun CameraPreview(
             }
         }, ContextCompat.getMainExecutor(context))
 
-        onDispose { provider?.unbindAll() }
+        onDispose {
+            disposed=true
+            previewView.removeOnLayoutChangeListener(rotationListener)
+            provider?.unbindAll()
+        }
     }
 
     AndroidView(

@@ -1,3 +1,4 @@
+// UAT stage 2 assisted by Codex, 2026-11-24; human review pending.
 // UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // Fridge presentation/sorting and arrival-order updates assisted by Codex, 2026-11-02; human review pending.
@@ -5,6 +6,7 @@
 // Ingredient name completion added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.ui.fridge.components
 
+import com.example.mylittlechef.ui.components.SelectionBadge
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.Image
@@ -76,7 +78,8 @@ fun IngredientItem(
     ingredient: Ingredient,
     modifier: Modifier = Modifier,
     imageSize: Dp = 45.dp,
-    appearance: IngredientAppearance? = null
+    appearance: IngredientAppearance? = null,
+    selected: Boolean = false
 )
 {
     Column(
@@ -86,18 +89,10 @@ fun IngredientItem(
     {
         val imageRes = ingredient.imageRes
         if (appearance != null) {
-            Box(
-                modifier = Modifier.size(imageSize).clip(RoundedCornerShape(imageSize * 0.36f))
-                    .background(Color(appearance.backgroundArgb)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(ingredientIconResource(if(ingredient.name=="감자") "potato" else if(ingredient.name in listOf("고추","청고추","홍고추","청양고추")) "chili" else appearance.iconKey)),
-                    contentDescription = ingredient.name,
-                    tint = Color(0xFF172C25),
-                    modifier = Modifier.size(imageSize * 0.82f).testTag("ingredient-icon-" + ingredient.name)
-                )
-            }
+            SelectionBadge(ingredient.name,
+                ingredientIconResource(if(ingredient.name=="감자") "potato" else if(ingredient.name in listOf("고추","청고추","홍고추","청양고추")) "chili" else appearance.iconKey),
+                Color(appearance.backgroundArgb),selected,size=imageSize,
+                shape=RoundedCornerShape(imageSize * .36f),iconTag="ingredient-icon-${ingredient.name}")
         }
         else if (imageRes != null) {
             Image(

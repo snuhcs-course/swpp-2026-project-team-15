@@ -48,10 +48,8 @@ import com.example.mylittlechef.ui.fridge.add.CaptureScreen
 import com.example.mylittlechef.ui.fridge.add.ManualAddScreen
 
 import com.example.mylittlechef.ui.onboarding.OnboardingScreen
-import com.example.mylittlechef.ui.profile.EditAllergyScreen
 import com.example.mylittlechef.ui.profile.EditPantryScreen
 import com.example.mylittlechef.ui.profile.EditNicknameScreen
-import com.example.mylittlechef.ui.profile.EditUtensilScreen
 import com.example.mylittlechef.data.local.PreferencesFridgeRepository
 import com.example.mylittlechef.data.local.IngredientPresentationProvider
 import com.example.mylittlechef.data.local.PreferencesUserRepository
@@ -216,12 +214,8 @@ fun AppNavHost(
                 onEditNicknameClick = {
                     navController.navigate(Routes.EDIT_NICKNAME)
                 },
-                onEditUtensilClick = {
-                    navController.navigate(Routes.EDIT_UTENSIL)
-                },
-                onEditAllergyClick = {
-                    navController.navigate(Routes.EDIT_ALLERGY)
-                },
+                onEditUtensilClick = {},
+                onEditAllergyClick = {},
                 onEditPantryClick = {
                     navController.navigate(Routes.EDIT_PANTRY)
                 }
@@ -330,28 +324,16 @@ fun AppNavHost(
             )
         }
 
-        composable(Routes.EDIT_UTENSIL) {
-            EditUtensilScreen(
-                user = user,
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onSaveClick = {
-                    navController.popBackStack()
+        // Old saved navigation entries must not reopen retired settings after an update.
+        listOf(Routes.EDIT_UTENSIL,Routes.EDIT_ALLERGY).forEach { retired ->
+            composable(retired) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Routes.MAIN) {
+                        popUpTo(retired) {inclusive=true}
+                        launchSingleTop=true
+                    }
                 }
-            )
-        }
-
-        composable(Routes.EDIT_ALLERGY) {
-            EditAllergyScreen(
-                user = user,
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onSaveClick = {
-                    navController.popBackStack()
-                }
-            )
+            }
         }
 
         composable(Routes.EDIT_PANTRY) {

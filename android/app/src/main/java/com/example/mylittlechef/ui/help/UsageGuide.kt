@@ -48,7 +48,7 @@ fun UsageGuideDialog(onClose: () -> Unit, saving: Boolean = false, error: String
                 verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 GuideItem(R.drawable.ic_edit, "1. 재료 추가", "냉장고에서 직접 입력하거나 사진으로 재료를 찾아보세요. 여러 재료를 함께 추가할 수 있어요.")
                 GuideItem(R.drawable.ic_gallery, "2. 확인하고 저장", "인식 결과를 확인하고 이름을 수정해 주세요. 실수로 지운 항목은 실행 취소로 되돌릴 수 있어요.")
-                GuideItem(R.drawable.ic_recipe, "3. AI 제안", "원하는 요리의 상세에서 AI 제안을 요청해 보세요. 재료·조리법을 원본과 비교하고 알레르기를 확인해 주세요.")
+                GuideItem(R.drawable.ic_recipe, "3. AI 제안", "원하는 요리의 상세에서 AI 제안을 요청해 보세요. 재료·조리법을 원본과 비교해 확인해 주세요.")
                 Text("이 안내는 내 정보에서 다시 볼 수 있어요.", style = MaterialTheme.typography.bodySmall)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }

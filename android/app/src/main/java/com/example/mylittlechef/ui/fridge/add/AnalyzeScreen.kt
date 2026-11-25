@@ -1,7 +1,10 @@
+// UAT stage 3 assisted by Codex, 2026-11-24; human review pending.
 // UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // HE photo review assisted by Codex, 2026-11-09; manual review pending.
 package com.example.mylittlechef.ui.fridge.add
 
+import com.example.mylittlechef.ui.components.IngredientLoading
+import com.example.mylittlechef.ui.components.LoadingTask
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.window.Dialog
@@ -137,8 +140,7 @@ fun AnalyzeScreen(
                 when (state) {
                     PhotoAnalysisState.Loading -> Column(Modifier.fillMaxWidth().weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        CircularProgressIndicator(Modifier.testTag("recognition-progress"))
-                        Text("사진에서 재료를 찾고 있어요", Modifier.padding(12.dp))
+                        IngredientLoading(LoadingTask.RECOGNITION,Modifier.padding(20.dp).testTag("recognition-progress"))
                     }
                     is PhotoAnalysisState.Ready -> EditableIngredientList(review.editor, ingredientCatalog.names,
                         Modifier.fillMaxWidth().weight(1f), enabled = !save.busy)
