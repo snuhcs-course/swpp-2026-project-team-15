@@ -1,3 +1,4 @@
+// Fixed camera controls assisted by Codex, 2026-11-25; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // AI-generated initial capture-flow scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
 package com.example.mylittlechef.ui.fridge.add
@@ -14,6 +15,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.ImageCapture
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import android.content.res.Configuration
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalView
+import com.example.mylittlechef.domain.captureControlEdge
+import com.example.mylittlechef.domain.CaptureControlEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +36,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -46,8 +54,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
@@ -71,6 +82,15 @@ fun CaptureScreen(
     modifier: Modifier = Modifier
 )
 {
+    val returnToPortrait=CameraOnlyRotation()
+    var pendingCaptured by rememberSaveable {mutableStateOf<String?>(null)}
+    val portraitConfiguration=LocalConfiguration.current.orientation==Configuration.ORIENTATION_PORTRAIT
+    val finishCapture:(Uri)->Unit={uri -> returnToPortrait();pendingCaptured=uri.toString()}
+    // Do not briefly render scan results in the old landscape configuration.
+    LaunchedEffect(pendingCaptured,portraitConfiguration) {
+        val uri=pendingCaptured
+        if(uri!=null && portraitConfiguration) {pendingCaptured=null;onCaptured(Uri.parse(uri))}
+    }
     val context = LocalContext.current
 
     // 지금 카메라 권한이 허용돼 있는지 확인
@@ -97,7 +117,7 @@ fun CaptureScreen(
     // 갤러리에서 사진 고르기 (시스템 사진 선택기라서 저장소 권한이 필요 없음)
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
-    ) { uri -> if (uri != null) onCaptured(uri) } // 선택을 취소하면 uri가 null
+    ) { uri -> if (uri != null) finishCapture(uri) } // 선택을 취소하면 uri가 null
 
     // 촬영 기능. 화면이 다시 그려져도 같은 객체를 쓰도록 remember
     val imageCapture = remember {
@@ -111,16 +131,18 @@ fun CaptureScreen(
     var videoMode by remember { mutableStateOf(false) }
     var sweepProgress by remember { mutableStateOf<Float?>(null) }
     val sweepRecorder = remember { SweepRecorder(context) }
+    CaptureOutputOrientation(imageCapture,sweepRecorder.analysis)
     DisposableEffect(sweepRecorder) { onDispose { sweepRecorder.cancel() } }
 
     CaptureContent(
+        modifier=modifier,
         hasCameraPermission = hasCameraPermission,
-        isCapturing = isCapturing,
+        isCapturing = isCapturing || pendingCaptured!=null,
         videoMode = videoMode,
         sweepProgress = sweepProgress,
         onModeChange = { videoMode = it },
-        onBackClick = onBackClick,
-        onManualAddClick = onManualAddClick,
+        onBackClick = {returnToPortrait();onBackClick()},
+        onManualAddClick = {returnToPortrait();onManualAddClick()},
         onShutterClick = {
             if (!isCapturing && videoMode) {
                 isCapturing = true
@@ -131,7 +153,7 @@ fun CaptureScreen(
                         isCapturing = false
                         sweepProgress = null
                         if (uri != null) {
-                            onCaptured(uri)
+                            finishCapture(uri)
                         } else {
                             Toast.makeText(context, "촬영에 실패했어요. 다시 시도해 주세요", Toast.LENGTH_SHORT).show()
                         }
@@ -144,7 +166,7 @@ fun CaptureScreen(
                     imageCapture = imageCapture,
                     onSaved = { uri ->
                         isCapturing = false
-                        onCaptured(uri)
+                        finishCapture(uri)
                     },
                     onError = {
                         isCapturing = false
@@ -196,114 +218,66 @@ private fun CaptureContent(
     modifier: Modifier = Modifier
 )
 {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .navigationBarsPadding()
-            .background(MaterialTheme.colorScheme.background)
-    )
-    {
-        AddFlowHeader(
-            onBackClick = onBackClick,
-            title = "추가할 재료들을 찍어 주세요"
-        )
-
-        // camera area
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .background(Gray)
-        )
-        {
-            if (hasCameraPermission) {
-                cameraPreview()
-            }
-            else {
-                PermissionNeeded(
-                    onOpenSettingsClick = onOpenSettingsClick,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
-
-            // photo / video mode
-            ModeSwitch(
-                videoMode = videoMode,
-                enabled = !isCapturing,
-                onModeChange = onModeChange,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 12.dp)
-            )
-
-            if (sweepProgress != null) {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 96.dp, start = 48.dp, end = 48.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "냉장고를 천천히 훑어 주세요",
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    LinearProgressIndicator(
-                        progress = { sweepProgress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        color = Color.White,
-                        trackColor = Color.White.copy(alpha = 0.3f)
-                    )
+    val landscape=LocalConfiguration.current.orientation==Configuration.ORIENTATION_LANDSCAPE
+    val rotation=LocalView.current.display?.rotation ?: 0
+    val edge=captureControlEdge(landscape,rotation)
+    Box(modifier.fillMaxSize().background(Color.Black).safeDrawingPadding().testTag("capture-screen")) {
+        Box(Modifier.fillMaxSize().testTag("capture-viewfinder")) {
+            if(hasCameraPermission) cameraPreview()
+            else PermissionNeeded(onOpenSettingsClick,Modifier.align(Alignment.Center))
+        }
+        val railWidth=112.dp
+        val horizontalInsets=if(landscape) railWidth else 0.dp
+        Column(Modifier.align(Alignment.TopCenter).fillMaxWidth()
+            .padding(start=if(edge==CaptureControlEdge.LEFT) horizontalInsets else 0.dp,
+                end=if(edge==CaptureControlEdge.RIGHT) horizontalInsets else 0.dp)
+            .background(Color.Black.copy(alpha=.55f))) {
+            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                IconButton(onClick=onBackClick) {
+                    Icon(painterResource(R.drawable.ic_back),"돌아가기",tint=Color.White)
                 }
+                Text("추가할 재료를 찍어 주세요",Modifier.weight(1f),color=Color.White,
+                    style=MaterialTheme.typography.titleMedium,maxLines=2)
             }
-
-            // gallery and shutter button
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = 24.dp,
-                        vertical = 24.dp
-                    ),
-                verticalAlignment = Alignment.CenterVertically
-            )
-            {
-                Box(
-                    Modifier.weight(1f),
-                    contentAlignment = Alignment.CenterStart
-                )
-                {
-                    IconButton(
-                        onClick = onGalleryClick
-                    )
-                    {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_gallery),
-                            contentDescription = "open gallery",
-                            tint = Color.White
-                        )
-                    }
-                }
-
-                ShutterButton(
-                    enabled = hasCameraPermission && !isCapturing,
-                    onClick = onShutterClick
-                )
-
-                Box(Modifier.weight(1f))
+            ModeSwitch(videoMode,!isCapturing,onModeChange,
+                Modifier.align(Alignment.CenterHorizontally).testTag("capture-mode-switch"))
+        }
+        val controlsModifier=when(edge) {
+            CaptureControlEdge.BOTTOM -> Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(112.dp)
+            CaptureControlEdge.RIGHT -> Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(112.dp)
+            CaptureControlEdge.LEFT -> Modifier.align(Alignment.CenterStart).fillMaxHeight().width(112.dp)
+        }.background(Color.Black.copy(alpha=.65f)).testTag("capture-controls-${edge.name}")
+        val gallery:@Composable ()->Unit={
+            IconButton(onClick=onGalleryClick,enabled=!isCapturing,modifier=Modifier.testTag("capture-gallery")) {
+                Icon(painterResource(R.drawable.ic_gallery),"갤러리에서 선택",tint=Color.White)
             }
         }
-
-        TextOnlyButton(
-            text = "직접 입력할래요",
-            onClick = onManualAddClick,
-            modifier = Modifier
-                .fillMaxWidth(),
-            textColor = DeepGreen
-        )
+        val manual:@Composable ()->Unit={
+            TextButton(onClick=onManualAddClick,enabled=!isCapturing,modifier=Modifier.testTag("capture-manual")) {
+                Text("직접 입력",color=Color.White,style=MaterialTheme.typography.labelMedium)
+            }
+        }
+        if(landscape) Column(controlsModifier.padding(vertical=12.dp),
+            horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.SpaceEvenly) {
+            Box(Modifier.weight(1f),contentAlignment=Alignment.Center) {gallery()}
+            ShutterButton(hasCameraPermission&&!isCapturing,onShutterClick)
+            Box(Modifier.weight(1f),contentAlignment=Alignment.Center) {manual()}
+        } else Row(controlsModifier.padding(horizontal=12.dp),verticalAlignment=Alignment.CenterVertically) {
+            Box(Modifier.weight(1f),contentAlignment=Alignment.Center) {gallery()}
+            ShutterButton(hasCameraPermission&&!isCapturing,onShutterClick)
+            Box(Modifier.weight(1f),contentAlignment=Alignment.Center) {manual()}
+        }
+        if(sweepProgress!=null) Column(
+            Modifier.align(Alignment.BottomCenter)
+                .padding(start=if(edge==CaptureControlEdge.LEFT) 128.dp else 24.dp,
+                    end=if(edge==CaptureControlEdge.RIGHT) 128.dp else 24.dp,
+                    bottom=if(landscape) 16.dp else 128.dp)
+                .background(Color.Black.copy(alpha=.65f)).padding(12.dp),
+            horizontalAlignment=Alignment.CenterHorizontally) {
+            Text("냉장고를 천천히 훑어 주세요",color=Color.White,style=MaterialTheme.typography.bodyMedium)
+            LinearProgressIndicator(progress={sweepProgress},modifier=Modifier.fillMaxWidth().padding(top=8.dp),
+                color=Color.White,trackColor=Color.White.copy(alpha=.3f))
+        }
     }
 }
 
@@ -320,6 +294,7 @@ private fun ModeSwitch(
         listOf(false to "사진", true to "동영상").forEach { (isVideo, label) ->
             TextButton(
                 onClick = { onModeChange(isVideo) },
+                modifier=Modifier.testTag(if(isVideo) "capture-mode-video" else "capture-mode-photo").semantics {selected=videoMode==isVideo},
                 enabled = enabled
             )
             {
@@ -343,6 +318,7 @@ private fun ShutterButton(
     Box(
         modifier = Modifier
             .size(50.dp)
+            .testTag("capture-shutter")
             .clip(CircleShape)
             // Camera overlay controls keep a white shutter against the dark viewfinder.
             .background(Color.White)

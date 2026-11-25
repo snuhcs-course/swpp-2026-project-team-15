@@ -1,3 +1,4 @@
+// Nickname/pantry-only onboarding assisted by Codex, 2026-11-25; human review pending.
 // UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // Onboarding scaffold adapted and reviewed by Ahyoon Choi from an earlier Claude draft.
 // Responsive controls updated with Codex, 2026-11-03; human review pending.
@@ -25,15 +26,12 @@ import com.example.mylittlechef.viewmodel.UserViewModel
 fun OnboardingScreen(user: UserViewModel, fridge: FridgeViewModel, onFinish: () -> Unit) {
     var stepIndex by rememberSaveable { mutableStateOf(1) }
     var selectedPantryItems by rememberSaveable { mutableStateOf(emptyList<String>()) }
-    val onNext = { stepIndex += 1 }
-    val onBack = { stepIndex -= 1 }
     Crossfade(targetState=stepIndex, animationSpec=tween(160), label="onboarding-step") { step ->
     when (step) {
-        1 -> OnboardingNickname(user, onNext)
-        2 -> OnboardingUtensil(user, onNext, onBack)
-        3 -> OnboardingAllergy(user, onNext, onBack)
-        4 -> OnboardingPantry(selectedPantryItems, { selectedPantryItems = it }, onNext, onBack)
-        5 -> OnboardingDone(user, {
+        1 -> OnboardingNickname(user, {stepIndex=4})
+        // Retain saved step IDs; old utensil/allergy drafts now continue at pantry.
+        2, 3, 4 -> OnboardingPantry(selectedPantryItems, { selectedPantryItems = it }, {stepIndex=5}, {stepIndex=1})
+        else -> OnboardingDone(user, {
             fridge.updatePantryItems(selectedPantryItems, onSaved = onFinish)
         }, fridge.pantryError)
     }

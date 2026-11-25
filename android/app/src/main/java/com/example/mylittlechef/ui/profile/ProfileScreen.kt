@@ -1,3 +1,4 @@
+// Retired allergy/utensil settings assisted by Codex, 2026-11-25; human review pending.
 // UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // Pantry profile row added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
@@ -132,18 +133,6 @@ fun ProfileContent(
                 onMoreClick = onEditNicknameClick,
                 title = "별명",
                 contents = listOf(user.nickname)
-            )
-
-            ProfileItem(
-                onMoreClick = onEditUtensilClick,
-                title = "조리 도구",
-                contents = if (user.utensils.isEmpty()) listOf("없음") else user.utensils
-            )
-
-            ProfileItem(
-                onMoreClick = onEditAllergyClick,
-                title = "알레르기",
-                contents = if (user.allergies.isEmpty()) listOf("없음") else user.allergies
             )
 
             val pantryOptions = Preset.pantrySeasonings + Preset.pantryBasics

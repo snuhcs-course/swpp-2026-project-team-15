@@ -1,8 +1,12 @@
+// UAT stage 1 assisted by Codex, 2026-11-24; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
 // Ingredient suggestion UI added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.ui.fridge
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Alignment
+import com.example.mylittlechef.ui.components.IngredientBadge
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,17 +22,16 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.mylittlechef.ui.theme.DeepGreen
-import com.example.mylittlechef.ui.theme.Gray
 import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
 
 @Composable
 fun IngredientSuggestionSheet(
     suggestions: IngredientSuggestionViewModel,
     onRetry: () -> Unit,
-    onAdd: (String) -> Unit = {}
+    onAdd: (String) -> Unit = {},
+    ownedNames: Set<String> = emptySet(),
+    saving: Boolean = false
 ) {
     Column(
         modifier = Modifier
@@ -43,9 +46,14 @@ fun IngredientSuggestionSheet(
             style = MaterialTheme.typography.bodyMedium
         )
         Spacer(Modifier.height(20.dp))
+        if(suggestions.isLoading && suggestions.suggestions.isNotEmpty()) Text("추천을 업데이트하고 있어요")
+        if(suggestions.error!=null && suggestions.suggestions.isNotEmpty()) {
+            Text("이전 추천이에요. 최신 추천을 불러오지 못했어요.")
+            TextButton(onClick=onRetry) {Text("추천 다시 불러오기")}
+        }
         when {
-            suggestions.isLoading -> Text("추천을 계산 중…")
-            suggestions.error != null -> {
+            suggestions.isLoading && suggestions.suggestions.isEmpty() -> Text("추천을 계산 중…")
+            suggestions.error != null && suggestions.suggestions.isEmpty() -> {
                 Text(suggestions.error!!)
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(onClick = onRetry) { Text("다시 시도") }
@@ -56,14 +64,17 @@ fun IngredientSuggestionSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 10.dp)
-                        .background(Gray, RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
                         .padding(16.dp)
                 ) {
+                    Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                    IngredientBadge(suggestion.name,size=40.dp)
                     Text(
                         suggestion.name,
                         style = MaterialTheme.typography.titleMedium,
-                        color = DeepGreen
+                        color = MaterialTheme.colorScheme.onSurface,modifier=Modifier.weight(1f)
                     )
+                    }
                     Spacer(Modifier.height(4.dp))
                     Text(
                         "추가하면 바로 만들 수 있는 요리 ${suggestion.readyRecipeCount}개",
@@ -83,16 +94,17 @@ fun IngredientSuggestionSheet(
                     // Phone test 2026-11-19: tapping a suggestion did nothing; it now adds it.
                     TextButton(
                         onClick = { onAdd(suggestion.name) },
+                        enabled = !saving,
                         modifier = Modifier.testTag("suggestion-add-${suggestion.name}")
-                    ) { Text("냉장고에 추가") }
+                    ) { Text(if(ownedNames.any {it.equals(suggestion.name,ignoreCase=true)}) "이미 냉장고에 있어요" else if(saving) "저장 중…" else "냉장고에 추가") }
                 }
             }
         }
         Spacer(Modifier.height(8.dp))
         Text(
-            "현재 서버가 기본 보유로 가정하는 조미료를 포함해 계산해요. 전체 레시피에는 다른 부족한 재료가 있을 수 있어요. 조리도구와 알레르기 조건은 아직 이 숫자에 반영되지 않아요.",
+            "위 숫자는 핵심 재료를 기준으로 해요. 현재 서버가 기본 보유로 가정하는 조미료를 포함해 계산해요. 전체 레시피에는 다른 부족한 재료가 있을 수 있어요. 조리도구와 알레르기 조건은 아직 이 숫자에 반영되지 않아요.",
             style = MaterialTheme.typography.bodySmall,
-            color = Color.DarkGray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(Modifier.height(20.dp))
     }

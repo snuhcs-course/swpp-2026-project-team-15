@@ -1,3 +1,5 @@
+// UAT stage 4 assisted by Codex, 2026-11-24; human review pending.
+// UAT stage 1 assisted by Codex, 2026-11-24; human review pending.
 // UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // Photo UI navigation motion assisted by Codex, 2026-11-19; human review pending.
 // UI ergonomics and theme changes assisted by Codex, 2026-11-03; human review pending.
@@ -8,59 +10,36 @@
 // server; usage data (screen views), data reset and the usage switch are wired underneath this UI.
 package com.example.mylittlechef.navigation
 
-import androidx.annotation.DrawableRes // drawable 리소스 ID 파라미터 표시
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.annotation.DrawableRes
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.foundation.layout.padding // 안쪽 여백 (탭 바에 화면이 안 가려지게)
-import androidx.compose.material3.Icon // 탭 아이콘
-import androidx.compose.material3.MaterialTheme // 테마 색상/글자 스타일
-import androidx.compose.material3.NavigationBar // 하단 탭 바 컨테이너
-import androidx.compose.material3.NavigationBarItem // 탭 하나
-import androidx.compose.material3.NavigationBarItemDefaults // 탭 색상 지정
-import androidx.compose.material3.Scaffold // 본문 + 하단바 뼈대
-import androidx.compose.material3.Text // 탭 이름 글자
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import androidx.compose.animation.core.updateTransition
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.mylittlechef.domain.NoTelemetry
-import com.example.mylittlechef.domain.Telemetry
-import com.example.mylittlechef.domain.Usage
-import com.example.mylittlechef.domain.UsageEvent
-import com.example.mylittlechef.viewmodel.DataResetViewModel
-import com.example.mylittlechef.viewmodel.DishViewModel
-import com.example.mylittlechef.viewmodel.UsageDataViewModel
-import androidx.compose.ui.platform.LocalContext
+import com.example.mylittlechef.R
 import com.example.mylittlechef.data.local.localDataStore
 import com.example.mylittlechef.data.local.SectionTourRepository
-import com.example.mylittlechef.ui.help.SectionTourHost
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue // `by` 문법으로 상태 읽기
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color // 투명색 (선택 표시 배경 제거)
-import androidx.compose.ui.res.painterResource // drawable → 그릴 수 있는 형태
-import androidx.navigation.NavGraph.Companion.findStartDestination // 탭 전환 시 시작 지점 찾기
-import androidx.navigation.compose.NavHost // 화면 전환 컨테이너
-import androidx.navigation.compose.composable // 경로에 화면 등록
-import androidx.navigation.compose.currentBackStackEntryAsState // 현재 경로를 상태로 관찰
-import androidx.navigation.compose.rememberNavController // 탭용 NavController 생성
-import com.example.mylittlechef.R
+import com.example.mylittlechef.domain.*
 import com.example.mylittlechef.ui.components.NavTabText
-import com.example.mylittlechef.ui.fridge.FridgeScreen
+import com.example.mylittlechef.ui.fridge.*
+import com.example.mylittlechef.ui.help.SectionTourHost
 import com.example.mylittlechef.ui.profile.ProfileScreen
 import com.example.mylittlechef.ui.recipe.RecipeScreen
-
 import com.example.mylittlechef.ui.theme.GreenGray
 import com.example.mylittlechef.ui.theme.DeepGreen
-import com.example.mylittlechef.viewmodel.FridgeViewModel
-import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
-import com.example.mylittlechef.viewmodel.UserViewModel
+import com.example.mylittlechef.viewmodel.*
 
 // 하단 탭 정의. 탭을 추가/변경할 때 이 enum만 고치면 된다
 // 아이콘은 단색 SVG(Vector Asset)여야 선택/비선택 색이 틴트로 바뀐다
@@ -74,6 +53,7 @@ enum class BottomTab(
     PROFILE(Routes.PROFILE, "내 정보", R.drawable.ic_profile)
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun MainScreen(
     user: UserViewModel,
@@ -91,6 +71,7 @@ fun MainScreen(
     telemetry: Telemetry = NoTelemetry,
     usageData: UsageDataViewModel? = null,
     dishViewModel: DishViewModel? = null,
+    tourStore: SectionTourRepository? = null,
     onDishClick: (String) -> Unit = {}
 ) {
     // 요리 추천 탭의 상태. 탭을 오가거나 화면을 돌려도 유지되도록 이 화면 단위로 만든다
@@ -102,11 +83,19 @@ fun MainScreen(
     }
     // The app passes its own (the detail route reads the same one); previews and tests get their own here.
     val dishes: DishViewModel = dishViewModel ?: viewModel(factory = dishFactory)
-    // 탭 전환만 담당하는 NavController (최상위 NavController와 별개)
-    val tabNavController = rememberNavController()
-    // 현재 보고 있는 탭의 경로. 바뀔 때마다 탭 바가 다시 그려진다
-    val backStackEntry by tabNavController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry?.destination?.route
+    // The three peer tabs have no nested route stack. Keep each tab's saveable UI state
+    // independently, while the parent AppNavHost still owns editing and detail navigation.
+    var currentRoute by rememberSaveable {mutableStateOf(Routes.FRIDGE)}
+    val tabStates=rememberSaveableStateHolder()
+    val tabTransition=updateTransition(currentRoute,label="main-tabs")
+    val tabReady=tabTransition.currentState==currentRoute && !tabTransition.isRunning
+    BackHandler(enabled=currentRoute!=Routes.FRIDGE) {currentRoute=Routes.FRIDGE}
+    val fridgeTransient=rememberFridgeTransientState()
+    var previousRoute by rememberSaveable {mutableStateOf<String?>(null)}
+    LaunchedEffect(currentRoute) {
+        if(previousRoute==Routes.FRIDGE && currentRoute!=Routes.FRIDGE) fridgeTransient.reset()
+        previousRoute=currentRoute
+    }
     LaunchedEffect(currentRoute) {
         val screen = when (currentRoute) {
             Routes.FRIDGE -> "fridge"
@@ -118,29 +107,18 @@ fun MainScreen(
     }
 
     val store=LocalContext.current.applicationContext.localDataStore
-    val tourRepository=remember(store) { SectionTourRepository(store) }
-    SectionTourHost(tourRepository,currentRoute,automaticEnabled=user.onboardingComplete,navigate={route ->
-        tabNavController.navigate(route) {
-            popUpTo(tabNavController.graph.findStartDestination().id) { saveState=true }
-            launchSingleTop=true;restoreState=true
-        }
-    }) {
+    val tourRepository=tourStore ?: remember(store) { SectionTourRepository(store) }
+    SectionTourHost(tourRepository,currentRoute,automaticEnabled=user.onboardingComplete,
+        navigationReady=tabReady,navigate={route -> currentRoute=route}) {
     Scaffold(
         modifier = modifier,
+        snackbarHost = {if(currentRoute!=Routes.FRIDGE) AdditionFeedback(fridge,Modifier.padding(12.dp))},
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.background) {
                 BottomTab.entries.forEach { tab ->
                     NavigationBarItem(
                         selected = currentRoute == tab.route,
-                        onClick = {
-                            tabNavController.navigate(tab.route) {
-                                popUpTo(tabNavController.graph.findStartDestination().id) {
-                                    saveState = true // 떠나는 탭의 상태(스크롤 위치 등) 저장
-                                }
-                                launchSingleTop = true // 같은 탭을 또 눌러도 중복 생성 안 함
-                                restoreState = true // 돌아오면 저장해 둔 상태 복원
-                            }
-                        },
+                        onClick = {currentRoute=tab.route},
                         icon = {
                             Icon(
                                 painter = painterResource(tab.iconRes),
@@ -164,44 +142,23 @@ fun MainScreen(
             }
         }
     ) { innerPadding ->
-        // 탭 3개를 전환하는 NavHost. 탭 바에 가려지지 않게 innerPadding 적용
-        NavHost(
-            navController = tabNavController,
-            startDestination = Routes.FRIDGE,
-            modifier = Modifier.padding(innerPadding),
-            enterTransition = { fadeIn(tween(130)) },
-            exitTransition = { fadeOut(tween(90)) }
-        ) {
-            composable(Routes.FRIDGE) {
-                FridgeScreen(
-                    user = user,
-                    fridge = fridge,
-                    ingredientSuggestions = ingredientSuggestions,
-                    onAddIngredientClick = onAddIngredientClick,
-                    onManualAddClick = onManualAddClick
-                )
-            }
-            composable(Routes.RECIPE) {
-                RecipeScreen(fridge = fridge, dishes = dishes, onDishClick = { onDishClick(it.id) })
-            }
-            composable(Routes.PROFILE) {
-                ProfileScreen(
-                    user = user,
-                    fridge = fridge,
-                    onEditNicknameClick = onEditNicknameClick,
-                    onEditUtensilClick = onEditUtensilClick,
-                    onEditAllergyClick = onEditAllergyClick,
-                    onEditPantryClick = onEditPantryClick,
-                    dataReset = dataReset,
-                    usageData = usageData,
-                    onDataResetDone = {
-                        dishes.resetState()
-                        onDataResetDone()
-                    }
-                )
+        tabTransition.Crossfade(modifier=Modifier.padding(innerPadding),animationSpec=tween(130)) {route ->
+            tabStates.SaveableStateProvider(route) {
+                when(route) {
+                    Routes.FRIDGE -> FridgeScreen(user=user,fridge=fridge,
+                        ingredientSuggestions=ingredientSuggestions,onAddIngredientClick=onAddIngredientClick,
+                        onManualAddClick=onManualAddClick,transient=fridgeTransient,
+                        dishes=dishes,onRecipeClick=onDishClick)
+                    Routes.RECIPE -> RecipeScreen(fridge=fridge,dishes=dishes,
+                        onDishClick={onDishClick(it.id)},active=currentRoute==Routes.RECIPE)
+                    Routes.PROFILE -> ProfileScreen(user=user,fridge=fridge,
+                        onEditNicknameClick=onEditNicknameClick,onEditUtensilClick=onEditUtensilClick,
+                        onEditAllergyClick=onEditAllergyClick,onEditPantryClick=onEditPantryClick,
+                        dataReset=dataReset,usageData=usageData,
+                        onDataResetDone={dishes.resetState();onDataResetDone()})
+                }
             }
         }
     }
     }
 }
- 

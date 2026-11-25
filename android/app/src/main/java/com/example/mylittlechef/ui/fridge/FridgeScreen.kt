@@ -1,3 +1,5 @@
+// UAT stage 2 assisted by Codex, 2026-11-24; human review pending.
+// UAT stage 1 assisted by Codex, 2026-11-24; human review pending.
 // UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // Photo-led fridge UI assisted by Codex, 2026-11-19; human review pending.
 // Multi-selection fridge actions assisted by Codex, 2026-11-03; human review pending.
@@ -6,8 +8,6 @@ package com.example.mylittlechef.ui.fridge
 
 import com.example.mylittlechef.ui.help.tourAnchor
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.tween
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
@@ -36,6 +36,7 @@ import com.example.mylittlechef.ui.fridge.components.FridgeShelves
 import com.example.mylittlechef.viewmodel.FridgeViewModel
 import com.example.mylittlechef.viewmodel.IngredientSuggestionViewModel
 import com.example.mylittlechef.viewmodel.UserViewModel
+import com.example.mylittlechef.viewmodel.DishViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,13 +46,22 @@ fun FridgeScreen(
     onAddIngredientClick: () -> Unit,
     modifier: Modifier = Modifier,
     ingredientSuggestions: IngredientSuggestionViewModel? = null,
-    onManualAddClick: () -> Unit = onAddIngredientClick
+    onManualAddClick: () -> Unit = onAddIngredientClick,
+    transient: FridgeTransientState = rememberFridgeTransientState(),
+    dishes: DishViewModel? = null,
+    onRecipeClick: (String) -> Unit = {}
 ) {
     val context = LocalContext.current.applicationContext
     val appearanceCatalog = remember(context) { IngredientPresentationProvider.get(context) }
-    var showSuggestions by rememberSaveable { mutableStateOf(false) }
+    var showSuggestions by transient::showSuggestions
     LaunchedEffect(showSuggestions, fridge.ingredients) {
         if (showSuggestions) ingredientSuggestions?.refresh(fridge.ingredients)
+    }
+    LaunchedEffect(transient.ingredientRecipes,fridge.ingredients) {
+        transient.ingredientRecipes?.let { name ->
+            if(fridge.ingredients.none {it.name==name}) transient.ingredientRecipes=null
+            else dishes?.onFridgeChanged(fridge.ingredients.map {it.name})
+        }
     }
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(fridge.removalError) {
@@ -61,18 +71,24 @@ fun FridgeScreen(
         }
     }
     Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        Column(Modifier.fillMaxSize()) {
         FridgeContent(
+            modifier = Modifier.weight(1f),
             nickname = user.nickname,
             ingredients = fridge.ingredients,
-            controlsEnabled = fridge.removingIngredient == null && !fridge.isRemovingIngredients && !fridge.isSavingPantry && !fridge.isRestoringIngredients,
+            transient = transient,
+            controlsEnabled = !fridge.isSavingSuggestion && fridge.removingIngredient == null && !fridge.isRemovingIngredients && !fridge.isSavingPantry && !fridge.isRestoringIngredients,
             onRemoveIngredients = fridge::removeIngredients,
             onAddIngredientClick = onAddIngredientClick,
             onManualAddClick = onManualAddClick,
-            onSuggestionsClick = { showSuggestions = true },
+            onSuggestionsClick = { transient.ingredientRecipes=null;showSuggestions = true },
+            onIngredientClick = { name -> showSuggestions=false;transient.ingredientRecipes=name },
             appearanceCatalog = appearanceCatalog
         )
+        if (!showSuggestions) AdditionFeedback(fridge, Modifier.padding(12.dp))
+        }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
-        fridge.pendingRemoval?.let { receipt ->
+        fridge.pendingRemoval?.takeIf { fridge.additionNotice == null }?.let { receipt ->
             Snackbar(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 88.dp)
                     .testTag("fridge-undo"),
@@ -93,16 +109,26 @@ fun FridgeScreen(
             ) { Text(fridge.undoError ?: "재료 ${receipt.items.size}개를 삭제했어요") }
         }
     }
+    transient.ingredientRecipes?.let { name ->
+        if(dishes!=null) ModalBottomSheet(onDismissRequest={transient.ingredientRecipes=null},
+            sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true)) {
+            IngredientRecipeSheet(name,dishes) {dish -> transient.ingredientRecipes=null;onRecipeClick(dish.id)}
+        }
+    }
     if (showSuggestions && ingredientSuggestions != null) {
         ModalBottomSheet(
             onDismissRequest = { showSuggestions = false },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ) {
-            IngredientSuggestionSheet(
+            Column(Modifier.fillMaxWidth().heightIn(max=600.dp)) {
+            Box(Modifier.weight(1f, fill=false)) { IngredientSuggestionSheet(
                 ingredientSuggestions,
                 onRetry = { ingredientSuggestions.refresh(fridge.ingredients) },
-                onAdd = { name -> fridge.addIngredients(listOf(Ingredient(name)), source = "suggestion") }
-            )
+                onAdd = fridge::addSuggested,
+                ownedNames=fridge.ingredients.map {it.name}.toSet(), saving=fridge.isSavingSuggestion
+            ) }
+            AdditionFeedback(fridge, Modifier.fillMaxWidth().padding(12.dp))
+            }
         }
     }
 }
@@ -116,12 +142,14 @@ private fun FridgeContent(
     onAddIngredientClick: () -> Unit,
     onManualAddClick: () -> Unit,
     onSuggestionsClick: () -> Unit,
+    onIngredientClick: (String) -> Unit,
     appearanceCatalog: IngredientPresentationCatalog,
+    transient: FridgeTransientState,
     modifier: Modifier = Modifier
 ) {
-    var selecting by rememberSaveable { mutableStateOf(false) }
-    var selectedNames by rememberSaveable { mutableStateOf(listOf<String>()) }
-    var confirming by rememberSaveable { mutableStateOf(false) }
+    var selecting by transient::selecting
+    var selectedNames by transient::selectedNames
+    var confirming by transient::confirming
     var sortType by rememberSaveable { mutableStateOf(FridgeSortType.CATEGORY) }
     var categoryFilter by rememberSaveable { mutableStateOf<String?>(null) }
     val selected = ingredients.map { it.name }.filter { it in selectedNames }
@@ -166,15 +194,6 @@ private fun FridgeContent(
                         label={Text(category.label)},modifier=Modifier.testTag("fridge-category-"+category.key))
                 }
             }
-            if (selecting) {
-                Row(Modifier.fillMaxWidth().animateContentSize(tween(180)), verticalAlignment = Alignment.CenterVertically) {
-                    Text("${selected.size}개 선택", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-                    TextButton(onClick = { selectedNames = ingredients.map { it.name } }, enabled = controlsEnabled) {
-                        Text("전체 선택")
-                    }
-                }
-
-            }
             Spacer(Modifier.height(4.dp))
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val areaHeight = maxHeight
@@ -187,6 +206,8 @@ private fun FridgeContent(
                             groupedByCategory = sortType == FridgeSortType.CATEGORY,
                             managing = selecting,
                             selectedNames = selected.toSet(),
+                            onIngredientClick = onIngredientClick,
+                            onSelectionChange = { selectedNames = it.toList() },
                             controlsEnabled = controlsEnabled,
                             onRemoveIngredient = { name ->
                                 selectedNames = if (name in selectedNames) selectedNames - name else selectedNames + name
@@ -213,6 +234,16 @@ private fun FridgeContent(
                     Row(Modifier.padding(horizontal=14.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically) {
                         Text("추가 재료 추천",Modifier.weight(1f),style=MaterialTheme.typography.labelMedium)
                         Icon(painterResource(R.drawable.ic_more),null,Modifier.size(16.dp))
+                    }
+                }
+            } else {
+                // Match the recommendation row's minimum height so entering management
+                // does not insert content above the grid or change its starting position.
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("fridge-selection-summary"),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text("${selected.size}개 선택", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                    TextButton(onClick = { selectedNames = ingredients.map { it.name } }, enabled = controlsEnabled) {
+                        Text("전체 선택")
                     }
                 }
             }

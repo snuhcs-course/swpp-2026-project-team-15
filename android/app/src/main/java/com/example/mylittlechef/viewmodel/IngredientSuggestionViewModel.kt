@@ -1,3 +1,4 @@
+// UAT stage 1 assisted by Codex, 2026-11-24; human review pending.
 // Ingredient suggestions added with Codex (GPT-6.1 Sol), 2026-10-17; human review pending.
 package com.example.mylittlechef.viewmodel
 
@@ -43,7 +44,6 @@ class IngredientSuggestionViewModel(
                 throw cancelled
             } catch (_: Exception) {
                 if (requestGeneration != generation) return@launch
-                suggestions = emptyList()
                 error = "추천을 불러오지 못했어요. 서버 연결을 확인하고 다시 시도해 주세요."
             } finally {
                 if (requestGeneration == generation) isLoading = false

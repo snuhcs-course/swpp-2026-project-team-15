@@ -1,3 +1,4 @@
+// UAT stage 2 assisted by Codex, 2026-11-24; human review pending.
 // UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // AI-assisted with Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.ui.profile
@@ -35,7 +36,7 @@ fun EditPantryScreen(fridge: FridgeViewModel, onBackClick: () -> Unit, onSaveCli
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal=20.dp,vertical=12.dp)) {
             fridge.pantryError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             if (fridge.isSavingPantry) Text("저장하고 있어요…", color = MaterialTheme.colorScheme.onSurface)
-            PantrySelectionContent(selected, { if (!fridge.isSavingPantry) selected = it })
+            PantrySelectionContent(selected, { if (!fridge.isSavingPantry) selected = it }, enabled = !fridge.isSavingPantry)
         }
     }
 }

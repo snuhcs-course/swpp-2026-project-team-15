@@ -1,3 +1,4 @@
+// UAT stage 2 assisted by Codex, 2026-11-24; human review pending.
 // Icon selection presentation assisted by Codex, 2026-11-19; human review pending.
 package com.example.mylittlechef.ui.onboarding
 
@@ -15,9 +16,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.mylittlechef.R
 import com.example.mylittlechef.ui.components.IngredientBadge
+import com.example.mylittlechef.ui.components.SelectionBadge
 
 @Composable
-internal fun ChoiceBadge(name: String, modifier: Modifier = Modifier) {
+internal fun ChoiceBadge(name: String, modifier: Modifier = Modifier, selected: Boolean = false) {
     val resource = when(name) {
         "가스레인지" -> R.drawable.ic_choice_gas
         "인덕션" -> R.drawable.ic_choice_induction
@@ -35,9 +37,7 @@ internal fun ChoiceBadge(name: String, modifier: Modifier = Modifier) {
         "대두" -> R.drawable.ic_ingredient_beans
         else -> null
     }
-    if(resource == null) IngredientBadge(name, modifier.testTag("choice-icon-$name"), 36.dp)
-    else Box(modifier.size(36.dp).clip(CircleShape).background(Color(0xFFE8EFE8))
-        .testTag("choice-icon-$name"), contentAlignment=Alignment.Center) {
-        Icon(painterResource(resource), null, Modifier.size(29.dp), tint=Color(0xFF172C25))
-    }
+    if(resource == null) IngredientBadge(name, modifier.testTag("choice-icon-$name"), 36.dp, selected)
+    else SelectionBadge(name, resource, Color(0xFFE8EFE8), selected,
+        modifier.testTag("choice-icon-$name"), 36.dp)
 }

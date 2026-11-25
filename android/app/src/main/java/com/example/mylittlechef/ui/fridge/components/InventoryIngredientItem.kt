@@ -1,8 +1,12 @@
+// UAT stage 2 assisted by Codex, 2026-11-24; human review pending.
 // UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
 // Photo-led selection motion assisted by Codex, 2026-11-19; human review pending.
 // Multi-selection semantics assisted by Codex, 2026-11-03; human review pending.
 package com.example.mylittlechef.ui.fridge.components
 
+import com.example.mylittlechef.ui.components.LocalSelectionTargets
+import com.example.mylittlechef.ui.components.selectionTarget
+import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -41,32 +45,31 @@ fun InventoryIngredientItem(
     onRemoveRequest: () -> Unit,
     appearance: IngredientAppearance? = null,
     selected: Boolean = false,
-    onLongPress: () -> Unit = onRemoveRequest
+    onLongPress: () -> Unit = onRemoveRequest,
+    onIngredientClick: () -> Unit = {}
 ) {
+    val gestureGroup = LocalSelectionTargets.current
+    val groupedGestures = gestureGroup != null
     val outline = animateColorAsState(if(selected && managing) MaterialTheme.colorScheme.primary else Color.Transparent, tween(160), label="ingredient-selection").value
     Box(
         Modifier.fillMaxWidth().heightIn(min = 80.dp).clip(RoundedCornerShape(18.dp))
             .border(1.5.dp, outline, RoundedCornerShape(18.dp)).padding(vertical = 4.dp)
             .testTag("fridge-ingredient-" + ingredient.name)
-            .semantics { if (managing) this.selected = selected }
+            .selectionTarget(ingredient.name)
+            .semantics {
+                if (managing) this.selected = selected
+                if(groupedGestures && enabled) onLongClick(ingredient.name + " 선택") { onLongPress(); true }
+            }
             .combinedClickable(
                 enabled = enabled,
                 role = if (managing) Role.Checkbox else Role.Button,
-                onClickLabel = if (managing) ingredient.name + " 선택 전환" else null,
-                onClick = { if (managing) onRemoveRequest() },
+                onClickLabel = if (managing) ingredient.name + " 선택 전환" else ingredient.name + " 활용 요리 보기",
+                onClick = { if(gestureGroup?.suppressClick != true) {if(managing) onRemoveRequest() else onIngredientClick()} },
                 onLongClickLabel = ingredient.name + " 선택",
-                onLongClick = onLongPress
+                onLongClick = if(groupedGestures) null else onLongPress
             ),
         contentAlignment = Alignment.Center
     ) {
-        IngredientItem(ingredient, imageSize = 48.dp, appearance = appearance)
-        androidx.compose.animation.AnimatedVisibility(visible=managing, enter=fadeIn(tween(140)), exit=fadeOut(tween(100)), modifier=Modifier.align(Alignment.TopEnd)) {
-            Checkbox(
-                checked = selected,
-                onCheckedChange = null,
-                enabled = enabled,
-                modifier = Modifier.size(24.dp)
-            )
-        }
+        IngredientItem(ingredient, imageSize = 48.dp, appearance = appearance, selected=selected && managing)
     }
 }
