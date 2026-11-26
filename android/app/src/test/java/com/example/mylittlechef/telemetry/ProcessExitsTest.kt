@@ -1,4 +1,4 @@
-// AI-generated with Claude Code (Opus 5.5), 2026-11-26; reviewed by Jaehyuk Choi.
+// AI-generated with Claude Code (Opus 5.5), 2026-11-26; human review pending.
 package com.example.mylittlechef.telemetry
 
 import com.example.mylittlechef.data.telemetry.ExitMark
@@ -47,6 +47,14 @@ class ProcessExitsTest {
         assertNull(native.codeFunction)
         assertEquals("Pixel 7 Pro", native.deviceModel)
         assertEquals(34, telemetry.events.first().apiLevel)
+        assertEquals(300L, mark.value)
+    }
+
+    @Test fun exitsFromBeforeThisVersionWasInstalledAreSkipped() {
+        val telemetry = Recorder()
+        val mark = MemoryMark()
+        ProcessExitReport.send(history, mark, telemetry, "x", 34, installedAt = 150)
+        assertEquals(listOf(200L, 300L), telemetry.events.map { it.t })
         assertEquals(300L, mark.value)
     }
 

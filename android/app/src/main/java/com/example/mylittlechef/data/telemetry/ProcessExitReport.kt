@@ -1,9 +1,10 @@
-// AI-generated with Claude Code (Opus 5.5), 2026-11-26; reviewed by Jaehyuk Choi.
+// AI-generated with Claude Code (Opus 5.5), 2026-11-26; human review pending.
 package com.example.mylittlechef.data.telemetry
 
 import android.app.ActivityManager
 import android.app.ApplicationExitInfo
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import com.example.mylittlechef.domain.ExitKind
 import com.example.mylittlechef.domain.ProcessExit
@@ -45,16 +46,31 @@ object ProcessExitReport {
                     else -> null // REASON_CRASH: the in-app handler already kept it
                 }
             }
-            send(exits, mark, telemetry, device, Build.VERSION.SDK_INT)
+            send(exits, mark, telemetry, device, Build.VERSION.SDK_INT, installedAt(context))
         } catch (_: Exception) {
             // usage data is never worth a failed start
         }
     }
 
-    /** The part without Android, for tests. */
-    fun send(exits: List<ProcessExit>, mark: ExitMark, telemetry: Telemetry, device: String, sdk: Int) {
-        val (events, newest) = exitEvents(exits, mark.get(), device, sdk)
+    /**
+     * The part without Android, for tests. Exits from before [installedAt] (this version's install or update
+     * time) are skipped: Android keeps the history across updates, and an older build's freeze must not be
+     * counted against this version on its first launch.
+     */
+    fun send(exits: List<ProcessExit>, mark: ExitMark, telemetry: Telemetry, device: String, sdk: Int, installedAt: Long = 0L) {
+        val (events, newest) = exitEvents(exits, maxOf(mark.get(), installedAt), device, sdk)
         events.forEach(telemetry::track)
         if (events.isNotEmpty()) mark.set(newest)
+    }
+
+    /** When this version was installed or last updated; 0 when unknown, which keeps the whole history. */
+    private fun installedAt(context: Context): Long = try {
+        val name = context.packageName
+        val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            context.packageManager.getPackageInfo(name, PackageManager.PackageInfoFlags.of(0))
+        else @Suppress("DEPRECATION") context.packageManager.getPackageInfo(name, 0)
+        info.lastUpdateTime
+    } catch (_: Exception) {
+        0L
     }
 }

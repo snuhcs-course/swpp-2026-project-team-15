@@ -10,8 +10,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 UUID = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 # Crash fields hold names from the code and the phone under OpenTelemetry attribute names
-# (exception.type, code.function.name, code.line.number, device.model.identifier; ours:
-# exception.cause.type, android.os.api_level). There is no exception.message or
+# (exception.type, code.function.name, code.line.number, device.model.identifier,
+# android.os.api_level as an integer; ours: exception.cause.type). There is no exception.message or
 # exception.stacktrace field: both can carry user data (ADR 007). The app cleans its values to
 # these characters, so a crash cannot make a whole batch fail.
 CLASS_NAME = r"^[A-Za-z_$][A-Za-z0-9_$.]{0,199}$"

@@ -1,4 +1,4 @@
-// AI-generated with Claude Code (Opus 5.5), 2026-11-26; reviewed by Jaehyuk Choi.
+// AI-generated with Claude Code (Opus 5.5), 2026-11-26; human review pending.
 package com.example.mylittlechef.domain
 
 /**
@@ -11,7 +11,7 @@ package com.example.mylittlechef.domain
  * On the wire (OpenTelemetry names): [type] is `exception.type`, the thrown class; [causeType] is
  * `exception.cause.type` (ours), the innermost cause's class when it differs; [function] and [line] are
  * `code.function.name` and `code.line.number`; [device] is `device.model.identifier`; [apiLevel] is
- * `android.os.api_level` (ours).
+ * `android.os.api_level` (OpenTelemetry's Android attribute, sent as an integer).
  */
 data class CrashRecord(
     val type: String,
