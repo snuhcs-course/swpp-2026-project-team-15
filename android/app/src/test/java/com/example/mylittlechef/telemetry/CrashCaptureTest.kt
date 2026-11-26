@@ -1,4 +1,4 @@
-// AI-generated with Claude Code (Opus 5.5), 2026-11-26; human review pending.
+// AI-generated with Claude Code (Opus 5.5), 2026-11-26; reviewed by Jaehyuk Choi.
 package com.example.mylittlechef.telemetry
 
 import com.example.mylittlechef.data.local.UsageDataSettings
