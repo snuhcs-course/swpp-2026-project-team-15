@@ -13,12 +13,14 @@ data class ProcessExit(val kind: ExitKind, val timestamp: Long)
 /** The events for exits after [lastReported], oldest first, and the new mark (unchanged when none). */
 fun exitEvents(exits: List<ProcessExit>, lastReported: Long, device: String, sdk: Int): Pair<List<Usage>, Long> {
     val fresh = exits.filter { it.timestamp > lastReported }.sortedBy { it.timestamp }
-    val clean = CrashRecord.cleanDevice(device)
+    val model = CrashRecord.cleanDevice(device)
+    val api = CrashRecord.cleanApiLevel(sdk)
     val events = fresh.map {
         when (it.kind) {
-            ExitKind.ANR -> Usage(UsageEvent.ANR, device = clean, sdk = sdk.coerceIn(1, 99), t = it.timestamp)
+            ExitKind.ANR -> Usage(UsageEvent.ANR, deviceModel = model, apiLevel = api, t = it.timestamp)
             ExitKind.NATIVE_CRASH -> Usage(
-                UsageEvent.CRASH, error = "native", device = clean, sdk = sdk.coerceIn(1, 99), count = 1, t = it.timestamp
+                UsageEvent.CRASH, exceptionType = CrashRecord.NATIVE, deviceModel = model, apiLevel = api, count = 1,
+                t = it.timestamp
             )
         }
     }

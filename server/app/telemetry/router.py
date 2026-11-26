@@ -1,4 +1,5 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
+# Modified with Claude Code (Opus 5.5), 2026-11-26: stored under the wire (OpenTelemetry) names.
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Request, status
@@ -30,7 +31,7 @@ def events(batch: EventBatch, request: Request) -> BatchAccepted:
     catalog = request.app.state.dishes.service.catalog
     records = []
     for e in batch.events:
-        record = e.model_dump(exclude_none=True)
+        record = e.model_dump(by_alias=True, exclude_none=True)
         if "dish_id" in record and catalog.get(record["dish_id"]) is None:
             del record["dish_id"]  # only ids from the dish list are kept: no free text
         records.append(head | record)

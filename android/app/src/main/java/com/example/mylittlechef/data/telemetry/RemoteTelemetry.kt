@@ -1,5 +1,5 @@
 // AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
-// Modified with Claude Code (Opus 5.5), 2026-11-26: crash fields.
+// Modified with Claude Code (Opus 5.5), 2026-11-26: crash, ANR and cooking fields.
 package com.example.mylittlechef.data.telemetry
 
 import com.example.mylittlechef.data.local.UsageDataSettings
@@ -91,10 +91,13 @@ class RemoteTelemetry(
         source = usage.source,
         screen = usage.screen,
         code = usage.code,
-        error = usage.error,
-        cause = usage.cause,
-        where = usage.where,
-        device = usage.device,
-        sdk = usage.sdk
+        recipe = usage.recipe,
+        steps = usage.steps,
+        exceptionType = usage.exceptionType,
+        exceptionCauseType = usage.exceptionCauseType,
+        codeFunction = usage.codeFunction,
+        codeLine = usage.codeLine,
+        deviceModel = usage.deviceModel,
+        apiLevel = usage.apiLevel
     )
 }

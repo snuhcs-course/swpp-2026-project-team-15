@@ -1,5 +1,5 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
-# Modified with Claude Code (Opus 5.5), 2026-11-26: crash and ANR events.
+# Modified with Claude Code (Opus 5.5), 2026-11-26: crash, ANR and cooking events.
 """Usage events and request records (research/decisions/adr-007-telemetry.md)."""
 
 import json
@@ -106,54 +106,82 @@ def test_anything_outside_the_closed_schema_is_refused(bad):
 CRASH = {
     "name": "crash",
     "t": 1,
-    "error": "java.lang.IllegalStateException",
-    "cause": "java.io.IOException",
-    "where": "com.example.mylittlechef.viewmodel.DishViewModel$load$1.invokeSuspend:251",
-    "device": "SM-S918N",
-    "sdk": 34,
+    "exception.type": "java.lang.IllegalStateException",
+    "exception.cause.type": "java.io.IOException",
+    "code.function.name": "com.example.mylittlechef.viewmodel.DishViewModel$load$1.invokeSuspend",
+    "code.line.number": 251,
+    "device.model.identifier": "SM-S918N",
+    "android.os.api_level": 34,
     "count": 1,
 }
 
 
-def test_a_crash_is_stored_with_its_class_names_place_and_phone():
+def test_a_crash_is_stored_under_opentelemetry_names():
     sink = ListSink()
     client = TestClient(create_app(StubVision(), telemetry=sink))
-    body = batch() | {"events": [CRASH | {"device": "Pixel 7 Pro", "where": "a.B.<init>"}]}
-    assert client.post("/telemetry/events", json=body).status_code == 202
+    event = CRASH | {"device.model.identifier": "Pixel 7 Pro", "code.function.name": "a.B.<init>"}
+    assert client.post("/telemetry/events", json=batch() | {"events": [event]}).status_code == 202
     [record] = [r for r in sink.records if r["kind"] == "app"]
-    assert record["name"] == "crash" and record["error"] == "java.lang.IllegalStateException"
-    assert record["device"] == "Pixel 7 Pro" and record["sdk"] == 34
-
-
-def test_an_anr_and_a_native_crash_carry_the_phone_only():
-    sink = ListSink()
-    client = TestClient(create_app(StubVision(), telemetry=sink))
-    anr = {"name": "anr", "t": 5, "device": "SM-S918N", "sdk": 34}
-    native = {"name": "crash", "t": 6, "error": "native", "device": "SM-S918N", "sdk": 34}
-    assert (
-        client.post("/telemetry/events", json=batch() | {"events": [anr, native]}).status_code
-        == 202
-    )
-    assert [r["name"] for r in sink.records if r["kind"] == "app"] == ["anr", "crash"]
-    bad = anr | {"description": "Input dispatching timed out"}
-    assert client.post("/telemetry/events", json=batch() | {"events": [bad]}).status_code == 422
+    assert record["name"] == "crash"
+    assert record["exception.type"] == "java.lang.IllegalStateException"
+    assert record["code.line.number"] == 251 and record["android.os.api_level"] == 34
+    assert record["device.model.identifier"] == "Pixel 7 Pro"
+    assert not any(k.startswith(("exception_", "code_", "device_", "api_")) for k in record)
 
 
 @pytest.mark.parametrize(
     "bad",
     [
-        {"message": "Unable to parse 양파"},  # the exception message is never accepted
-        {"error": "java.lang.Exception: 양파 두부"},  # a message glued to the class name
-        {"where": "Foo.bar(Foo.kt:12)"},  # a raw stack line
-        {"where": "a" * 201},
-        {"device": "홍길동의 폰"},  # a phone name set by its owner
-        {"sdk": 0},
+        {"exception.message": "Unable to parse 양파"},  # never accepted
+        {"exception.stacktrace": "at Foo.bar(Foo.kt:12)"},
+        {"exception_type": "java.lang.Exception"},  # Python names are not wire names
+        {"exception.type": "java.lang.Exception: 양파 두부"},  # a message glued to the class
+        {"code.function.name": "Foo.bar(Foo.kt:12)"},  # a raw stack line
+        {"code.function.name": "a" * 201},
+        {"code.line.number": -1},
+        {"device.model.identifier": "홍길동의 폰"},  # a phone name set by its owner
+        {"android.os.api_level": 0},
+        {"error": "java.lang.Exception"},  # the first draft's names are gone
     ],
 )
 def test_crash_fields_hold_names_only(bad):
     client = TestClient(create_app(StubVision(), telemetry=ListSink()))
     body = batch() | {"events": [CRASH | bad]}
     assert client.post("/telemetry/events", json=body).status_code == 422
+
+
+def test_an_anr_and_a_native_crash_carry_the_phone_only():
+    sink = ListSink()
+    client = TestClient(create_app(StubVision(), telemetry=sink))
+    phone = {"device.model.identifier": "SM-S918N", "android.os.api_level": 34}
+    anr = {"name": "anr", "t": 5} | phone
+    native = {"name": "crash", "t": 6, "exception.type": "native"} | phone
+    body = batch() | {"events": [anr, native]}
+    assert client.post("/telemetry/events", json=body).status_code == 202
+    assert [r["name"] for r in sink.records if r["kind"] == "app"] == ["anr", "crash"]
+    bad = anr | {"description": "Input dispatching timed out"}
+    assert client.post("/telemetry/events", json=batch() | {"events": [bad]}).status_code == 422
+
+
+def test_cooking_events_carry_the_recipe_kind_and_steps():
+    sink = ListSink()
+    client = TestClient(create_app(StubVision(), telemetry=sink))
+    dish = {"dish_id": "kimchi-fried-rice"}
+    events = [
+        {"name": "cook_start", "t": 1, "recipe": "original", "steps": 6} | dish,
+        {"name": "cook_exit", "t": 2, "recipe": "original", "count": 3, "steps": 6} | dish,
+        {"name": "cook_complete", "t": 3, "recipe": "revised", "steps": 5, "duration_ms": 9} | dish,
+    ]
+    assert client.post("/telemetry/events", json=batch() | {"events": events}).status_code == 202
+    stored = [r for r in sink.records if r["kind"] == "app"]
+    assert [(r["name"], r["recipe"]) for r in stored] == [
+        ("cook_start", "original"),
+        ("cook_exit", "original"),
+        ("cook_complete", "revised"),
+    ]
+    for bad in ({"recipe": "ai"}, {"steps": 501}, {"steps": -1}):
+        body = batch() | {"events": [events[0] | bad]}
+        assert client.post("/telemetry/events", json=body).status_code == 422
 
 
 def test_batches_are_bounded_and_ids_must_be_uuids():

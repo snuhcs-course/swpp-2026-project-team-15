@@ -1,5 +1,5 @@
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
-// Modified with Claude Code (Opus 5.5), 2026-11-26: crash fields in the usage event.
+// Modified with Claude Code (Opus 5.5), 2026-11-26: crash, ANR and cooking fields in the usage event.
 package com.example.mylittlechef.data.remote
 
 import com.example.mylittlechef.BuildConfig
@@ -145,11 +145,16 @@ data class TelemetryEventDto(
     val source: String? = null,
     val screen: String? = null,
     val code: Int? = null,
-    val error: String? = null,
-    val cause: String? = null,
-    val where: String? = null,
-    val device: String? = null,
-    val sdk: Int? = null
+    val recipe: String? = null,
+    val steps: Int? = null,
+    // Crash and ANR: OpenTelemetry attribute names (exception.*, code.*, device.*); android.os.api_level and
+    // exception.cause.type are ours. exception.message and exception.stacktrace are never sent.
+    @SerializedName("exception.type") val exceptionType: String? = null,
+    @SerializedName("exception.cause.type") val exceptionCauseType: String? = null,
+    @SerializedName("code.function.name") val codeFunction: String? = null,
+    @SerializedName("code.line.number") val codeLine: Int? = null,
+    @SerializedName("device.model.identifier") val deviceModel: String? = null,
+    @SerializedName("android.os.api_level") val apiLevel: Int? = null
 )
 
 data class TelemetryBatchDto(

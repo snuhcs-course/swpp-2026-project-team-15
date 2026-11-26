@@ -1,9 +1,12 @@
 // UAT stage 3 assisted by Codex, 2026-11-24; human review pending.
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
 // Usage events (dish_list, dish_open, player_error) added with Claude Code (Opus 5.5), 2026-11-20.
+// Cooking-mode events (cook_start, cook_exit, cook_complete) added with Claude Code (Opus 5.5), 2026-11-26.
 // Bookmarks, hide-for-this-list and in-list search for the #24 recipe UI added with Claude Code (Opus 5.5), 2026-11-20.
 package com.example.mylittlechef.viewmodel
 
+import com.example.mylittlechef.domain.CookingTracker
+import com.example.mylittlechef.domain.CookingUsage
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -62,8 +65,9 @@ class DishViewModel(
     private val debounceMillis: Long = 400L,
     recipeApi: DishRecipeApi = DishApiClient.recipeApi,
     private val telemetry: Telemetry = NoTelemetry,
-    private val favoriteStore: FavoriteDishes = InMemoryFavoriteDishes()
-) : ViewModel() {
+    private val favoriteStore: FavoriteDishes = InMemoryFavoriteDishes(),
+    private val cooking: CookingTracker = CookingUsage(telemetry)
+) : ViewModel(), CookingTracker by cooking {
     /** The recipe sheet and the revision of a dish; kept next to the dish list it opens from. */
     val recipes = DishRecipeSession(recipeApi, viewModelScope, telemetry) { lastNames.orEmpty() }
 

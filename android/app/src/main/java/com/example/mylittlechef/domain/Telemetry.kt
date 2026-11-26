@@ -1,5 +1,6 @@
 // AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
-// Modified with Claude Code (Opus 5.5), 2026-11-26: crash and ANR events (see CrashReport.kt, ProcessExits.kt).
+// Modified with Claude Code (Opus 5.5), 2026-11-26: crash and ANR events (CrashReport.kt, ProcessExits.kt),
+// cooking-mode events (CookingUsage.kt).
 package com.example.mylittlechef.domain
 
 import retrofit2.HttpException
@@ -20,7 +21,10 @@ enum class UsageEvent(val wire: String) {
     REVISE("revise"),
     PLAYER_ERROR("player_error"),
     CRASH("crash"),
-    ANR("anr")
+    ANR("anr"),
+    COOK_START("cook_start"),
+    COOK_EXIT("cook_exit"),
+    COOK_COMPLETE("cook_complete")
 }
 
 data class Usage(
@@ -35,12 +39,20 @@ data class Usage(
     val screen: String? = null,
     /** HTTP status of a failed request; null when the server was not reached. */
     val code: Int? = null,
-    /** Crash only: exception and root cause class names, first app frame, phone model, API level. */
-    val error: String? = null,
-    val cause: String? = null,
-    val where: String? = null,
-    val device: String? = null,
-    val sdk: Int? = null,
+    /** Cooking mode: original or revised (the recipe being cooked), and its number of steps. */
+    val recipe: String? = null,
+    val steps: Int? = null,
+    /**
+     * Crash and ANR only, sent under OpenTelemetry attribute names (TelemetryEventDto): the thrown class,
+     * the root cause's class, the first frame of the app's code, phone model, Android API level.
+     * Never the exception message or the stack trace.
+     */
+    val exceptionType: String? = null,
+    val exceptionCauseType: String? = null,
+    val codeFunction: String? = null,
+    val codeLine: Int? = null,
+    val deviceModel: String? = null,
+    val apiLevel: Int? = null,
     val t: Long = System.currentTimeMillis()
 )
 

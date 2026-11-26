@@ -1,6 +1,6 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
 # Modified with Claude Code (Opus 5.5), 2026-11-26: version and period filters, crashes, scanner
-# requests apart from the app's routes.
+# requests apart from the app's routes, cooking mode (T4).
 """Summarise the beta week's usage file (one JSON object per line) into the metrics of README.md.
 
     uv run python ../research/experiments/telemetry/summarize.py usage.jsonl [--out summary.json]
@@ -212,7 +212,7 @@ def crashes(app: list[dict[str, Any]]) -> dict[str, Any]:
 
     Exposure: user-days = distinct (install, UTC day) with any app event, and sessions started.
     A crash or ANR is reported on the next launch, so it is counted on the day it arrived. Native
-    crashes arrive as crash events with error "native" and no place."""
+    crashes arrive as crash events with exception.type "native" and no place."""
     events = [e for e in app if e["name"] == "crash"]
 
     def n(e: dict[str, Any]) -> int:
@@ -248,20 +248,25 @@ def crashes(app: list[dict[str, Any]]) -> dict[str, Any]:
     by_device: Counter = Counter()
     devices_installs: dict[str, set[str]] = defaultdict(set)
     for e in events:
-        by_device[e.get("device", "missing")] += n(e)
-        devices_installs[e.get("device", "missing")].add(e["install"])
+        device = e.get("device.model.identifier", "missing")
+        by_device[device] += n(e)
+        devices_installs[device].add(e["install"])
 
+    # A crash bucket: the thrown class and the first frame of the app's code.
     buckets: dict[tuple[str, str], dict[str, Any]] = {}
     for e in events:
-        key = (e.get("error", "missing"), e.get("where", "?"))
+        function = e.get("code.function.name")
+        line = e.get("code.line.number")
+        place = f"{function}:{line}" if function and line is not None else function or "?"
+        key = (e.get("exception.type", "missing"), place)
         b = buckets.setdefault(
             key,
-            {"error": key[0], "where": key[1], "crashes": 0, "installs": set(), "versions": set()},
+            {"type": key[0], "where": key[1], "crashes": 0, "installs": set(), "versions": set()},
         )
         b["crashes"] += n(e)
         b["installs"].add(e["install"])
         b["versions"].add(e.get("version", "missing"))
-    ordered = sorted(buckets.values(), key=lambda b: (-b["crashes"], b["error"], b["where"]))
+    ordered = sorted(buckets.values(), key=lambda b: (-b["crashes"], b["type"], b["where"]))
     return {
         "by_version": by_version,
         # Exposure per phone model is unknown: only crash events carry the model.
@@ -272,6 +277,44 @@ def crashes(app: list[dict[str, Any]]) -> dict[str, Any]:
         "buckets": [
             b | {"installs": len(b["installs"]), "versions": sorted(b["versions"])} for b in ordered
         ],
+    }
+
+
+def task_cook(
+    app: list[dict[str, Any]], sessions: dict[str, list[dict[str, Any]]]
+) -> dict[str, Any]:
+    """T4: sessions with a successful recipe_view in which cooking mode was finished
+    (cook_complete), testers who finished at least once, and how cooking ended by recipe."""
+    total = done = 0
+    for events in sessions.values():
+        if any(e["name"] == "recipe_view" and e.get("status") == "ok" for e in events):
+            total += 1
+            done += any(e["name"] == "cook_complete" for e in events)
+    installs = {e["install"] for e in app}
+    finished = {e["install"] for e in app if e["name"] == "cook_complete"}
+    by_recipe: dict[str, Any] = {}
+    for recipe in ("original", "revised"):
+        starts = [e for e in app if e["name"] == "cook_start" and e.get("recipe") == recipe]
+        ends = [e for e in app if e["name"] == "cook_complete" and e.get("recipe") == recipe]
+        exits = [e for e in app if e["name"] == "cook_exit" and e.get("recipe") == recipe]
+        by_recipe[recipe] = {
+            "starts": len(starts),
+            "completes": len(ends),
+            "exits": len(exits),
+            "time": _spread([e["duration_ms"] for e in ends if "duration_ms" in e]),
+        }
+    exits = [e for e in app if e["name"] == "cook_exit"]
+    reached = Counter(f"{e.get('count', '?')}/{e.get('steps', '?')}" for e in exits)
+    shares = [e["count"] / e["steps"] for e in exits if e.get("steps") and "count" in e]
+    return {
+        "completion": _rate(done, total),
+        "testers_with_complete": {"k": len(finished), "n": len(installs)},
+        "by_recipe": by_recipe,
+        "exit_step_reached": dict(sorted(reached.items())),
+        "exit_share_of_steps": {
+            "n": len(shares),
+            "median": round(statistics.median(shares), 3) if shares else None,
+        },
     }
 
 
@@ -301,6 +344,7 @@ def summarize(records: list[dict[str, Any]]) -> dict[str, Any]:
         "T1_fill_fridge_to_dish_list": task_fill(sessions),
         "T2_dish_list_to_recipe": task_open(sessions),
         "T3_revise": task_revise(app),
+        "T4_recipe_to_cooked": task_cook(app, sessions),
         "errors": errors(app, requests),
         "crashes": crashes(app),
         "usage": usage(app, sessions),

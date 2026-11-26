@@ -1,4 +1,5 @@
 // UX2 layout/lifecycle changes assisted by Codex, 2026-11-19; human review pending.
+// Cooking-mode usage events (one call per site) added with Claude Code (Opus 5.5), 2026-11-26.
 // Photo UI navigation motion assisted by Codex, 2026-11-19; human review pending.
 // HE ingredient/exploration changes assisted by Codex, 2026-11-10; human review pending.
 // AI-generated initial navigation scaffold with Claude chat (Sonnet 5.5), 2026-10-04; adapted and reviewed by Ahyoon Choi.
@@ -308,7 +309,8 @@ fun AppNavHost(
                 onRetryRecipe = { dishes.recipes.requestRecipe(id) },
                 onRevise = { dishes.recipes.requestRevision(id) },
                 onRetryVideos = { dishes.requestVideos(dish) },
-                onPlayerError = { dishes.onPlayerError(id) }
+                onPlayerError = { dishes.onPlayerError(id) },
+                cookingTracker = dishes
             )
         }
 

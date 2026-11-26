@@ -1,5 +1,5 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
-# Modified with Claude Code (Opus 5.5), 2026-11-26: filters, crashes, scanner requests.
+# Modified with Claude Code (Opus 5.5), 2026-11-26: filters, crashes, scanner requests, cooking.
 """The beta-week summary on synthetic usage records whose answers are known."""
 
 import json
@@ -108,6 +108,20 @@ def test_scanner_requests_are_kept_apart_from_the_apps_error_rate():
     assert s["errors"]["requests"]["GET unmatched"]["total"] == 8  # still visible
 
 
+def crash(session, t, kind, function=None, line=None, device="Pixel 7", **fields):
+    place = {"code.function.name": function} if function else {}
+    if line is not None:
+        place["code.line.number"] = line
+    return app(
+        session,
+        t,
+        "crash",
+        **{"exception.type": kind, "device.model.identifier": device},
+        **place,
+        **fields,
+    )
+
+
 def test_crashes_with_exposure_buckets_and_no_rate_judgement():
     B_ = {"install": B}
     s = summarize(
@@ -115,27 +129,11 @@ def test_crashes_with_exposure_buckets_and_no_rate_judgement():
             app("s1", 0, "session_start"),
             app("s2", DAY, "session_start"),  # install A on two days
             app("s3", 0, "session_start") | B_,
-            app(
-                "s3",
-                1,
-                "crash",
-                error="java.lang.IllegalStateException",
-                where="a.B.c:3",
-                device="SM-S918N",
-                count=2,
-            )
-            | B_,
-            app(
-                "s2",
-                DAY + 1,
-                "crash",
-                error="java.lang.IllegalStateException",
-                where="a.B.c:3",
-                device="Pixel 7",
-            ),
-            app("s2", DAY + 2, "crash", error="java.lang.NullPointerException", device="Pixel 7"),
+            crash("s3", 1, "java.lang.IllegalStateException", "a.B.c", 3, "SM-S918N", count=2) | B_,
+            crash("s2", DAY + 1, "java.lang.IllegalStateException", "a.B.c", 3),
+            crash("s2", DAY + 2, "native"),
             app("x", 0, "session_start") | {"version": "1.0.0-cloud-test"},
-            app("s1", 5, "anr", device="SM-S918N"),
+            app("s1", 5, "anr", **{"device.model.identifier": "SM-S918N"}),
         ]
     )
     c = s["crashes"]
@@ -149,14 +147,46 @@ def test_crashes_with_exposure_buckets_and_no_rate_judgement():
     assert c["by_version"]["1.0.0-cloud-test"]["crash_free_installs"] == {"k": 1, "n": 1}
     assert c["by_device"]["SM-S918N"] == {"crashes": 2, "installs_with_crash": 1}
     first, second = c["buckets"]
-    assert (first["error"], first["where"], first["crashes"], first["installs"]) == (
+    assert (first["type"], first["where"], first["crashes"], first["installs"]) == (
         "java.lang.IllegalStateException",
         "a.B.c:3",
         3,
         2,
     )
-    assert second["where"] == "?" and second["crashes"] == 1
+    assert (second["type"], second["where"], second["crashes"]) == ("native", "?", 1)
     assert "pass" not in json.dumps(c)
+
+
+def test_cooking_completion_per_session_with_a_recipe_and_by_recipe_kind():
+    dish = {"dish_id": "tofu-soup"}
+    s = summarize(
+        [
+            # s1: recipe shown, cooked the original to the end in 90 s
+            app("s1", 0, "recipe_view", status="ok", **dish),
+            app("s1", 1, "cook_start", recipe="original", steps=4, **dish),
+            app("s1", 2, "cook_complete", recipe="original", steps=4, duration_ms=90_000, **dish),
+            # s2: recipe shown, revised recipe left at step 2 of 5, then finished
+            app("s2", 0, "recipe_view", status="ok", **dish),
+            app("s2", 1, "cook_start", recipe="revised", steps=5, **dish),
+            app("s2", 2, "cook_exit", recipe="revised", count=2, steps=5, **dish),
+            app("s2", 3, "cook_start", recipe="revised", steps=5, **dish),
+            app("s2", 4, "cook_complete", recipe="revised", steps=5, duration_ms=30_000, **dish),
+            # s3 (install B): recipe shown, left at step 1 of 4
+            app("s3", 0, "recipe_view", status="ok", **dish) | {"install": B},
+            app("s3", 1, "cook_exit", recipe="original", count=1, steps=4, **dish) | {"install": B},
+            # s4: the recipe failed to load: not in the denominator
+            app("s4", 0, "recipe_view", status="error", **dish),
+        ]
+    )
+    t4 = s["T4_recipe_to_cooked"]
+    assert t4["completion"] == {"done": 2, "total": 3, "rate": 0.667}
+    assert t4["testers_with_complete"] == {"k": 1, "n": 2}
+    assert t4["by_recipe"]["original"]["starts"] == 1
+    assert t4["by_recipe"]["original"]["completes"] == 1
+    assert t4["by_recipe"]["revised"]["exits"] == 1
+    assert t4["by_recipe"]["revised"]["time"]["median_ms"] == 30_000
+    assert t4["exit_step_reached"] == {"1/4": 1, "2/5": 1}
+    assert t4["exit_share_of_steps"] == {"n": 2, "median": 0.325}
 
 
 def test_version_and_period_filters():

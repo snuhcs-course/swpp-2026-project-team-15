@@ -43,9 +43,10 @@ class ProcessExitsTest {
         assertEquals(listOf(UsageEvent.ANR, UsageEvent.ANR, UsageEvent.CRASH), telemetry.events.map { it.event })
         assertEquals(listOf(100L, 200L, 300L), telemetry.events.map { it.t })
         val native = telemetry.events.last()
-        assertEquals("native", native.error)
-        assertNull(native.where)
-        assertEquals("Pixel 7 Pro", native.device)
+        assertEquals("native", native.exceptionType)
+        assertNull(native.codeFunction)
+        assertEquals("Pixel 7 Pro", native.deviceModel)
+        assertEquals(34, telemetry.events.first().apiLevel)
         assertEquals(300L, mark.value)
     }
 
@@ -71,6 +72,6 @@ class ProcessExitsTest {
     @Test fun anOwnerSetPhoneNameIsCleanedToTheServersPattern() {
         val telemetry = Recorder()
         ProcessExitReport.send(history.take(1), MemoryMark(), telemetry, "홍길동의 폰", 34)
-        assertTrue(Regex("^[A-Za-z0-9 ._()+-]{1,64}$").matches(telemetry.events.single().device!!))
+        assertTrue(Regex("^[A-Za-z0-9 ._()+-]{1,64}$").matches(telemetry.events.single().deviceModel!!))
     }
 }

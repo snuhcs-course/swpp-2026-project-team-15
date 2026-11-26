@@ -60,9 +60,10 @@ class CrashCaptureTest {
 
     @Test fun aRecordHoldsClassNamesAndTheFirstAppFrameOfTheRootCauseButNoMessage() {
         val record = CrashRecord.of(failureInApp("GET /dishes 양파"), "Pixel 7 Pro", 34, 1_000)
-        assertEquals("java.lang.IllegalStateException", record.error)
-        assertEquals("java.io.IOException", record.cause)
-        assertEquals("com.example.mylittlechef.data.DishRepo.load:42", record.where)
+        assertEquals("java.lang.IllegalStateException", record.type)
+        assertEquals("java.io.IOException", record.causeType)
+        assertEquals("com.example.mylittlechef.data.DishRepo.load", record.function)
+        assertEquals(42, record.line)
         assertEquals("Pixel 7 Pro", record.device)
         val stored = record.encode()
         assertFalse(stored.contains("양파") || stored.contains("dishes") || stored.contains("두부"))
@@ -73,11 +74,12 @@ class CrashCaptureTest {
             stackTrace = arrayOf(StackTraceElement("kotlin.Foo", "bar baz", null, -2))
         }
         val record = CrashRecord.of(failure, "홍길동 폰\n", 0, 5)
-        assertEquals("kotlin.Foo.bar_baz", record.where) // no app frame: the top frame, no line for native
+        assertEquals("kotlin.Foo.bar_baz", record.function) // no app frame: the top frame
+        assertNull(record.line) // a native frame has no line
         assertTrue(Regex("^[A-Za-z0-9 ._()+-]{1,64}$").matches(record.device))
-        assertNull(record.cause)
-        assertEquals(1, record.sdk)
-        assertTrue(Regex("^[A-Za-z0-9_$.<>]{1,200}(:[0-9]{1,6})?$").matches(record.where!!))
+        assertNull(record.causeType)
+        assertEquals(1, record.apiLevel)
+        assertTrue(Regex("^[A-Za-z0-9_$.<>]{1,200}$").matches(record.function!!))
     }
 
     @Test fun theFileKeepsTheNewestCrashCountsRepeatsAndIsRemovedWhenTaken() {
@@ -86,7 +88,7 @@ class CrashCaptureTest {
         store.save(CrashRecord.of(failureInApp("a"), "SM-S918N", 34, 1))
         store.save(CrashRecord.of(RuntimeException("b"), "SM-S918N", 34, 2))
         val taken = store.take()!!
-        assertEquals("java.lang.RuntimeException", taken.error)
+        assertEquals("java.lang.RuntimeException", taken.type)
         assertEquals(2, taken.count)
         assertEquals(2L, taken.t)
         assertFalse(file.exists())
@@ -94,7 +96,7 @@ class CrashCaptureTest {
     }
 
     @Test fun aDamagedFileIsDroppedQuietly() {
-        val file = folder.root.resolve(FileCrashStore.NAME).apply { writeText("garbage\nerror=") }
+        val file = folder.root.resolve(FileCrashStore.NAME).apply { writeText("garbage\ntype=") }
         assertNull(FileCrashStore(file).take())
         assertFalse(file.exists())
     }
@@ -145,12 +147,27 @@ class CrashCaptureTest {
         results += sent.flatMap { it.events }.filter { it.name == "crash" }
     }
 
+    /** The wire names are the OpenTelemetry attribute names; no message or stack trace field exists. */
+    @Test fun theCrashGoesOutUnderOpenTelemetryNames() {
+        val dto = com.example.mylittlechef.data.remote.TelemetryEventDto(
+            name = "crash", t = 1, exceptionType = "a.B", exceptionCauseType = "c.D", codeFunction = "e.F.g",
+            codeLine = 3, deviceModel = "SM-S918N", apiLevel = 34
+        )
+        val json = com.google.gson.Gson().toJson(dto)
+        for (name in listOf("exception.type", "exception.cause.type", "code.function.name", "code.line.number",
+            "device.model.identifier", "android.os.api_level")) assertTrue(name, json.contains("\"$name\""))
+        assertFalse(json.contains("message") || json.contains("stacktrace"))
+        val fields = com.example.mylittlechef.data.remote.TelemetryEventDto::class.java.declaredFields.map { it.name }
+        assertFalse(fields.any { it.contains("message", ignoreCase = true) || it.contains("stack", ignoreCase = true) })
+    }
+
     @Test fun theNextLaunchSendsTheCrashOnlyWithConsent() {
         launchWithCrash(UsageDataState(enabled = true, noticeSeen = true))
         val crash = results.single()
-        assertEquals("java.lang.IllegalStateException", crash.error)
-        assertEquals("com.example.mylittlechef.data.DishRepo.load:42", crash.where)
-        assertEquals(34, crash.sdk)
+        assertEquals("java.lang.IllegalStateException", crash.exceptionType)
+        assertEquals("com.example.mylittlechef.data.DishRepo.load", crash.codeFunction)
+        assertEquals(42, crash.codeLine)
+        assertEquals(34, crash.apiLevel)
         assertEquals(9L, crash.t)
 
         results.clear()

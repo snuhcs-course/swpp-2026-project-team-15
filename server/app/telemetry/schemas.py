@@ -1,5 +1,6 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
-# Modified with Claude Code (Opus 5.5), 2026-11-26: crash and ANR events (class names, code place).
+# Modified with Claude Code (Opus 5.5), 2026-11-26: crash and ANR events under OpenTelemetry names,
+# cooking-mode events.
 """The only app events the server accepts. Closed names and narrow fields, so no free text
 (ingredient names, photos, nicknames) can be sent, even by mistake."""
 
@@ -8,10 +9,13 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 UUID = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-# Crash fields hold names from the code and the phone, never an exception message (ADR 007). The app
-# cleans its values to these characters, so a crash cannot make a whole batch fail.
+# Crash fields hold names from the code and the phone under OpenTelemetry attribute names
+# (exception.type, code.function.name, code.line.number, device.model.identifier; ours:
+# exception.cause.type, android.os.api_level). There is no exception.message or
+# exception.stacktrace field: both can carry user data (ADR 007). The app cleans its values to
+# these characters, so a crash cannot make a whole batch fail.
 CLASS_NAME = r"^[A-Za-z_$][A-Za-z0-9_$.]{0,199}$"
-CODE_PLACE = r"^[A-Za-z0-9_$.<>]{1,200}(:[0-9]{1,6})?$"
+FUNCTION = r"^[A-Za-z0-9_$.<>]{1,200}$"
 DEVICE = r"^[A-Za-z0-9 ._()+-]{1,64}$"
 MAX_EVENTS = 100  # one batch; the app sends at most 20 at a time
 
@@ -26,16 +30,21 @@ EventName = Literal[
     "recipe_view",  # dish_id, status ok|error, code
     "revise",  # dish_id, status revised|refused|failed|error, duration_ms, code
     "player_error",  # dish_id
-    "crash",  # error, cause, where, device, sdk, count: an uncaught exception of the last run
-    "anr",  # device, sdk: the app froze and Android closed it (from Android's exit history)
+    "crash",  # exception.*, code.*, device.model.identifier, android.os.api_level, count
+    "anr",  # device.model.identifier, android.os.api_level: the app froze and Android closed it
+    "cook_start",  # dish_id, recipe, steps: the cooking cards opened
+    "cook_exit",  # dish_id, recipe, count = step reached, steps: "조리 종료" before the end
+    "cook_complete",  # dish_id, recipe, steps, duration_ms since cook_start
 ]
 Status = Literal["ok", "empty", "error", "revised", "refused", "failed"]
 Source = Literal["photo", "manual", "suggestion", "pantry"]
+Recipe = Literal["original", "revised"]
 Screen = Literal["onboarding", "fridge", "dishes", "profile", "capture", "analyze", "manual_add"]
 
 
 class AppEvent(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    # Dotted names arrive and are stored as aliases; the Python names are not accepted on the wire.
+    model_config = ConfigDict(extra="forbid", serialize_by_alias=True)
 
     name: EventName
     t: int = Field(ge=0, description="Milliseconds since the epoch, on the phone")
@@ -46,13 +55,36 @@ class AppEvent(BaseModel):
     source: Source | None = None
     screen: Screen | None = None
     code: int | None = Field(default=None, ge=0, le=999, description="HTTP status of a failure")
-    error: str | None = Field(default=None, pattern=CLASS_NAME, description="Exception class")
-    cause: str | None = Field(default=None, pattern=CLASS_NAME, description="Root cause class")
-    where: str | None = Field(
-        default=None, pattern=CODE_PLACE, description="First app frame, Class.method:line"
+    recipe: Recipe | None = Field(default=None, description="Cooking: the recipe being cooked")
+    steps: int | None = Field(default=None, ge=0, le=500, description="Cooking: number of steps")
+    exception_type: str | None = Field(
+        default=None, alias="exception.type", pattern=CLASS_NAME, description="Thrown class"
     )
-    device: str | None = Field(default=None, pattern=DEVICE, description="Phone model")
-    sdk: int | None = Field(default=None, ge=1, le=99, description="Android API level")
+    exception_cause_type: str | None = Field(
+        default=None,
+        alias="exception.cause.type",
+        pattern=CLASS_NAME,
+        description="Innermost cause's class, when it differs (not an OpenTelemetry name)",
+    )
+    code_function: str | None = Field(
+        default=None,
+        alias="code.function.name",
+        pattern=FUNCTION,
+        description="First frame of the app's code: Class.method",
+    )
+    code_line: int | None = Field(
+        default=None, alias="code.line.number", ge=0, le=999_999, description="Its line"
+    )
+    device_model: str | None = Field(
+        default=None, alias="device.model.identifier", pattern=DEVICE, description="Phone model"
+    )
+    api_level: int | None = Field(
+        default=None,
+        alias="android.os.api_level",
+        ge=1,
+        le=99,
+        description="Android API level (not an OpenTelemetry name)",
+    )
 
 
 class EventBatch(BaseModel):
