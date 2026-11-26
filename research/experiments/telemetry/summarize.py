@@ -1,7 +1,15 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
+# Modified with Claude Code (Opus 5.5), 2026-11-26: version and period filters, crashes, scanner
+# requests apart from the app's routes.
 """Summarise the beta week's usage file (one JSON object per line) into the metrics of README.md.
 
     uv run python ../research/experiments/telemetry/summarize.py usage.jsonl [--out summary.json]
+        [--version 1.0.1 ...] [--since 2026-12-07] [--until 2026-12-11]
+
+--version keeps the app events of those app versions (development builds such as
+1.0.0-cloud-test are left out); request records carry no version and are kept. --since and
+--until take a date (a whole day, UTC) or an ISO time and apply to both kinds of record; app
+events are placed by the time the server received them.
 
 Every rate is printed with its counts; nothing is judged against a threshold.
 """
@@ -13,6 +21,7 @@ import json
 import statistics
 from collections import Counter, defaultdict
 from collections.abc import Iterable
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +35,57 @@ def read(lines: Iterable[str]) -> list[dict[str, Any]]:
                 out.append(json.loads(line))
             except ValueError:
                 continue  # a cut last line after a crash
+    return out
+
+
+# A route outside the API: internet scanners probing the open port, not the app.
+UNMATCHED = "unmatched"
+
+
+def _instant(text: str, *, end: bool) -> int:
+    """Milliseconds since the epoch; a bare date means the start (or the end) of that UTC day."""
+    try:
+        day = date.fromisoformat(text)
+    except ValueError:
+        moment = datetime.fromisoformat(text)
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=UTC)
+        return int(moment.timestamp() * 1000)
+    start = datetime(day.year, day.month, day.day, tzinfo=UTC) + timedelta(days=1 if end else 0)
+    return int(start.timestamp() * 1000) - (1 if end else 0)
+
+
+def _when(record: dict[str, Any]) -> int | None:
+    """Server time: when an app event arrived (a phone clock can be wrong), else its own time."""
+    received = record.get("received")
+    if isinstance(received, str):
+        try:
+            return _instant(received, end=False)
+        except ValueError:
+            pass
+    t = record.get("t")
+    return t if isinstance(t, int) else None
+
+
+def select(
+    records: list[dict[str, Any]],
+    versions: Iterable[str] = (),
+    since: str | None = None,
+    until: str | None = None,
+) -> list[dict[str, Any]]:
+    """The records of a test period and of the given app versions (all versions when none)."""
+    wanted = set(versions)
+    low = _instant(since, end=False) if since else None
+    high = _instant(until, end=True) if until else None
+    out = []
+    for r in records:
+        if wanted and r.get("kind") == "app" and r.get("version") not in wanted:
+            continue
+        if low is not None or high is not None:
+            t = _when(r)
+            if t is None or (low is not None and t < low) or (high is not None and t > high):
+                continue
+        out.append(r)
     return out
 
 
@@ -123,9 +183,96 @@ def errors(app: list[dict[str, Any]], requests: list[dict[str, Any]]) -> dict[st
         }
         for route, c in sorted(by_route.items())
     }
+    api = Counter()
+    scanners = 0
+    for route, c in by_route.items():
+        if route.endswith(f" {UNMATCHED}"):
+            scanners += sum(c.values())
+        else:
+            api.update(c)
     app_errors = Counter(e["name"] for e in app if e.get("status") == "error")
     app_errors.update(e["name"] for e in app if e["name"] == "player_error")
-    return {"requests": routes, "app": dict(app_errors)}
+    return {
+        "requests": routes,
+        # The app's routes only; requests to paths outside the API are counted apart.
+        "api_server_errors": _rate(api["server_error"], sum(api.values())),
+        "unmatched_requests": scanners,
+        "app": dict(app_errors),
+    }
+
+
+def _day(record: dict[str, Any]) -> str | None:
+    t = _when(record)
+    return datetime.fromtimestamp(t / 1000, UTC).date().isoformat() if t is not None else None
+
+
+def crashes(app: list[dict[str, Any]]) -> dict[str, Any]:
+    """Crash and ANR counts with their exposure, per app version; no rate is judged (a few
+    testers for a week cannot bound a crash rate, so each crash bucket is read and fixed).
+
+    Exposure: user-days = distinct (install, UTC day) with any app event, and sessions started.
+    A crash or ANR is reported on the next launch, so it is counted on the day it arrived. Native
+    crashes arrive as crash events with error "native" and no place."""
+    events = [e for e in app if e["name"] == "crash"]
+
+    def n(e: dict[str, Any]) -> int:
+        return int(e.get("count", 1))
+
+    by_version: dict[str, Any] = {}
+    for version in sorted({e.get("version", "missing") for e in app}):
+        mine = [e for e in app if e.get("version", "missing") == version]
+        crashed = [e for e in mine if e["name"] == "crash"]
+        froze = [e for e in mine if e["name"] == "anr"]
+        installs = {e["install"] for e in mine}
+        user_days = {(e["install"], _day(e)) for e in mine}
+        count = sum(n(e) for e in crashed)
+        by_version[version] = {
+            "crashes": count,
+            "user_days": len(user_days),
+            "sessions": sum(1 for e in mine if e["name"] == "session_start"),
+            "crash_free_installs": {
+                "k": len(installs - {e["install"] for e in crashed}),
+                "n": len(installs),
+            },
+            # descriptive only: crashes per user-day of this version
+            "crashes_per_user_day": round(count / len(user_days), 3) if user_days else None,
+            # the app froze and Android closed it (API 30+ phones only), same exposure
+            "anrs": len(froze),
+            "anr_free_installs": {
+                "k": len(installs - {e["install"] for e in froze}),
+                "n": len(installs),
+            },
+            "anrs_per_user_day": round(len(froze) / len(user_days), 3) if user_days else None,
+        }
+
+    by_device: Counter = Counter()
+    devices_installs: dict[str, set[str]] = defaultdict(set)
+    for e in events:
+        by_device[e.get("device", "missing")] += n(e)
+        devices_installs[e.get("device", "missing")].add(e["install"])
+
+    buckets: dict[tuple[str, str], dict[str, Any]] = {}
+    for e in events:
+        key = (e.get("error", "missing"), e.get("where", "?"))
+        b = buckets.setdefault(
+            key,
+            {"error": key[0], "where": key[1], "crashes": 0, "installs": set(), "versions": set()},
+        )
+        b["crashes"] += n(e)
+        b["installs"].add(e["install"])
+        b["versions"].add(e.get("version", "missing"))
+    ordered = sorted(buckets.values(), key=lambda b: (-b["crashes"], b["error"], b["where"]))
+    return {
+        "by_version": by_version,
+        # Exposure per phone model is unknown: only crash events carry the model.
+        "by_device": {
+            d: {"crashes": c, "installs_with_crash": len(devices_installs[d])}
+            for d, c in by_device.most_common()
+        },
+        "buckets": [
+            b | {"installs": len(b["installs"]), "versions": sorted(b["versions"])} for b in ordered
+        ],
+    }
 
 
 def usage(app: list[dict[str, Any]], sessions: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
@@ -155,6 +302,7 @@ def summarize(records: list[dict[str, Any]]) -> dict[str, Any]:
         "T2_dish_list_to_recipe": task_open(sessions),
         "T3_revise": task_revise(app),
         "errors": errors(app, requests),
+        "crashes": crashes(app),
         "usage": usage(app, sessions),
     }
 
@@ -163,8 +311,13 @@ def main(argv: list[str] | None = None) -> dict[str, Any]:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("usage", type=Path)
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--version", action="append", default=[], help="app version to keep")
+    parser.add_argument("--since", help="first day or ISO time (UTC unless given)")
+    parser.add_argument("--until", help="last day or ISO time (UTC unless given)")
     args = parser.parse_args(argv)
-    result = summarize(read(args.usage.read_text(encoding="utf-8").splitlines()))
+    records = read(args.usage.read_text(encoding="utf-8").splitlines())
+    result = summarize(select(records, args.version, args.since, args.until))
+    result["filters"] = {"version": args.version, "since": args.since, "until": args.until}
     text = json.dumps(result, ensure_ascii=False, indent=2)
     if args.out:
         args.out.write_text(text + "\n", encoding="utf-8")

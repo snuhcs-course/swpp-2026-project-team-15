@@ -1,4 +1,5 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
+# Modified with Claude Code (Opus 5.5), 2026-11-26: crash and ANR events (class names, code place).
 """The only app events the server accepts. Closed names and narrow fields, so no free text
 (ingredient names, photos, nicknames) can be sent, even by mistake."""
 
@@ -7,6 +8,11 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 UUID = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+# Crash fields hold names from the code and the phone, never an exception message (ADR 007). The app
+# cleans its values to these characters, so a crash cannot make a whole batch fail.
+CLASS_NAME = r"^[A-Za-z_$][A-Za-z0-9_$.]{0,199}$"
+CODE_PLACE = r"^[A-Za-z0-9_$.<>]{1,200}(:[0-9]{1,6})?$"
+DEVICE = r"^[A-Za-z0-9 ._()+-]{1,64}$"
 MAX_EVENTS = 100  # one batch; the app sends at most 20 at a time
 
 EventName = Literal[
@@ -20,6 +26,8 @@ EventName = Literal[
     "recipe_view",  # dish_id, status ok|error, code
     "revise",  # dish_id, status revised|refused|failed|error, duration_ms, code
     "player_error",  # dish_id
+    "crash",  # error, cause, where, device, sdk, count: an uncaught exception of the last run
+    "anr",  # device, sdk: the app froze and Android closed it (from Android's exit history)
 ]
 Status = Literal["ok", "empty", "error", "revised", "refused", "failed"]
 Source = Literal["photo", "manual", "suggestion", "pantry"]
@@ -38,6 +46,13 @@ class AppEvent(BaseModel):
     source: Source | None = None
     screen: Screen | None = None
     code: int | None = Field(default=None, ge=0, le=999, description="HTTP status of a failure")
+    error: str | None = Field(default=None, pattern=CLASS_NAME, description="Exception class")
+    cause: str | None = Field(default=None, pattern=CLASS_NAME, description="Root cause class")
+    where: str | None = Field(
+        default=None, pattern=CODE_PLACE, description="First app frame, Class.method:line"
+    )
+    device: str | None = Field(default=None, pattern=DEVICE, description="Phone model")
+    sdk: int | None = Field(default=None, ge=1, le=99, description="Android API level")
 
 
 class EventBatch(BaseModel):

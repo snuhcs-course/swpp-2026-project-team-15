@@ -1,4 +1,5 @@
 // AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
+// Modified with Claude Code (Opus 5.5), 2026-11-26: the last run's crash, ANRs and native crashes are reported once the sender exists.
 package com.example.mylittlechef.data.telemetry
 
 import android.content.Context
@@ -12,6 +13,7 @@ import com.example.mylittlechef.domain.UsageEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import java.io.File
 
 /**
  * The usage sender and the session tracker of the app process, made once on first use. Only the composition
@@ -28,7 +30,13 @@ object AppUsage {
             PreferencesUsageDataSettings(context.applicationContext.localDataStore),
             CoroutineScope(SupervisorJob() + Dispatchers.IO),
             BuildConfig.VERSION_NAME
-        ).also { telemetry = it }
+        ).also {
+            telemetry = it
+            // Sent with the first batch only if the stored consent allows it; the file goes either way.
+            val files = context.applicationContext.filesDir
+            CrashCapture.report(FileCrashStore(File(files, FileCrashStore.NAME)), it)
+            ProcessExitReport.report(context.applicationContext, FileExitMark(File(files, FileExitMark.NAME)), it)
+        }
     }
 }
 

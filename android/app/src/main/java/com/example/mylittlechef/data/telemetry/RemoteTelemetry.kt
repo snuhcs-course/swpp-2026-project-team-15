@@ -1,4 +1,5 @@
 // AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
+// Modified with Claude Code (Opus 5.5), 2026-11-26: crash fields.
 package com.example.mylittlechef.data.telemetry
 
 import com.example.mylittlechef.data.local.UsageDataSettings
@@ -89,6 +90,11 @@ class RemoteTelemetry(
         status = usage.status,
         source = usage.source,
         screen = usage.screen,
-        code = usage.code
+        code = usage.code,
+        error = usage.error,
+        cause = usage.cause,
+        where = usage.where,
+        device = usage.device,
+        sdk = usage.sdk
     )
 }

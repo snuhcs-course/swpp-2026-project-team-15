@@ -1,4 +1,5 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
+# Modified with Claude Code (Opus 5.5), 2026-11-26: crash and ANR events.
 """Usage events and request records (research/decisions/adr-007-telemetry.md)."""
 
 import json
@@ -100,6 +101,59 @@ def test_anything_outside_the_closed_schema_is_refused(bad):
     client = TestClient(create_app(StubVision(), telemetry=sink))
     assert client.post("/telemetry/events", json=batch(**bad)).status_code == 422
     assert [r for r in sink.records if r["kind"] == "app"] == []
+
+
+CRASH = {
+    "name": "crash",
+    "t": 1,
+    "error": "java.lang.IllegalStateException",
+    "cause": "java.io.IOException",
+    "where": "com.example.mylittlechef.viewmodel.DishViewModel$load$1.invokeSuspend:251",
+    "device": "SM-S918N",
+    "sdk": 34,
+    "count": 1,
+}
+
+
+def test_a_crash_is_stored_with_its_class_names_place_and_phone():
+    sink = ListSink()
+    client = TestClient(create_app(StubVision(), telemetry=sink))
+    body = batch() | {"events": [CRASH | {"device": "Pixel 7 Pro", "where": "a.B.<init>"}]}
+    assert client.post("/telemetry/events", json=body).status_code == 202
+    [record] = [r for r in sink.records if r["kind"] == "app"]
+    assert record["name"] == "crash" and record["error"] == "java.lang.IllegalStateException"
+    assert record["device"] == "Pixel 7 Pro" and record["sdk"] == 34
+
+
+def test_an_anr_and_a_native_crash_carry_the_phone_only():
+    sink = ListSink()
+    client = TestClient(create_app(StubVision(), telemetry=sink))
+    anr = {"name": "anr", "t": 5, "device": "SM-S918N", "sdk": 34}
+    native = {"name": "crash", "t": 6, "error": "native", "device": "SM-S918N", "sdk": 34}
+    assert (
+        client.post("/telemetry/events", json=batch() | {"events": [anr, native]}).status_code
+        == 202
+    )
+    assert [r["name"] for r in sink.records if r["kind"] == "app"] == ["anr", "crash"]
+    bad = anr | {"description": "Input dispatching timed out"}
+    assert client.post("/telemetry/events", json=batch() | {"events": [bad]}).status_code == 422
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"message": "Unable to parse 양파"},  # the exception message is never accepted
+        {"error": "java.lang.Exception: 양파 두부"},  # a message glued to the class name
+        {"where": "Foo.bar(Foo.kt:12)"},  # a raw stack line
+        {"where": "a" * 201},
+        {"device": "홍길동의 폰"},  # a phone name set by its owner
+        {"sdk": 0},
+    ],
+)
+def test_crash_fields_hold_names_only(bad):
+    client = TestClient(create_app(StubVision(), telemetry=ListSink()))
+    body = batch() | {"events": [CRASH | bad]}
+    assert client.post("/telemetry/events", json=body).status_code == 422
 
 
 def test_batches_are_bounded_and_ids_must_be_uuids():

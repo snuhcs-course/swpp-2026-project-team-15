@@ -1,4 +1,5 @@
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
+// Modified with Claude Code (Opus 5.5), 2026-11-26: crash fields in the usage event.
 package com.example.mylittlechef.data.remote
 
 import com.example.mylittlechef.BuildConfig
@@ -143,7 +144,12 @@ data class TelemetryEventDto(
     val status: String? = null,
     val source: String? = null,
     val screen: String? = null,
-    val code: Int? = null
+    val code: Int? = null,
+    val error: String? = null,
+    val cause: String? = null,
+    val where: String? = null,
+    val device: String? = null,
+    val sdk: Int? = null
 )
 
 data class TelemetryBatchDto(

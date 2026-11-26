@@ -1,4 +1,5 @@
 // AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
+// Modified with Claude Code (Opus 5.5), 2026-11-26: crash and ANR events (see CrashReport.kt, ProcessExits.kt).
 package com.example.mylittlechef.domain
 
 import retrofit2.HttpException
@@ -17,7 +18,9 @@ enum class UsageEvent(val wire: String) {
     DISH_OPEN("dish_open"),
     RECIPE_VIEW("recipe_view"),
     REVISE("revise"),
-    PLAYER_ERROR("player_error")
+    PLAYER_ERROR("player_error"),
+    CRASH("crash"),
+    ANR("anr")
 }
 
 data class Usage(
@@ -32,6 +35,12 @@ data class Usage(
     val screen: String? = null,
     /** HTTP status of a failed request; null when the server was not reached. */
     val code: Int? = null,
+    /** Crash only: exception and root cause class names, first app frame, phone model, API level. */
+    val error: String? = null,
+    val cause: String? = null,
+    val where: String? = null,
+    val device: String? = null,
+    val sdk: Int? = null,
     val t: Long = System.currentTimeMillis()
 )
 
