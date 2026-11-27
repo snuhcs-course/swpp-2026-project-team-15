@@ -1,4 +1,5 @@
 // UAT stage 4 assisted by Codex, 2026-11-24; human review pending.
+// Cooking-mode usage events (one call per site) added with Claude Code (Opus 5.5), 2026-11-26; video plays 2026-11-27.
 // UAT stage 3 assisted by Codex, 2026-11-24; human review pending.
 // Photo-led detail layout assisted by Codex, 2026-11-19; human review pending.
 // HE selected-recipe state, consent, cancellation and cooking completion retained.
@@ -9,6 +10,7 @@
 package com.example.mylittlechef.ui.recipe
 
 import com.example.mylittlechef.domain.CookingRun
+import com.example.mylittlechef.domain.CookingTracker
 import com.example.mylittlechef.domain.startCookingRun
 import com.google.gson.Gson
 import android.content.ClipData
@@ -107,7 +109,9 @@ fun RecipeDetailScreen(
     onRetryRecipe: () -> Unit,
     onRevise: () -> Unit,
     onRetryVideos: () -> Unit,
-    onPlayerError: () -> Unit = {}
+    onPlayerError: () -> Unit = {},
+    cookingTracker: CookingTracker? = null,
+    onVideoPlay: () -> Unit = {}
 ) {
     val context=LocalContext.current
     val snackbar=remember {SnackbarHostState()}
@@ -129,6 +133,7 @@ fun RecipeDetailScreen(
     var completionJson by rememberSaveable(dish.id) {mutableStateOf<String?>(null)}
     val gson=remember {Gson()}
     val cooking=remember(cookingJson) {cookingJson?.let {runCatching {gson.fromJson(it,CookingRun::class.java)}.getOrNull()}}
+    LaunchedEffect(cooking?.id) {cooking?.let {cookingTracker?.cookStart(dish.id,it)}}
     val completedRun=remember(completionJson) {completionJson?.let {runCatching {gson.fromJson(it,CookingRun::class.java)}.getOrNull()}}
     var picked by rememberSaveable(dish.id) { mutableStateOf<String?>(null) }
     val listed = (videos as? VideoUiState.Success)?.videos.orEmpty()
@@ -166,8 +171,9 @@ fun RecipeDetailScreen(
                 modifier=Modifier.testTag("cook-original-anyway")) {Text("원본으로 조리")}
         }})
     if(cooking!=null) CookingCards(cooking,
+        onExitAt={cookingTracker?.cookExit(dish.id,cooking,it)},
         onExit={cookingJson=null},
-        onComplete={completionJson=cookingJson;cookingJson=null;showCompletion=true})
+        onComplete={cookingTracker?.cookComplete(dish.id,cooking);completionJson=cookingJson;cookingJson=null;showCompletion=true})
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().navigationBarsPadding()) {
         Column(Modifier.fillMaxSize().verticalScroll(scroll).testTag("recipe-detail-scroll")) {
             // The #24 photo slot: the video the recipe was written from (its still image until it is known).
@@ -178,7 +184,7 @@ fun RecipeDetailScreen(
                     if (failed) Text("이 영상은 앱에서 재생할 수 없어요. YouTube에서 열어 보세요.", Modifier.padding(24.dp),
                         color = Color.White, style = MaterialTheme.typography.bodyMedium)
                     // A new view per video: the player's view is made once per id, and AndroidView keeps its first view.
-                    else key(playingId) { YouTubePlayer(playingId, Modifier.fillMaxWidth().padding(top = 52.dp), onError = { failed = true; onPlayerError() }) }
+                    else key(playingId) { YouTubePlayer(playingId, Modifier.fillMaxWidth().padding(top = 52.dp), onError = { failed = true; onPlayerError() }, onPlay = onVideoPlay) }
                 } else RecipeImage(dish.name, dish.thumbnailUrl, Modifier.fillMaxWidth().height(236.dp))
             }
             Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {

@@ -1,9 +1,13 @@
 // UAT stage 3 assisted by Codex, 2026-11-24; human review pending.
 // AI-assisted with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
 // Usage events (dish_list, dish_open, player_error) added with Claude Code (Opus 5.5), 2026-11-20.
+// Cooking-mode events (cook_start, cook_exit, cook_complete) added with Claude Code (Opus 5.5), 2026-11-26.
+// Video plays and favorites (video_play, favorite_add, favorite_remove) added with Claude Code (Opus 5.5), 2026-11-27.
 // Bookmarks, hide-for-this-list and in-list search for the #24 recipe UI added with Claude Code (Opus 5.5), 2026-11-20.
 package com.example.mylittlechef.viewmodel
 
+import com.example.mylittlechef.domain.CookingTracker
+import com.example.mylittlechef.domain.CookingUsage
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -62,8 +66,9 @@ class DishViewModel(
     private val debounceMillis: Long = 400L,
     recipeApi: DishRecipeApi = DishApiClient.recipeApi,
     private val telemetry: Telemetry = NoTelemetry,
-    private val favoriteStore: FavoriteDishes = InMemoryFavoriteDishes()
-) : ViewModel() {
+    private val favoriteStore: FavoriteDishes = InMemoryFavoriteDishes(),
+    private val cooking: CookingTracker = CookingUsage(telemetry)
+) : ViewModel(), CookingTracker by cooking {
     /** The recipe sheet and the revision of a dish; kept next to the dish list it opens from. */
     val recipes = DishRecipeSession(recipeApi, viewModelScope, telemetry) { lastNames.orEmpty() }
 
@@ -125,8 +130,10 @@ class DishViewModel(
     fun isSuggested(id: String) = rawDishes.any { it.id == id }
 
     fun toggleFavorite(dish: Dish) {
+        val removing = isFavorite(dish.id)
+        telemetry.track(Usage(if (removing) UsageEvent.FAVORITE_REMOVE else UsageEvent.FAVORITE_ADD, dishId = dish.id))
         viewModelScope.launch {
-            if (isFavorite(dish.id)) favoriteStore.remove(dish.id)
+            if (removing) favoriteStore.remove(dish.id)
             else favoriteStore.add(FavoriteDish(dish.id, dish.name, dish.thumbnailUrl))
         }
     }
@@ -178,6 +185,11 @@ class DishViewModel(
     /** The in-app player could not play a video of the dish (usage data only). */
     fun onPlayerError(dishId: String) {
         telemetry.track(Usage(UsageEvent.PLAYER_ERROR, dishId = dishId))
+    }
+
+    /** A video of the dish started playing in the app, once per video (usage data only). */
+    fun onVideoPlay(dishId: String) {
+        telemetry.track(Usage(UsageEvent.VIDEO_PLAY, dishId = dishId))
     }
 
     fun selectSort(value: DishSort) {

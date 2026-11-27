@@ -1,4 +1,5 @@
 // UAT stage 4 assisted by Codex, 2026-11-24; human review pending.
+// Cooking-mode usage events (one call per site) added with Claude Code (Opus 5.5), 2026-11-26.
 package com.example.mylittlechef.ui.recipe
 
 import androidx.compose.animation.*
@@ -20,7 +21,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.mylittlechef.domain.CookingRun
 
 @Composable
-fun CookingCards(run:CookingRun,onExit:()->Unit,onComplete:()->Unit) {
+fun CookingCards(run:CookingRun,onExit:()->Unit,onComplete:()->Unit,onExitAt:(Int)->Unit={}) {
     var index by rememberSaveable(run.id) {mutableIntStateOf(0)}
     var confirmExit by rememberSaveable(run.id) {mutableStateOf(false)}
     val steps=run.recipe.steps
@@ -72,7 +73,7 @@ fun CookingCards(run:CookingRun,onExit:()->Unit,onComplete:()->Unit) {
         }
         if(confirmExit) AlertDialog(onDismissRequest={confirmExit=false},title={Text("조리를 끝낼까요?")},
             text={Text("냉장고 재료는 바뀌지 않아요. 다시 시작하면 첫 단계부터 보여 드려요.")},
-            confirmButton={TextButton(onClick=onExit,modifier=Modifier.testTag("confirm-exit-cooking")) {Text("조리 종료")}},
+            confirmButton={TextButton(onClick={onExitAt(current+1);onExit()},modifier=Modifier.testTag("confirm-exit-cooking")) {Text("조리 종료")}},
             dismissButton={TextButton(onClick={confirmExit=false}) {Text("계속 조리")}})
     }
 }

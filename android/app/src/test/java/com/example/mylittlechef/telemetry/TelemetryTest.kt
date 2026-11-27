@@ -1,4 +1,5 @@
 // AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
+// Modified with Claude Code (Opus 5.5), 2026-11-27: video plays and favorites.
 package com.example.mylittlechef.telemetry
 
 import com.example.mylittlechef.data.local.UsageDataSettings
@@ -153,6 +154,27 @@ class TelemetryTest {
         broken.onFridgeChanged(listOf("두부")); settle()
         assertEquals("error", failing.events.single().status)
         assertEquals(502, failing.events.single().code)
+    }
+
+    @Test fun videoPlaysAndFavoritesAreReportedWithTheDishId() = runTest(dispatcher) {
+        val recorder = Recorder()
+        val ok = DishSuggestResponse("llm", listOf(DishDto("tofu-soup", "두부국", "국", listOf("두부"), emptyList(), "", emptyList(), null)))
+        val vm = DishViewModel(FakeDishApi { ok }, debounceMillis = 0, recipeApi = NoRecipes, telemetry = recorder)
+        vm.onFridgeChanged(listOf("두부")); settle()
+        val dish = vm.dishById("tofu-soup")!!
+        vm.onVideoPlay("tofu-soup")
+        vm.toggleFavorite(dish); settle()
+        vm.toggleFavorite(dish); settle()
+        val tail = recorder.events.drop(1)
+        assertEquals(listOf(UsageEvent.VIDEO_PLAY, UsageEvent.FAVORITE_ADD, UsageEvent.FAVORITE_REMOVE), tail.map { it.event })
+        assertTrue(tail.all { it.dishId == "tofu-soup" })
+    }
+
+    @Test fun aVideoCountsAsPlayedOnlyTheFirstTimeItPlays() {
+        val played = java.util.concurrent.atomic.AtomicBoolean(false)
+        assertEquals(false, com.example.mylittlechef.ui.dish.firstPlay(false, played))
+        assertEquals(true, com.example.mylittlechef.ui.dish.firstPlay(true, played))
+        assertEquals(false, com.example.mylittlechef.ui.dish.firstPlay(true, played))
     }
 
     @Test fun recipeAndRevisionFailuresAreReported() = runTest(dispatcher) {
