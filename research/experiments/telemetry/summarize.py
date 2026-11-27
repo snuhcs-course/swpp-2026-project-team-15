@@ -1,6 +1,7 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
 # Modified with Claude Code (Opus 5.5), 2026-11-26: version and period filters, crashes, scanner
 # requests apart from the app's routes, cooking mode (T4).
+# Modified with Claude Code (Opus 5.5), 2026-11-27: uses per feature, video plays and favorites.
 """Summarise the beta week's usage file (one JSON object per line) into the metrics of README.md.
 
     uv run python ../research/experiments/telemetry/summarize.py usage.jsonl [--out summary.json]
@@ -335,6 +336,35 @@ def usage(app: list[dict[str, Any]], sessions: dict[str, list[dict[str, Any]]]) 
     }
 
 
+# Each feature and the app events that count one use of it.
+FEATURES: dict[str, tuple[str, dict[str, str]]] = {
+    "photo_or_video_recognition": ("recognition", {}),
+    "typed_ingredients": ("fridge_add", {"source": "manual"}),
+    "suggested_ingredients": ("fridge_add", {"source": "suggestion"}),
+    "pantry_staples": ("fridge_add", {"source": "pantry"}),
+    "dish_list": ("dish_list", {}),
+    "dish_opened": ("dish_open", {}),
+    "recipe": ("recipe_view", {}),
+    "recipe_adaptation": ("revise", {}),
+    "cooking_mode": ("cook_start", {}),
+    "video_playback": ("video_play", {}),
+    "favorite_added": ("favorite_add", {}),
+    "favorite_removed": ("favorite_remove", {}),
+}
+
+
+def features(app: list[dict[str, Any]]) -> dict[str, Any]:
+    """Uses of each feature and the installs that used it at least once, out of all installs."""
+    installs = {e["install"] for e in app}
+    out: dict[str, Any] = {"installs": len(installs)}
+    for feature, (name, match) in FEATURES.items():
+        hits = [
+            e for e in app if e["name"] == name and all(e.get(k) == v for k, v in match.items())
+        ]
+        out[feature] = {"uses": len(hits), "installs": len({e["install"] for e in hits})}
+    return out
+
+
 def summarize(records: list[dict[str, Any]]) -> dict[str, Any]:
     app = [r for r in records if r.get("kind") == "app"]
     requests = [r for r in records if r.get("kind") == "request"]
@@ -348,6 +378,7 @@ def summarize(records: list[dict[str, Any]]) -> dict[str, Any]:
         "errors": errors(app, requests),
         "crashes": crashes(app),
         "usage": usage(app, sessions),
+        "features": features(app),
     }
 
 

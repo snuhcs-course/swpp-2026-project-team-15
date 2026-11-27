@@ -1,5 +1,6 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
 # Modified with Claude Code (Opus 5.5), 2026-11-26: filters, crashes, scanner requests, cooking.
+# Modified with Claude Code (Opus 5.5), 2026-11-27: uses per feature.
 """The beta-week summary on synthetic usage records whose answers are known."""
 
 import json
@@ -216,3 +217,28 @@ def test_the_cli_applies_the_filters(tmp_path):
     result = main([str(usage), "--version", "2.0"])
     assert result["records"] == {"app": 0, "request": 2}
     assert result["filters"]["version"] == ["2.0"]
+
+
+def test_uses_per_feature_and_the_installs_that_used_it():
+    def other(session, t, name, **fields):
+        return app(session, t, name, **fields) | {"install": B}
+
+    records = [
+        app("s1", 0, "recognition", status="ok", count=5, duration_ms=900),
+        app("s1", 1, "fridge_add", source="photo", count=4),
+        app("s1", 2, "fridge_add", source="manual", count=1),
+        app("s1", 3, "video_play", dish_id="tofu-soup"),
+        app("s1", 4, "video_play", dish_id="kimchi-stew"),
+        app("s1", 5, "favorite_add", dish_id="tofu-soup"),
+        other("s9", 0, "fridge_add", source="manual", count=2),
+        other("s9", 1, "favorite_add", dish_id="tofu-soup"),
+        other("s9", 2, "favorite_remove", dish_id="tofu-soup"),
+    ]
+    f = summarize(records)["features"]
+    assert f["installs"] == 2
+    assert f["photo_or_video_recognition"] == {"uses": 1, "installs": 1}
+    assert f["typed_ingredients"] == {"uses": 2, "installs": 2}
+    assert f["video_playback"] == {"uses": 2, "installs": 1}
+    assert f["favorite_added"] == {"uses": 2, "installs": 2}
+    assert f["favorite_removed"] == {"uses": 1, "installs": 1}
+    assert f["cooking_mode"] == {"uses": 0, "installs": 0}

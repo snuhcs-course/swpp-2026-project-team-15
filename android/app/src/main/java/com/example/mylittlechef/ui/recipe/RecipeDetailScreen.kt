@@ -1,5 +1,5 @@
 // UAT stage 4 assisted by Codex, 2026-11-24; human review pending.
-// Cooking-mode usage events (one call per site) added with Claude Code (Opus 5.5), 2026-11-26.
+// Cooking-mode usage events (one call per site) added with Claude Code (Opus 5.5), 2026-11-26; video plays 2026-11-27.
 // UAT stage 3 assisted by Codex, 2026-11-24; human review pending.
 // Photo-led detail layout assisted by Codex, 2026-11-19; human review pending.
 // HE selected-recipe state, consent, cancellation and cooking completion retained.
@@ -110,7 +110,8 @@ fun RecipeDetailScreen(
     onRevise: () -> Unit,
     onRetryVideos: () -> Unit,
     onPlayerError: () -> Unit = {},
-    cookingTracker: CookingTracker? = null
+    cookingTracker: CookingTracker? = null,
+    onVideoPlay: () -> Unit = {}
 ) {
     val context=LocalContext.current
     val snackbar=remember {SnackbarHostState()}
@@ -183,7 +184,7 @@ fun RecipeDetailScreen(
                     if (failed) Text("이 영상은 앱에서 재생할 수 없어요. YouTube에서 열어 보세요.", Modifier.padding(24.dp),
                         color = Color.White, style = MaterialTheme.typography.bodyMedium)
                     // A new view per video: the player's view is made once per id, and AndroidView keeps its first view.
-                    else key(playingId) { YouTubePlayer(playingId, Modifier.fillMaxWidth().padding(top = 52.dp), onError = { failed = true; onPlayerError() }) }
+                    else key(playingId) { YouTubePlayer(playingId, Modifier.fillMaxWidth().padding(top = 52.dp), onError = { failed = true; onPlayerError() }, onPlay = onVideoPlay) }
                 } else RecipeImage(dish.name, dish.thumbnailUrl, Modifier.fillMaxWidth().height(236.dp))
             }
             Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {

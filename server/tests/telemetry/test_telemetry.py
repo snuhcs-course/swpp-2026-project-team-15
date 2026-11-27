@@ -1,5 +1,6 @@
 # AI-generated with Claude Code (Opus 5.5), 2026-11-20; reviewed by Jaehyuk Choi.
 # Modified with Claude Code (Opus 5.5), 2026-11-26: crash, ANR and cooking events.
+# Modified with Claude Code (Opus 5.5), 2026-11-27: video plays and favorites.
 """Usage events and request records (research/decisions/adr-007-telemetry.md)."""
 
 import json
@@ -182,6 +183,18 @@ def test_cooking_events_carry_the_recipe_kind_and_steps():
     for bad in ({"recipe": "ai"}, {"steps": 501}, {"steps": -1}):
         body = batch() | {"events": [events[0] | bad]}
         assert client.post("/telemetry/events", json=body).status_code == 422
+
+
+def test_video_plays_and_favorites_carry_a_dish_id_only():
+    sink = ListSink()
+    client = TestClient(create_app(StubVision(), telemetry=sink))
+    names = ["video_play", "favorite_add", "favorite_remove"]
+    events = [{"name": n, "t": i, "dish_id": "kimchi-fried-rice"} for i, n in enumerate(names)]
+    assert client.post("/telemetry/events", json=batch() | {"events": events}).status_code == 202
+    stored = [r for r in sink.records if r["kind"] == "app"]
+    assert [(r["name"], r["dish_id"]) for r in stored] == [(n, "kimchi-fried-rice") for n in names]
+    body = batch() | {"events": [events[0] | {"video_id": "dQw4w9WgXcQ"}]}
+    assert client.post("/telemetry/events", json=body).status_code == 422
 
 
 def test_batches_are_bounded_and_ids_must_be_uuids():

@@ -35,6 +35,9 @@ EventName = Literal[
     "cook_start",  # dish_id, recipe, steps: the cooking cards opened
     "cook_exit",  # dish_id, recipe, count = step reached, steps: "조리 종료" before the end
     "cook_complete",  # dish_id, recipe, steps, duration_ms since cook_start
+    "video_play",  # dish_id: a video of the dish started playing, once per video
+    "favorite_add",  # dish_id
+    "favorite_remove",  # dish_id
 ]
 Status = Literal["ok", "empty", "error", "revised", "refused", "failed"]
 Source = Literal["photo", "manual", "suggestion", "pantry"]

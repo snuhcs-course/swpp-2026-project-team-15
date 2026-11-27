@@ -24,7 +24,10 @@ enum class UsageEvent(val wire: String) {
     ANR("anr"),
     COOK_START("cook_start"),
     COOK_EXIT("cook_exit"),
-    COOK_COMPLETE("cook_complete")
+    COOK_COMPLETE("cook_complete"),
+    VIDEO_PLAY("video_play"),
+    FAVORITE_ADD("favorite_add"),
+    FAVORITE_REMOVE("favorite_remove")
 }
 
 data class Usage(

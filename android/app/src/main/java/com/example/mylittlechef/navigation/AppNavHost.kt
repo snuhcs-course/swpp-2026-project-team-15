@@ -310,7 +310,8 @@ fun AppNavHost(
                 onRevise = { dishes.recipes.requestRevision(id) },
                 onRetryVideos = { dishes.requestVideos(dish) },
                 onPlayerError = { dishes.onPlayerError(id) },
-                cookingTracker = dishes
+                cookingTracker = dishes,
+                onVideoPlay = { dishes.onVideoPlay(id) }
             )
         }
 
