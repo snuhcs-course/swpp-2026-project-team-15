@@ -113,17 +113,64 @@ and telemetry. They contain no Judge prompt, score, latency, token, or cost fiel
 owns selection of rubric-relevant fields and construction of its minimized model payload. It should
 store the source observation identity so a Judge result remains auditable.
 
+From the repository root, preview the exact minimized payload for one eligible observation without
+constructing a model or reading a credential:
+
+```bash
+PYTHONPATH=server:research uv run --project server --locked python \
+  -m experiments.revision_evaluation.judge \
+  research/experiments/revision_evaluation/fixtures/contract-v1/observations/revised-after-reask-429__r01/attempt-001.json
+```
+
+Add `--allow-live-api --model <model-id>` to make one logical Judge call through the existing
+OpenRouter `DishLLM` client. After validating the observation, live mode automatically loads `server/.env`
+using the module's location, regardless of the working directory. Existing environment variables
+take precedence (`override=False`). Set `OPENROUTER_API_KEY` in that file or the environment;
+a missing file is allowed, but a missing or blank final key fails before model construction.
+Offline preview does not load the file. Model selection uses `--model` or the existing default;
+`DISH_LLM_MODEL` does not select the Judge model. This research command uses the server dev
+environment, which already includes `python-dotenv`.
+
+For example, with `OPENROUTER_API_KEY` already in `server/.env`, run from the repository root:
+
+```bash
+PYTHONPATH=server:research uv run --project server --locked python \
+  -m experiments.revision_evaluation.judge \
+  research/experiments/revision_evaluation/fixtures/contract-v1/observations/revised-after-reask-429__r01/attempt-001.json \
+  --allow-live-api
+```
+
+This command can incur provider charges and sends the minimized recipe payload to the provider.
+It prints one judgment linked to the exact source-byte hash, rubric, prompt and model, and does not
+modify the observation or publish an aggregate pass/fail result. The client may retry HTTP attempts
+inside that one logical call according to its existing policy.
+Output rejection includes the fixed local rule and schema field/error types, without echoing
+the model response, unknown field names, or credential values.
+
+Results use `revision-evaluation-judgment/v2` for compact criterion output:
+score 2 contains only `state` and `score`, even if the model supplies valid reason/evidence
+(including an empty evidence list); these extra explanations are accepted and omitted.
+Scores 0/1 include a brief deduction `reason`
+and concrete `evidence`. `deferred` retains a null score and records only missing information
+in `reason`; `not_applicable` retains a null score and may include a short no-subject reason.
+Its reason may also be null in the model response, in which case the CLI omits it.
+Neither non-scored state includes evidence. The strict provider schema requires null values
+for unused explanation fields; the CLI omits those fields after validation. Earlier saved v1
+results are not rewritten. The rubric score boundaries remain unchanged; prompt hashes
+distinguish the updated instructions and provider schema.
+
 ## Regeneration and validation
 
 ### Offline command entry point
 
-From the repository root in PowerShell, using the existing server environment:
+From the repository root, using the existing server environment:
 
-```powershell
-$env:PYTHONPATH = "$PWD\server;$PWD\research"
-.\server\.venv\Scripts\python.exe -m experiments.revision_evaluation
-.\server\.venv\Scripts\python.exe -m experiments.revision_evaluation --cases R02a R01a --repetitions 3
-.\server\.venv\Scripts\python.exe -m experiments.revision_evaluation --validate-fixtures
+```bash
+PYTHONPATH=server:research uv run --project server --locked python -m experiments.revision_evaluation
+PYTHONPATH=server:research uv run --project server --locked python \
+  -m experiments.revision_evaluation --cases R02a R01a --repetitions 3
+PYTHONPATH=server:research uv run --project server --locked python \
+  -m experiments.revision_evaluation --validate-fixtures
 ```
 
 Default invocation validates the committed contract bundle and prints a dry-run plan
@@ -153,9 +200,13 @@ missing rather than being invented as zero. No credential is printed.
 The following commands can incur provider charges. Set the key in the process
 environment beforehand; the runner does not discover or load `.env` files.
 
-```powershell
-.\server\.venv\Scripts\python.exe -m experiments.revision_evaluation --allow-live-api --max-http-attempts 6 --run-id revision-demo --cases R02a --repetitions 1
-.\server\.venv\Scripts\python.exe -m experiments.revision_evaluation --resume data/dish-revision-evaluation/revision-demo --allow-live-api
+```bash
+PYTHONPATH=server:research uv run --project server --locked python \
+  -m experiments.revision_evaluation --allow-live-api --max-http-attempts 6 \
+  --run-id revision-demo --cases R02a --repetitions 1
+PYTHONPATH=server:research uv run --project server --locked python \
+  -m experiments.revision_evaluation \
+  --resume data/dish-revision-evaluation/revision-demo --allow-live-api
 ```
 
 A new run writes beneath `--output-parent` (default: repository-relative
@@ -245,8 +296,10 @@ implemented as dedicated options; use the existing test/API commands below inste
 From the repository root, run the end-to-end CLI tests with disposable local Git
 inputs and `httpx.MockTransport`:
 
-```powershell
-.\server\.venv\Scripts\python.exe -m pytest server/tests/experiments/revision_evaluation/test_cli_execution.py -q -p no:cacheprovider
+```bash
+uv run --project server --locked python -m pytest \
+  server/tests/experiments/revision_evaluation/test_cli_execution.py \
+  -q -p no:cacheprovider
 ```
 
 These tests replace only the HTTP transport and source/configuration location;
@@ -259,13 +312,14 @@ and artifact behavior, not culinary quality or live provider compatibility.
 
 ### Offline deterministic rescore preview
 
-After setting `PYTHONPATH` as above, this PowerShell command prints a fresh JSON
+This Bash command prints a fresh JSON
 summary using the current deterministic evaluator and the stored raw observations.
 It does not construct a model, read an API key, run production checks or invoke a
 Judge. The committed bundle provides a reproducible example:
 
-```powershell
-@'
+```bash
+PYTHONPATH=server:research uv run --project server --locked python - \
+  research/experiments/revision_evaluation/fixtures/contract-v1 <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -282,7 +336,7 @@ rescored = {
 }
 summary = summarize_run(metadata, rescored, generated_at=stored.generated_at)
 print(json.dumps(summary.model_dump(by_alias=True), ensure_ascii=True, indent=2))
-'@ | .\server\.venv\Scripts\python.exe - research/experiments/revision_evaluation/fixtures/contract-v1
+PY
 ```
 
 Replace the final path with an existing self-contained run directory containing
@@ -305,10 +359,11 @@ recorded confirmed subtotal is retained.
 
 ### Contract asset generation
 
-From `research/`:
+From the repository root:
 
-```powershell
-..\server\.venv\Scripts\python.exe -m experiments.revision_evaluation.generate_contract
+```bash
+PYTHONPATH=server:research uv run --project server --locked python \
+  -m experiments.revision_evaluation.generate_contract
 ```
 
 Generation is deterministic. Contract tests compare the generated in-memory values with every
