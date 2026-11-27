@@ -1,0 +1,340 @@
+{
+  "artifact_schema": "revision-evaluation-observation/v1",
+  "case_id": "check-failed",
+  "checks": [
+    {
+      "code": "unexplained_change",
+      "message": "A dropped ingredient has no reason",
+      "phase": "initial",
+      "result": "violation"
+    },
+    {
+      "code": "unexplained_change",
+      "message": "A dropped ingredient has no reason",
+      "phase": "final",
+      "result": "violation"
+    }
+  ],
+  "deterministic_evaluation": {
+    "answers": [
+      {
+        "issues": [],
+        "logical_call_index": 1,
+        "reference_valid": true,
+        "structure_valid": true
+      },
+      {
+        "issues": [],
+        "logical_call_index": 2,
+        "reference_valid": true,
+        "structure_valid": true
+      }
+    ],
+    "deleted_ingredient_explanation": {
+      "denominator": 1,
+      "numerator": 0,
+      "value": 0.0
+    }
+  },
+  "execution": {
+    "checkpoint_revision": 1,
+    "checkpoint_stage": "terminal",
+    "final_service_response": {
+      "availability": [
+        "owned",
+        "unavailable",
+        "assumed"
+      ],
+      "changes": [],
+      "dish_id": "fixture-rice",
+      "error": {
+        "code": "unexplained_change",
+        "message": "바꾼 레시피가 규칙을 어겨서 보여 드릴 수 없어요."
+      },
+      "notice": "AI가 만든 제안이에요. 맛과 알레르기는 직접 확인해 주세요.",
+      "original": {
+        "dish_id": "fixture-rice",
+        "ingredients": [
+          {
+            "amount": "1공기",
+            "name": "밥",
+            "role": "main"
+          },
+          {
+            "amount": "1/4대",
+            "name": "대파",
+            "role": "secondary"
+          },
+          {
+            "amount": "1꼬집",
+            "name": "소금",
+            "role": "seasoning"
+          }
+        ],
+        "servings": 1,
+        "source": "contract_fixture",
+        "steps": [
+          {
+            "n": 1,
+            "text": "대파를 썬다."
+          },
+          {
+            "n": 2,
+            "text": "밥과 함께 볶는다."
+          }
+        ],
+        "tips": []
+      },
+      "refusal_reason": null,
+      "revised": null,
+      "status": "failed"
+    },
+    "finished_at": "2026-11-20T00:00:00Z",
+    "outcome_source": "production_check",
+    "sanitized_error": null,
+    "started_at": "2026-11-20T00:00:00Z",
+    "state": "completed",
+    "terminal_outcome": "check_failed"
+  },
+  "execution_attempt": 1,
+  "input": {
+    "availability": [
+      "owned",
+      "unavailable",
+      "assumed"
+    ],
+    "dish_id": "fixture-rice",
+    "dish_name": "Fixture Rice",
+    "effective_assumed_staples": [
+      "소금"
+    ],
+    "original_recipe": {
+      "dish_id": "fixture-rice",
+      "ingredients": [
+        {
+          "amount": "1공기",
+          "name": "밥",
+          "role": "main"
+        },
+        {
+          "amount": "1/4대",
+          "name": "대파",
+          "role": "secondary"
+        },
+        {
+          "amount": "1꼬집",
+          "name": "소금",
+          "role": "seasoning"
+        }
+      ],
+      "servings": 1,
+      "source": "contract_fixture",
+      "steps": [
+        {
+          "n": 1,
+          "text": "대파를 썬다."
+        },
+        {
+          "n": 2,
+          "text": "밥과 함께 볶는다."
+        }
+      ],
+      "tips": []
+    },
+    "supplied_ingredients": [
+      "밥"
+    ]
+  },
+  "model_calls": [
+    {
+      "decoded_answer": {
+        "can_revise": true,
+        "changes": [],
+        "ingredients": [
+          {
+            "amount": "1공기",
+            "name": "밥"
+          },
+          {
+            "amount": "1꼬집",
+            "name": "소금"
+          }
+        ],
+        "refusal_reason": "",
+        "servings": 1,
+        "steps": [
+          "밥에 소금을 넣고 볶는다."
+        ],
+        "tips": []
+      },
+      "http_attempts": [
+        {
+          "cost_usd": {
+            "applicability": "value",
+            "confirmed_subtotal": 0.0001,
+            "price_inputs": null,
+            "provenance": "measured",
+            "value": 0.0001
+          },
+          "counts_against_budget": true,
+          "delivery": "confirmed",
+          "finish_reason": "stop",
+          "index": 1,
+          "model": "fixture/model",
+          "prepared_at": "2026-11-20T00:00:00Z",
+          "provider_round_trip_s": 0.25,
+          "request_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "safe_response_text": "{\"can_revise\": true, \"refusal_reason\": \"\", \"servings\": 1, \"ingredients\": [{\"name\": \"밥\", \"amount\": \"1공기\"}, {\"name\": \"소금\", \"amount\": \"1꼬집\"}], \"steps\": [\"밥에 소금을 넣고 볶는다.\"], \"tips\": [], \"changes\": []}",
+          "state": "response_received",
+          "status_code": 200,
+          "usage": {
+            "cached_tokens": 0,
+            "input_tokens": 10,
+            "output_tokens": 20,
+            "reasoning_tokens": 0
+          }
+        }
+      ],
+      "index": 1,
+      "parsing": {
+        "attempted": true,
+        "error": null,
+        "succeeded": true
+      },
+      "purpose": "initial",
+      "request": {
+        "name": "revision_initial",
+        "schema": {
+          "type": "object"
+        },
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "system": "Return the requested recipe revision as JSON.",
+        "user": "Fixture initial request."
+      }
+    },
+    {
+      "decoded_answer": {
+        "can_revise": true,
+        "changes": [],
+        "ingredients": [
+          {
+            "amount": "1공기",
+            "name": "밥"
+          },
+          {
+            "amount": "1꼬집",
+            "name": "소금"
+          }
+        ],
+        "refusal_reason": "",
+        "servings": 1,
+        "steps": [
+          "밥에 소금을 넣고 볶는다."
+        ],
+        "tips": []
+      },
+      "http_attempts": [
+        {
+          "cost_usd": {
+            "applicability": "value",
+            "confirmed_subtotal": 0.0001,
+            "price_inputs": null,
+            "provenance": "measured",
+            "value": 0.0001
+          },
+          "counts_against_budget": true,
+          "delivery": "confirmed",
+          "finish_reason": "stop",
+          "index": 1,
+          "model": "fixture/model",
+          "prepared_at": "2026-11-20T00:00:00Z",
+          "provider_round_trip_s": 0.25,
+          "request_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "safe_response_text": "{\"can_revise\": true, \"refusal_reason\": \"\", \"servings\": 1, \"ingredients\": [{\"name\": \"밥\", \"amount\": \"1공기\"}, {\"name\": \"소금\", \"amount\": \"1꼬집\"}], \"steps\": [\"밥에 소금을 넣고 볶는다.\"], \"tips\": [], \"changes\": []}",
+          "state": "response_received",
+          "status_code": 200,
+          "usage": {
+            "cached_tokens": 0,
+            "input_tokens": 10,
+            "output_tokens": 20,
+            "reasoning_tokens": 0
+          }
+        }
+      ],
+      "index": 2,
+      "parsing": {
+        "attempted": true,
+        "error": null,
+        "succeeded": true
+      },
+      "purpose": "reask",
+      "request": {
+        "name": "revision_reask",
+        "schema": {
+          "type": "object"
+        },
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "system": "Return the requested recipe revision as JSON.",
+        "user": "Fixture reask request."
+      }
+    }
+  ],
+  "repetition": 1,
+  "run_id": "contract-v1-fixture",
+  "telemetry": {
+    "checkpoint_persistence_s": {
+      "applicability": "value",
+      "value": 0.02
+    },
+    "cost_usd": {
+      "applicability": "value",
+      "confirmed_subtotal": 0.0002,
+      "price_inputs": null,
+      "provenance": "measured",
+      "value": 0.0002
+    },
+    "http_429_responses": 0,
+    "http_429_retries": 0,
+    "http_attempts": 2,
+    "logical_calls": 2,
+    "non_http_remainder_s": {
+      "applicability": "value",
+      "value": 0.3
+    },
+    "observed_wall_s": {
+      "applicability": "value",
+      "value": 0.82
+    },
+    "provider_round_trip_s": {
+      "applicability": "value",
+      "value": 0.5
+    },
+    "reasks": 1,
+    "revision_s": {
+      "applicability": "value",
+      "value": 0.8
+    },
+    "tokens": {
+      "cached_tokens": {
+        "applicability": "value",
+        "confirmed_subtotal": 0,
+        "value": 0
+      },
+      "input_tokens": {
+        "applicability": "value",
+        "confirmed_subtotal": 20,
+        "value": 20
+      },
+      "output_tokens": {
+        "applicability": "value",
+        "confirmed_subtotal": 40,
+        "value": 40
+      },
+      "reasoning_tokens": {
+        "applicability": "value",
+        "confirmed_subtotal": 0,
+        "value": 0
+      }
+    }
+  }
+}

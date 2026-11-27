@@ -1,4 +1,7 @@
 # AI-generated with Claude Code (Sonnet 5.5), 2026-11-16; reviewed by Jaehyuk Choi.
+
+# Modified by Codex (GPT-6.1 Sol), 2026-11-21; reviewed by Soohyun An
+# Changes: inject clock to exclude checkpoint overhead
 """One bounded OpenRouter text call with a strict JSON schema; no secret-bearing errors."""
 
 import json
@@ -40,7 +43,8 @@ class DishLLM:
         self._api_key = api_key
         self._model = model
         self._retry_waits = retry_waits
-        self._clock = clock  # handed in so a test can check the time each attempt gets
+        # Research tracing can exclude checkpoint I/O from the shared policy clock.
+        self._clock = clock
 
     def complete(
         self, system: str, user: str, name: str, schema: dict, max_tokens: int | None = None

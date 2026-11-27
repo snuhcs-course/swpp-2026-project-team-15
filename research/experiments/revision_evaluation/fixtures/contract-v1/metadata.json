@@ -1,0 +1,577 @@
+{
+  "artifact_schema": "revision-evaluation-metadata/v1",
+  "code_identity": {
+    "commit": "cccccccccccccccccccccccccccccccccccccccc",
+    "dirty": false,
+    "tree": "dddddddddddddddddddddddddddddddddddddddd"
+  },
+  "compatibility_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "created_at": "2026-11-20T00:00:00Z",
+  "effective_assumed_staples": [
+    "소금"
+  ],
+  "http_attempt_budget": {
+    "consumed": 10,
+    "maximum": 20,
+    "remaining": 10
+  },
+  "identities": {
+    "fixture_sha256": {
+      "contract-v1": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "input_sha256": {
+      "api-error": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "check-failed": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "refused-prescreen": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "response-error-json": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "response-error-structure": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "resumed": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "revised-after-reask-429": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "unchanged": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "prompt_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "response_schema_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  },
+  "model": {
+    "id": "fixture/model",
+    "temperature": 0
+  },
+  "observation_schema": "revision-evaluation-observation/v1",
+  "plan": [
+    {
+      "case_id": "unchanged",
+      "cumulative_telemetry": {
+        "checkpoint_persistence_s": {
+          "applicability": "value",
+          "value": 0.02
+        },
+        "cost_usd": {
+          "applicability": "not_applicable",
+          "confirmed_subtotal": 0,
+          "price_inputs": null,
+          "provenance": "not_applicable",
+          "value": null
+        },
+        "http_429_responses": 0,
+        "http_429_retries": 0,
+        "http_attempts": 0,
+        "logical_calls": 0,
+        "non_http_remainder_s": {
+          "applicability": "unavailable",
+          "value": null
+        },
+        "observed_wall_s": {
+          "applicability": "value",
+          "value": 0.82
+        },
+        "provider_round_trip_s": {
+          "applicability": "not_applicable",
+          "value": null
+        },
+        "reasks": 0,
+        "revision_s": {
+          "applicability": "value",
+          "value": 0.8
+        },
+        "tokens": {
+          "cached_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "input_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "output_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "reasoning_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          }
+        }
+      },
+      "observation_refs": [
+        "observations/unchanged__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "revised-after-reask-429",
+      "cumulative_telemetry": {
+        "checkpoint_persistence_s": {
+          "applicability": "value",
+          "value": 0.02
+        },
+        "cost_usd": {
+          "applicability": "unavailable",
+          "confirmed_subtotal": 0.0002,
+          "price_inputs": null,
+          "provenance": "missing",
+          "value": null
+        },
+        "http_429_responses": 1,
+        "http_429_retries": 1,
+        "http_attempts": 3,
+        "logical_calls": 2,
+        "non_http_remainder_s": {
+          "applicability": "value",
+          "value": 0.3
+        },
+        "observed_wall_s": {
+          "applicability": "value",
+          "value": 0.82
+        },
+        "provider_round_trip_s": {
+          "applicability": "value",
+          "value": 0.75
+        },
+        "reasks": 1,
+        "revision_s": {
+          "applicability": "value",
+          "value": 0.8
+        },
+        "tokens": {
+          "cached_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "input_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 20,
+            "value": null
+          },
+          "output_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 40,
+            "value": null
+          },
+          "reasoning_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          }
+        }
+      },
+      "observation_refs": [
+        "observations/revised-after-reask-429__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "refused-prescreen",
+      "cumulative_telemetry": {
+        "checkpoint_persistence_s": {
+          "applicability": "value",
+          "value": 0.02
+        },
+        "cost_usd": {
+          "applicability": "not_applicable",
+          "confirmed_subtotal": 0,
+          "price_inputs": null,
+          "provenance": "not_applicable",
+          "value": null
+        },
+        "http_429_responses": 0,
+        "http_429_retries": 0,
+        "http_attempts": 0,
+        "logical_calls": 0,
+        "non_http_remainder_s": {
+          "applicability": "unavailable",
+          "value": null
+        },
+        "observed_wall_s": {
+          "applicability": "value",
+          "value": 0.82
+        },
+        "provider_round_trip_s": {
+          "applicability": "not_applicable",
+          "value": null
+        },
+        "reasks": 0,
+        "revision_s": {
+          "applicability": "value",
+          "value": 0.8
+        },
+        "tokens": {
+          "cached_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "input_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "output_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "reasoning_tokens": {
+            "applicability": "not_applicable",
+            "confirmed_subtotal": 0,
+            "value": null
+          }
+        }
+      },
+      "observation_refs": [
+        "observations/refused-prescreen__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "check-failed",
+      "cumulative_telemetry": {
+        "checkpoint_persistence_s": {
+          "applicability": "value",
+          "value": 0.02
+        },
+        "cost_usd": {
+          "applicability": "value",
+          "confirmed_subtotal": 0.0002,
+          "price_inputs": null,
+          "provenance": "measured",
+          "value": 0.0002
+        },
+        "http_429_responses": 0,
+        "http_429_retries": 0,
+        "http_attempts": 2,
+        "logical_calls": 2,
+        "non_http_remainder_s": {
+          "applicability": "value",
+          "value": 0.3
+        },
+        "observed_wall_s": {
+          "applicability": "value",
+          "value": 0.82
+        },
+        "provider_round_trip_s": {
+          "applicability": "value",
+          "value": 0.5
+        },
+        "reasks": 1,
+        "revision_s": {
+          "applicability": "value",
+          "value": 0.8
+        },
+        "tokens": {
+          "cached_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 0,
+            "value": 0
+          },
+          "input_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 20,
+            "value": 20
+          },
+          "output_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 40,
+            "value": 40
+          },
+          "reasoning_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 0,
+            "value": 0
+          }
+        }
+      },
+      "observation_refs": [
+        "observations/check-failed__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "response-error-json",
+      "cumulative_telemetry": {
+        "checkpoint_persistence_s": {
+          "applicability": "value",
+          "value": 0.02
+        },
+        "cost_usd": {
+          "applicability": "value",
+          "confirmed_subtotal": 0.0001,
+          "price_inputs": null,
+          "provenance": "measured",
+          "value": 0.0001
+        },
+        "http_429_responses": 0,
+        "http_429_retries": 0,
+        "http_attempts": 1,
+        "logical_calls": 1,
+        "non_http_remainder_s": {
+          "applicability": "value",
+          "value": 0.3
+        },
+        "observed_wall_s": {
+          "applicability": "value",
+          "value": 0.82
+        },
+        "provider_round_trip_s": {
+          "applicability": "value",
+          "value": 0.25
+        },
+        "reasks": 0,
+        "revision_s": {
+          "applicability": "value",
+          "value": 0.8
+        },
+        "tokens": {
+          "cached_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 0,
+            "value": 0
+          },
+          "input_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 10,
+            "value": 10
+          },
+          "output_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 20,
+            "value": 20
+          },
+          "reasoning_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 0,
+            "value": 0
+          }
+        }
+      },
+      "observation_refs": [
+        "observations/response-error-json__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "response-error-structure",
+      "cumulative_telemetry": {
+        "checkpoint_persistence_s": {
+          "applicability": "value",
+          "value": 0.02
+        },
+        "cost_usd": {
+          "applicability": "value",
+          "confirmed_subtotal": 0.0001,
+          "price_inputs": null,
+          "provenance": "measured",
+          "value": 0.0001
+        },
+        "http_429_responses": 0,
+        "http_429_retries": 0,
+        "http_attempts": 1,
+        "logical_calls": 1,
+        "non_http_remainder_s": {
+          "applicability": "value",
+          "value": 0.3
+        },
+        "observed_wall_s": {
+          "applicability": "value",
+          "value": 0.82
+        },
+        "provider_round_trip_s": {
+          "applicability": "value",
+          "value": 0.25
+        },
+        "reasks": 0,
+        "revision_s": {
+          "applicability": "value",
+          "value": 0.8
+        },
+        "tokens": {
+          "cached_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 0,
+            "value": 0
+          },
+          "input_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 10,
+            "value": 10
+          },
+          "output_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 20,
+            "value": 20
+          },
+          "reasoning_tokens": {
+            "applicability": "value",
+            "confirmed_subtotal": 0,
+            "value": 0
+          }
+        }
+      },
+      "observation_refs": [
+        "observations/response-error-structure__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "api-error",
+      "cumulative_telemetry": {
+        "checkpoint_persistence_s": {
+          "applicability": "value",
+          "value": 0.02
+        },
+        "cost_usd": {
+          "applicability": "unavailable",
+          "confirmed_subtotal": 0,
+          "price_inputs": null,
+          "provenance": "missing",
+          "value": null
+        },
+        "http_429_responses": 0,
+        "http_429_retries": 0,
+        "http_attempts": 1,
+        "logical_calls": 1,
+        "non_http_remainder_s": {
+          "applicability": "unavailable",
+          "value": null
+        },
+        "observed_wall_s": {
+          "applicability": "value",
+          "value": 0.82
+        },
+        "provider_round_trip_s": {
+          "applicability": "value",
+          "value": 0.25
+        },
+        "reasks": 0,
+        "revision_s": {
+          "applicability": "value",
+          "value": 0.8
+        },
+        "tokens": {
+          "cached_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "input_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "output_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "reasoning_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          }
+        }
+      },
+      "observation_refs": [
+        "observations/api-error__r01/attempt-001.json"
+      ],
+      "repetition": 1,
+      "selected_completed_attempt": 1,
+      "state": "completed"
+    },
+    {
+      "case_id": "resumed",
+      "cumulative_telemetry": {
+        "checkpoint_persistence_s": {
+          "applicability": "value",
+          "value": 0.04
+        },
+        "cost_usd": {
+          "applicability": "unavailable",
+          "confirmed_subtotal": 0.0001,
+          "price_inputs": null,
+          "provenance": "missing",
+          "value": null
+        },
+        "http_429_responses": 0,
+        "http_429_retries": 0,
+        "http_attempts": 2,
+        "logical_calls": 2,
+        "non_http_remainder_s": {
+          "applicability": "unavailable",
+          "value": null
+        },
+        "observed_wall_s": {
+          "applicability": "unavailable",
+          "value": null
+        },
+        "provider_round_trip_s": {
+          "applicability": "value",
+          "value": 0.25
+        },
+        "reasks": 0,
+        "revision_s": {
+          "applicability": "unavailable",
+          "value": null
+        },
+        "tokens": {
+          "cached_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          },
+          "input_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 10,
+            "value": null
+          },
+          "output_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 20,
+            "value": null
+          },
+          "reasoning_tokens": {
+            "applicability": "unavailable",
+            "confirmed_subtotal": 0,
+            "value": null
+          }
+        }
+      },
+      "observation_refs": [
+        "observations/resumed__r03/attempt-001.json",
+        "observations/resumed__r03/attempt-002.json"
+      ],
+      "repetition": 3,
+      "selected_completed_attempt": 2,
+      "state": "completed"
+    }
+  ],
+  "pricing": {
+    "input_per_million_usd": 0.1,
+    "output_per_million_usd": 0.4,
+    "source": "fixture"
+  },
+  "resume_history": [
+    {
+      "from_execution_attempt": 1,
+      "resumed_at": "2026-11-20T00:00:00Z"
+    }
+  ],
+  "run_id": "contract-v1-fixture",
+  "state": "completed",
+  "updated_at": "2026-11-20T00:00:00Z"
+}

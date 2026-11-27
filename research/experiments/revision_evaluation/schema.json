@@ -1,0 +1,1699 @@
+{
+  "$defs": {
+    "AnswerEvaluation": {
+      "additionalProperties": false,
+      "properties": {
+        "issues": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Issues",
+          "type": "array"
+        },
+        "logical_call_index": {
+          "minimum": 1,
+          "title": "Logical Call Index",
+          "type": "integer"
+        },
+        "reference_valid": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reference Valid"
+        },
+        "structure_valid": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Structure Valid"
+        }
+      },
+      "required": [
+        "logical_call_index",
+        "structure_valid",
+        "reference_valid",
+        "issues"
+      ],
+      "title": "AnswerEvaluation",
+      "type": "object"
+    },
+    "CaseSummary": {
+      "additionalProperties": false,
+      "description": "Describe one case's planned repetitions and selected terminal results.",
+      "properties": {
+        "all_planned_completed": {
+          "title": "All Planned Completed",
+          "type": "boolean"
+        },
+        "case_id": {
+          "title": "Case Id",
+          "type": "string"
+        },
+        "completed_repetitions": {
+          "minimum": 0,
+          "title": "Completed Repetitions",
+          "type": "integer"
+        },
+        "outcomes": {
+          "$ref": "#/$defs/OutcomeCounts"
+        },
+        "planned_repetitions": {
+          "minimum": 1,
+          "title": "Planned Repetitions",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "case_id",
+        "planned_repetitions",
+        "completed_repetitions",
+        "all_planned_completed",
+        "outcomes"
+      ],
+      "title": "CaseSummary",
+      "type": "object"
+    },
+    "CheckEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Code"
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Message"
+        },
+        "phase": {
+          "enum": [
+            "initial",
+            "final"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "result": {
+          "enum": [
+            "passed",
+            "violation",
+            "refusal_needed",
+            "not_run"
+          ],
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "phase",
+        "result",
+        "code",
+        "message"
+      ],
+      "title": "CheckEvent",
+      "type": "object"
+    },
+    "CodeIdentity": {
+      "additionalProperties": false,
+      "description": "Record both the checked-out commit and working-tree identity used by a run.",
+      "properties": {
+        "commit": {
+          "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$",
+          "title": "Commit",
+          "type": "string"
+        },
+        "dirty": {
+          "title": "Dirty",
+          "type": "boolean"
+        },
+        "tree": {
+          "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$",
+          "title": "Tree",
+          "type": "string"
+        }
+      },
+      "required": [
+        "commit",
+        "tree",
+        "dirty"
+      ],
+      "title": "CodeIdentity",
+      "type": "object"
+    },
+    "Cost": {
+      "additionalProperties": false,
+      "description": "Preserve whether a cost was observed, estimated, missing, or inapplicable.",
+      "properties": {
+        "applicability": {
+          "enum": [
+            "value",
+            "unavailable",
+            "not_applicable"
+          ],
+          "title": "Applicability",
+          "type": "string"
+        },
+        "confirmed_subtotal": {
+          "minimum": 0,
+          "title": "Confirmed Subtotal",
+          "type": "number"
+        },
+        "price_inputs": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "minimum": 0,
+                "type": "number"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Price Inputs"
+        },
+        "provenance": {
+          "enum": [
+            "measured",
+            "estimated",
+            "missing",
+            "not_applicable"
+          ],
+          "title": "Provenance",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "applicability",
+        "value",
+        "confirmed_subtotal",
+        "provenance",
+        "price_inputs"
+      ],
+      "title": "Cost",
+      "type": "object"
+    },
+    "DeterministicEvaluation": {
+      "additionalProperties": false,
+      "properties": {
+        "answers": {
+          "items": {
+            "$ref": "#/$defs/AnswerEvaluation"
+          },
+          "title": "Answers",
+          "type": "array"
+        },
+        "deleted_ingredient_explanation": {
+          "$ref": "#/$defs/Rate"
+        }
+      },
+      "required": [
+        "answers",
+        "deleted_ingredient_explanation"
+      ],
+      "title": "DeterministicEvaluation",
+      "type": "object"
+    },
+    "Execution": {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint_revision": {
+          "minimum": 1,
+          "title": "Checkpoint Revision",
+          "type": "integer"
+        },
+        "checkpoint_stage": {
+          "enum": [
+            "attempt_created",
+            "request_prepared",
+            "response_received",
+            "json_parsed",
+            "check_completed",
+            "terminal"
+          ],
+          "title": "Checkpoint Stage",
+          "type": "string"
+        },
+        "final_service_response": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Final Service Response"
+        },
+        "finished_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Finished At"
+        },
+        "outcome_source": {
+          "anyOf": [
+            {
+              "enum": [
+                "no_change",
+                "prescreen",
+                "model",
+                "production_check",
+                "response",
+                "transport"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Outcome Source"
+        },
+        "sanitized_error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Sanitized Error"
+        },
+        "started_at": {
+          "title": "Started At",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "running",
+            "completed",
+            "interrupted"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "terminal_outcome": {
+          "anyOf": [
+            {
+              "enum": [
+                "unchanged",
+                "revised",
+                "refused",
+                "check_failed",
+                "response_error",
+                "api_error"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Terminal Outcome"
+        }
+      },
+      "required": [
+        "state",
+        "checkpoint_revision",
+        "checkpoint_stage",
+        "started_at",
+        "finished_at",
+        "terminal_outcome",
+        "outcome_source",
+        "final_service_response",
+        "sanitized_error"
+      ],
+      "title": "Execution",
+      "type": "object"
+    },
+    "HttpAttempt": {
+      "additionalProperties": false,
+      "properties": {
+        "cost_usd": {
+          "$ref": "#/$defs/Cost"
+        },
+        "counts_against_budget": {
+          "const": true,
+          "title": "Counts Against Budget",
+          "type": "boolean"
+        },
+        "delivery": {
+          "enum": [
+            "unknown",
+            "confirmed",
+            "failed"
+          ],
+          "title": "Delivery",
+          "type": "string"
+        },
+        "finish_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Finish Reason"
+        },
+        "index": {
+          "minimum": 1,
+          "title": "Index",
+          "type": "integer"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "prepared_at": {
+          "title": "Prepared At",
+          "type": "string"
+        },
+        "provider_round_trip_s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Provider Round Trip S"
+        },
+        "request_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Request Sha256",
+          "type": "string"
+        },
+        "safe_response_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Safe Response Text"
+        },
+        "state": {
+          "enum": [
+            "request_prepared",
+            "response_received",
+            "transport_error"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "status_code": {
+          "anyOf": [
+            {
+              "maximum": 599,
+              "minimum": 100,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status Code"
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Usage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "index",
+        "state",
+        "prepared_at",
+        "request_sha256",
+        "model",
+        "counts_against_budget",
+        "delivery",
+        "provider_round_trip_s",
+        "finish_reason",
+        "safe_response_text",
+        "usage",
+        "cost_usd"
+      ],
+      "title": "HttpAttempt",
+      "type": "object"
+    },
+    "HttpAttemptBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "consumed": {
+          "minimum": 0,
+          "title": "Consumed",
+          "type": "integer"
+        },
+        "maximum": {
+          "minimum": 1,
+          "title": "Maximum",
+          "type": "integer"
+        },
+        "remaining": {
+          "minimum": 0,
+          "title": "Remaining",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "maximum",
+        "consumed",
+        "remaining"
+      ],
+      "title": "HttpAttemptBudget",
+      "type": "object"
+    },
+    "InputIdentities": {
+      "additionalProperties": false,
+      "description": "Keep the immutable prompt, schema, input, and fixture hashes behind compatibility.",
+      "properties": {
+        "fixture_sha256": {
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Fixture Sha256",
+          "type": "object"
+        },
+        "input_sha256": {
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Input Sha256",
+          "type": "object"
+        },
+        "prompt_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Prompt Sha256",
+          "type": "string"
+        },
+        "response_schema_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Response Schema Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "prompt_sha256",
+        "response_schema_sha256",
+        "input_sha256",
+        "fixture_sha256"
+      ],
+      "title": "InputIdentities",
+      "type": "object"
+    },
+    "LatencySummary": {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint_persistence_s": {
+          "$ref": "#/$defs/Percentiles"
+        },
+        "observed_wall_s": {
+          "$ref": "#/$defs/Percentiles"
+        },
+        "revision_s": {
+          "$ref": "#/$defs/Percentiles"
+        }
+      },
+      "required": [
+        "revision_s",
+        "observed_wall_s",
+        "checkpoint_persistence_s"
+      ],
+      "title": "LatencySummary",
+      "type": "object"
+    },
+    "ModelCall": {
+      "additionalProperties": false,
+      "properties": {
+        "decoded_answer": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "items": {},
+              "type": "array"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Decoded Answer"
+        },
+        "http_attempts": {
+          "items": {
+            "$ref": "#/$defs/HttpAttempt"
+          },
+          "title": "Http Attempts",
+          "type": "array"
+        },
+        "index": {
+          "minimum": 1,
+          "title": "Index",
+          "type": "integer"
+        },
+        "parsing": {
+          "$ref": "#/$defs/ParsingResult"
+        },
+        "purpose": {
+          "enum": [
+            "initial",
+            "reask"
+          ],
+          "title": "Purpose",
+          "type": "string"
+        },
+        "request": {
+          "$ref": "#/$defs/RequestSnapshot"
+        }
+      },
+      "required": [
+        "index",
+        "purpose",
+        "request",
+        "http_attempts",
+        "parsing",
+        "decoded_answer"
+      ],
+      "title": "ModelCall",
+      "type": "object"
+    },
+    "Observation": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_schema": {
+          "const": "revision-evaluation-observation/v1",
+          "title": "Artifact Schema",
+          "type": "string"
+        },
+        "case_id": {
+          "title": "Case Id",
+          "type": "string"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/CheckEvent"
+          },
+          "title": "Checks",
+          "type": "array"
+        },
+        "deterministic_evaluation": {
+          "$ref": "#/$defs/DeterministicEvaluation"
+        },
+        "execution": {
+          "$ref": "#/$defs/Execution"
+        },
+        "execution_attempt": {
+          "minimum": 1,
+          "title": "Execution Attempt",
+          "type": "integer"
+        },
+        "input": {
+          "$ref": "#/$defs/ObservationInput"
+        },
+        "model_calls": {
+          "items": {
+            "$ref": "#/$defs/ModelCall"
+          },
+          "title": "Model Calls",
+          "type": "array"
+        },
+        "repetition": {
+          "minimum": 1,
+          "title": "Repetition",
+          "type": "integer"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "telemetry": {
+          "$ref": "#/$defs/Telemetry"
+        }
+      },
+      "required": [
+        "artifact_schema",
+        "run_id",
+        "case_id",
+        "repetition",
+        "execution_attempt",
+        "input",
+        "execution",
+        "model_calls",
+        "checks",
+        "deterministic_evaluation",
+        "telemetry"
+      ],
+      "title": "Observation",
+      "type": "object"
+    },
+    "ObservationInput": {
+      "additionalProperties": false,
+      "properties": {
+        "availability": {
+          "items": {
+            "enum": [
+              "owned",
+              "assumed",
+              "unavailable"
+            ],
+            "type": "string"
+          },
+          "title": "Availability",
+          "type": "array"
+        },
+        "dish_id": {
+          "title": "Dish Id",
+          "type": "string"
+        },
+        "dish_name": {
+          "title": "Dish Name",
+          "type": "string"
+        },
+        "effective_assumed_staples": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Effective Assumed Staples",
+          "type": "array"
+        },
+        "original_recipe": {
+          "$ref": "#/$defs/SourceRecipeSnapshot"
+        },
+        "supplied_ingredients": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supplied Ingredients",
+          "type": "array"
+        }
+      },
+      "required": [
+        "dish_id",
+        "dish_name",
+        "supplied_ingredients",
+        "effective_assumed_staples",
+        "availability",
+        "original_recipe"
+      ],
+      "title": "ObservationInput",
+      "type": "object"
+    },
+    "OptionalNumber": {
+      "additionalProperties": false,
+      "description": "Represent a number while distinguishing unavailable and inapplicable values.",
+      "properties": {
+        "applicability": {
+          "enum": [
+            "value",
+            "unavailable",
+            "not_applicable"
+          ],
+          "title": "Applicability",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "applicability",
+        "value"
+      ],
+      "title": "OptionalNumber",
+      "type": "object"
+    },
+    "OutcomeCounts": {
+      "additionalProperties": false,
+      "properties": {
+        "api_error": {
+          "minimum": 0,
+          "title": "Api Error",
+          "type": "integer"
+        },
+        "check_failed": {
+          "minimum": 0,
+          "title": "Check Failed",
+          "type": "integer"
+        },
+        "refused": {
+          "minimum": 0,
+          "title": "Refused",
+          "type": "integer"
+        },
+        "response_error": {
+          "minimum": 0,
+          "title": "Response Error",
+          "type": "integer"
+        },
+        "revised": {
+          "minimum": 0,
+          "title": "Revised",
+          "type": "integer"
+        },
+        "unchanged": {
+          "minimum": 0,
+          "title": "Unchanged",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "unchanged",
+        "revised",
+        "refused",
+        "check_failed",
+        "response_error",
+        "api_error"
+      ],
+      "title": "OutcomeCounts",
+      "type": "object"
+    },
+    "ParsingResult": {
+      "additionalProperties": false,
+      "properties": {
+        "attempted": {
+          "title": "Attempted",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error"
+        },
+        "succeeded": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Succeeded"
+        }
+      },
+      "required": [
+        "attempted",
+        "succeeded",
+        "error"
+      ],
+      "title": "ParsingResult",
+      "type": "object"
+    },
+    "Percentiles": {
+      "additionalProperties": false,
+      "description": "Report percentile values together with their sample count and inclusion policy.",
+      "properties": {
+        "incomplete_attempt_policy": {
+          "enum": [
+            "exclude",
+            "include_when_available"
+          ],
+          "title": "Incomplete Attempt Policy",
+          "type": "string"
+        },
+        "p50_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "p95_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "sample_count": {
+          "minimum": 0,
+          "title": "Sample Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "sample_count",
+        "incomplete_attempt_policy",
+        "p50_s",
+        "p95_s"
+      ],
+      "title": "Percentiles",
+      "type": "object"
+    },
+    "PlanUnit": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "title": "Case Id",
+          "type": "string"
+        },
+        "cumulative_telemetry": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Telemetry"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observation_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Observation Refs",
+          "type": "array"
+        },
+        "repetition": {
+          "minimum": 1,
+          "title": "Repetition",
+          "type": "integer"
+        },
+        "selected_completed_attempt": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Selected Completed Attempt"
+        },
+        "state": {
+          "enum": [
+            "completed",
+            "incomplete",
+            "not_started"
+          ],
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "case_id",
+        "repetition",
+        "state",
+        "observation_refs",
+        "selected_completed_attempt",
+        "cumulative_telemetry"
+      ],
+      "title": "PlanUnit",
+      "type": "object"
+    },
+    "Rate": {
+      "additionalProperties": false,
+      "properties": {
+        "denominator": {
+          "minimum": 0,
+          "title": "Denominator",
+          "type": "integer"
+        },
+        "numerator": {
+          "minimum": 0,
+          "title": "Numerator",
+          "type": "integer"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator",
+        "value"
+      ],
+      "title": "Rate",
+      "type": "object"
+    },
+    "RecipeIngredient": {
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Amount"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "main",
+            "secondary",
+            "seasoning"
+          ],
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "amount",
+        "role"
+      ],
+      "title": "RecipeIngredient",
+      "type": "object"
+    },
+    "RecipeStep": {
+      "additionalProperties": false,
+      "properties": {
+        "n": {
+          "minimum": 1,
+          "title": "N",
+          "type": "integer"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "n",
+        "text"
+      ],
+      "title": "RecipeStep",
+      "type": "object"
+    },
+    "RequestSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "schema": {
+          "additionalProperties": true,
+          "title": "Schema",
+          "type": "object"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "system": {
+          "title": "System",
+          "type": "string"
+        },
+        "user": {
+          "title": "User",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "system",
+        "user",
+        "schema",
+        "sha256"
+      ],
+      "title": "RequestSnapshot",
+      "type": "object"
+    },
+    "RunMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_schema": {
+          "const": "revision-evaluation-metadata/v1",
+          "title": "Artifact Schema",
+          "type": "string"
+        },
+        "code_identity": {
+          "$ref": "#/$defs/CodeIdentity"
+        },
+        "compatibility_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Compatibility Fingerprint",
+          "type": "string"
+        },
+        "created_at": {
+          "title": "Created At",
+          "type": "string"
+        },
+        "effective_assumed_staples": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Effective Assumed Staples",
+          "type": "array"
+        },
+        "http_attempt_budget": {
+          "$ref": "#/$defs/HttpAttemptBudget"
+        },
+        "identities": {
+          "$ref": "#/$defs/InputIdentities"
+        },
+        "model": {
+          "additionalProperties": true,
+          "title": "Model",
+          "type": "object"
+        },
+        "observation_schema": {
+          "const": "revision-evaluation-observation/v1",
+          "title": "Observation Schema",
+          "type": "string"
+        },
+        "plan": {
+          "items": {
+            "$ref": "#/$defs/PlanUnit"
+          },
+          "title": "Plan",
+          "type": "array"
+        },
+        "pricing": {
+          "additionalProperties": true,
+          "title": "Pricing",
+          "type": "object"
+        },
+        "resume_history": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Resume History",
+          "type": "array"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "running",
+            "interrupted",
+            "completed"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "updated_at": {
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_schema",
+        "observation_schema",
+        "run_id",
+        "state",
+        "created_at",
+        "updated_at",
+        "compatibility_fingerprint",
+        "code_identity",
+        "identities",
+        "effective_assumed_staples",
+        "model",
+        "pricing",
+        "http_attempt_budget",
+        "plan",
+        "resume_history"
+      ],
+      "title": "RunMetadata",
+      "type": "object"
+    },
+    "RunSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_schema": {
+          "const": "revision-evaluation-summary/v1",
+          "title": "Artifact Schema",
+          "type": "string"
+        },
+        "cases": {
+          "items": {
+            "$ref": "#/$defs/CaseSummary"
+          },
+          "title": "Cases",
+          "type": "array"
+        },
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "explanation_coverage": {
+          "$ref": "#/$defs/Rate"
+        },
+        "final_failure_codes": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "title": "Final Failure Codes",
+          "type": "object"
+        },
+        "generated_at": {
+          "title": "Generated At",
+          "type": "string"
+        },
+        "initial_failure_codes": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "title": "Initial Failure Codes",
+          "type": "object"
+        },
+        "json_parse_success": {
+          "$ref": "#/$defs/Rate"
+        },
+        "latency": {
+          "$ref": "#/$defs/LatencySummary"
+        },
+        "observation_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Observation Refs",
+          "type": "array"
+        },
+        "observation_schema": {
+          "const": "revision-evaluation-observation/v1",
+          "title": "Observation Schema",
+          "type": "string"
+        },
+        "outcomes": {
+          "$ref": "#/$defs/OutcomeCounts"
+        },
+        "reference_validity": {
+          "$ref": "#/$defs/Rate"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "semantic_success": {
+          "$ref": "#/$defs/SemanticSuccess"
+        },
+        "structural_validity": {
+          "$ref": "#/$defs/Rate"
+        },
+        "totals": {
+          "$ref": "#/$defs/RunTotals"
+        }
+      },
+      "required": [
+        "artifact_schema",
+        "observation_schema",
+        "run_id",
+        "complete",
+        "generated_at",
+        "observation_refs",
+        "outcomes",
+        "json_parse_success",
+        "structural_validity",
+        "reference_validity",
+        "explanation_coverage",
+        "initial_failure_codes",
+        "final_failure_codes",
+        "latency",
+        "cases",
+        "semantic_success",
+        "totals"
+      ],
+      "title": "RunSummary",
+      "type": "object"
+    },
+    "RunTotals": {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint_persistence_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "completed_repetitions": {
+          "minimum": 0,
+          "title": "Completed Repetitions",
+          "type": "integer"
+        },
+        "cost_usd": {
+          "$ref": "#/$defs/Cost"
+        },
+        "http_429_responses": {
+          "minimum": 0,
+          "title": "Http 429 Responses",
+          "type": "integer"
+        },
+        "http_429_retries": {
+          "minimum": 0,
+          "title": "Http 429 Retries",
+          "type": "integer"
+        },
+        "http_attempts": {
+          "minimum": 0,
+          "title": "Http Attempts",
+          "type": "integer"
+        },
+        "incomplete_attempts": {
+          "minimum": 0,
+          "title": "Incomplete Attempts",
+          "type": "integer"
+        },
+        "logical_calls": {
+          "minimum": 0,
+          "title": "Logical Calls",
+          "type": "integer"
+        },
+        "non_http_remainder_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "observed_wall_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "provider_round_trip_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "reasks": {
+          "minimum": 0,
+          "title": "Reasks",
+          "type": "integer"
+        },
+        "revision_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "tokens": {
+          "$ref": "#/$defs/TokenTotals"
+        }
+      },
+      "required": [
+        "completed_repetitions",
+        "incomplete_attempts",
+        "logical_calls",
+        "reasks",
+        "http_attempts",
+        "http_429_responses",
+        "http_429_retries",
+        "provider_round_trip_s",
+        "revision_s",
+        "observed_wall_s",
+        "checkpoint_persistence_s",
+        "non_http_remainder_s",
+        "tokens",
+        "cost_usd"
+      ],
+      "title": "RunTotals",
+      "type": "object"
+    },
+    "SemanticSuccess": {
+      "additionalProperties": false,
+      "description": "Keep semantic success unavailable until a named, versioned definition exists.",
+      "properties": {
+        "applicability": {
+          "enum": [
+            "value",
+            "not_applicable"
+          ],
+          "title": "Applicability",
+          "type": "string"
+        },
+        "definition": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Definition"
+        },
+        "rate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Rate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "applicability",
+        "definition",
+        "rate"
+      ],
+      "title": "SemanticSuccess",
+      "type": "object"
+    },
+    "SourceRecipeSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "dish_id": {
+          "title": "Dish Id",
+          "type": "string"
+        },
+        "ingredients": {
+          "items": {
+            "$ref": "#/$defs/RecipeIngredient"
+          },
+          "title": "Ingredients",
+          "type": "array"
+        },
+        "servings": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Servings"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/RecipeStep"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "tips": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tips",
+          "type": "array"
+        }
+      },
+      "required": [
+        "dish_id",
+        "source",
+        "servings",
+        "ingredients",
+        "steps",
+        "tips"
+      ],
+      "title": "SourceRecipeSnapshot",
+      "type": "object"
+    },
+    "Telemetry": {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint_persistence_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "cost_usd": {
+          "$ref": "#/$defs/Cost"
+        },
+        "http_429_responses": {
+          "minimum": 0,
+          "title": "Http 429 Responses",
+          "type": "integer"
+        },
+        "http_429_retries": {
+          "minimum": 0,
+          "title": "Http 429 Retries",
+          "type": "integer"
+        },
+        "http_attempts": {
+          "minimum": 0,
+          "title": "Http Attempts",
+          "type": "integer"
+        },
+        "logical_calls": {
+          "minimum": 0,
+          "title": "Logical Calls",
+          "type": "integer"
+        },
+        "non_http_remainder_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "observed_wall_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "provider_round_trip_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "reasks": {
+          "minimum": 0,
+          "title": "Reasks",
+          "type": "integer"
+        },
+        "revision_s": {
+          "$ref": "#/$defs/OptionalNumber"
+        },
+        "tokens": {
+          "$ref": "#/$defs/TokenTotals"
+        }
+      },
+      "required": [
+        "logical_calls",
+        "reasks",
+        "http_attempts",
+        "http_429_responses",
+        "http_429_retries",
+        "provider_round_trip_s",
+        "revision_s",
+        "observed_wall_s",
+        "checkpoint_persistence_s",
+        "non_http_remainder_s",
+        "tokens",
+        "cost_usd"
+      ],
+      "title": "Telemetry",
+      "type": "object"
+    },
+    "TokenTotal": {
+      "additionalProperties": false,
+      "description": "Retain known tokens even when an aggregate has incomplete provider usage.",
+      "properties": {
+        "applicability": {
+          "enum": [
+            "value",
+            "unavailable",
+            "not_applicable"
+          ],
+          "title": "Applicability",
+          "type": "string"
+        },
+        "confirmed_subtotal": {
+          "minimum": 0,
+          "title": "Confirmed Subtotal",
+          "type": "integer"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "applicability",
+        "value",
+        "confirmed_subtotal"
+      ],
+      "title": "TokenTotal",
+      "type": "object"
+    },
+    "TokenTotals": {
+      "additionalProperties": false,
+      "properties": {
+        "cached_tokens": {
+          "$ref": "#/$defs/TokenTotal"
+        },
+        "input_tokens": {
+          "$ref": "#/$defs/TokenTotal"
+        },
+        "output_tokens": {
+          "$ref": "#/$defs/TokenTotal"
+        },
+        "reasoning_tokens": {
+          "$ref": "#/$defs/TokenTotal"
+        }
+      },
+      "required": [
+        "input_tokens",
+        "output_tokens",
+        "reasoning_tokens",
+        "cached_tokens"
+      ],
+      "title": "TokenTotals",
+      "type": "object"
+    },
+    "Usage": {
+      "additionalProperties": false,
+      "properties": {
+        "cached_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cached Tokens"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Output Tokens"
+        },
+        "reasoning_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reasoning Tokens"
+        }
+      },
+      "required": [
+        "input_tokens",
+        "output_tokens",
+        "reasoning_tokens",
+        "cached_tokens"
+      ],
+      "title": "Usage",
+      "type": "object"
+    }
+  },
+  "$id": "https://mylittlechef.invalid/schemas/revision-evaluation/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Full Runner artifacts; Judge payload selection is a separate contract.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/RunMetadata"
+    },
+    {
+      "$ref": "#/$defs/Observation"
+    },
+    {
+      "$ref": "#/$defs/RunSummary"
+    }
+  ],
+  "title": "Revision evaluation artifact contract v1"
+}

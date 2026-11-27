@@ -1,0 +1,178 @@
+{
+  "artifact_schema": "revision-evaluation-observation/v1",
+  "case_id": "refused-prescreen",
+  "checks": [],
+  "deterministic_evaluation": {
+    "answers": [],
+    "deleted_ingredient_explanation": {
+      "denominator": 0,
+      "numerator": 0,
+      "value": null
+    }
+  },
+  "execution": {
+    "checkpoint_revision": 1,
+    "checkpoint_stage": "terminal",
+    "final_service_response": {
+      "availability": [
+        "owned",
+        "unavailable",
+        "assumed"
+      ],
+      "changes": [],
+      "dish_id": "fixture-rice",
+      "error": null,
+      "notice": "AI가 만든 제안이에요. 맛과 알레르기는 직접 확인해 주세요.",
+      "original": {
+        "dish_id": "fixture-rice",
+        "ingredients": [
+          {
+            "amount": "1공기",
+            "name": "밥",
+            "role": "main"
+          },
+          {
+            "amount": "1/4대",
+            "name": "대파",
+            "role": "secondary"
+          },
+          {
+            "amount": "1꼬집",
+            "name": "소금",
+            "role": "seasoning"
+          }
+        ],
+        "servings": 1,
+        "source": "contract_fixture",
+        "steps": [
+          {
+            "n": 1,
+            "text": "대파를 썬다."
+          },
+          {
+            "n": 2,
+            "text": "밥과 함께 볶는다."
+          }
+        ],
+        "tips": []
+      },
+      "refusal_reason": "missing identity",
+      "revised": null,
+      "status": "refused"
+    },
+    "finished_at": "2026-11-20T00:00:00Z",
+    "outcome_source": "prescreen",
+    "sanitized_error": null,
+    "started_at": "2026-11-20T00:00:00Z",
+    "state": "completed",
+    "terminal_outcome": "refused"
+  },
+  "execution_attempt": 1,
+  "input": {
+    "availability": [
+      "owned",
+      "unavailable",
+      "assumed"
+    ],
+    "dish_id": "fixture-rice",
+    "dish_name": "Fixture Rice",
+    "effective_assumed_staples": [
+      "소금"
+    ],
+    "original_recipe": {
+      "dish_id": "fixture-rice",
+      "ingredients": [
+        {
+          "amount": "1공기",
+          "name": "밥",
+          "role": "main"
+        },
+        {
+          "amount": "1/4대",
+          "name": "대파",
+          "role": "secondary"
+        },
+        {
+          "amount": "1꼬집",
+          "name": "소금",
+          "role": "seasoning"
+        }
+      ],
+      "servings": 1,
+      "source": "contract_fixture",
+      "steps": [
+        {
+          "n": 1,
+          "text": "대파를 썬다."
+        },
+        {
+          "n": 2,
+          "text": "밥과 함께 볶는다."
+        }
+      ],
+      "tips": []
+    },
+    "supplied_ingredients": [
+      "밥"
+    ]
+  },
+  "model_calls": [],
+  "repetition": 1,
+  "run_id": "contract-v1-fixture",
+  "telemetry": {
+    "checkpoint_persistence_s": {
+      "applicability": "value",
+      "value": 0.02
+    },
+    "cost_usd": {
+      "applicability": "not_applicable",
+      "confirmed_subtotal": 0,
+      "price_inputs": null,
+      "provenance": "not_applicable",
+      "value": null
+    },
+    "http_429_responses": 0,
+    "http_429_retries": 0,
+    "http_attempts": 0,
+    "logical_calls": 0,
+    "non_http_remainder_s": {
+      "applicability": "unavailable",
+      "value": null
+    },
+    "observed_wall_s": {
+      "applicability": "value",
+      "value": 0.82
+    },
+    "provider_round_trip_s": {
+      "applicability": "not_applicable",
+      "value": null
+    },
+    "reasks": 0,
+    "revision_s": {
+      "applicability": "value",
+      "value": 0.8
+    },
+    "tokens": {
+      "cached_tokens": {
+        "applicability": "not_applicable",
+        "confirmed_subtotal": 0,
+        "value": null
+      },
+      "input_tokens": {
+        "applicability": "not_applicable",
+        "confirmed_subtotal": 0,
+        "value": null
+      },
+      "output_tokens": {
+        "applicability": "not_applicable",
+        "confirmed_subtotal": 0,
+        "value": null
+      },
+      "reasoning_tokens": {
+        "applicability": "not_applicable",
+        "confirmed_subtotal": 0,
+        "value": null
+      }
+    }
+  }
+}
